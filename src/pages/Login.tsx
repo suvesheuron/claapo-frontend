@@ -16,14 +16,14 @@ export default function Login() {
             <p className="text-lg text-neutral-600">Login to access your CrewCall account</p>
           </div>
 
-          <div className="bg-white border border-neutral-200 p-8 sm:p-12">
+          <div className="rounded-lg bg-white border border-neutral-200 p-8 sm:p-12">
             <form className="space-y-6">
               <div>
                 <label className="block text-neutral-900 text-sm mb-3 font-medium">Email or Phone Number</label>
                 <input
                   type="text"
                   placeholder="Enter your email or phone"
-                  className="w-full px-4 py-4 border border-neutral-300 bg-white text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-neutral-900"
+                  className="rounded-lg w-full px-4 py-4 border border-neutral-300 bg-white text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-neutral-900"
                 />
               </div>
               <div>
@@ -31,7 +31,7 @@ export default function Login() {
                 <input
                   type="password"
                   placeholder="Enter your password"
-                  className="w-full px-4 py-4 border border-neutral-300 bg-white text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-neutral-900"
+                  className="rounded-lg w-full px-4 py-4 border border-neutral-300 bg-white text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-neutral-900"
                 />
               </div>
               <div className="flex items-center justify-between">
@@ -43,7 +43,7 @@ export default function Login() {
               </div>
               <button
                 type="submit"
-                className="w-full py-4 bg-neutral-900 text-white text-lg hover:bg-neutral-800 font-medium"
+                className="rounded-lg w-full py-4 bg-neutral-900 text-white text-lg hover:bg-neutral-700 font-medium"
               >
                 Login
               </button>

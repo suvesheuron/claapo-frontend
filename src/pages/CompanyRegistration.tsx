@@ -13,21 +13,21 @@ export default function CompanyRegistration() {
       <div className="flex items-center justify-center px-4 sm:px-8 py-12 sm:py-20">
         <div className="w-full max-w-[640px]">
           <div className="text-center mb-8 sm:mb-12">
-            <div className="w-16 h-16 bg-neutral-800 mx-auto mb-6 flex items-center justify-center">
+            <div className="w-16 h-16 rounded-lg bg-neutral-800 mx-auto mb-6 flex items-center justify-center">
               <FaBuilding className="text-white text-2xl" />
             </div>
             <h1 className="text-4xl sm:text-5xl text-neutral-900 mb-4 font-bold">Company Registration</h1>
             <p className="text-lg text-neutral-600">Register your company to start hiring crew and vendors</p>
           </div>
 
-          <div className="bg-white border border-neutral-200 p-8 sm:p-12">
+          <div className="rounded-lg bg-white border border-neutral-200 p-8 sm:p-12">
             <form className="space-y-6">
               <div>
                 <label className="block text-neutral-900 text-sm mb-3 font-medium">Company Name *</label>
                 <input
                   type="text"
                   placeholder="Enter your company name"
-                  className="w-full px-4 py-4 border border-neutral-300 bg-white text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-neutral-900"
+                  className="rounded-lg w-full px-4 py-4 border border-neutral-300 bg-white text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-neutral-900"
                 />
               </div>
               <div>
@@ -35,7 +35,7 @@ export default function CompanyRegistration() {
                 <input
                   type="text"
                   placeholder="Enter GST registration number"
-                  className="w-full px-4 py-4 border border-neutral-300 bg-white text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-neutral-900"
+                  className="rounded-lg w-full px-4 py-4 border border-neutral-300 bg-white text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-neutral-900"
                 />
                 <p className="text-xs text-neutral-500 mt-2 flex items-center gap-1">
                   <FaCircleInfo className="shrink-0" /> We&apos;ll verify your GST registration for business authenticity
@@ -46,7 +46,7 @@ export default function CompanyRegistration() {
                 <input
                   type="tel"
                   placeholder="+91 XXXXX XXXXX"
-                  className="w-full px-4 py-4 border border-neutral-300 bg-white text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-neutral-900"
+                  className="rounded-lg w-full px-4 py-4 border border-neutral-300 bg-white text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-neutral-900"
                 />
                 <p className="text-xs text-neutral-500 mt-2 flex items-center gap-1">
                   <FaShieldHalved className="shrink-0" /> Phone verification required for account security
@@ -57,14 +57,14 @@ export default function CompanyRegistration() {
                 <input
                   type="email"
                   placeholder="company@example.com"
-                  className="w-full px-4 py-4 border border-neutral-300 bg-white text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-neutral-900"
+                  className="rounded-lg w-full px-4 py-4 border border-neutral-300 bg-white text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-neutral-900"
                 />
                 <p className="text-xs text-neutral-500 mt-2 flex items-center gap-1">
                   <FaEnvelope className="shrink-0" /> Email verification link will be sent to this address
                 </p>
               </div>
 
-              <div className="bg-neutral-50 border border-neutral-200 p-6">
+              <div className="rounded-lg bg-neutral-50 border border-neutral-200 p-6">
                 <div className="flex items-start gap-3">
                   <FaShieldHalved className="text-neutral-600 text-lg mt-1 shrink-0" />
                   <div>
@@ -87,7 +87,7 @@ export default function CompanyRegistration() {
                 </label>
               </div>
 
-              <button type="submit" className="w-full py-4 bg-neutral-900 text-white text-lg hover:bg-neutral-800 font-medium">
+              <button type="submit" className="rounded-lg w-full py-4 bg-neutral-900 text-white text-lg hover:bg-neutral-700 font-medium">
                 Register Company
               </button>
 

@@ -32,7 +32,7 @@ export default function SearchFilter() {
       <header className="border-b border-neutral-200 bg-white">
         <div className="max-w-[1920px] mx-auto px-4 sm:px-8 lg:px-16 py-6 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-neutral-800 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-neutral-800 flex items-center justify-center">
               <FaVideo className="text-white text-xl" />
             </div>
             <span className="text-xl sm:text-2xl text-neutral-900 font-semibold">CrewCall</span>
@@ -56,20 +56,20 @@ export default function SearchFilter() {
               <h1 className="text-3xl sm:text-4xl text-neutral-900 mb-2 font-bold">Find Crew & Vendors</h1>
               <p className="text-lg text-neutral-600">Search and hire the best talent for your projects</p>
             </div>
-            <Link to="/dashboard/projects/new" className="px-6 py-3 bg-neutral-900 text-white hover:bg-neutral-800 inline-flex items-center justify-center gap-2 shrink-0">
+            <Link to="/dashboard/projects/new" className="rounded-lg px-6 py-3 bg-neutral-900 text-white hover:bg-neutral-700 inline-flex items-center justify-center gap-2 shrink-0">
               <span>Create Project</span>
             </Link>
           </div>
 
           <div className="flex flex-col lg:flex-row gap-6 sm:gap-8">
-            <aside className="w-full lg:w-80 bg-white border border-neutral-200 p-6 h-fit shrink-0">
+            <aside className="rounded-lg w-full lg:w-80 bg-white border border-neutral-200 p-6 h-fit shrink-0">
               <h3 className="text-lg text-neutral-900 mb-4 font-bold">Filters</h3>
               <div className="space-y-6">
                 <div className="relative">
                   <input
                     type="text"
                     placeholder="Search by name or skill..."
-                    className="w-full px-4 py-3 border border-neutral-300 bg-white text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-neutral-900"
+                    className="rounded-lg w-full px-4 py-3 border border-neutral-300 bg-white text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-neutral-900"
                   />
                   <FaMagnifyingGlass className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
                 </div>
@@ -100,9 +100,9 @@ export default function SearchFilter() {
                 <div>
                   <label className="block text-neutral-900 text-sm mb-3 font-medium">Availability</label>
                   <div className="flex gap-2 items-center">
-                    <input type="date" className="flex-1 px-3 py-2 border border-neutral-300 bg-white text-neutral-900 text-sm focus:outline-none focus:border-neutral-900" />
+                    <input type="date" className="rounded-lg flex-1 px-3 py-2 border border-neutral-300 bg-white text-neutral-900 text-sm focus:outline-none focus:border-neutral-900" />
                     <span className="text-neutral-500 text-sm">to</span>
-                    <input type="date" className="flex-1 px-3 py-2 border border-neutral-300 bg-white text-neutral-900 text-sm focus:outline-none focus:border-neutral-900" />
+                    <input type="date" className="rounded-lg flex-1 px-3 py-2 border border-neutral-300 bg-white text-neutral-900 text-sm focus:outline-none focus:border-neutral-900" />
                   </div>
                 </div>
                 <div>
@@ -126,10 +126,10 @@ export default function SearchFilter() {
                     ))}
                   </div>
                 </div>
-                <button type="button" className="w-full py-3 bg-neutral-900 text-white hover:bg-neutral-800 font-medium">
+                <button type="button" className="rounded-lg w-full py-3 bg-neutral-900 text-white hover:bg-neutral-700 font-medium">
                   Apply Filters
                 </button>
-                <button type="button" className="w-full py-3 border border-neutral-300 text-neutral-900 hover:bg-neutral-50">
+                <button type="button" className="rounded-lg w-full py-3 border border-neutral-300 text-neutral-900 hover:bg-neutral-100">
                   Clear All
                 </button>
               </div>
@@ -140,7 +140,7 @@ export default function SearchFilter() {
                 <p className="text-neutral-600">Showing {results.length} results</p>
                 <div className="flex items-center gap-4">
                   <span className="text-sm text-neutral-600">Sort by:</span>
-                  <select className="px-3 py-2 border border-neutral-300 bg-white text-neutral-900 text-sm focus:outline-none focus:border-neutral-900">
+                  <select className="rounded-lg px-3 py-2 border border-neutral-300 bg-white text-neutral-900 text-sm focus:outline-none focus:border-neutral-900">
                     <option>Relevance</option>
                     <option>Rating</option>
                     <option>Experience</option>
@@ -152,10 +152,10 @@ export default function SearchFilter() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
                 {results.map((r) => (
-                  <div key={r.name} className="bg-white border border-neutral-200 p-4 sm:p-6">
+                  <div key={r.name} className="rounded-lg bg-white border border-neutral-200 p-4 sm:p-6">
                     <div className="flex items-start gap-4 mb-4">
                       {r.vendor ? (
-                        <div className="w-16 h-16 bg-neutral-300 flex items-center justify-center shrink-0">
+                        <div className="w-16 h-16 rounded-lg bg-neutral-300 flex items-center justify-center shrink-0">
                           <FaTruck className="text-neutral-600 text-xl" />
                         </div>
                       ) : (
@@ -178,10 +178,10 @@ export default function SearchFilter() {
                     <p className="text-sm text-neutral-700 mb-4 line-clamp-2">{r.bio}</p>
                     <p className="text-lg text-neutral-900 font-bold mb-4">{r.price}</p>
                     <div className="flex gap-2">
-                      <button type="button" className="flex-1 py-2 border border-neutral-300 text-neutral-900 text-sm hover:bg-neutral-50">
+                      <button type="button" className="rounded-lg flex-1 py-2 border border-neutral-300 text-neutral-900 text-sm hover:bg-neutral-100">
                         View Profile
                       </button>
-                      <button type="button" className="flex-1 py-2 bg-neutral-900 text-white text-sm hover:bg-neutral-800">
+                      <button type="button" className="rounded-lg flex-1 py-2 bg-neutral-900 text-white text-sm hover:bg-neutral-700">
                         Send Request
                       </button>
                     </div>
@@ -190,13 +190,13 @@ export default function SearchFilter() {
               </div>
 
               <div className="flex items-center justify-center mt-8 sm:mt-12 gap-2">
-                <button type="button" className="px-3 py-2 border border-neutral-300 text-neutral-900 hover:bg-neutral-50">
-                  <FaChevronLeft />
-                </button>
-                <button type="button" className="px-4 py-2 bg-neutral-900 text-white">1</button>
-                <button type="button" className="px-4 py-2 border border-neutral-300 text-neutral-900 hover:bg-neutral-50">2</button>
-                <button type="button" className="px-4 py-2 border border-neutral-300 text-neutral-900 hover:bg-neutral-50">3</button>
-                <button type="button" className="px-3 py-2 border border-neutral-300 text-neutral-900 hover:bg-neutral-50">
+<button type="button" className="rounded-lg px-3 py-2 border border-neutral-300 text-neutral-900 hover:bg-neutral-100">
+                <FaChevronLeft />
+              </button>
+              <button type="button" className="rounded-lg px-4 py-2 bg-neutral-900 text-white">1</button>
+              <button type="button" className="rounded-lg px-4 py-2 border border-neutral-300 text-neutral-900 hover:bg-neutral-100">2</button>
+              <button type="button" className="rounded-lg px-4 py-2 border border-neutral-300 text-neutral-900 hover:bg-neutral-100">3</button>
+              <button type="button" className="rounded-lg px-3 py-2 border border-neutral-300 text-neutral-900 hover:bg-neutral-100">
                   <FaChevronRight />
                 </button>
               </div>

@@ -11,7 +11,7 @@ export default function RegisterPlaceholder() {
         <div className="text-center max-w-md">
           <h1 className="text-2xl sm:text-3xl text-neutral-900 mb-4 font-bold">{label} Registration</h1>
           <p className="text-neutral-600 mb-8">This registration flow is coming soon. Please check back later.</p>
-          <Link to="/register" className="inline-block px-6 py-3 bg-neutral-900 text-white hover:bg-neutral-800">
+          <Link to="/register" className="rounded-lg inline-block px-6 py-3 bg-neutral-900 text-white hover:bg-neutral-700">
             Back to Account Type
           </Link>
         </div>

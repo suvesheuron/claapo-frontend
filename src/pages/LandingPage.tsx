@@ -56,10 +56,10 @@ export default function LandingPage() {
               CrewCall connects production companies with verified freelance crew members and equipment vendors. Streamline your hiring, manage availability, and lock your team in one platform.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
-              <Link to="/dashboard" className="px-8 py-4 bg-neutral-900 text-white text-lg hover:bg-neutral-800 inline-block text-center">
+              <Link to="/dashboard" className="rounded-lg px-8 py-4 bg-neutral-900 text-white text-lg hover:bg-neutral-700 inline-block text-center">
                 Hire Crew
               </Link>
-              <Link to="/register" className="px-8 py-4 border-2 border-neutral-900 text-neutral-900 text-lg hover:bg-neutral-50 inline-block text-center">
+              <Link to="/register" className="rounded-lg px-8 py-4 border-2 border-neutral-900 text-neutral-900 text-lg hover:bg-neutral-100 inline-block text-center">
                 Join as Crew or Vendor
               </Link>
             </div>
@@ -74,8 +74,8 @@ export default function LandingPage() {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 sm:gap-12">
             {featureCards.map((card) => (
-              <div key={card.title} className="border border-neutral-200 p-8 sm:p-10">
-                <div className="w-16 h-16 bg-neutral-800 flex items-center justify-center mb-6">
+              <div key={card.title} className="rounded-lg border border-neutral-200 p-8 sm:p-10">
+                <div className="w-16 h-16 rounded-lg bg-neutral-800 flex items-center justify-center mb-6">
                   <card.icon className="text-white text-2xl" />
                 </div>
                 <h3 className="text-2xl text-neutral-900 mb-4 font-bold">{card.title}</h3>
@@ -102,7 +102,7 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {steps.map((step) => (
               <div key={step.num} className="text-center">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-neutral-900 text-white flex items-center justify-center mx-auto mb-6 text-2xl sm:text-3xl font-bold">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg bg-neutral-900 text-white flex items-center justify-center mx-auto mb-6 text-2xl sm:text-3xl font-bold">
                   {step.num}
                 </div>
                 <h4 className="text-xl text-neutral-900 mb-3 font-bold">{step.title}</h4>
@@ -118,10 +118,10 @@ export default function LandingPage() {
           <h2 className="text-3xl sm:text-4xl text-white mb-6 font-bold">Ready to Streamline Your Production?</h2>
           <p className="text-xl text-neutral-300 mb-8">Join thousands of production professionals using CrewCall</p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to="/register" className="px-8 py-4 bg-white text-neutral-900 text-lg hover:bg-neutral-100 inline-block">
+            <Link to="/register" className="rounded-lg px-8 py-4 bg-white text-neutral-900 text-lg hover:bg-neutral-100 inline-block">
               Get Started Now
             </Link>
-            <Link to="/register" className="px-8 py-4 border-2 border-white text-white text-lg hover:bg-neutral-800 inline-block">
+            <Link to="/register" className="rounded-lg px-8 py-4 border-2 border-white text-white text-lg hover:bg-neutral-700 inline-block">
               Learn More
             </Link>
           </div>
@@ -132,8 +132,8 @@ export default function LandingPage() {
         <div className="max-w-[1920px] mx-auto px-4 sm:px-8 lg:px-16">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 sm:gap-12 mb-8">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-neutral-800 flex items-center justify-center">
-                <FaVideo className="text-white text-xl" />
+<div className="w-10 h-10 rounded-lg bg-neutral-800 flex items-center justify-center">
+              <FaVideo className="text-white text-xl" />
               </div>
               <span className="text-2xl text-neutral-900 font-semibold">CrewCall</span>
             </div>

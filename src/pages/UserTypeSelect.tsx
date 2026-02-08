@@ -47,9 +47,9 @@ export default function UserTypeSelect() {
           {accountTypes.map((type) => (
             <div
               key={type.title}
-              className="bg-white border-2 border-neutral-200 p-8 sm:p-12 hover:border-neutral-900 transition-all group"
+              className="rounded-lg bg-white border-2 border-neutral-200 p-8 sm:p-12 hover:border-neutral-900 transition-all group"
             >
-              <div className="w-20 h-20 bg-neutral-100 flex items-center justify-center mx-auto mb-6 sm:mb-8">
+              <div className="w-20 h-20 rounded-lg bg-neutral-100 flex items-center justify-center mx-auto mb-6 sm:mb-8">
                 <type.icon className="text-neutral-900 text-3xl" />
               </div>
               <h3 className="text-2xl text-neutral-900 text-center mb-4 font-bold">{type.title}</h3>
@@ -64,7 +64,7 @@ export default function UserTypeSelect() {
               </ul>
               <Link
                 to={type.to}
-                className="block w-full py-4 bg-neutral-900 text-white text-lg hover:bg-neutral-800 text-center"
+                className="rounded-lg block w-full py-4 bg-neutral-900 text-white text-lg hover:bg-neutral-700 text-center"
               >
                 {type.cta}
               </Link>

@@ -38,7 +38,7 @@ export default function CreateProject() {
             <FaArrowLeft className="w-4 h-4" /> Back to Dashboard
           </Link>
           <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-8 sm:mb-10">
-            <div className="w-14 h-14 bg-neutral-800 flex items-center justify-center shrink-0">
+            <div className="w-14 h-14 rounded-lg bg-neutral-800 flex items-center justify-center shrink-0">
               <FaFolderPlus className="text-white text-2xl" />
             </div>
             <div>
@@ -49,7 +49,7 @@ export default function CreateProject() {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
             <div className="lg:col-span-2 space-y-6">
-              <div className="bg-white border border-neutral-200 p-6 sm:p-10">
+              <div className="rounded-lg bg-white border border-neutral-200 p-6 sm:p-10">
                 <h2 className="text-xl text-neutral-900 mb-6 sm:mb-8 flex items-center gap-3 font-bold">
                   <FaCircleInfo className="text-neutral-600" /> Project Information
                 </h2>
@@ -59,7 +59,7 @@ export default function CreateProject() {
                     <input
                       type="text"
                       placeholder="e.g., Summer Commercial Campaign 2025"
-                      className="w-full px-4 py-4 border border-neutral-300 bg-white text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-neutral-900"
+                      className="rounded-lg w-full px-4 py-4 border border-neutral-300 bg-white text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-neutral-900"
                     />
                   </div>
                   <div>
@@ -67,7 +67,7 @@ export default function CreateProject() {
                     <textarea
                       rows={4}
                       placeholder="Brief description of the project, shooting locations, and any special requirements..."
-                      className="w-full px-4 py-4 border border-neutral-300 bg-white text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-neutral-900"
+                      className="rounded-lg w-full px-4 py-4 border border-neutral-300 bg-white text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-neutral-900"
                     />
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -91,19 +91,19 @@ export default function CreateProject() {
                     <input
                       type="text"
                       placeholder="e.g., Mumbai, Maharashtra"
-                      className="w-full px-4 py-4 border border-neutral-300 bg-white text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-neutral-900"
+                      className="rounded-lg w-full px-4 py-4 border border-neutral-300 bg-white text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-neutral-900"
                     />
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white border border-neutral-200 p-6 sm:p-10">
-                <h2 className="text-xl text-neutral-900 mb-6 sm:mb-8 flex items-center gap-3 font-bold">
-                  <FaUsers className="text-neutral-600" /> Required Roles
+<div className="rounded-lg bg-white border border-neutral-200 p-6 sm:p-10">
+            <h2 className="text-xl text-neutral-900 mb-6 sm:mb-8 flex items-center gap-3 font-bold">
+              <FaUsers className="text-neutral-600" /> Required Roles
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                   {roles.map((r) => (
-                    <label key={r.title} className="flex items-center gap-3 p-4 border border-neutral-300 hover:border-neutral-900 cursor-pointer">
+                    <label key={r.title} className="rounded-lg flex items-center gap-3 p-4 border border-neutral-300 hover:border-neutral-900 hover:bg-neutral-50 cursor-pointer">
                       <input type="checkbox" className="w-5 h-5 border border-neutral-300 rounded" />
                       <div>
                         <div className="text-neutral-900 font-medium">{r.title}</div>
@@ -117,9 +117,9 @@ export default function CreateProject() {
                 </button>
               </div>
 
-              <div className="bg-white border border-neutral-200 p-6 sm:p-10">
-                <h2 className="text-xl text-neutral-900 mb-6 sm:mb-8 flex items-center gap-3 font-bold">
-                  <FaIndianRupeeSign className="text-neutral-600" /> Budget Information
+<div className="rounded-lg bg-white border border-neutral-200 p-6 sm:p-10">
+            <h2 className="text-xl text-neutral-900 mb-6 sm:mb-8 flex items-center gap-3 font-bold">
+              <FaIndianRupeeSign className="text-neutral-600" /> Budget Information
                 </h2>
                 <div className="mb-6">
                   <label className="block text-neutral-900 text-sm mb-3 font-medium">Total Project Budget *</label>
@@ -137,7 +137,7 @@ export default function CreateProject() {
                     <FaCircleInfo /> Budget helps us match you with appropriate crew members
                   </p>
                 </div>
-                <div className="bg-neutral-50 border border-neutral-200 p-6">
+                <div className="rounded-lg bg-neutral-50 border border-neutral-200 p-6">
                   <div className="flex items-start gap-3">
                     <FaLightbulb className="text-neutral-600 text-lg mt-1 shrink-0" />
                     <div>
@@ -155,7 +155,7 @@ export default function CreateProject() {
             </div>
 
             <div className="lg:col-span-1">
-              <div className="bg-white border border-neutral-200 p-6 sm:p-8 sticky top-8">
+              <div className="rounded-lg bg-white border border-neutral-200 p-6 sm:p-8 sticky top-8">
                 <h3 className="text-lg text-neutral-900 mb-6 flex items-center gap-2 font-bold">
                   <FaClipboardCheck /> Project Summary
                 </h3>
@@ -194,13 +194,13 @@ export default function CreateProject() {
                     </li>
                   </ul>
                 </div>
-                <button type="button" className="w-full py-4 bg-neutral-900 text-white hover:bg-neutral-800 mb-3 font-medium flex items-center justify-center gap-2">
+                <button type="button" className="rounded-lg w-full py-4 bg-neutral-900 text-white hover:bg-neutral-700 mb-3 font-medium flex items-center justify-center gap-2">
                   <FaClipboardCheck /> Create Project
                 </button>
-                <button type="button" className="w-full py-4 border border-neutral-300 text-neutral-900 hover:border-neutral-900">
+                <button type="button" className="rounded-lg w-full py-4 border border-neutral-300 text-neutral-900 hover:border-neutral-900 hover:bg-neutral-50">
                   Save as Draft
                 </button>
-                <div className="bg-neutral-50 border border-neutral-200 p-6 mt-6">
+                <div className="rounded-lg bg-neutral-50 border border-neutral-200 p-6 mt-6">
                   <div className="flex items-start gap-3">
                     <FaCircleQuestion className="text-neutral-600 text-lg shrink-0" />
                     <div>

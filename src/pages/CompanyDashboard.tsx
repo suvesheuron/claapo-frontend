@@ -54,9 +54,9 @@ export default function CompanyDashboard() {
               <Link
                 key={action.title}
                 to={action.to}
-                className="p-6 bg-white border border-neutral-200 hover:border-neutral-900 text-left group block"
+                className="rounded-lg p-6 bg-white border border-neutral-200 hover:border-neutral-900 text-left group block"
               >
-                <div className="w-12 h-12 bg-neutral-100 group-hover:bg-neutral-900 flex items-center justify-center mb-4">
+                <div className="w-12 h-12 rounded-lg bg-neutral-100 group-hover:bg-neutral-700 flex items-center justify-center mb-4">
                   <action.icon className="text-neutral-600 group-hover:text-white text-xl" />
                 </div>
                 <h3 className="text-lg text-neutral-900 mb-2 font-bold">{action.title}</h3>
@@ -67,16 +67,16 @@ export default function CompanyDashboard() {
 
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 sm:gap-8">
             <div className="lg:col-span-3">
-              <div className="bg-white border border-neutral-200 p-4 sm:p-6">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-                  <h2 className="text-xl sm:text-2xl text-neutral-900 font-bold">Project Calendar</h2>
+<div className="rounded-lg bg-white border border-neutral-200 p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                <h2 className="text-xl sm:text-2xl text-neutral-900 font-bold">Project Calendar</h2>
                   <div className="flex items-center gap-4">
-                    <select className="px-3 py-2 border border-neutral-300 bg-white text-neutral-900 text-sm">
+                    <select className="rounded-lg px-3 py-2 border border-neutral-300 bg-white text-neutral-900 text-sm">
                       <option>January</option>
                       <option>February</option>
                       <option>March</option>
                     </select>
-                    <select className="px-3 py-2 border border-neutral-300 bg-white text-neutral-900 text-sm">
+                    <select className="rounded-lg px-3 py-2 border border-neutral-300 bg-white text-neutral-900 text-sm">
                       <option>2025</option>
                       <option>2024</option>
                     </select>
@@ -91,7 +91,7 @@ export default function CompanyDashboard() {
                   {calendarDays.map((cell, i) => (
                     <div
                       key={i}
-                      className={`h-16 sm:h-20 p-2 text-sm border border-neutral-200 ${
+                      className={`rounded h-16 sm:h-20 p-2 text-sm border border-neutral-200 ${
                         cell.muted ? 'text-neutral-400' : 'text-neutral-900'
                       } ${cell.project === 'Commercial Shoot' ? 'bg-neutral-900 text-white' : ''} ${
                         cell.project === 'Documentary' ? 'bg-neutral-100' : ''
@@ -104,15 +104,15 @@ export default function CompanyDashboard() {
                 </div>
                 <div className="flex flex-wrap gap-4 sm:gap-6 mt-6 text-xs">
                   <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-neutral-900" />
+                    <div className="rounded w-4 h-4 bg-neutral-900" />
                     <span className="text-neutral-600">Active Projects</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-neutral-600" />
+                    <div className="rounded w-4 h-4 bg-neutral-600" />
                     <span className="text-neutral-600">In Progress</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-neutral-100 border border-neutral-300" />
+                    <div className="rounded w-4 h-4 bg-neutral-100 border border-neutral-300" />
                     <span className="text-neutral-600">Planning</span>
                   </div>
                 </div>
@@ -120,11 +120,11 @@ export default function CompanyDashboard() {
             </div>
 
             <div className="space-y-6">
-              <div className="bg-white border border-neutral-200 p-4 sm:p-6">
+              <div className="rounded-lg bg-white border border-neutral-200 p-4 sm:p-6">
                 <h3 className="text-xl text-neutral-900 mb-6 font-bold">Ongoing Projects</h3>
                 <div className="space-y-4">
                   {projects.map((p) => (
-                    <div key={p.name} className="border border-neutral-200 p-4">
+                    <div key={p.name} className="rounded-lg border border-neutral-200 p-4">
                       <div className="flex items-center justify-between mb-2">
                         <h4 className="text-sm text-neutral-900 font-bold">{p.name}</h4>
                         <span className={`text-xs px-2 py-1 ${p.statusClass}`}>{p.status}</span>
@@ -137,11 +137,11 @@ export default function CompanyDashboard() {
                     </div>
                   ))}
                 </div>
-                <Link to="/dashboard/projects" className="block w-full mt-6 py-2 text-sm text-neutral-600 border border-neutral-200 hover:border-neutral-900 hover:text-neutral-900 text-center">
+                <Link to="/dashboard/projects" className="rounded-lg block w-full mt-6 py-2 text-sm text-neutral-600 border border-neutral-200 hover:border-neutral-900 hover:text-neutral-900 text-center">
                   View All Projects
                 </Link>
               </div>
-              <div className="bg-white border border-neutral-200 p-4 sm:p-6">
+              <div className="rounded-lg bg-white border border-neutral-200 p-4 sm:p-6">
                 <h3 className="text-lg text-neutral-900 mb-4 font-bold">Quick Stats</h3>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">

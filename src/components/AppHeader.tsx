@@ -12,7 +12,7 @@ export default function AppHeader({ variant = 'landing', backTo = '/', backLabel
     <header className="border-b border-neutral-200 bg-white">
       <div className="max-w-[1920px] mx-auto px-4 sm:px-8 lg:px-16 py-6 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-neutral-800 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-lg bg-neutral-800 flex items-center justify-center">
             <FaVideo className="text-white text-xl" />
           </div>
           <span className="text-xl sm:text-2xl text-neutral-900 font-semibold">CrewCall</span>
@@ -24,7 +24,7 @@ export default function AppHeader({ variant = 'landing', backTo = '/', backLabel
             </Link>
             <Link
               to="/register"
-              className="px-4 sm:px-6 py-2.5 bg-neutral-900 text-white hover:bg-neutral-800 text-sm sm:text-base"
+              className="rounded-lg px-4 sm:px-6 py-2.5 bg-neutral-900 text-white hover:bg-neutral-700 text-sm sm:text-base"
             >
               Register
             </Link>
