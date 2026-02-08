@@ -1,0 +1,153 @@
+
+                <html>
+                <head>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+                    <script src="https://cdn.tailwindcss.com"></script>
+                    <script>
+                        window.FontAwesomeConfig = {
+                            autoReplaceSvg: 'nest', // Options: 'nest', 'remove', 'replace'
+                        };
+                    </script>
+                    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+                    <style>
+                    </style>
+                    <script>
+                    tailwind.config = {
+                    theme: {
+                        extend: {
+                        colors: {
+                            primary: {"50":"#fafafa","100":"#f5f5f5","200":"#e5e5e5","300":"#d4d4d4","400":"#a3a3a3","500":"#737373","600":"#525252","700":"#404040","800":"#262626","900":"#171717","950":"#0a0a0a"}
+                        }
+                        }
+                    }
+                    }
+                </script>
+                </head>
+
+                <body>
+                        <div id="company-registration" class="bg-neutral-50 min-h-[1080px] flex flex-col">
+  <header id="header" class="border-b border-neutral-200 bg-white">
+    <div class="max-w-[1920px] mx-auto px-16 py-6 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-neutral-800 flex items-center justify-center">
+          <i class="fa-solid fa-video text-white text-xl"></i>
+        </div>
+        <span class="text-2xl text-neutral-900">CrewCall</span>
+      </div>
+      <button class="text-neutral-600 hover:text-neutral-900">
+        <i class="fa-solid fa-arrow-left mr-2"></i>Back to User Type
+      </button>
+    </div>
+  </header>
+
+  <main class="flex-1 flex items-center justify-center px-16 py-20">
+    <div class="w-full max-w-[640px]">
+      <div class="text-center mb-12">
+        <div class="w-16 h-16 bg-neutral-800 mx-auto mb-6 flex items-center justify-center">
+          <i class="fa-solid fa-building text-white text-2xl"></i>
+        </div>
+        <h1 class="text-5xl text-neutral-900 mb-4">Company Registration</h1>
+        <p class="text-lg text-neutral-600">Register your company to start hiring crew and vendors</p>
+      </div>
+
+      <div class="bg-white border border-neutral-200 p-12">
+        <form>
+          <div class="mb-8">
+            <label class="block text-neutral-900 text-sm mb-3">Company Name *</label>
+            <input type="text" placeholder="Enter your company name" class="w-full px-4 py-4 border border-neutral-300 bg-white text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-neutral-900">
+          </div>
+
+          <div class="mb-8">
+            <label class="block text-neutral-900 text-sm mb-3">GST Number *</label>
+            <input type="text" placeholder="Enter GST registration number" class="w-full px-4 py-4 border border-neutral-300 bg-white text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-neutral-900">
+            <p class="text-xs text-neutral-500 mt-2">
+              <i class="fa-solid fa-info-circle mr-1"></i>
+              We'll verify your GST registration for business authenticity
+            </p>
+          </div>
+
+          <div class="mb-8">
+            <label class="block text-neutral-900 text-sm mb-3">Phone Number *</label>
+            <input type="tel" placeholder="+91 XXXXX XXXXX" class="w-full px-4 py-4 border border-neutral-300 bg-white text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-neutral-900">
+            <p class="text-xs text-neutral-500 mt-2">
+              <i class="fa-solid fa-shield-check mr-1"></i>
+              Phone verification required for account security
+            </p>
+          </div>
+
+          <div class="mb-8">
+            <label class="block text-neutral-900 text-sm mb-3">Email Address *</label>
+            <input type="email" placeholder="company@example.com" class="w-full px-4 py-4 border border-neutral-300 bg-white text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-neutral-900">
+            <p class="text-xs text-neutral-500 mt-2">
+              <i class="fa-solid fa-envelope-check mr-1"></i>
+              Email verification link will be sent to this address
+            </p>
+          </div>
+
+          <div class="bg-neutral-50 border border-neutral-200 p-6 mb-8">
+            <div class="flex items-start gap-3">
+              <i class="fa-solid fa-shield-check text-neutral-600 text-lg mt-1"></i>
+              <div>
+                <h3 class="text-neutral-900 text-sm mb-2">Verification Process</h3>
+                <ul class="text-xs text-neutral-600 space-y-1">
+                  <li>• GST verification ensures business legitimacy</li>
+                  <li>• Phone verification for secure communication</li>
+                  <li>• Email verification for account access</li>
+                  <li>• All verifications typically complete within 24 hours</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex items-start gap-3 mb-8">
+            <input type="checkbox" class="w-4 h-4 border border-neutral-300 mt-1">
+            <label class="text-sm text-neutral-700">
+              I agree to the <a href="#" class="text-neutral-900 hover:underline">Terms of Service</a> and <a href="#" class="text-neutral-900 hover:underline">Privacy Policy</a>
+            </label>
+          </div>
+
+          <button type="submit" class="w-full py-4 bg-neutral-900 text-white text-lg hover:bg-neutral-800 mb-6">
+            Register Company
+          </button>
+
+          <div class="text-center">
+            <p class="text-neutral-600 text-sm">Already have an account? <a href="#" class="text-neutral-900 hover:underline">Login here</a></p>
+          </div>
+        </form>
+      </div>
+
+      <div class="mt-8 text-center">
+        <div class="flex items-center justify-center gap-6 text-xs text-neutral-500">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-lock"></i>
+            <span>Secure Registration</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-certificate"></i>
+            <span>Verified Business</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-handshake"></i>
+            <span>Trusted Platform</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer id="footer" class="border-t border-neutral-200 bg-white py-8">
+    <div class="max-w-[1920px] mx-auto px-16">
+      <div class="flex items-center justify-between">
+        <p class="text-neutral-600 text-sm">© 2025 CrewCall. All rights reserved.</p>
+        <div class="flex items-center gap-8">
+          <a href="#" class="text-neutral-600 hover:text-neutral-900 text-sm">Help Center</a>
+          <a href="#" class="text-neutral-600 hover:text-neutral-900 text-sm">Privacy Policy</a>
+          <a href="#" class="text-neutral-600 hover:text-neutral-900 text-sm">Terms of Service</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+</div>
+                        </body>
+                        </html>
+                        
