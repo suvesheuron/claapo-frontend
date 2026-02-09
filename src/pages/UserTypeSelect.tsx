@@ -12,6 +12,8 @@ const accountTypes = [
     cta: 'Continue as Company',
     to: '/register/company',
   },
+
+  
   {
     icon: FaUser,
     title: 'Individual',
@@ -37,34 +39,34 @@ export default function UserTypeSelect() {
 
   return (
     <AppLayout headerVariant="back" backTo="/" backLabel="Back">
-      <div className="max-w-[1400px] mx-auto px-4 sm:px-8 lg:px-16 py-12 sm:py-20">
-        <div className="text-center mb-12 sm:mb-16">
-          <h1 className="text-4xl sm:text-5xl text-neutral-900 mb-4 font-bold">Choose Your Account Type</h1>
-          <p className="text-lg sm:text-xl text-neutral-600">Select the option that best describes you to get started</p>
+      <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 md:px-8 lg:px-16 py-8 sm:py-12 md:py-20 min-w-0 max-w-full overflow-x-hidden">
+        <div className="text-center mb-8 sm:mb-12 md:mb-16">
+          <h1 className="text-xl sm:text-3xl md:text-4xl lg:text-5xl text-neutral-900 mb-2 sm:mb-3 md:mb-4 font-bold break-words px-2">Choose Your Account Type</h1>
+          <p className="text-sm sm:text-base md:text-lg lg:text-xl text-neutral-600 break-words px-2">Select the option that best describes you to get started</p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 sm:gap-12 mb-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8 lg:gap-12 mb-8 sm:mb-10 md:mb-12 min-w-0">
           {accountTypes.map((type) => (
             <div
               key={type.title}
-              className="rounded-lg bg-white border-2 border-neutral-200 p-8 sm:p-12 hover:border-neutral-900 transition-all group"
+              className="rounded-lg bg-white border-2 border-neutral-200 p-4 sm:p-6 md:p-8 lg:p-12 hover:border-neutral-900 transition-all group flex flex-col min-w-0"
             >
-              <div className="w-20 h-20 rounded-lg bg-neutral-100 flex items-center justify-center mx-auto mb-6 sm:mb-8">
-                <type.icon className="text-neutral-900 text-3xl" />
+              <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-lg bg-neutral-100 flex items-center justify-center mx-auto mb-4 sm:mb-6 md:mb-8 shrink-0">
+                <type.icon className="text-neutral-900 text-2xl sm:text-3xl" />
               </div>
-              <h3 className="text-2xl text-neutral-900 text-center mb-4 font-bold">{type.title}</h3>
-              <p className="text-neutral-600 text-center mb-6 sm:mb-8 leading-relaxed">{type.description}</p>
-              <ul className="space-y-3 text-neutral-700 mb-8 sm:mb-10">
+              <h3 className="text-lg sm:text-xl md:text-2xl text-neutral-900 text-center mb-2 sm:mb-3 md:mb-4 font-bold break-words">{type.title}</h3>
+              <p className="text-xs sm:text-sm md:text-base text-neutral-600 text-center mb-3 sm:mb-4 md:mb-6 lg:mb-8 leading-relaxed flex-1 break-words">{type.description}</p>
+              <ul className="space-y-2 sm:space-y-3 text-neutral-700 mb-6 sm:mb-8 md:mb-10 text-sm sm:text-base">
                 {type.features.map((f) => (
-                  <li key={f} className="flex items-start gap-3">
+                  <li key={f} className="flex items-start gap-2 sm:gap-3 min-w-0">
                     <FaCheck className="text-neutral-900 mt-1 shrink-0" />
-                    <span>{f}</span>
+                    <span className="break-words">{f}</span>
                   </li>
                 ))}
               </ul>
               <Link
                 to={type.to}
-                className="rounded-lg block w-full py-4 bg-neutral-900 text-white text-lg hover:bg-neutral-700 text-center"
+                className="rounded-lg block w-full py-3 sm:py-3.5 md:py-4 bg-neutral-900 text-white text-sm sm:text-base md:text-lg hover:bg-neutral-700 text-center min-h-[44px] flex items-center justify-center"
               >
                 {type.cta}
               </Link>
@@ -72,8 +74,8 @@ export default function UserTypeSelect() {
           ))}
         </div>
 
-        <div className="text-center">
-          <p className="text-neutral-600">
+        <div className="text-center px-2">
+          <p className="text-sm sm:text-base text-neutral-600">
             Already have an account? <Link to="/login" className="text-neutral-900 hover:underline font-medium">Login here</Link>
           </p>
         </div>

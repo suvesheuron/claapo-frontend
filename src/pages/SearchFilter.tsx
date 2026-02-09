@@ -12,6 +12,7 @@ const results = [
   { name: 'Mumbai Locations', role: 'Location Services', location: 'Mumbai', exp: 'Vendor', rating: 4.5, fullStars: 4, bio: 'Premium shooting locations across Mumbai. Permits and logistics included.', price: 'From ₹12,000/day', vendor: true },
 ];
 
+
 function Stars({ fullStars }: { fullStars: number }) {
   return (
     <div className="flex text-neutral-500 gap-0.5">
@@ -28,54 +29,54 @@ export default function SearchFilter() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-neutral-50 flex flex-col">
-      <header className="border-b border-neutral-200 bg-white">
-        <div className="max-w-[1920px] mx-auto px-4 sm:px-8 lg:px-16 py-6 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-neutral-800 flex items-center justify-center">
-              <FaVideo className="text-white text-xl" />
+    <div className="min-h-screen bg-neutral-50 flex flex-col min-w-0 w-full max-w-full overflow-x-hidden">
+      <header className="border-b border-neutral-200 bg-white shrink-0 overflow-hidden">
+        <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 md:px-8 lg:px-16 py-4 sm:py-6 flex items-center justify-between gap-2 min-w-0 overflow-hidden">
+          <Link to="/" className="flex items-center gap-2 sm:gap-3 min-w-0 shrink-0">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-neutral-800 flex items-center justify-center shrink-0">
+              <FaVideo className="text-white text-lg sm:text-xl" />
             </div>
-            <span className="text-xl sm:text-2xl text-neutral-900 font-semibold">CrewCall</span>
+            <span className="text-lg sm:text-xl md:text-2xl text-neutral-900 font-semibold truncate">CrewCall</span>
           </Link>
-          <div className="flex items-center gap-4 sm:gap-6">
-            <Link to="/dashboard" className="text-neutral-600 hover:text-neutral-900 text-sm hidden sm:inline">Dashboard</Link>
-            <Link to="/dashboard/projects" className="text-neutral-600 hover:text-neutral-900 text-sm hidden sm:inline">Projects</Link>
+          <div className="flex items-center gap-2 sm:gap-4 md:gap-6 shrink-0">
+            <Link to="/dashboard" className="text-neutral-600 hover:text-neutral-900 text-xs sm:text-sm hidden sm:inline">Dashboard</Link>
+            <Link to="/dashboard/projects" className="text-neutral-600 hover:text-neutral-900 text-xs sm:text-sm hidden sm:inline">Projects</Link>
             <img
               src="https://api.dicebear.com/7.x/notionists/svg?scale=200&seed=123"
               alt="Profile"
-              className="w-10 h-10 rounded-full object-cover"
+              className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover shrink-0"
             />
           </div>
         </div>
       </header>
 
-      <div className="flex-1 px-4 sm:px-8 lg:px-16 py-6 sm:py-8">
-        <div className="max-w-[1920px] mx-auto">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-8">
-            <div>
-              <h1 className="text-3xl sm:text-4xl text-neutral-900 mb-2 font-bold">Find Crew & Vendors</h1>
-              <p className="text-lg text-neutral-600">Search and hire the best talent for your projects</p>
+      <div className="flex-1 px-4 sm:px-6 md:px-8 lg:px-16 py-4 sm:py-6 md:py-8 min-w-0 w-full max-w-full overflow-x-hidden">
+        <div className="w-full max-w-[1920px] mx-auto min-w-0 max-w-full">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-5 sm:mb-6 md:mb-8">
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl text-neutral-900 mb-1 sm:mb-2 font-bold break-words">Find Crew & Vendors</h1>
+              <p className="text-sm sm:text-base md:text-lg text-neutral-600 break-words">Search and hire the best talent for your projects</p>
             </div>
-            <Link to="/dashboard/projects/new" className="rounded-lg px-6 py-3 bg-neutral-900 text-white hover:bg-neutral-700 inline-flex items-center justify-center gap-2 shrink-0">
+            <Link to="/dashboard/projects/new" className="rounded-lg px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] bg-neutral-900 text-white hover:bg-neutral-700 inline-flex items-center justify-center gap-2 shrink-0 text-sm sm:text-base w-full sm:w-auto">
               <span>Create Project</span>
             </Link>
           </div>
 
-          <div className="flex flex-col lg:flex-row gap-6 sm:gap-8">
-            <aside className="rounded-lg w-full lg:w-80 bg-white border border-neutral-200 p-6 h-fit shrink-0">
-              <h3 className="text-lg text-neutral-900 mb-4 font-bold">Filters</h3>
+          <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 md:gap-8 min-w-0 flex-wrap lg:flex-nowrap">
+            <aside className="rounded-lg w-full lg:w-80 lg:min-w-[280px] lg:max-w-[320px] bg-white border border-neutral-200 p-4 sm:p-4 md:p-6 h-fit shrink-0 order-2 lg:order-1 min-w-0">
+              <h3 className="text-base sm:text-lg text-neutral-900 mb-3 sm:mb-4 font-bold">Filters</h3>
               <div className="space-y-6">
-                <div className="relative">
+                <div className="relative min-w-0">
                   <input
                     type="text"
                     placeholder="Search by name or skill..."
-                    className="rounded-lg w-full px-4 py-3 border border-neutral-300 bg-white text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-neutral-900"
+                    className="rounded-lg w-full min-w-0 px-3 sm:px-4 py-2.5 sm:py-3 border border-neutral-300 bg-white text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-neutral-900 text-base"
                   />
                   <FaMagnifyingGlass className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
                 </div>
                 <div>
                   <label className="block text-neutral-900 text-sm mb-3 font-medium">Role/Category</label>
-                  <select className="w-full px-4 py-3 border border-neutral-300 bg-white text-neutral-900 focus:outline-none focus:border-neutral-900">
+                  <select className="rounded-lg w-full px-4 py-3 min-h-[44px] border border-neutral-300 bg-white text-neutral-900 focus:outline-none focus:border-neutral-900">
                     <option>All Roles</option>
                     <option>Director</option>
                     <option>Cinematographer</option>
@@ -87,7 +88,7 @@ export default function SearchFilter() {
                 </div>
                 <div>
                   <label className="block text-neutral-900 text-sm mb-3 font-medium">Location</label>
-                  <select className="w-full px-4 py-3 border border-neutral-300 bg-white text-neutral-900 focus:outline-none focus:border-neutral-900">
+                  <select className="rounded-lg w-full px-4 py-3 min-h-[44px] border border-neutral-300 bg-white text-neutral-900 focus:outline-none focus:border-neutral-900">
                     <option>All Locations</option>
                     <option>Mumbai</option>
                     <option>Delhi</option>
@@ -97,17 +98,17 @@ export default function SearchFilter() {
                     <option>Pune</option>
                   </select>
                 </div>
-                <div>
-                  <label className="block text-neutral-900 text-sm mb-3 font-medium">Availability</label>
-                  <div className="flex gap-2 items-center">
-                    <input type="date" className="rounded-lg flex-1 px-3 py-2 border border-neutral-300 bg-white text-neutral-900 text-sm focus:outline-none focus:border-neutral-900" />
-                    <span className="text-neutral-500 text-sm">to</span>
-                    <input type="date" className="rounded-lg flex-1 px-3 py-2 border border-neutral-300 bg-white text-neutral-900 text-sm focus:outline-none focus:border-neutral-900" />
+                <div className="min-w-0">
+                  <label className="block text-neutral-900 text-sm mb-2 sm:mb-3 font-medium">Availability</label>
+                  <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
+                    <input type="date" className="rounded-lg flex-1 min-w-0 px-3 py-2 border border-neutral-300 bg-white text-neutral-900 text-sm focus:outline-none focus:border-neutral-900 min-h-[40px]" />
+                    <span className="text-neutral-500 text-xs sm:text-sm shrink-0">to</span>
+                    <input type="date" className="rounded-lg flex-1 min-w-0 px-3 py-2 border border-neutral-300 bg-white text-neutral-900 text-sm focus:outline-none focus:border-neutral-900 min-h-[40px]" />
                   </div>
                 </div>
                 <div>
                   <label className="block text-neutral-900 text-sm mb-3 font-medium">Budget Range (per day)</label>
-                  <select className="w-full px-4 py-3 border border-neutral-300 bg-white text-neutral-900 focus:outline-none focus:border-neutral-900">
+                  <select className="rounded-lg w-full px-4 py-3 min-h-[44px] border border-neutral-300 bg-white text-neutral-900 focus:outline-none focus:border-neutral-900">
                     <option>Any Budget</option>
                     <option>₹5,000 - ₹10,000</option>
                     <option>₹10,000 - ₹25,000</option>
@@ -126,21 +127,21 @@ export default function SearchFilter() {
                     ))}
                   </div>
                 </div>
-                <button type="button" className="rounded-lg w-full py-3 bg-neutral-900 text-white hover:bg-neutral-700 font-medium">
+                <button type="button" className="rounded-lg w-full py-3 min-h-[44px] bg-neutral-900 text-white hover:bg-neutral-700 font-medium">
                   Apply Filters
                 </button>
-                <button type="button" className="rounded-lg w-full py-3 border border-neutral-300 text-neutral-900 hover:bg-neutral-100">
+                <button type="button" className="rounded-lg w-full py-3 min-h-[44px] border border-neutral-300 text-neutral-900 hover:bg-neutral-100">
                   Clear All
                 </button>
               </div>
             </aside>
 
-            <div className="flex-1 min-w-0">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-                <p className="text-neutral-600">Showing {results.length} results</p>
-                <div className="flex items-center gap-4">
-                  <span className="text-sm text-neutral-600">Sort by:</span>
-                  <select className="rounded-lg px-3 py-2 border border-neutral-300 bg-white text-neutral-900 text-sm focus:outline-none focus:border-neutral-900">
+            <div className="flex-1 min-w-0 order-1 lg:order-2 overflow-hidden">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-3 sm:mb-4 md:mb-6">
+                <p className="text-sm sm:text-base text-neutral-600">Showing {results.length} results</p>
+                <div className="flex flex-wrap items-center gap-2 sm:gap-4 min-w-0">
+                  <span className="text-xs sm:text-sm text-neutral-600 shrink-0">Sort by:</span>
+                  <select className="rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 border border-neutral-300 bg-white text-neutral-900 text-xs sm:text-sm focus:outline-none focus:border-neutral-900 min-h-[36px] sm:min-h-[40px] w-full sm:w-auto min-w-0">
                     <option>Relevance</option>
                     <option>Rating</option>
                     <option>Experience</option>
@@ -150,24 +151,24 @@ export default function SearchFilter() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
                 {results.map((r) => (
-                  <div key={r.name} className="rounded-lg bg-white border border-neutral-200 p-4 sm:p-6">
-                    <div className="flex items-start gap-4 mb-4">
+                  <div key={r.name} className="rounded-lg bg-white border border-neutral-200 p-3 sm:p-4 md:p-6 min-w-0 overflow-hidden">
+                    <div className="flex items-start gap-3 sm:gap-4 mb-3 sm:mb-4 min-w-0">
                       {r.vendor ? (
-                        <div className="w-16 h-16 rounded-lg bg-neutral-300 flex items-center justify-center shrink-0">
-                          <FaTruck className="text-neutral-600 text-xl" />
+                        <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-lg bg-neutral-300 flex items-center justify-center shrink-0">
+                          <FaTruck className="text-neutral-600 text-lg sm:text-xl" />
                         </div>
                       ) : (
                         <img
                           src={`https://api.dicebear.com/7.x/notionists/svg?scale=200&seed=${r.seed}`}
                           alt={r.name}
-                          className="w-16 h-16 rounded-full object-cover shrink-0"
+                          className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full object-cover shrink-0"
                         />
                       )}
-                      <div className="min-w-0 flex-1">
-                        <h3 className="text-lg text-neutral-900 font-bold truncate">{r.name}</h3>
-                        <p className="text-sm text-neutral-600">{r.role}</p>
+                      <div className="min-w-0 flex-1 overflow-hidden">
+                        <h3 className="text-base sm:text-lg text-neutral-900 font-bold truncate">{r.name}</h3>
+                        <p className="text-xs sm:text-sm text-neutral-600 truncate">{r.role}</p>
                         <div className="flex items-center gap-2 mb-2">
                           <Stars fullStars={r.fullStars} />
                           <span className="text-xs text-neutral-600">({r.rating})</span>
@@ -175,13 +176,13 @@ export default function SearchFilter() {
                         <p className="text-sm text-neutral-600">{r.location} • {r.exp}</p>
                       </div>
                     </div>
-                    <p className="text-sm text-neutral-700 mb-4 line-clamp-2">{r.bio}</p>
-                    <p className="text-lg text-neutral-900 font-bold mb-4">{r.price}</p>
-                    <div className="flex gap-2">
-                      <button type="button" className="rounded-lg flex-1 py-2 border border-neutral-300 text-neutral-900 text-sm hover:bg-neutral-100">
+                    <p className="text-xs sm:text-sm text-neutral-700 mb-3 sm:mb-4 line-clamp-2 break-words">{r.bio}</p>
+                    <p className="text-base sm:text-lg text-neutral-900 font-bold mb-3 sm:mb-4">{r.price}</p>
+                    <div className="flex gap-2 flex-wrap">
+                      <button type="button" className="rounded-lg flex-1 min-w-[100px] py-2.5 sm:py-2 min-h-[40px] border border-neutral-300 text-neutral-900 text-sm hover:bg-neutral-100">
                         View Profile
                       </button>
-                      <button type="button" className="rounded-lg flex-1 py-2 bg-neutral-900 text-white text-sm hover:bg-neutral-700">
+                      <button type="button" className="rounded-lg flex-1 min-w-[100px] py-2.5 sm:py-2 min-h-[40px] bg-neutral-900 text-white text-sm hover:bg-neutral-700">
                         Send Request
                       </button>
                     </div>
@@ -189,14 +190,14 @@ export default function SearchFilter() {
                 ))}
               </div>
 
-              <div className="flex items-center justify-center mt-8 sm:mt-12 gap-2">
-<button type="button" className="rounded-lg px-3 py-2 border border-neutral-300 text-neutral-900 hover:bg-neutral-100">
+              <div className="flex flex-wrap items-center justify-center mt-6 sm:mt-8 lg:mt-12 gap-2">
+<button type="button" className="rounded-lg px-3 py-2 min-h-[40px] min-w-[40px] border border-neutral-300 text-neutral-900 hover:bg-neutral-100 inline-flex items-center justify-center">
                 <FaChevronLeft />
               </button>
-              <button type="button" className="rounded-lg px-4 py-2 bg-neutral-900 text-white">1</button>
-              <button type="button" className="rounded-lg px-4 py-2 border border-neutral-300 text-neutral-900 hover:bg-neutral-100">2</button>
-              <button type="button" className="rounded-lg px-4 py-2 border border-neutral-300 text-neutral-900 hover:bg-neutral-100">3</button>
-              <button type="button" className="rounded-lg px-3 py-2 border border-neutral-300 text-neutral-900 hover:bg-neutral-100">
+              <button type="button" className="rounded-lg px-4 py-2 min-h-[40px] bg-neutral-900 text-white">1</button>
+              <button type="button" className="rounded-lg px-4 py-2 min-h-[40px] border border-neutral-300 text-neutral-900 hover:bg-neutral-100">2</button>
+              <button type="button" className="rounded-lg px-4 py-2 min-h-[40px] border border-neutral-300 text-neutral-900 hover:bg-neutral-100">3</button>
+              <button type="button" className="rounded-lg px-3 py-2 min-h-[40px] min-w-[40px] border border-neutral-300 text-neutral-900 hover:bg-neutral-100 inline-flex items-center justify-center">
                   <FaChevronRight />
                 </button>
               </div>
