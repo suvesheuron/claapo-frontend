@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { FaPlus, FaUsers, FaTruck, FaHouse, FaFolder } from 'react-icons/fa6';
 import DashboardHeader from '../components/DashboardHeader';
 import AppFooter from '../components/AppFooter';
+import RoleIndicator from '../components/RoleIndicator';
 
 const quickActions = [
   { icon: FaPlus, title: 'Create Project', description: 'Start a new film production', to: '/dashboard/projects/new' },
@@ -72,9 +73,12 @@ export default function CompanyDashboard() {
           <div className="flex-1 min-h-0 overflow-auto">
             <div className="max-w-[1400px] mx-auto px-4 sm:px-6 md:px-8 lg:px-6 xl:px-8 py-4 sm:py-5">
               <div className="mb-4 sm:mb-5">
-                <h1 className="text-xl sm:text-2xl md:text-3xl text-neutral-900 mb-0.5 sm:mb-1 font-bold break-words">
-                  Dashboard
-                </h1>
+                <div className="flex items-center justify-between mb-2">
+                  <h1 className="text-xl sm:text-2xl md:text-3xl text-neutral-900 font-bold break-words">
+                    Company Dashboard
+                  </h1>
+                  <RoleIndicator />
+                </div>
                 <p className="text-xs sm:text-sm text-neutral-600 break-words">
                   Manage your projects and crew scheduling
                 </p>

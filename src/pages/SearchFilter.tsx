@@ -1,7 +1,9 @@
 import { Link } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { FaVideo, FaTruck, FaMagnifyingGlass, FaStar, FaRegStar, FaChevronLeft, FaChevronRight } from 'react-icons/fa6';
 import AppFooter from '../components/AppFooter';
+import Avatar from '../components/Avatar';
+import BookingRequestModal from '../components/BookingRequestModal';
 
 const results = [
   { name: 'Rajesh Kumar', role: 'Cinematographer', location: 'Mumbai', exp: '8 years exp', rating: 4.9, fullStars: 5, bio: 'Specialized in commercial shoots and documentaries. RED camera certified.', price: '₹25,000/day', seed: '456' },
@@ -24,9 +26,24 @@ function Stars({ fullStars }: { fullStars: number }) {
 }
 
 export default function SearchFilter() {
+  const [selectedUser, setSelectedUser] = useState<{ name: string; role: string; price: string } | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   useEffect(() => {
     document.title = 'Find Crew & Vendors – CrewCall';
   }, []);
+
+  const handleSendRequest = (user: { name: string; role: string; price: string }) => {
+    setSelectedUser(user);
+    setIsModalOpen(true);
+  };
+
+  const handleSubmitRequest = (dates: { start: string; end: string }, message: string) => {
+    // In real app, this would call an API
+    alert(`Booking request sent to ${selectedUser?.name} for ${dates.start} to ${dates.end}`);
+    setIsModalOpen(false);
+    setSelectedUser(null);
+  };
 
   return (
     <div className="min-h-screen bg-neutral-50 flex flex-col min-w-0 w-full max-w-full overflow-x-hidden">
@@ -41,11 +58,7 @@ export default function SearchFilter() {
           <div className="flex items-center gap-2 sm:gap-4 md:gap-6 shrink-0">
             <Link to="/dashboard" className="text-neutral-600 hover:text-neutral-900 text-xs sm:text-sm hidden sm:inline">Dashboard</Link>
             <Link to="/dashboard/projects" className="text-neutral-600 hover:text-neutral-900 text-xs sm:text-sm hidden sm:inline">Projects</Link>
-            <img
-              src="https://api.dicebear.com/7.x/notionists/svg?scale=200&seed=123"
-              alt="Profile"
-              className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover shrink-0"
-            />
+            <Avatar size="sm" />
           </div>
         </div>
       </header>
@@ -160,11 +173,7 @@ export default function SearchFilter() {
                           <FaTruck className="text-neutral-600 text-lg sm:text-xl" />
                         </div>
                       ) : (
-                        <img
-                          src={`https://api.dicebear.com/7.x/notionists/svg?scale=200&seed=${r.seed}`}
-                          alt={r.name}
-                          className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full object-cover shrink-0"
-                        />
+                        <Avatar name={r.name} size="lg" />
                       )}
                       <div className="min-w-0 flex-1 overflow-hidden">
                         <h3 className="text-base sm:text-lg text-neutral-900 font-bold truncate">{r.name}</h3>
@@ -179,10 +188,17 @@ export default function SearchFilter() {
                     <p className="text-xs sm:text-sm text-neutral-700 mb-3 sm:mb-4 line-clamp-2 break-words">{r.bio}</p>
                     <p className="text-base sm:text-lg text-neutral-900 font-bold mb-3 sm:mb-4">{r.price}</p>
                     <div className="flex gap-2 flex-wrap">
-                      <button type="button" className="rounded-lg flex-1 min-w-[100px] py-2.5 sm:py-2 min-h-[40px] border border-neutral-300 text-neutral-900 text-sm hover:bg-neutral-100">
+                      <Link
+                        to={`/dashboard/chat/${r.name.toLowerCase().replace(/\s+/g, '-')}`}
+                        className="rounded-lg flex-1 min-w-[100px] py-2.5 sm:py-2 min-h-[40px] border border-neutral-300 text-neutral-900 text-sm hover:bg-neutral-100 text-center flex items-center justify-center"
+                      >
                         View Profile
-                      </button>
-                      <button type="button" className="rounded-lg flex-1 min-w-[100px] py-2.5 sm:py-2 min-h-[40px] bg-neutral-900 text-white text-sm hover:bg-neutral-700">
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => handleSendRequest({ name: r.name, role: r.role, price: r.price })}
+                        className="rounded-lg flex-1 min-w-[100px] py-2.5 sm:py-2 min-h-[40px] bg-neutral-900 text-white text-sm hover:bg-neutral-700"
+                      >
                         Send Request
                       </button>
                     </div>
@@ -206,6 +222,20 @@ export default function SearchFilter() {
         </div>
       </div>
       <AppFooter />
+
+      {selectedUser && (
+        <BookingRequestModal
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            setSelectedUser(null);
+          }}
+          userName={selectedUser.name}
+          userRole={selectedUser.role}
+          userRate={selectedUser.price}
+          onSubmit={handleSubmitRequest}
+        />
+      )}
     </div>
   );
 }

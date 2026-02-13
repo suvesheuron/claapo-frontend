@@ -196,10 +196,23 @@ export default function CreateProject() {
                     </li>
                   </ul>
                 </div>
-                <button type="button" className="rounded-lg w-full py-3.5 sm:py-4 bg-neutral-900 text-white hover:bg-neutral-700 mb-3 font-medium flex items-center justify-center gap-2 min-h-[44px] text-base sm:text-lg">
+                <button
+                  type="button"
+                  onClick={() => {
+                    alert('Project created successfully!');
+                    // In real app, this would submit form data to API
+                  }}
+                  className="rounded-lg w-full py-3.5 sm:py-4 bg-neutral-900 text-white hover:bg-neutral-700 mb-3 font-medium flex items-center justify-center gap-2 min-h-[44px] text-base sm:text-lg"
+                >
                   <FaClipboardCheck /> Create Project
                 </button>
-                <button type="button" className="rounded-lg w-full py-3.5 sm:py-4 border border-neutral-300 text-neutral-900 hover:border-neutral-900 hover:bg-neutral-50 min-h-[44px]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    alert('Project saved as draft!');
+                  }}
+                  className="rounded-lg w-full py-3.5 sm:py-4 border border-neutral-300 text-neutral-900 hover:border-neutral-900 hover:bg-neutral-50 min-h-[44px]"
+                >
                   Save as Draft
                 </button>
                 <div className="rounded-lg bg-neutral-50 border border-neutral-200 p-4 sm:p-6 mt-4 sm:mt-6 min-w-0">

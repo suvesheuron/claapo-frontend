@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { FaVideo, FaBell } from 'react-icons/fa6';
+import Avatar from './Avatar';
 
 type DashboardHeaderProps = {
   userName?: string;
@@ -22,11 +23,7 @@ export default function DashboardHeader({ userName = 'Production Studios Inc.', 
             <span className="hidden sm:inline">Notifications</span>
           </Link>
           <div className="flex items-center gap-2 sm:gap-3">
-            <img
-              src={userAvatar || 'https://api.dicebear.com/7.x/notionists/svg?scale=200&seed=42'}
-              alt="Profile"
-              className="w-8 h-8 sm:w-9 sm:h-9 rounded-full object-cover shrink-0"
-            />
+            <Avatar src={userAvatar} alt="Profile" name={userName} size="sm" />
             <span className="text-sm text-neutral-900 font-medium hidden md:inline truncate max-w-[120px] lg:max-w-none">{userName}</span>
           </div>
         </div>

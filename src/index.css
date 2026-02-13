@@ -51,3 +51,19 @@ img, video, svg {
   overflow-x: hidden;
   min-height: 100vh;
 }
+
+/* Flickering animation for vendor role indicator */
+@keyframes flicker {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.2;
+    transform: scale(0.8);
+  }
+}
+
+.animate-flicker {
+  animation: flicker 1s ease-in-out infinite;
+}

@@ -1,14 +1,33 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import RoleSwitcher from './components/RoleSwitcher';
 
 const LandingPage = lazy(() => import('./pages/LandingPage'));
 const UserTypeSelect = lazy(() => import('./pages/UserTypeSelect'));
 const Login = lazy(() => import('./pages/Login'));
 const CompanyRegistration = lazy(() => import('./pages/CompanyRegistration'));
 const RegisterPlaceholder = lazy(() => import('./pages/RegisterPlaceholder'));
-const CompanyDashboard = lazy(() => import('./pages/CompanyDashboard'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
 const CreateProject = lazy(() => import('./pages/CreateProject'));
 const SearchFilter = lazy(() => import('./pages/SearchFilter'));
+
+// Individual routes
+const IndividualAvailability = lazy(() => import('./pages/individual/Availability'));
+const IndividualPastProjects = lazy(() => import('./pages/individual/PastProjects'));
+const IndividualProfile = lazy(() => import('./pages/individual/Profile'));
+
+// Vendor routes
+const VendorEquipment = lazy(() => import('./pages/vendor/Equipment'));
+const VendorAvailability = lazy(() => import('./pages/vendor/Availability'));
+const VendorPastRentals = lazy(() => import('./pages/vendor/PastRentals'));
+
+// Company routes
+const Projects = lazy(() => import('./pages/company/Projects'));
+const ProjectDetail = lazy(() => import('./pages/company/ProjectDetail'));
+
+// Shared routes
+const Chat = lazy(() => import('./pages/Chat'));
+const Invoice = lazy(() => import('./pages/Invoice'));
 
 function PageFallback() {
   return (
@@ -29,10 +48,25 @@ export default function App() {
           <Route path="/register/company" element={<CompanyRegistration />} />
           <Route path="/register/individual" element={<RegisterPlaceholder />} />
           <Route path="/register/vendor" element={<RegisterPlaceholder />} />
-          <Route path="/dashboard" element={<CompanyDashboard />} />
-          <Route path="/dashboard/projects" element={<CompanyDashboard />} />
+          <Route path="/dashboard" element={<><Dashboard /><RoleSwitcher /></>} />
+          <Route path="/dashboard/projects" element={<><Projects /><RoleSwitcher /></>} />
+          <Route path="/dashboard/projects/:id" element={<><ProjectDetail /><RoleSwitcher /></>} />
           <Route path="/dashboard/projects/new" element={<CreateProject />} />
           <Route path="/dashboard/search" element={<SearchFilter />} />
+          
+          {/* Shared routes */}
+          <Route path="/dashboard/chat/:userId" element={<><Chat /><RoleSwitcher /></>} />
+          <Route path="/dashboard/invoice/:invoiceId" element={<><Invoice /><RoleSwitcher /></>} />
+          
+          {/* Individual routes */}
+          <Route path="/dashboard/availability" element={<><IndividualAvailability /><RoleSwitcher /></>} />
+          <Route path="/dashboard/past-projects" element={<><IndividualPastProjects /><RoleSwitcher /></>} />
+          <Route path="/dashboard/profile" element={<><IndividualProfile /><RoleSwitcher /></>} />
+          
+          {/* Vendor routes */}
+          <Route path="/dashboard/equipment" element={<><VendorEquipment /><RoleSwitcher /></>} />
+          <Route path="/dashboard/vendor-availability" element={<><VendorAvailability /><RoleSwitcher /></>} />
+          <Route path="/dashboard/past-rentals" element={<><VendorPastRentals /><RoleSwitcher /></>} />
         </Routes>
       </Suspense>
     </BrowserRouter>
