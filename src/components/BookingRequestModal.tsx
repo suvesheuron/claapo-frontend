@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FaXmark, FaCalendar, FaIndianRupeeSign } from 'react-icons/fa6';
+import { FaXmark, FaCalendar } from 'react-icons/fa6';
 
 type BookingRequestModalProps = {
   isOpen: boolean;

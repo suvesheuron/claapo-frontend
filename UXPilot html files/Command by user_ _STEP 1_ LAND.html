@@ -1,0 +1,379 @@
+
+                <html>
+                <head>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+                    <script src="https://cdn.tailwindcss.com"></script>
+                    <script>
+                        window.FontAwesomeConfig = {
+                            autoReplaceSvg: 'nest', // Options: 'nest', 'remove', 'replace'
+                        };
+                    </script>
+                    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+                    <style>
+                    </style>
+                    <script>
+                    tailwind.config = {
+                    theme: {
+                        extend: {
+                        colors: {
+                            primary: {"50":"#fafafa","100":"#f5f5f5","200":"#e5e5e5","300":"#d4d4d4","400":"#a3a3a3","500":"#737373","600":"#525252","700":"#404040","800":"#262626","900":"#171717","950":"#0a0a0a"}
+                        }
+                        }
+                    }
+                    }
+                </script>
+                </head>
+
+                <body>
+                        <div id="landing-page" class="min-h-screen bg-white">
+  <header id="header" class="border-b border-neutral-200">
+    <div class="max-w-[1920px] mx-auto px-16 py-6 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-neutral-800 flex items-center justify-center">
+          <i class="fa-solid fa-video text-white text-xl"></i>
+        </div>
+        <span class="text-2xl text-neutral-900">CrewCall</span>
+      </div>
+      <div class="flex items-center gap-4">
+        <button class="px-6 py-2.5 text-neutral-700 hover:text-neutral-900">Login</button>
+        <button class="px-6 py-2.5 bg-neutral-900 text-white hover:bg-neutral-800">Register</button>
+      </div>
+    </div>
+  </header>
+
+  <section id="hero" class="h-[600px] bg-neutral-50 flex items-center">
+    <div class="max-w-[1920px] mx-auto px-16 w-full">
+      <div class="max-w-4xl">
+        <h1 class="text-6xl text-neutral-900 mb-6">Hire Film Crews & Vendors with Confidence</h1>
+        <p class="text-xl text-neutral-600 mb-8 leading-relaxed">CrewCall connects production companies with verified freelance crew members and equipment vendors. Streamline your hiring, manage availability, and lock your team in one platform.</p>
+        <div class="flex gap-4">
+          <button class="px-8 py-4 bg-neutral-900 text-white text-lg hover:bg-neutral-800">Hire Crew</button>
+          <button class="px-8 py-4 border-2 border-neutral-900 text-neutral-900 text-lg hover:bg-neutral-50">Join as Crew or Vendor</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="benefits" class="py-24 bg-white">
+    <div class="max-w-[1920px] mx-auto px-16">
+      <h2 class="text-4xl text-neutral-900 text-center mb-16">Built for Every Role in Production</h2>
+      <div class="grid grid-cols-3 gap-12">
+        <div class="border border-neutral-200 p-10">
+          <div class="w-16 h-16 bg-neutral-800 flex items-center justify-center mb-6">
+            <i class="fa-solid fa-building text-white text-2xl"></i>
+          </div>
+          <h3 class="text-2xl text-neutral-900 mb-4">For Companies</h3>
+          <p class="text-neutral-600 leading-relaxed mb-6">Ad agencies and line producers can search verified crew, check real-time availability, manage projects on a calendar, and lock bookings instantly.</p>
+          <ul class="space-y-3 text-neutral-700">
+            <li class="flex items-start gap-2">
+              <i class="fa-solid fa-check text-neutral-900 mt-1"></i>
+              <span>Calendar-based project management</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <i class="fa-solid fa-check text-neutral-900 mt-1"></i>
+              <span>Verified GST and contact details</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <i class="fa-solid fa-check text-neutral-900 mt-1"></i>
+              <span>Real-time availability tracking</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="border border-neutral-200 p-10">
+          <div class="w-16 h-16 bg-neutral-800 flex items-center justify-center mb-6">
+            <i class="fa-solid fa-user text-white text-2xl"></i>
+          </div>
+          <h3 class="text-2xl text-neutral-900 mb-4">For Freelancers</h3>
+          <p class="text-neutral-600 leading-relaxed mb-6">Crew members can showcase their skills, manage availability, receive booking requests, and get hired by top production companies.</p>
+          <ul class="space-y-3 text-neutral-700">
+            <li class="flex items-start gap-2">
+              <i class="fa-solid fa-check text-neutral-900 mt-1"></i>
+              <span>Control your availability calendar</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <i class="fa-solid fa-check text-neutral-900 mt-1"></i>
+              <span>Get discovered by verified companies</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <i class="fa-solid fa-check text-neutral-900 mt-1"></i>
+              <span>Track past projects and invoices</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="border border-neutral-200 p-10">
+          <div class="w-16 h-16 bg-neutral-800 flex items-center justify-center mb-6">
+            <i class="fa-solid fa-truck text-white text-2xl"></i>
+          </div>
+          <h3 class="text-2xl text-neutral-900 mb-4">For Vendors</h3>
+          <p class="text-neutral-600 leading-relaxed mb-6">Equipment and service vendors can list inventory, manage rental availability, accept booking requests, and grow their business.</p>
+          <ul class="space-y-3 text-neutral-700">
+            <li class="flex items-start gap-2">
+              <i class="fa-solid fa-check text-neutral-900 mt-1"></i>
+              <span>Manage equipment availability</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <i class="fa-solid fa-check text-neutral-900 mt-1"></i>
+              <span>Accept or decline rental requests</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <i class="fa-solid fa-check text-neutral-900 mt-1"></i>
+              <span>Track rental history and payments</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="how-it-works" class="py-24 bg-neutral-50">
+    <div class="max-w-[1920px] mx-auto px-16">
+      <h2 class="text-4xl text-neutral-900 text-center mb-16">How CrewCall Works</h2>
+      <div class="grid grid-cols-4 gap-8">
+        <div class="text-center">
+          <div class="w-20 h-20 bg-neutral-900 text-white flex items-center justify-center mx-auto mb-6 text-3xl">1</div>
+          <h4 class="text-xl text-neutral-900 mb-3">Register</h4>
+          <p class="text-neutral-600">Sign up as a Company, Freelancer, or Vendor with verified details</p>
+        </div>
+        <div class="text-center">
+          <div class="w-20 h-20 bg-neutral-900 text-white flex items-center justify-center mx-auto mb-6 text-3xl">2</div>
+          <h4 class="text-xl text-neutral-900 mb-3">Search & Filter</h4>
+          <p class="text-neutral-600">Find crew or vendors by skill, location, availability, and budget</p>
+        </div>
+        <div class="text-center">
+          <div class="w-20 h-20 bg-neutral-900 text-white flex items-center justify-center mx-auto mb-6 text-3xl">3</div>
+          <h4 class="text-xl text-neutral-900 mb-3">Chat & Book</h4>
+          <p class="text-neutral-600">Communicate directly and send booking requests in real-time</p>
+        </div>
+        <div class="text-center">
+          <div class="w-20 h-20 bg-neutral-900 text-white flex items-center justify-center mx-auto mb-6 text-3xl">4</div>
+          <h4 class="text-xl text-neutral-900 mb-3">Lock & Invoice</h4>
+          <p class="text-neutral-600">Confirm bookings, manage projects, and generate invoices</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="cta" class="py-24 bg-neutral-900">
+    <div class="max-w-[1920px] mx-auto px-16 text-center">
+      <h2 class="text-4xl text-white mb-6">Ready to Streamline Your Production?</h2>
+      <p class="text-xl text-neutral-300 mb-8">Join thousands of production professionals using CrewCall</p>
+      <div class="flex gap-4 justify-center">
+        <button class="px-8 py-4 bg-white text-neutral-900 text-lg hover:bg-neutral-100">Get Started Now</button>
+        <button class="px-8 py-4 border-2 border-white text-white text-lg hover:bg-neutral-800">Learn More</button>
+      </div>
+    </div>
+  </section>
+
+  <footer id="footer" class="bg-white border-t border-neutral-200 py-12">
+    <div class="max-w-[1920px] mx-auto px-16">
+      <div class="grid grid-cols-4 gap-12 mb-8">
+        <div>
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-10 h-10 bg-neutral-800 flex items-center justify-center">
+              <i class="fa-solid fa-video text-white text-xl"></i>
+            </div>
+            <span class="text-2xl text-neutral-900">CrewCall</span>
+          </div>
+          <p class="text-neutral-600">The professional platform for film production hiring and crew management.</p>
+        </div>
+        <div>
+          <h5 class="text-neutral-900 mb-4">For Companies</h5>
+          <ul class="space-y-2 text-neutral-600">
+            <li><a href="#" class="hover:text-neutral-900">Hire Crew</a></li>
+            <li><a href="#" class="hover:text-neutral-900">Find Vendors</a></li>
+            <li><a href="#" class="hover:text-neutral-900">Pricing</a></li>
+          </ul>
+        </div>
+        <div>
+          <h5 class="text-neutral-900 mb-4">For Professionals</h5>
+          <ul class="space-y-2 text-neutral-600">
+            <li><a href="#" class="hover:text-neutral-900">Join as Crew</a></li>
+            <li><a href="#" class="hover:text-neutral-900">Become a Vendor</a></li>
+            <li><a href="#" class="hover:text-neutral-900">Resources</a></li>
+          </ul>
+        </div>
+        <div>
+          <h5 class="text-neutral-900 mb-4">Support</h5>
+          <ul class="space-y-2 text-neutral-600">
+            <li><a href="#" class="hover:text-neutral-900">Help Center</a></li>
+            <li><a href="#" class="hover:text-neutral-900">Contact Us</a></li>
+            <li><a href="#" class="hover:text-neutral-900">Privacy Policy</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="border-t border-neutral-200 pt-8 text-center text-neutral-600">
+        <p>&copy; 2025 CrewCall. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+</div>
+
+<div id="user-type-selection" class="min-h-screen bg-neutral-50 hidden">
+  <header id="header-selection" class="border-b border-neutral-200 bg-white">
+    <div class="max-w-[1920px] mx-auto px-16 py-6 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-neutral-800 flex items-center justify-center">
+          <i class="fa-solid fa-video text-white text-xl"></i>
+        </div>
+        <span class="text-2xl text-neutral-900">CrewCall</span>
+      </div>
+      <button class="text-neutral-600 hover:text-neutral-900">
+        <i class="fa-solid fa-arrow-left mr-2"></i>Back
+      </button>
+    </div>
+  </header>
+
+  <main class="max-w-[1400px] mx-auto px-16 py-20">
+    <div class="text-center mb-16">
+      <h1 class="text-5xl text-neutral-900 mb-4">Choose Your Account Type</h1>
+      <p class="text-xl text-neutral-600">Select the option that best describes you</p>
+    </div>
+
+    <div class="grid grid-cols-3 gap-8 mb-12">
+      <div class="bg-white border-2 border-neutral-200 p-12 cursor-pointer hover:border-neutral-900 transition-all">
+        <div class="w-20 h-20 bg-neutral-100 flex items-center justify-center mx-auto mb-6">
+          <i class="fa-solid fa-user text-neutral-900 text-3xl"></i>
+        </div>
+        <h3 class="text-2xl text-neutral-900 text-center mb-4">Individual</h3>
+        <p class="text-neutral-600 text-center mb-6">For freelance crew members like cinematographers, directors, editors, and production staff</p>
+        <ul class="space-y-3 text-neutral-700 mb-8">
+          <li class="flex items-start gap-2">
+            <i class="fa-solid fa-check text-neutral-900 mt-1"></i>
+            <span>Manage your availability</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <i class="fa-solid fa-check text-neutral-900 mt-1"></i>
+            <span>Receive booking requests</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <i class="fa-solid fa-check text-neutral-900 mt-1"></i>
+            <span>Build your profile</span>
+          </li>
+        </ul>
+        <button class="w-full py-3 bg-neutral-900 text-white hover:bg-neutral-800">Select Individual</button>
+      </div>
+
+      <div class="bg-white border-2 border-neutral-200 p-12 cursor-pointer hover:border-neutral-900 transition-all">
+        <div class="w-20 h-20 bg-neutral-100 flex items-center justify-center mx-auto mb-6">
+          <i class="fa-solid fa-building text-neutral-900 text-3xl"></i>
+        </div>
+        <h3 class="text-2xl text-neutral-900 text-center mb-4">Company</h3>
+        <p class="text-neutral-600 text-center mb-6">For ad agencies, production houses, and line producers who need to hire crew and vendors</p>
+        <ul class="space-y-3 text-neutral-700 mb-8">
+          <li class="flex items-start gap-2">
+            <i class="fa-solid fa-check text-neutral-900 mt-1"></i>
+            <span>Search verified crew</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <i class="fa-solid fa-check text-neutral-900 mt-1"></i>
+            <span>Manage projects</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <i class="fa-solid fa-check text-neutral-900 mt-1"></i>
+            <span>Track availability</span>
+          </li>
+        </ul>
+        <button class="w-full py-3 bg-neutral-900 text-white hover:bg-neutral-800">Select Company</button>
+      </div>
+
+      <div class="bg-white border-2 border-neutral-200 p-12 cursor-pointer hover:border-neutral-900 transition-all">
+        <div class="w-20 h-20 bg-neutral-100 flex items-center justify-center mx-auto mb-6">
+          <i class="fa-solid fa-truck text-neutral-900 text-3xl"></i>
+        </div>
+        <h3 class="text-2xl text-neutral-900 text-center mb-4">Vendor</h3>
+        <p class="text-neutral-600 text-center mb-6">For equipment rental companies and service providers in the film production industry</p>
+        <ul class="space-y-3 text-neutral-700 mb-8">
+          <li class="flex items-start gap-2">
+            <i class="fa-solid fa-check text-neutral-900 mt-1"></i>
+            <span>List your equipment</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <i class="fa-solid fa-check text-neutral-900 mt-1"></i>
+            <span>Manage rentals</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <i class="fa-solid fa-check text-neutral-900 mt-1"></i>
+            <span>Accept bookings</span>
+          </li>
+        </ul>
+        <button class="w-full py-3 bg-neutral-900 text-white hover:bg-neutral-800">Select Vendor</button>
+      </div>
+    </div>
+
+    <div class="text-center">
+      <p class="text-neutral-600">Already have an account? <a href="#" class="text-neutral-900 hover:underline">Login here</a></p>
+    </div>
+  </main>
+</div>
+
+<div id="login-screen" class="min-h-screen bg-neutral-50 hidden">
+  <header id="header-login" class="border-b border-neutral-200 bg-white">
+    <div class="max-w-[1920px] mx-auto px-16 py-6 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-neutral-800 flex items-center justify-center">
+          <i class="fa-solid fa-video text-white text-xl"></i>
+        </div>
+        <span class="text-2xl text-neutral-900">CrewCall</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex items-center justify-center py-20">
+    <div class="w-full max-w-[500px] bg-white border border-neutral-200 p-12">
+      <h1 class="text-3xl text-neutral-900 mb-2">Welcome Back</h1>
+      <p class="text-neutral-600 mb-8">Login to your CrewCall account</p>
+
+      <form class="space-y-6">
+        <div>
+          <label class="block text-sm text-neutral-900 mb-2">Email or Phone</label>
+          <input type="text" placeholder="Enter your email or phone number" class="w-full px-4 py-3 border border-neutral-300 focus:outline-none focus:border-neutral-900">
+        </div>
+
+        <div>
+          <label class="block text-sm text-neutral-900 mb-2">Password</label>
+          <input type="password" placeholder="Enter your password" class="w-full px-4 py-3 border border-neutral-300 focus:outline-none focus:border-neutral-900">
+        </div>
+
+        <div class="flex items-center justify-between">
+          <label class="flex items-center gap-2">
+            <input type="checkbox" class="w-4 h-4">
+            <span class="text-sm text-neutral-700">Remember me</span>
+          </label>
+          <a href="#" class="text-sm text-neutral-900 hover:underline">Forgot password?</a>
+        </div>
+
+        <button type="submit" class="w-full py-3 bg-neutral-900 text-white hover:bg-neutral-800">Login</button>
+      </form>
+
+      <div class="mt-8 pt-8 border-t border-neutral-200 text-center">
+        <p class="text-neutral-600 mb-4">Don't have an account? <a href="#" class="text-neutral-900 hover:underline">Register here</a></p>
+        <p class="text-sm text-neutral-500">Or continue as a different user type</p>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div id="company-registration" class="min-h-screen bg-neutral-50 hidden">
+  <header id="header-company-reg" class="border-b border-neutral-200 bg-white">
+    <div class="max-w-[1920px] mx-auto px-16 py-6 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-neutral-800 flex items-center justify-center">
+          <i class="fa-solid fa-video text-white text-xl"></i>
+        </div>
+        <span class="text-2xl text-neutral-900">CrewCall</span>
+      </div>
+      <button class="text-neutral-600 hover:text-neutral-900">
+        <i class="fa-solid fa-arrow-left mr-2"></i>Back
+      </button>
+    </div>
+  </header>
+
+  <main class="flex items-center justify-center py-20">
+    <div class="w-full max-w-[600px] bg-white border border-neutral-200 p-12">
+      <div class="flex items-center gap-4 mb-8">
+        <div class="w-16 h-16 bg-neutral-100 flex items-
+                        </body>
+                        </html>
+                        

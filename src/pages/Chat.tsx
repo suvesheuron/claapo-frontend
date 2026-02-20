@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
-import { FaArrowLeft, FaPaperPlane, FaVideo } from 'react-icons/fa6';
+import { Link } from 'react-router-dom';
+import { FaArrowLeft, FaPaperPlane } from 'react-icons/fa6';
 import DashboardHeader from '../components/DashboardHeader';
 import AppFooter from '../components/AppFooter';
 import Avatar from '../components/Avatar';
@@ -13,7 +13,6 @@ const messages = [
 ];
 
 export default function Chat() {
-  const { userId } = useParams<{ userId: string }>();
   const [message, setMessage] = useState('');
 
   useEffect(() => {

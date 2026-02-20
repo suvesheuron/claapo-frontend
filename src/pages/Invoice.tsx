@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { FaArrowLeft, FaDownload, FaFileInvoice } from 'react-icons/fa6';
+import { FaArrowLeft, FaDownload } from 'react-icons/fa6';
 import DashboardHeader from '../components/DashboardHeader';
 import AppFooter from '../components/AppFooter';
 import RoleIndicator from '../components/RoleIndicator';

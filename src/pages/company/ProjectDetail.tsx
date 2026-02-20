@@ -23,7 +23,7 @@ const navLinks = [
 ];
 
 export default function ProjectDetail() {
-  const { id } = useParams<{ id: string }>();
+  const { id: _id } = useParams<{ id: string }>();
   const [isLocked, setIsLocked] = useState(false);
 
   useEffect(() => {

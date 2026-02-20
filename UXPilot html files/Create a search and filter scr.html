@@ -1,0 +1,366 @@
+
+                <html>
+                <head>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+                    <script src="https://cdn.tailwindcss.com"></script>
+                    <script>
+                        window.FontAwesomeConfig = {
+                            autoReplaceSvg: 'nest', // Options: 'nest', 'remove', 'replace'
+                        };
+                    </script>
+                    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+                    <style>
+                    </style>
+                    <script>
+                    tailwind.config = {
+                    theme: {
+                        extend: {
+                        colors: {
+                            primary: {"50":"#fafafa","100":"#f5f5f5","200":"#e5e5e5","300":"#d4d4d4","400":"#a3a3a3","500":"#737373","600":"#525252","700":"#404040","800":"#262626","900":"#171717","950":"#0a0a0a"}
+                        }
+                        }
+                    }
+                    }
+                </script>
+                </head>
+
+                <body>
+                        <div id="search-filter-screen" class="bg-neutral-50 min-h-[1080px] flex flex-col">
+  <header id="header" class="border-b border-neutral-200 bg-white">
+    <div class="max-w-[1920px] mx-auto px-16 py-6 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-neutral-800 flex items-center justify-center">
+          <i class="fa-solid fa-video text-white text-xl"></i>
+        </div>
+        <span class="text-2xl text-neutral-900">CrewCall</span>
+      </div>
+      <div class="flex items-center gap-6">
+        <button class="text-neutral-600 hover:text-neutral-900">Dashboard</button>
+        <button class="text-neutral-600 hover:text-neutral-900">Projects</button>
+        <div class="w-10 h-10 rounded-full overflow-hidden">
+          <img src="https://api.dicebear.com/7.x/notionists/svg?scale=200&seed=123" alt="Profile" class="w-full h-full">
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-1 px-16 py-8">
+    <div class="max-w-[1920px] mx-auto">
+      <div class="flex items-center justify-between mb-8">
+        <div>
+          <h1 class="text-4xl text-neutral-900 mb-2">Find Crew & Vendors</h1>
+          <p class="text-lg text-neutral-600">Search and hire the best talent for your projects</p>
+        </div>
+        <button class="px-6 py-3 bg-neutral-900 text-white hover:bg-neutral-800">
+          <i class="fa-solid fa-plus mr-2"></i>Create Project
+        </button>
+      </div>
+
+      <div class="flex gap-8">
+        <div id="filters-sidebar" class="w-80 bg-white border border-neutral-200 p-6 h-fit">
+          <div class="mb-6">
+            <h3 class="text-lg text-neutral-900 mb-4">Filters</h3>
+            <div class="relative">
+              <input type="text" placeholder="Search by name or skill..." class="w-full px-4 py-3 border border-neutral-300 bg-white text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-neutral-900">
+              <i class="fa-solid fa-search absolute right-4 top-1/2 transform -translate-y-1/2 text-neutral-400"></i>
+            </div>
+          </div>
+
+          <div class="mb-6">
+            <label class="block text-neutral-900 text-sm mb-3">Role/Category</label>
+            <select class="w-full px-4 py-3 border border-neutral-300 bg-white text-neutral-900 focus:outline-none focus:border-neutral-900">
+              <option>All Roles</option>
+              <option>Director</option>
+              <option>Cinematographer</option>
+              <option>Sound Engineer</option>
+              <option>Editor</option>
+              <option>Equipment Vendor</option>
+              <option>Location Services</option>
+            </select>
+          </div>
+
+          <div class="mb-6">
+            <label class="block text-neutral-900 text-sm mb-3">Location</label>
+            <select class="w-full px-4 py-3 border border-neutral-300 bg-white text-neutral-900 focus:outline-none focus:border-neutral-900">
+              <option>All Locations</option>
+              <option>Mumbai</option>
+              <option>Delhi</option>
+              <option>Bangalore</option>
+              <option>Chennai</option>
+              <option>Hyderabad</option>
+              <option>Pune</option>
+            </select>
+          </div>
+
+          <div class="mb-6">
+            <label class="block text-neutral-900 text-sm mb-3">Availability</label>
+            <div class="flex gap-2 mb-3">
+              <input type="date" class="flex-1 px-3 py-2 border border-neutral-300 bg-white text-neutral-900 text-sm focus:outline-none focus:border-neutral-900">
+              <span class="text-neutral-500 self-center">to</span>
+              <input type="date" class="flex-1 px-3 py-2 border border-neutral-300 bg-white text-neutral-900 text-sm focus:outline-none focus:border-neutral-900">
+            </div>
+          </div>
+
+          <div class="mb-6">
+            <label class="block text-neutral-900 text-sm mb-3">Budget Range (per day)</label>
+            <select class="w-full px-4 py-3 border border-neutral-300 bg-white text-neutral-900 focus:outline-none focus:border-neutral-900">
+              <option>Any Budget</option>
+              <option>₹5,000 - ₹10,000</option>
+              <option>₹10,000 - ₹25,000</option>
+              <option>₹25,000 - ₹50,000</option>
+              <option>₹50,000+</option>
+            </select>
+          </div>
+
+          <div class="mb-6">
+            <label class="block text-neutral-900 text-sm mb-3">Experience Level</label>
+            <div class="space-y-2">
+              <label class="flex items-center gap-2 text-neutral-700 cursor-pointer">
+                <input type="checkbox" class="w-4 h-4 border border-neutral-300">
+                <span class="text-sm">Entry Level (0-2 years)</span>
+              </label>
+              <label class="flex items-center gap-2 text-neutral-700 cursor-pointer">
+                <input type="checkbox" class="w-4 h-4 border border-neutral-300">
+                <span class="text-sm">Mid Level (3-7 years)</span>
+              </label>
+              <label class="flex items-center gap-2 text-neutral-700 cursor-pointer">
+                <input type="checkbox" class="w-4 h-4 border border-neutral-300">
+                <span class="text-sm">Senior Level (8+ years)</span>
+              </label>
+            </div>
+          </div>
+
+          <button class="w-full py-3 bg-neutral-900 text-white hover:bg-neutral-800 mb-3">Apply Filters</button>
+          <button class="w-full py-3 border border-neutral-300 text-neutral-900 hover:bg-neutral-50">Clear All</button>
+        </div>
+
+        <div id="results-section" class="flex-1">
+          <div class="flex items-center justify-between mb-6">
+            <p class="text-neutral-600">Showing 24 results</p>
+            <div class="flex items-center gap-4">
+              <span class="text-sm text-neutral-600">Sort by:</span>
+              <select class="px-3 py-2 border border-neutral-300 bg-white text-neutral-900 text-sm focus:outline-none focus:border-neutral-900">
+                <option>Relevance</option>
+                <option>Rating</option>
+                <option>Experience</option>
+                <option>Price (Low to High)</option>
+                <option>Price (High to Low)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-3 gap-6">
+            <div class="bg-white border border-neutral-200 p-6">
+              <div class="flex items-start gap-4 mb-4">
+                <img src="https://api.dicebear.com/7.x/notionists/svg?scale=200&seed=456" alt="Profile" class="w-16 h-16 rounded-full">
+                <div class="flex-1">
+                  <h3 class="text-lg text-neutral-900 mb-1">Rajesh Kumar</h3>
+                  <p class="text-sm text-neutral-600 mb-2">Cinematographer</p>
+                  <div class="flex items-center gap-2 mb-2">
+                    <div class="flex text-neutral-500">
+                      <i class="fa-solid fa-star text-xs"></i>
+                      <i class="fa-solid fa-star text-xs"></i>
+                      <i class="fa-solid fa-star text-xs"></i>
+                      <i class="fa-solid fa-star text-xs"></i>
+                      <i class="fa-solid fa-star text-xs"></i>
+                    </div>
+                    <span class="text-xs text-neutral-600">(4.9)</span>
+                  </div>
+                  <p class="text-sm text-neutral-600">Mumbai • 8 years exp</p>
+                </div>
+              </div>
+              <div class="mb-4">
+                <p class="text-sm text-neutral-700 mb-2">Specialized in commercial shoots and documentaries. RED camera certified.</p>
+                <p class="text-lg text-neutral-900">₹25,000/day</p>
+              </div>
+              <div class="flex gap-2">
+                <button class="flex-1 py-2 border border-neutral-300 text-neutral-900 text-sm hover:bg-neutral-50">View Profile</button>
+                <button class="flex-1 py-2 bg-neutral-900 text-white text-sm hover:bg-neutral-800">Send Request</button>
+              </div>
+            </div>
+
+            <div class="bg-white border border-neutral-200 p-6">
+              <div class="flex items-start gap-4 mb-4">
+                <img src="https://api.dicebear.com/7.x/notionists/svg?scale=200&seed=789" alt="Profile" class="w-16 h-16 rounded-full">
+                <div class="flex-1">
+                  <h3 class="text-lg text-neutral-900 mb-1">Priya Sharma</h3>
+                  <p class="text-sm text-neutral-600 mb-2">Sound Engineer</p>
+                  <div class="flex items-center gap-2 mb-2">
+                    <div class="flex text-neutral-500">
+                      <i class="fa-solid fa-star text-xs"></i>
+                      <i class="fa-solid fa-star text-xs"></i>
+                      <i class="fa-solid fa-star text-xs"></i>
+                      <i class="fa-solid fa-star text-xs"></i>
+                      <i class="fa-regular fa-star text-xs"></i>
+                    </div>
+                    <span class="text-xs text-neutral-600">(4.6)</span>
+                  </div>
+                  <p class="text-sm text-neutral-600">Delhi • 5 years exp</p>
+                </div>
+              </div>
+              <div class="mb-4">
+                <p class="text-sm text-neutral-700 mb-2">Expert in live recording and post-production mixing. Pro Tools certified.</p>
+                <p class="text-lg text-neutral-900">₹15,000/day</p>
+              </div>
+              <div class="flex gap-2">
+                <button class="flex-1 py-2 border border-neutral-300 text-neutral-900 text-sm hover:bg-neutral-50">View Profile</button>
+                <button class="flex-1 py-2 bg-neutral-900 text-white text-sm hover:bg-neutral-800">Send Request</button>
+              </div>
+            </div>
+
+            <div class="bg-white border border-neutral-200 p-6">
+              <div class="flex items-start gap-4 mb-4">
+                <div class="w-16 h-16 bg-neutral-300 flex items-center justify-center">
+                  <i class="fa-solid fa-video text-neutral-600"></i>
+                </div>
+                <div class="flex-1">
+                  <h3 class="text-lg text-neutral-900 mb-1">CineGear Rentals</h3>
+                  <p class="text-sm text-neutral-600 mb-2">Equipment Vendor</p>
+                  <div class="flex items-center gap-2 mb-2">
+                    <div class="flex text-neutral-500">
+                      <i class="fa-solid fa-star text-xs"></i>
+                      <i class="fa-solid fa-star text-xs"></i>
+                      <i class="fa-solid fa-star text-xs"></i>
+                      <i class="fa-solid fa-star text-xs"></i>
+                      <i class="fa-solid fa-star text-xs"></i>
+                    </div>
+                    <span class="text-xs text-neutral-600">(4.8)</span>
+                  </div>
+                  <p class="text-sm text-neutral-600">Bangalore • Vendor</p>
+                </div>
+              </div>
+              <div class="mb-4">
+                <p class="text-sm text-neutral-700 mb-2">Complete camera and lighting packages. ARRI, RED, Sony equipment available.</p>
+                <p class="text-lg text-neutral-900">From ₹8,000/day</p>
+              </div>
+              <div class="flex gap-2">
+                <button class="flex-1 py-2 border border-neutral-300 text-neutral-900 text-sm hover:bg-neutral-50">View Profile</button>
+                <button class="flex-1 py-2 bg-neutral-900 text-white text-sm hover:bg-neutral-800">Send Request</button>
+              </div>
+            </div>
+
+            <div class="bg-white border border-neutral-200 p-6">
+              <div class="flex items-start gap-4 mb-4">
+                <img src="https://api.dicebear.com/7.x/notionists/svg?scale=200&seed=101" alt="Profile" class="w-16 h-16 rounded-full">
+                <div class="flex-1">
+                  <h3 class="text-lg text-neutral-900 mb-1">Arjun Menon</h3>
+                  <p class="text-sm text-neutral-600 mb-2">Director</p>
+                  <div class="flex items-center gap-2 mb-2">
+                    <div class="flex text-neutral-500">
+                      <i class="fa-solid fa-star text-xs"></i>
+                      <i class="fa-solid fa-star text-xs"></i>
+                      <i class="fa-solid fa-star text-xs"></i>
+                      <i class="fa-solid fa-star text-xs"></i>
+                      <i class="fa-regular fa-star text-xs"></i>
+                    </div>
+                    <span class="text-xs text-neutral-600">(4.7)</span>
+                  </div>
+                  <p class="text-sm text-neutral-600">Chennai • 12 years exp</p>
+                </div>
+              </div>
+              <div class="mb-4">
+                <p class="text-sm text-neutral-700 mb-2">Award-winning director specializing in brand films and short documentaries.</p>
+                <p class="text-lg text-neutral-900">₹45,000/day</p>
+              </div>
+              <div class="flex gap-2">
+                <button class="flex-1 py-2 border border-neutral-300 text-neutral-900 text-sm hover:bg-neutral-50">View Profile</button>
+                <button class="flex-1 py-2 bg-neutral-900 text-white text-sm hover:bg-neutral-800">Send Request</button>
+              </div>
+            </div>
+
+            <div class="bg-white border border-neutral-200 p-6">
+              <div class="flex items-start gap-4 mb-4">
+                <img src="https://api.dicebear.com/7.x/notionists/svg?scale=200&seed=202" alt="Profile" class="w-16 h-16 rounded-full">
+                <div class="flex-1">
+                  <h3 class="text-lg text-neutral-900 mb-1">Kavya Patel</h3>
+                  <p class="text-sm text-neutral-600 mb-2">Editor</p>
+                  <div class="flex items-center gap-2 mb-2">
+                    <div class="flex text-neutral-500">
+                      <i class="fa-solid fa-star text-xs"></i>
+                      <i class="fa-solid fa-star text-xs"></i>
+                      <i class="fa-solid fa-star text-xs"></i>
+                      <i class="fa-solid fa-star text-xs"></i>
+                      <i class="fa-solid fa-star text-xs"></i>
+                    </div>
+                    <span class="text-xs text-neutral-600">(4.9)</span>
+                  </div>
+                  <p class="text-sm text-neutral-600">Hyderabad • 6 years exp</p>
+                </div>
+              </div>
+              <div class="mb-4">
+                <p class="text-sm text-neutral-700 mb-2">Expert in Avid, Premiere Pro, and DaVinci Resolve. Quick turnaround specialist.</p>
+                <p class="text-lg text-neutral-900">₹18,000/day</p>
+              </div>
+              <div class="flex gap-2">
+                <button class="flex-1 py-2 border border-neutral-300 text-neutral-900 text-sm hover:bg-neutral-50">View Profile</button>
+                <button class="flex-1 py-2 bg-neutral-900 text-white text-sm hover:bg-neutral-800">Send Request</button>
+              </div>
+            </div>
+
+            <div class="bg-white border border-neutral-200 p-6">
+              <div class="flex items-start gap-4 mb-4">
+                <div class="w-16 h-16 bg-neutral-300 flex items-center justify-center">
+                  <i class="fa-solid fa-truck text-neutral-600"></i>
+                </div>
+                <div class="flex-1">
+                  <h3 class="text-lg text-neutral-900 mb-1">Mumbai Locations</h3>
+                  <p class="text-sm text-neutral-600 mb-2">Location Services</p>
+                  <div class="flex items-center gap-2 mb-2">
+                    <div class="flex text-neutral-500">
+                      <i class="fa-solid fa-star text-xs"></i>
+                      <i class="fa-solid fa-star text-xs"></i>
+                      <i class="fa-solid fa-star text-xs"></i>
+                      <i class="fa-solid fa-star text-xs"></i>
+                      <i class="fa-regular fa-star text-xs"></i>
+                    </div>
+                    <span class="text-xs text-neutral-600">(4.5)</span>
+                  </div>
+                  <p class="text-sm text-neutral-600">Mumbai • Vendor</p>
+                </div>
+              </div>
+              <div class="mb-4">
+                <p class="text-sm text-neutral-700 mb-2">Premium shooting locations across Mumbai. Permits and logistics included.</p>
+                <p class="text-lg text-neutral-900">From ₹12,000/day</p>
+              </div>
+              <div class="flex gap-2">
+                <button class="flex-1 py-2 border border-neutral-300 text-neutral-900 text-sm hover:bg-neutral-50">View Profile</button>
+                <button class="flex-1 py-2 bg-neutral-900 text-white text-sm hover:bg-neutral-800">Send Request</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-center mt-12">
+            <div class="flex items-center gap-2">
+              <button class="px-3 py-2 border border-neutral-300 text-neutral-900 hover:bg-neutral-50">
+                <i class="fa-solid fa-chevron-left"></i>
+              </button>
+              <button class="px-4 py-2 bg-neutral-900 text-white">1</button>
+              <button class="px-4 py-2 border border-neutral-300 text-neutral-900 hover:bg-neutral-50">2</button>
+              <button class="px-4 py-2 border border-neutral-300 text-neutral-900 hover:bg-neutral-50">3</button>
+              <button class="px-4 py-2 border border-neutral-300 text-neutral-900 hover:bg-neutral-50">4</button>
+              <button class="px-3 py-2 border border-neutral-300 text-neutral-900 hover:bg-neutral-50">
+                <i class="fa-solid fa-chevron-right"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer id="footer" class="border-t border-neutral-200 bg-white py-8">
+    <div class="max-w-[1920px] mx-auto px-16">
+      <div class="flex items-center justify-between">
+        <p class="text-neutral-600 text-sm">© 2025 CrewCall. All rights reserved.</p>
+        <div class="flex items-center gap-8">
+          <a href="#" class="text-neutral-600 hover:text-neutral-900 text-sm">Help Center</a>
+          <a href="#" class="text-neutral-600 hover:text-neutral-900 text-sm">Privacy Policy</a>
+          <a href="#" class="text-neutral-600 hover:text-neutral-900 text-sm">Terms of Service</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+</div>
+                        </body>
+                        </html>
+                        

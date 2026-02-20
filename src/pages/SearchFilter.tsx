@@ -38,7 +38,7 @@ export default function SearchFilter() {
     setIsModalOpen(true);
   };
 
-  const handleSubmitRequest = (dates: { start: string; end: string }, message: string) => {
+  const handleSubmitRequest = (dates: { start: string; end: string }, _message: string) => {
     // In real app, this would call an API
     alert(`Booking request sent to ${selectedUser?.name} for ${dates.start} to ${dates.end}`);
     setIsModalOpen(false);

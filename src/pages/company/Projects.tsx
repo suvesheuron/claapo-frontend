@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FaPlus, FaUsers, FaTruck, FaHouse, FaFolder, FaLock, FaEye } from 'react-icons/fa6';
 import DashboardHeader from '../../components/DashboardHeader';
@@ -49,13 +49,11 @@ const navLinks = [
 ];
 
 export default function Projects() {
-  const [selectedProject, setSelectedProject] = useState<number | null>(null);
-
   useEffect(() => {
     document.title = 'Projects – CrewCall';
   }, []);
 
-  const handleLockProject = (projectId: number) => {
+  const handleLockProject = (_projectId: number) => {
     // In real app, this would call an API
     alert(`Project locked! All confirmed crew and vendors are now locked for this project.`);
   };
