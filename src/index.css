@@ -1,14 +1,24 @@
 @import "tailwindcss";
 
 /*
-  Responsive layout with Tailwind:
-  • Flexbox / Grid  → flex, flex-col, grid, grid-cols-1 sm:grid-cols-2 lg:grid-cols-3
-  • Relative widths → w-full, max-w-*, min-w-0, mx-auto (no fixed px widths on containers)
-  • Media queries   → sm: (640px), md: (768px), lg: (1024px), xl: (1280px) on layout, spacing, typography
+  CrewCall Design System
+  Primary:    #3678F1  – header, nav, primary actions
+  Accent:     #F4C430  – CTA, highlights
+  Success:    #22C55E  – available state
+  Error:      #F40F02  – booked state
+  White:      #FFFFFF  – background
+  Light Grey: #F3F4F6  – cards, sections
 */
 
 @theme {
-  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  /* Brand colors */
+  --color-brand-primary:    #3678F1;
+  --color-brand-accent:     #F4C430;
+  --color-brand-success:    #22C55E;
+  --color-brand-error:      #F40F02;
+  --color-surface:          #F3F4F6;
 }
 
 *,
@@ -31,19 +41,17 @@ body {
   max-width: 100vw;
   font-family: var(--font-sans);
   color: #171717;
-  background-color: #ffffff;
+  background-color: #F3F4F6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
 }
 
-/* Prevent flex/grid children from causing horizontal scroll */
 img, video, svg {
   max-width: 100%;
   height: auto;
 }
 
-/* App root must not overflow viewport */
 #root {
   min-width: 0;
   width: 100%;
@@ -52,18 +60,96 @@ img, video, svg {
   min-height: 100vh;
 }
 
+/* Slide-in panel animation */
+@keyframes slideInRight {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+
+@keyframes slideOutRight {
+  from { transform: translateX(0); }
+  to   { transform: translateX(100%); }
+}
+
+.panel-enter {
+  animation: slideInRight 0.25s ease-out forwards;
+}
+
 /* Flickering animation for vendor role indicator */
 @keyframes flicker {
-  0%, 100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.2;
-    transform: scale(0.8);
-  }
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.2; transform: scale(0.8); }
 }
 
 .animate-flicker {
   animation: flicker 1s ease-in-out infinite;
+}
+
+/* Calendar cell hover */
+.cal-cell {
+  cursor: pointer;
+  transition: filter 0.12s ease, transform 0.12s ease;
+}
+
+.cal-cell:hover {
+  filter: brightness(0.92);
+  transform: scale(1.04);
+  z-index: 1;
+  position: relative;
+}
+
+/* Smooth panel transition */
+.side-panel {
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Custom scrollbar (Webkit / Blink) ────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #CBD5E1 transparent;
+}
+
+/* ── Landing page sections ────────────────────────────────────────── */
+/* Normal scrolling — no snap, sections are auto-height */
+.landing-section {
+  /* intentionally empty — kept for potential future use */
+}
+
+/* ── Fade-in animation for sections ──────────────────────────────── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s ease-out forwards;
+}
+
+/* ── Stats count animation ────────────────────────────────────────── */
+@keyframes countUp {
+  from { opacity: 0; transform: scale(0.8); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.animate-count {
+  animation: countUp 0.5s ease-out forwards;
 }

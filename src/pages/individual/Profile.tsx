@@ -1,16 +1,15 @@
 import { useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { FaHouse, FaCalendar, FaFolder, FaUser } from 'react-icons/fa6';
 import DashboardHeader from '../../components/DashboardHeader';
+import DashboardSidebar from '../../components/DashboardSidebar';
 import AppFooter from '../../components/AppFooter';
-import RoleIndicator from '../../components/RoleIndicator';
 import Avatar from '../../components/Avatar';
 
 const navLinks = [
-  { icon: FaHouse, label: 'Dashboard', to: '/dashboard' },
-  { icon: FaCalendar, label: 'Availability', to: '/dashboard/availability' },
-  { icon: FaFolder, label: 'Past Projects', to: '/dashboard/past-projects' },
-  { icon: FaUser, label: 'Profile', to: '/dashboard/profile' },
+  { icon: FaHouse,     label: 'Dashboard',    to: '/dashboard' },
+  { icon: FaCalendar,  label: 'Availability', to: '/dashboard/availability' },
+  { icon: FaFolder,    label: 'Past Projects', to: '/dashboard/past-projects' },
+  { icon: FaUser,      label: 'Profile',       to: '/dashboard/profile' },
 ];
 
 export default function Profile() {
@@ -23,21 +22,7 @@ export default function Profile() {
       <DashboardHeader userName="John Director" />
 
       <div className="flex-1 flex min-h-0 overflow-hidden">
-        {/* Sidebar */}
-        <aside className="hidden lg:flex lg:flex-col lg:w-56 xl:w-64 shrink-0 bg-white border-r border-neutral-200 overflow-y-auto">
-          <nav className="p-3 space-y-1">
-            {navLinks.map((item) => (
-              <Link
-                key={item.to}
-                to={item.to}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900 text-sm font-medium"
-              >
-                <item.icon className="w-5 h-5 shrink-0 text-neutral-500" />
-                <span className="truncate">{item.label}</span>
-              </Link>
-            ))}
-          </nav>
-        </aside>
+        <DashboardSidebar links={navLinks} />
 
         <main className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
           <div className="flex-1 min-h-0 overflow-auto">
@@ -47,7 +32,6 @@ export default function Profile() {
                   <h1 className="text-xl sm:text-2xl md:text-3xl text-neutral-900 font-bold break-words">
                     My Profile
                   </h1>
-                  <RoleIndicator />
                 </div>
                 <p className="text-xs sm:text-sm text-neutral-600 break-words">
                   Manage your profile information and settings
@@ -66,7 +50,7 @@ export default function Profile() {
                       onClick={() => {
                         alert('Profile saved successfully!');
                       }}
-                      className="w-full px-4 py-2 bg-neutral-900 text-white rounded-lg hover:bg-neutral-800 text-sm"
+                      className="w-full px-4 py-2 bg-[#3678F1] text-white rounded-xl hover:bg-[#2c65d4] text-sm font-medium transition-colors"
                     >
                       Save Profile
                     </button>
@@ -79,19 +63,19 @@ export default function Profile() {
                     <div className="space-y-4">
                       <div>
                         <label className="block text-sm font-medium text-neutral-700 mb-1">Full Name</label>
-                        <input type="text" defaultValue="John Director" className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:border-neutral-900" />
+                        <input type="text" defaultValue="John Director" className="w-full px-3 py-2 border border-neutral-300 rounded-xl focus:outline-none focus:border-[#3678F1] focus:ring-1 focus:ring-[#3678F1]/20 text-sm" />
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-neutral-700 mb-1">Email</label>
-                        <input type="email" defaultValue="john.director@example.com" className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:border-neutral-900" />
+                        <input type="email" defaultValue="john.director@example.com" className="w-full px-3 py-2 border border-neutral-300 rounded-xl focus:outline-none focus:border-[#3678F1] focus:ring-1 focus:ring-[#3678F1]/20 text-sm" />
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-neutral-700 mb-1">Phone</label>
-                        <input type="tel" defaultValue="+91 98765 43210" className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:border-neutral-900" />
+                        <input type="tel" defaultValue="+91 98765 43210" className="w-full px-3 py-2 border border-neutral-300 rounded-xl focus:outline-none focus:border-[#3678F1] focus:ring-1 focus:ring-[#3678F1]/20 text-sm" />
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-neutral-700 mb-1">Location</label>
-                        <input type="text" defaultValue="Mumbai, India" className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:border-neutral-900" />
+                        <input type="text" defaultValue="Mumbai, India" className="w-full px-3 py-2 border border-neutral-300 rounded-xl focus:outline-none focus:border-[#3678F1] focus:ring-1 focus:ring-[#3678F1]/20 text-sm" />
                       </div>
                     </div>
                   </div>
@@ -101,15 +85,15 @@ export default function Profile() {
                     <div className="space-y-4">
                       <div>
                         <label className="block text-sm font-medium text-neutral-700 mb-1">Primary Role</label>
-                        <input type="text" defaultValue="Director" className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:border-neutral-900" />
+                        <input type="text" defaultValue="Director" className="w-full px-3 py-2 border border-neutral-300 rounded-xl focus:outline-none focus:border-[#3678F1] focus:ring-1 focus:ring-[#3678F1]/20 text-sm" />
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-neutral-700 mb-1">Experience</label>
-                        <input type="text" defaultValue="12 years" className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:border-neutral-900" />
+                        <input type="text" defaultValue="12 years" className="w-full px-3 py-2 border border-neutral-300 rounded-xl focus:outline-none focus:border-[#3678F1] focus:ring-1 focus:ring-[#3678F1]/20 text-sm" />
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-neutral-700 mb-1">Daily Rate</label>
-                        <input type="text" defaultValue="₹45,000/day" className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:border-neutral-900" />
+                        <input type="text" defaultValue="₹45,000/day" className="w-full px-3 py-2 border border-neutral-300 rounded-xl focus:outline-none focus:border-[#3678F1] focus:ring-1 focus:ring-[#3678F1]/20 text-sm" />
                       </div>
                       <div className="pt-2">
                         <button
@@ -117,7 +101,7 @@ export default function Profile() {
                           onClick={() => {
                             alert('Profile updated successfully!');
                           }}
-                          className="px-4 py-2 bg-neutral-900 text-white rounded-lg hover:bg-neutral-800 text-sm font-medium"
+                          className="px-4 py-2 bg-[#3678F1] text-white rounded-xl hover:bg-[#2c65d4] text-sm font-medium transition-colors"
                         >
                           Save Changes
                         </button>

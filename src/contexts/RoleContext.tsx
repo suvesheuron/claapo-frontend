@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, type ReactNode } from 'react';
 
-export type UserRole = 'individual' | 'company' | 'vendor';
+export type UserRole = 'Individual' | 'Company' | 'Vendor';
 
 type RoleContextType = {
   currentRole: UserRole;
@@ -11,7 +11,7 @@ const RoleContext = createContext<RoleContextType | undefined>(undefined);
 
 export function RoleProvider({ children }: { children: ReactNode }) {
   // Hardcoded role value - change this to switch between roles
-  const [currentRole, setCurrentRole] = useState<UserRole>('company'); //roles: individual, company, vendor
+  const [currentRole, setCurrentRole] = useState<UserRole>('Company'); //roles: individual, company, vendor
 
   return (
     <RoleContext.Provider value={{ currentRole, setCurrentRole }}>

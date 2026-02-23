@@ -24,6 +24,12 @@ const VendorPastRentals = lazy(() => import('./pages/vendor/PastRentals'));
 // Company routes
 const Projects = lazy(() => import('./pages/company/Projects'));
 const ProjectDetail = lazy(() => import('./pages/company/ProjectDetail'));
+const CompanyAvailability = lazy(() => import('./pages/company/Availability'));
+const CompanyPastProjects = lazy(() => import('./pages/company/PastProjects'));
+const CompanyProfile = lazy(() => import('./pages/company/Profile'));
+
+// Vendor additional routes
+const VendorProfile = lazy(() => import('./pages/vendor/Profile'));
 
 // Shared routes
 const Chat = lazy(() => import('./pages/Chat'));
@@ -51,6 +57,7 @@ export default function App() {
           <Route path="/dashboard" element={<><Dashboard /><RoleSwitcher /></>} />
           <Route path="/dashboard/projects" element={<><Projects /><RoleSwitcher /></>} />
           <Route path="/dashboard/projects/:id" element={<><ProjectDetail /><RoleSwitcher /></>} />
+          <Route path="/dashboard/company-availability" element={<><CompanyAvailability /><RoleSwitcher /></>} />
           <Route path="/dashboard/projects/new" element={<CreateProject />} />
           <Route path="/dashboard/search" element={<SearchFilter />} />
           
@@ -67,6 +74,11 @@ export default function App() {
           <Route path="/dashboard/equipment" element={<><VendorEquipment /><RoleSwitcher /></>} />
           <Route path="/dashboard/vendor-availability" element={<><VendorAvailability /><RoleSwitcher /></>} />
           <Route path="/dashboard/past-rentals" element={<><VendorPastRentals /><RoleSwitcher /></>} />
+          <Route path="/dashboard/vendor-profile" element={<><VendorProfile /><RoleSwitcher /></>} />
+
+          {/* Company extended routes */}
+          <Route path="/dashboard/company-past-projects" element={<><CompanyPastProjects /><RoleSwitcher /></>} />
+          <Route path="/dashboard/company-profile" element={<><CompanyProfile /><RoleSwitcher /></>} />
         </Routes>
       </Suspense>
     </BrowserRouter>

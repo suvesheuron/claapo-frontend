@@ -7,11 +7,11 @@ export default function Dashboard() {
   const { currentRole } = useRole();
 
   switch (currentRole) {
-    case 'individual':
+    case 'Individual':
       return <IndividualDashboard />;
-    case 'vendor':
+    case 'Vendor':
       return <VendorDashboard />;
-    case 'company':
+    case 'Company':
     default:
       return <CompanyDashboard />;
   }

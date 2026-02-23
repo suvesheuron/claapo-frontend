@@ -1,15 +1,16 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FaTruck, FaFileInvoice, FaHouse, FaCalendar, FaFolder } from 'react-icons/fa6';
+import { FaTruck, FaFileInvoice, FaHouse, FaCalendar, FaFolder, FaUser } from 'react-icons/fa6';
 import DashboardHeader from '../../components/DashboardHeader';
+import DashboardSidebar from '../../components/DashboardSidebar';
 import AppFooter from '../../components/AppFooter';
 import RoleIndicator from '../../components/RoleIndicator';
 
 const navLinks = [
-  { icon: FaHouse, label: 'Dashboard', to: '/dashboard' },
-  { icon: FaTruck, label: 'Equipment', to: '/dashboard/equipment' },
-  { icon: FaCalendar, label: 'Availability', to: '/dashboard/vendor-availability' },
-  { icon: FaFolder, label: 'Past Rentals', to: '/dashboard/past-rentals' },
+  { icon: FaHouse,     label: 'Dashboard',   to: '/dashboard' },
+  { icon: FaCalendar,  label: 'Availability', to: '/dashboard/vendor-availability' },
+  { icon: FaTruck,     label: 'Equipment',   to: '/dashboard/equipment' },
+  { icon: FaUser,      label: 'Profile',     to: '/dashboard/vendor-profile' },
 ];
 
 const pastRentals = [
@@ -30,21 +31,7 @@ export default function PastRentals() {
       <DashboardHeader userName="Equipment Rentals Co." />
 
       <div className="flex-1 flex min-h-0 overflow-hidden">
-        {/* Sidebar */}
-        <aside className="hidden lg:flex lg:flex-col lg:w-56 xl:w-64 shrink-0 bg-white border-r border-neutral-200 overflow-y-auto">
-          <nav className="p-3 space-y-1">
-            {navLinks.map((item) => (
-              <Link
-                key={item.to}
-                to={item.to}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900 text-sm font-medium"
-              >
-                <item.icon className="w-5 h-5 shrink-0 text-neutral-500" />
-                <span className="truncate">{item.label}</span>
-              </Link>
-            ))}
-          </nav>
-        </aside>
+        <DashboardSidebar links={navLinks} />
 
         <main className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
           <div className="flex-1 min-h-0 overflow-auto">

@@ -9,30 +9,38 @@ type AppHeaderProps = {
 
 export default function AppHeader({ variant = 'landing', backTo = '/', backLabel = 'Back' }: AppHeaderProps) {
   return (
-    <header className="border-b border-neutral-200 bg-white shrink-0 overflow-hidden">
-      <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 md:px-8 lg:px-16 py-4 sm:py-6 flex items-center justify-between gap-3 min-w-0 overflow-hidden">
-        <Link to="/" className="flex items-center gap-2 sm:gap-3 min-w-0 shrink-0">
-          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-neutral-800 flex items-center justify-center shrink-0">
-            <FaVideo className="text-white text-lg sm:text-xl" />
+    <header className="h-[64px] border-b border-neutral-200 bg-white shrink-0 flex items-center overflow-hidden">
+      <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 md:px-8 lg:px-16 flex items-center justify-between gap-3 min-w-0">
+        <Link to="/" className="flex items-center gap-2.5 min-w-0 shrink-0">
+          <div className="w-8 h-8 rounded-lg bg-[#3678F1] flex items-center justify-center shrink-0">
+            <FaVideo className="text-white text-sm" />
           </div>
-          <span className="text-lg sm:text-xl md:text-2xl text-neutral-900 font-semibold truncate">CrewCall</span>
+          <span className="text-lg text-neutral-900 font-semibold truncate">CrewCall</span>
         </Link>
+
         {variant === 'landing' && (
-          <div className="flex items-center gap-1 sm:gap-2 md:gap-4 shrink-0">
-            <Link to="/login" className="px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 text-neutral-700 hover:text-neutral-900 text-sm sm:text-base whitespace-nowrap">
+          <div className="flex items-center gap-2 shrink-0">
+            <Link
+              to="/login"
+              className="px-4 py-2 text-neutral-600 hover:text-neutral-900 text-sm font-medium transition-colors"
+            >
               Login
             </Link>
             <Link
               to="/register"
-              className="rounded-lg px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 bg-neutral-900 text-white hover:bg-neutral-700 text-sm sm:text-base whitespace-nowrap"
+              className="rounded-lg px-4 py-2 bg-[#3678F1] text-white hover:bg-[#2563d4] text-sm font-medium transition-colors"
             >
-              Register
+              Get Started
             </Link>
           </div>
         )}
+
         {variant === 'back' && (
-          <Link to={backTo} className="flex items-center gap-2 text-neutral-600 hover:text-neutral-900 text-sm sm:text-base min-w-0">
-            <FaArrowLeft className="w-4 h-4 shrink-0" aria-hidden />
+          <Link
+            to={backTo}
+            className="flex items-center gap-1.5 text-neutral-500 hover:text-neutral-900 text-sm transition-colors"
+          >
+            <FaArrowLeft className="w-3.5 h-3.5 shrink-0" aria-hidden />
             <span className="truncate">{backLabel}</span>
           </Link>
         )}

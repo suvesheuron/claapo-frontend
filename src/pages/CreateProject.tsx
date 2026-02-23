@@ -1,21 +1,12 @@
 import { Link } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
-  FaArrowLeft,
-  FaFolderPlus,
-  FaCircleInfo,
-  FaUsers,
-  FaIndianRupeeSign,
-  FaClipboardCheck,
-  FaCalendar,
-  FaPlus,
-  FaLightbulb,
-  FaCircleQuestion,
+  FaArrowLeft, FaFolderPlus, FaCircleInfo, FaUsers, FaIndianRupeeSign,
+  FaClipboardCheck, FaCalendar, FaPlus, FaLightbulb, FaHouse, FaFolder, FaMagnifyingGlass, FaUser,
 } from 'react-icons/fa6';
 import DashboardHeader from '../components/DashboardHeader';
+import DashboardSidebar from '../components/DashboardSidebar';
 import AppFooter from '../components/AppFooter';
-
-
 
 const roles = [
   { title: 'Director of Photography', sub: 'Camera & Lighting Lead' },
@@ -26,211 +17,211 @@ const roles = [
   { title: 'Makeup Artist', sub: 'Talent Makeup & Hair' },
 ];
 
+const navLinks = [
+  { icon: FaHouse,           label: 'Dashboard',    to: '/dashboard' },
+  { icon: FaCalendar,        label: 'Availability', to: '/dashboard/company-availability' },
+  { icon: FaFolder,          label: 'Projects',     to: '/dashboard/projects' },
+  { icon: FaFolder,          label: 'Past Projects', to: '/dashboard/company-past-projects' },
+  { icon: FaMagnifyingGlass, label: 'Search',       to: '/dashboard/search' },
+  { icon: FaUser,            label: 'Profile',      to: '/dashboard/company-profile' },
+];
+
 export default function CreateProject() {
-  useEffect(() => {
-    document.title = 'Create New Project – CrewCall';
-  }, []);
+  useEffect(() => { document.title = 'Create New Project – CrewCall'; }, []);
+  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
+
+  const toggleRole = (title: string) => {
+    setSelectedRoles((prev) =>
+      prev.includes(title) ? prev.filter((r) => r !== title) : [...prev, title]
+    );
+  };
 
   return (
-    <div className="min-h-screen bg-neutral-50 flex flex-col min-w-0 w-full max-w-full overflow-x-hidden">
+    <div className="h-screen flex flex-col overflow-hidden bg-[#F3F4F6] w-full">
       <DashboardHeader userName="Production Co." />
-      <div className="flex-1 px-4 sm:px-6 md:px-8 lg:px-16 py-6 sm:py-8 md:py-12 min-w-0 w-full max-w-full overflow-x-hidden">
-        <div className="w-full max-w-[1400px] mx-auto min-w-0 max-w-full">
-          <Link to="/dashboard" className="inline-flex items-center gap-2 text-neutral-600 hover:text-neutral-900 mb-4 sm:mb-6 text-sm sm:text-base min-h-[44px] items-center">
-            <FaArrowLeft className="w-4 h-4 shrink-0" /> <span className="truncate">Back to Dashboard</span>
-          </Link>
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-5 sm:mb-6 md:mb-8 lg:mb-10">
-            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg bg-neutral-800 flex items-center justify-center shrink-0">
-              <FaFolderPlus className="text-white text-xl sm:text-2xl" />
-            </div>
-            <div className="min-w-0">
-              <h1 className="text-2xl sm:text-3xl md:text-4xl text-neutral-900 font-bold">Create New Project</h1>
-              <p className="text-base sm:text-lg text-neutral-600 mt-1">Set up your project details to start hiring crew and vendors</p>
-            </div>
-          </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8 min-w-0">
-            <div className="lg:col-span-2 space-y-4 sm:space-y-6 order-1 min-w-0 overflow-hidden">
-              <div className="rounded-lg bg-white border border-neutral-200 p-4 sm:p-6 md:p-8 lg:p-10 min-w-0">
-                <h2 className="text-lg sm:text-xl text-neutral-900 mb-4 sm:mb-6 md:mb-8 flex items-center gap-2 sm:gap-3 font-bold flex-wrap">
-                  <FaCircleInfo className="text-neutral-600 shrink-0" /> Project Information
-                </h2>
-                <div className="space-y-4 sm:space-y-6">
-                  <div className="min-w-0">
-                    <label className="block text-neutral-900 text-sm mb-2 sm:mb-3 font-medium">Project Name *</label>
-                    <input
-                      type="text"
-                      placeholder="e.g., Summer Commercial Campaign 2025"
-                      className="rounded-lg w-full min-w-0 px-3 sm:px-4 py-3 sm:py-4 border border-neutral-300 bg-white text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-neutral-900 text-base"
-                    />
-                  </div>
-                  <div className="min-w-0">
-                    <label className="block text-neutral-900 text-sm mb-2 sm:mb-3 font-medium">Project Description</label>
-                    <textarea
-                      rows={4}
-                      placeholder="Brief description of the project, shooting locations, and any special requirements..."
-                      className="rounded-lg w-full min-w-0 px-3 sm:px-4 py-3 sm:py-4 border border-neutral-300 bg-white text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-neutral-900 text-base resize-y"
-                    />
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 min-w-0">
-                    <div className="min-w-0">
-                      <label className="block text-neutral-900 text-sm mb-2 sm:mb-3 font-medium">Start Date *</label>
-                      <div className="relative">
-                        <input type="date" className="rounded-lg w-full px-4 py-3 sm:py-4 border border-neutral-300 bg-white text-neutral-900 text-base focus:outline-none focus:border-neutral-900 min-h-[44px]" />
-                        <FaCalendar className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
-                      </div>
-                    </div>
-                    <div className="min-w-0">
-                      <label className="block text-neutral-900 text-sm mb-2 sm:mb-3 font-medium">End Date *</label>
-                      <div className="relative">
-                        <input type="date" className="rounded-lg w-full px-4 py-3 sm:py-4 border border-neutral-300 bg-white text-neutral-900 text-base focus:outline-none focus:border-neutral-900 min-h-[44px]" />
-                        <FaCalendar className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
-                      </div>
-                    </div>
-                  </div>
-                  <div className="min-w-0">
-                    <label className="block text-neutral-900 text-sm mb-2 sm:mb-3 font-medium">Shooting Location</label>
-                    <input
-                      type="text"
-                      placeholder="e.g., Mumbai, Maharashtra"
-                      className="rounded-lg w-full min-w-0 px-3 sm:px-4 py-3 sm:py-4 border border-neutral-300 bg-white text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-neutral-900 text-base"
-                    />
-                  </div>
+      <div className="flex-1 flex min-h-0 overflow-hidden">
+        <DashboardSidebar links={navLinks} />
+
+        {/* Main */}
+        <main className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
+          <div className="flex-1 min-h-0 overflow-auto">
+            <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-5">
+
+              <Link to="/dashboard/projects" className="inline-flex items-center gap-2 text-neutral-500 hover:text-[#3678F1] mb-5 text-sm transition-colors">
+                <FaArrowLeft className="w-3.5 h-3.5" /> Back to Projects
+              </Link>
+
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-11 h-11 rounded-2xl bg-[#3678F1] flex items-center justify-center shrink-0">
+                  <FaFolderPlus className="text-white text-lg" />
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold text-neutral-900">Create New Project</h1>
+                  <p className="text-sm text-neutral-500 mt-0.5">Set up your project to start hiring crew and vendors</p>
                 </div>
               </div>
 
-              <div className="rounded-lg bg-white border border-neutral-200 p-4 sm:p-6 md:p-8 lg:p-10 min-w-0">
-                <h2 className="text-lg sm:text-xl text-neutral-900 mb-4 sm:mb-6 md:mb-8 flex items-center gap-2 sm:gap-3 font-bold flex-wrap">
-                  <FaUsers className="text-neutral-600 shrink-0" /> Required Roles
-                </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
-                  {roles.map((r) => (
-                    <label key={r.title} className="rounded-lg flex items-center gap-2 sm:gap-3 p-3 sm:p-4 border border-neutral-300 hover:border-neutral-900 hover:bg-neutral-50 cursor-pointer min-w-0">
-                      <input type="checkbox" className="w-5 h-5 border border-neutral-300 rounded shrink-0" />
-                      <div className="min-w-0">
-                        <div className="text-neutral-900 font-medium text-sm sm:text-base truncate">{r.title}</div>
-                        <div className="text-xs text-neutral-500 truncate">{r.sub}</div>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+                {/* Left: form */}
+                <div className="lg:col-span-2 space-y-4">
+                  {/* Project Info */}
+                  <div className="rounded-2xl bg-white border border-neutral-200 p-5">
+                    <h2 className="text-sm font-bold text-neutral-900 mb-4 flex items-center gap-2">
+                      <FaCircleInfo className="text-[#3678F1]" /> Project Information
+                    </h2>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-neutral-700 text-xs mb-1.5 font-semibold">Project Name <span className="text-[#F40F02]">*</span></label>
+                        <input type="text" placeholder="e.g., Summer Commercial Campaign 2025" className="rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all" />
                       </div>
-                    </label>
-                  ))}
-                </div>
-                <button type="button" className="text-neutral-900 text-sm hover:underline flex items-center gap-2">
-                  <FaPlus /> Add Custom Role
-                </button>
-              </div>
-
-<div className="rounded-lg bg-white border border-neutral-200 p-4 sm:p-6 md:p-8 lg:p-10 min-w-0">
-                <h2 className="text-lg sm:text-xl text-neutral-900 mb-4 sm:mb-6 md:mb-8 flex items-center gap-2 sm:gap-3 font-bold flex-wrap">
-                  <FaIndianRupeeSign className="text-neutral-600 shrink-0" /> Budget Information
-                </h2>
-                <div className="mb-4 sm:mb-6">
-                  <label className="block text-neutral-900 text-sm mb-2 sm:mb-3 font-medium">Total Project Budget *</label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                    <div className="relative min-w-0">
-                      <span className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-neutral-500">₹</span>
-                      <input type="number" placeholder="Min Budget" className="rounded-lg w-full min-w-0 pl-8 sm:pl-10 pr-3 sm:pr-4 py-3 sm:py-4 border border-neutral-300 bg-white text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-neutral-900 text-base" />
-                    </div>
-                    <div className="relative min-w-0">
-                      <span className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-neutral-500">₹</span>
-                      <input type="number" placeholder="Max Budget" className="rounded-lg w-full min-w-0 pl-8 sm:pl-10 pr-3 sm:pr-4 py-3 sm:py-4 border border-neutral-300 bg-white text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-neutral-900 text-base" />
+                      <div>
+                        <label className="block text-neutral-700 text-xs mb-1.5 font-semibold">Project Description</label>
+                        <textarea rows={3} placeholder="Brief description of the project, locations, and requirements..." className="rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all resize-none" />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-neutral-700 text-xs mb-1.5 font-semibold">Start Date <span className="text-[#F40F02]">*</span></label>
+                          <div className="relative">
+                            <input type="date" className="rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all" />
+                            <FaCalendar className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 text-xs pointer-events-none" />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-neutral-700 text-xs mb-1.5 font-semibold">End Date <span className="text-[#F40F02]">*</span></label>
+                          <div className="relative">
+                            <input type="date" className="rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all" />
+                            <FaCalendar className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 text-xs pointer-events-none" />
+                          </div>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-neutral-700 text-xs mb-1.5 font-semibold">Shooting Location</label>
+                        <input type="text" placeholder="e.g., Mumbai, Maharashtra" className="rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all" />
+                      </div>
                     </div>
                   </div>
-                  <p className="text-xs text-neutral-500 mt-2 flex items-center gap-1">
-                    <FaCircleInfo /> Budget helps us match you with appropriate crew members
-                  </p>
-                </div>
-                <div className="rounded-lg bg-neutral-50 border border-neutral-200 p-4 sm:p-6 min-w-0">
-                  <div className="flex items-start gap-2 sm:gap-3 min-w-0">
-                    <FaLightbulb className="text-neutral-600 text-lg mt-1 shrink-0" />
+
+                  {/* Required Roles */}
+                  <div className="rounded-2xl bg-white border border-neutral-200 p-5">
+                    <h2 className="text-sm font-bold text-neutral-900 mb-4 flex items-center gap-2">
+                      <FaUsers className="text-[#3678F1]" /> Required Roles
+                    </h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
+                      {roles.map((r) => {
+                        const checked = selectedRoles.includes(r.title);
+                        return (
+                          <label
+                            key={r.title}
+                            className={`rounded-xl flex items-center gap-3 p-3 border cursor-pointer transition-all ${
+                              checked
+                                ? 'border-[#3678F1] bg-[#EEF4FF]'
+                                : 'border-neutral-200 bg-[#FAFAFA] hover:border-neutral-300'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={() => toggleRole(r.title)}
+                              className="w-4 h-4 rounded border-neutral-300 accent-[#3678F1] shrink-0"
+                            />
+                            <div className="min-w-0">
+                              <p className={`text-xs font-semibold truncate ${checked ? 'text-[#3678F1]' : 'text-neutral-900'}`}>{r.title}</p>
+                              <p className="text-[11px] text-neutral-400 truncate">{r.sub}</p>
+                            </div>
+                          </label>
+                        );
+                      })}
+                    </div>
+                    <button type="button" className="text-[#3678F1] text-xs hover:underline flex items-center gap-1.5 font-medium">
+                      <FaPlus className="w-2.5 h-2.5" /> Add Custom Role
+                    </button>
+                  </div>
+
+                  {/* Budget */}
+                  <div className="rounded-2xl bg-white border border-neutral-200 p-5">
+                    <h2 className="text-sm font-bold text-neutral-900 mb-4 flex items-center gap-2">
+                      <FaIndianRupeeSign className="text-[#3678F1]" /> Budget Information
+                    </h2>
                     <div>
-                      <h3 className="text-neutral-900 text-sm font-bold mb-2">Budget Allocation Tips</h3>
-                      <ul className="text-xs text-neutral-600 space-y-1">
-                        <li>• Allocate 30-40% for crew salaries</li>
-                        <li>• Reserve 20-30% for equipment rentals</li>
-                        <li>• Keep 15-20% for post-production</li>
-                        <li>• Maintain 10-15% buffer for contingencies</li>
+                      <label className="block text-neutral-700 text-xs mb-1.5 font-semibold">Total Project Budget <span className="text-[#F40F02]">*</span></label>
+                      <div className="grid grid-cols-2 gap-3 mb-3">
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-sm">₹</span>
+                          <input type="number" placeholder="Min Budget" className="rounded-xl w-full pl-7 pr-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all" />
+                        </div>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-sm">₹</span>
+                          <input type="number" placeholder="Max Budget" className="rounded-xl w-full pl-7 pr-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all" />
+                        </div>
+                      </div>
+                      <div className="rounded-xl bg-[#EEF4FF] border border-[#BFDBFE] p-3">
+                        <div className="flex items-start gap-2">
+                          <FaLightbulb className="text-[#3678F1] text-sm mt-0.5 shrink-0" />
+                          <div className="text-xs text-[#1D4ED8] space-y-0.5">
+                            <p className="font-semibold">Budget Tips</p>
+                            <p>30–40% crew · 20–30% equipment · 15% post-production · 10–15% buffer</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right: summary */}
+                <div>
+                  <div className="rounded-2xl bg-white border border-neutral-200 p-5 lg:sticky lg:top-5">
+                    <h3 className="text-sm font-bold text-neutral-900 mb-4 flex items-center gap-2">
+                      <FaClipboardCheck className="text-[#3678F1]" /> Project Summary
+                    </h3>
+                    <div className="space-y-3 mb-5">
+                      {[
+                        { label: 'Project Name', value: 'Not set' },
+                        { label: 'Duration', value: 'Not set' },
+                        { label: 'Roles', value: selectedRoles.length ? `${selectedRoles.length} selected` : '0 selected' },
+                        { label: 'Budget', value: 'Not set' },
+                      ].map(({ label, value }) => (
+                        <div key={label} className="flex justify-between gap-2">
+                          <span className="text-xs text-neutral-400">{label}</span>
+                          <span className={`text-xs font-semibold ${value === 'Not set' || value === '0 selected' ? 'text-neutral-400' : 'text-neutral-900'}`}>{value}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="border-t border-neutral-100 pt-4 mb-4">
+                      <p className="text-xs font-bold text-neutral-700 mb-3">Next Steps</p>
+                      <ul className="space-y-2">
+                        {['Search & filter crew members', 'Send booking requests', 'Lock confirmed team'].map((step) => (
+                          <li key={step} className="flex items-center gap-2">
+                            <div className="w-1.5 h-1.5 rounded-full bg-[#3678F1] shrink-0" />
+                            <span className="text-xs text-neutral-500">{step}</span>
+                          </li>
+                        ))}
                       </ul>
                     </div>
-                  </div>
-                </div>
-              </div>
-            </div>
 
-            <div className="lg:col-span-1 min-w-0 order-2 lg:order-2 overflow-hidden">
-              <div className="rounded-lg bg-white border border-neutral-200 p-4 sm:p-6 md:p-8 lg:sticky lg:top-8 min-w-0">
-                <h3 className="text-base sm:text-lg text-neutral-900 mb-4 sm:mb-6 flex items-center gap-2 font-bold flex-wrap">
-                  <FaClipboardCheck /> Project Summary
-                </h3>
-                <div className="space-y-6 mb-8">
-                  <div>
-                    <div className="text-xs text-neutral-500 mb-1">Project Name</div>
-                    <div className="text-neutral-900">Not set</div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-neutral-500 mb-1">Duration</div>
-                    <div className="text-neutral-900">Not set</div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-neutral-500 mb-1">Roles Required</div>
-                    <div className="text-neutral-900">0 selected</div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-neutral-500 mb-1">Budget Range</div>
-                    <div className="text-neutral-900">Not set</div>
-                  </div>
-                </div>
-                <div className="border-t border-neutral-200 pt-6 mb-6">
-                  <h4 className="text-sm text-neutral-900 font-bold mb-4">Next Steps</h4>
-                  <ul className="space-y-3 text-sm text-neutral-600">
-                    <li className="flex items-start gap-2">
-                      <FaCircleInfo className="text-[6px] mt-2 shrink-0" />
-                      <span>Search and filter crew members</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <FaCircleInfo className="text-[6px] mt-2 shrink-0" />
-                      <span>Send booking requests</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <FaCircleInfo className="text-[6px] mt-2 shrink-0" />
-                      <span>Finalize team and lock project</span>
-                    </li>
-                  </ul>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    alert('Project created successfully!');
-                    // In real app, this would submit form data to API
-                  }}
-                  className="rounded-lg w-full py-3.5 sm:py-4 bg-neutral-900 text-white hover:bg-neutral-700 mb-3 font-medium flex items-center justify-center gap-2 min-h-[44px] text-base sm:text-lg"
-                >
-                  <FaClipboardCheck /> Create Project
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    alert('Project saved as draft!');
-                  }}
-                  className="rounded-lg w-full py-3.5 sm:py-4 border border-neutral-300 text-neutral-900 hover:border-neutral-900 hover:bg-neutral-50 min-h-[44px]"
-                >
-                  Save as Draft
-                </button>
-                <div className="rounded-lg bg-neutral-50 border border-neutral-200 p-4 sm:p-6 mt-4 sm:mt-6 min-w-0">
-                  <div className="flex items-start gap-2 sm:gap-3 min-w-0">
-                    <FaCircleQuestion className="text-neutral-600 text-lg shrink-0" />
-                    <div>
-                      <h4 className="text-sm text-neutral-900 font-bold mb-2">Need Help?</h4>
-                      <p className="text-xs text-neutral-600 mb-3">Our team is here to assist you with project setup</p>
-                      <button type="button" className="text-xs text-neutral-900 hover:underline">Contact Support</button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => alert('Project created successfully!')}
+                      className="rounded-xl w-full py-3 bg-[#3678F1] text-white font-semibold text-sm hover:bg-[#2563d4] mb-2 flex items-center justify-center gap-2 transition-colors shadow-sm"
+                    >
+                      <FaClipboardCheck /> Create Project
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => alert('Saved as draft!')}
+                      className="rounded-xl w-full py-2.5 border border-neutral-300 text-neutral-700 text-sm font-medium hover:bg-neutral-50 transition-colors"
+                    >
+                      Save as Draft
+                    </button>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
+          <AppFooter />
+        </main>
       </div>
-      <AppFooter />
     </div>
   );
 }

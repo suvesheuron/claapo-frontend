@@ -1,238 +1,244 @@
 import { Link } from 'react-router-dom';
-import { useEffect } from 'react';
-import { FaVideo, FaCalendar, FaUsers, FaTruck, FaCircleCheck, FaLock } from 'react-icons/fa6';
-import { FaSearch } from 'react-icons/fa';
+import { useEffect, useRef, useState } from 'react';
+import {
+  FaVideo, FaCalendar, FaUsers, FaTruck, FaCircleCheck, FaLock,
+  FaArrowRight, FaMagnifyingGlass, FaCalendarCheck, FaChevronDown,
+} from 'react-icons/fa6';
 import AppHeader from '../components/AppHeader';
+import AppFooter from '../components/AppFooter';
+
+const howItWorks = [
+  { step: '01', icon: FaMagnifyingGlass, title: 'Search & Discover', description: 'Browse verified crew and vendors filtered by skill, location and availability.', bg: 'bg-[#EEF4FF]', ic: 'text-[#3678F1]' },
+  { step: '02', icon: FaCalendarCheck,   title: 'Book via Calendar',  description: 'Check real-time availability, send requests and get confirmations instantly.',   bg: 'bg-[#DCFCE7]', ic: 'text-[#15803D]' },
+  { step: '03', icon: FaLock,            title: 'Lock & Manage',      description: 'Lock your confirmed team, track bookings and manage invoices in one place.',     bg: 'bg-[#FEF9E6]', ic: 'text-[#92400E]' },
+];
+
+const features = [
+  { icon: FaCalendar, title: 'Calendar-First',    description: 'Crew & vendor availability on one shared calendar.',   bg: 'bg-[#EEF4FF]', ic: 'text-[#3678F1]' },
+  { icon: FaUsers,    title: 'Structured Hiring', description: 'Search, filter, chat, hire — no more WhatsApp chaos.',  bg: 'bg-[#DCFCE7]', ic: 'text-[#15803D]' },
+  { icon: FaLock,     title: 'Lock & Confirm',    description: 'Once your team is set, lock it. No double-bookings.',   bg: 'bg-[#FEF9E6]', ic: 'text-[#92400E]' },
+  { icon: FaVideo,    title: 'Project History',   description: 'View completed bookings by navigating past months.',     bg: 'bg-[#F3E8FF]', ic: 'text-[#7C3AED]' },
+];
+
+const userTypes = [
+  { icon: FaUsers, title: 'Production Companies', description: 'Search, book and manage crew & vendors across all your projects.',   checks: ['Filter by skill & availability', 'Manage project calendars', 'Lock confirmed bookings'],   bg: 'bg-[#EEF4FF]', ic: 'text-[#3678F1]', cta: 'Register as Company',    to: '/register/company' },
+  { icon: FaVideo, title: 'Freelancers',           description: 'Showcase your reel and let productions find and hire you.',          checks: ['Manage your availability calendar', 'Accept booking requests', 'Track history & invoices'],  bg: 'bg-[#F3E8FF]', ic: 'text-[#7C3AED]', cta: 'Register as Individual', to: '/register/individual' },
+  { icon: FaTruck, title: 'Vendors',               description: 'List equipment and get discovered by active productions.',           checks: ['List equipment with rates',         'Accept rental requests',    'Track bookings & payments'], bg: 'bg-[#FEF9E6]', ic: 'text-[#92400E]', cta: 'Register as Vendor',     to: '/register/vendor' },
+];
+
+const stats = [
+  { value: '500+',   label: 'Verified Crew' },
+  { value: '200+',   label: 'Equipment Vendors' },
+  { value: '1,000+', label: 'Projects Managed' },
+  { value: '100%',   label: 'GST Verified' },
+];
+
+function useInView(threshold = 0.15) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setVisible(true); }, { threshold });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [threshold]);
+  return { ref, visible };
+}
+
+function SectionLabel({ text, color }: { text: string; color: string }) {
+  return (
+    <span className={`inline-block text-[11px] font-bold px-3 py-1 rounded-full mb-3 border ${color}`}>
+      {text}
+    </span>
+  );
+}
 
 export default function LandingPage() {
-  useEffect(() => {
-    document.title = 'CrewCall – Hire Film Crews & Vendors with Confidence';
-  }, []);
+  useEffect(() => { document.title = 'CrewCall – Hire Film Crews & Vendors'; }, []);
 
-  const features = [
-    {
-      icon: FaCalendar,
-      title: 'Centralized Calendar',
-      description: 'Real-time visibility into crew and vendor availability',
-    },
-    {
-      icon: FaUsers,
-      title: 'Structured Hiring',
-      description: 'Systematic workflow for searching, filtering, and hiring',
-    },
-    {
-      icon: FaLock,
-      title: 'Lock & Manage',
-      description: 'Secure bookings and track your production team',
-    },
-    {
-      icon: FaSearch,
-      title: 'Past Work Tracking',
-      description: 'Complete project history with chats and invoices',
-    },
-  ];
+  const s1 = useInView(0.1);
+  const s2 = useInView();
+  const s3 = useInView();
+  const s4 = useInView();
+  const s5 = useInView();
 
   return (
-    <div className="min-h-screen flex flex-col bg-white min-w-0 w-full">
-      {/* Fixed-height header */}
-      <div className="shrink-0">
-        <AppHeader variant="landing" />
-      </div>
+    <div className="flex flex-col w-full bg-white">
+      <AppHeader variant="landing" />
 
-      {/* Main: Hero Section */}
-      <main className="flex-1 flex flex-col min-h-0">
-        {/* Hero Section */}
-        <section className="bg-gradient-to-br from-neutral-50 via-white to-neutral-50 py-16 sm:py-20 md:py-24 lg:py-32">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12">
-            <div className="text-center max-w-5xl mx-auto space-y-6 sm:space-y-8">
-              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight text-balance bg-gradient-to-r from-neutral-900 via-neutral-700 to-neutral-500 bg-clip-text text-transparent">
-                Reimagining How Advertising Productions Hire & Manage Crews
-              </h1>
-              <p className="text-lg sm:text-xl md:text-2xl text-neutral-600 leading-relaxed text-balance max-w-3xl mx-auto">
-                CrewCall connects production companies with verified freelance crew members and equipment vendors. 
-                Streamline your hiring, manage availability, and lock your team in one centralized platform.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4">
-                <Link
-                  to="/dashboard"
-                  className="inline-flex justify-center items-center rounded-lg bg-neutral-900 text-white px-8 py-4 font-semibold hover:bg-neutral-800 transition-all text-base sm:text-lg w-full sm:w-auto min-h-[52px] shadow-lg hover:shadow-xl hover:scale-105"
-                >
-                  Get Started
-                </Link>
-                <Link
-                  to="/register"
-                  className="inline-flex justify-center items-center rounded-lg border-2 border-neutral-900 text-neutral-900 px-8 py-4 font-semibold hover:bg-neutral-50 transition-all text-base sm:text-lg w-full sm:w-auto min-h-[52px] hover:scale-105"
-                >
-                  Join as Crew or Vendor
-                </Link>
-              </div>
-            </div>
+      {/* ── HERO ──────────────────────────────────────── */}
+      <section ref={s1.ref} className="relative bg-white overflow-hidden py-16 sm:py-20">
+        <div className="absolute -top-16 -right-16 w-72 h-72 bg-[#EEF4FF] rounded-full blur-3xl opacity-70 pointer-events-none" />
+        <div className="absolute -bottom-12 -left-12 w-56 h-56 bg-[#FEF9E6] rounded-full blur-3xl opacity-60 pointer-events-none" />
+
+        <div className={`max-w-3xl mx-auto px-5 text-center relative z-10 transition-all duration-700 ${s1.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`}>
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#EEF4FF] text-[#3678F1] text-xs font-semibold mb-6 border border-[#BFDBFE]">
+            <FaCalendar className="w-3 h-3" />
+            Streamline hiring — crews, vendors &amp; projects in one place
           </div>
-        </section>
 
-        {/* Features Section */}
-        <section className="py-16 sm:py-20 md:py-24 lg:py-28 bg-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12">
-            <div className="text-center mb-12 sm:mb-16 md:mb-20 space-y-4">
-              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold leading-tight text-balance bg-gradient-to-r from-neutral-900 to-neutral-600 bg-clip-text text-transparent">
-                Everything You Need to Manage Productions
-              </h2>
-              <p className="text-lg sm:text-xl text-neutral-600 text-balance max-w-2xl mx-auto">
-                Three core pillars that revolutionize crew hiring and management
-              </p>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
-              {features.map((feature, index) => (
-                <div
-                  key={index}
-                  className="bg-gradient-to-br from-neutral-50 to-white rounded-xl p-8 sm:p-10 hover:shadow-xl transition-all border border-neutral-200 hover:border-neutral-300 hover:-translate-y-1"
-                >
-                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-gradient-to-br from-neutral-900 to-neutral-700 flex items-center justify-center mb-6 shadow-lg">
-                    <feature.icon className="text-white text-2xl sm:text-3xl" />
-                  </div>
-                  <h3 className="text-xl sm:text-2xl font-bold leading-tight text-neutral-900 mb-3">
-                    {feature.title}
-                  </h3>
-                  <p className="text-base sm:text-lg text-neutral-600 leading-relaxed">
-                    {feature.description}
-                  </p>
-                </div>
-              ))}
-            </div>
+          <h1 className="text-[32px] sm:text-[42px] font-bold text-neutral-900 leading-snug mb-4 tracking-tight">
+            The Production Platform
+            <br />
+            <span className="text-[#3678F1] relative inline-block">
+              Built for Film
+              <svg className="absolute -bottom-1 left-0 w-full" viewBox="0 0 300 6" fill="none">
+                <path d="M2 4C60 1 150 1 298 3" stroke="#F4C430" strokeWidth="2.5" strokeLinecap="round"/>
+              </svg>
+            </span>
+            {' '}&amp; Advertising
+          </h1>
+
+          <p className="text-sm text-neutral-500 leading-relaxed mb-7 max-w-xl mx-auto">
+            Replace messy WhatsApp groups and spreadsheets with a structured, calendar-first platform for hiring crew, booking vendors, and managing productions end-to-end.
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-3 justify-center mb-10">
+            <Link to="/dashboard" className="inline-flex justify-center items-center gap-2 rounded-xl bg-[#3678F1] text-white px-6 py-3 text-sm font-bold hover:bg-[#2563d4] transition-all shadow-md shadow-[#3678F1]/20 hover:-translate-y-0.5">
+              View Dashboard <FaArrowRight className="w-3 h-3" />
+            </Link>
+            <Link to="/register" className="inline-flex justify-center items-center rounded-xl border-2 border-neutral-200 text-neutral-700 px-6 py-3 text-sm font-bold hover:border-[#3678F1] hover:text-[#3678F1] transition-all">
+              Get Started Free
+            </Link>
           </div>
-        </section>
 
-        {/* User Types Section */}
-        <section className="py-16 sm:py-20 md:py-24 lg:py-28 bg-gradient-to-b from-neutral-50 to-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12">
-            <div className="text-center mb-12 sm:mb-16 md:mb-20 space-y-4">
-              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold leading-tight text-balance bg-gradient-to-r from-neutral-900 to-neutral-600 bg-clip-text text-transparent">
-                Built for Everyone in Production
-              </h2>
-              <p className="text-lg sm:text-xl text-neutral-600 text-balance max-w-2xl mx-auto">
-                Whether you're hiring, getting hired, or providing equipment
-              </p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-10">
-              <div className="bg-white rounded-xl p-8 sm:p-10 border border-neutral-200 hover:shadow-xl transition-all hover:-translate-y-1">
-                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-gradient-to-br from-blue-100 to-blue-50 flex items-center justify-center mb-6 shadow-md">
-                  <FaUsers className="text-blue-600 text-2xl sm:text-3xl" />
-                </div>
-                <h3 className="text-2xl sm:text-3xl font-bold leading-tight text-neutral-900 mb-4">
-                  Production Companies
-                </h3>
-                <p className="text-base sm:text-lg text-neutral-600 mb-6 leading-relaxed">
-                  Search, filter, chat, and hire verified crew members and vendors. Manage projects with centralized calendars and track all bookings.
-                </p>
-                <ul className="space-y-3 text-base sm:text-lg text-neutral-600">
-                  <li className="flex items-start gap-2">
-                    <FaCircleCheck className="text-green-600 mt-1 shrink-0" />
-                    <span>Search & filter by location, skill, availability</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <FaCircleCheck className="text-green-600 mt-1 shrink-0" />
-                    <span>View budgets and rates</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <FaCircleCheck className="text-green-600 mt-1 shrink-0" />
-                    <span>Lock and manage crew bookings</span>
-                  </li>
-                </ul>
+          <div className="flex flex-wrap items-center justify-center gap-8 sm:gap-12 pt-6 border-t border-neutral-100">
+            {stats.map(({ value, label }) => (
+              <div key={label} className="text-center">
+                <p className="text-xl font-bold text-neutral-900">{value}</p>
+                <p className="text-xs text-neutral-400 mt-0.5">{label}</p>
               </div>
-
-              <div className="bg-white rounded-xl p-8 sm:p-10 border border-neutral-200 hover:shadow-xl transition-all hover:-translate-y-1">
-                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-gradient-to-br from-purple-100 to-purple-50 flex items-center justify-center mb-6 shadow-md">
-                  <FaVideo className="text-purple-600 text-2xl sm:text-3xl" />
-                </div>
-                <h3 className="text-2xl sm:text-3xl font-bold leading-tight text-neutral-900 mb-4">
-                  Individual Freelancers
-                </h3>
-                <p className="text-base sm:text-lg text-neutral-600 mb-6 leading-relaxed">
-                  Directors, DOPs, ADs, Costume designers, and more. Showcase your work, manage availability, and get hired.
-                </p>
-                <ul className="space-y-3 text-base sm:text-lg text-neutral-600">
-                  <li className="flex items-start gap-2">
-                    <FaCircleCheck className="text-green-600 mt-1 shrink-0" />
-                    <span>Upload showreels and past work</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <FaCircleCheck className="text-green-600 mt-1 shrink-0" />
-                    <span>Manage availability calendar</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <FaCircleCheck className="text-green-600 mt-1 shrink-0" />
-                    <span>Receive booking requests</span>
-                  </li>
-                </ul>
-              </div>
-
-              <div className="bg-white rounded-xl p-8 sm:p-10 border border-neutral-200 hover:shadow-xl transition-all hover:-translate-y-1">
-                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-gradient-to-br from-orange-100 to-orange-50 flex items-center justify-center mb-6 shadow-md">
-                  <FaTruck className="text-orange-600 text-2xl sm:text-3xl" />
-                </div>
-                <h3 className="text-2xl sm:text-3xl font-bold leading-tight text-neutral-900 mb-4">
-                  Vendors
-                </h3>
-                <p className="text-base sm:text-lg text-neutral-600 mb-6 leading-relaxed">
-                  Equipment, Lighting, Transport, and Catering providers. List your services and manage bookings.
-                </p>
-                <ul className="space-y-3 text-base sm:text-lg text-neutral-600">
-                  <li className="flex items-start gap-2">
-                    <FaCircleCheck className="text-green-600 mt-1 shrink-0" />
-                    <span>List equipment and services</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <FaCircleCheck className="text-green-600 mt-1 shrink-0" />
-                    <span>Set availability and rates</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <FaCircleCheck className="text-green-600 mt-1 shrink-0" />
-                    <span>Manage booking requests</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* CTA Section */}
-        <section className="py-16 sm:py-20 md:py-24 lg:py-28 bg-gradient-to-br from-neutral-900 via-neutral-800 to-neutral-900 text-white">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 md:px-8 text-center space-y-8">
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold leading-tight text-balance">
-              Ready to Transform Your Production Hiring?
-            </h2>
-            <p className="text-lg sm:text-xl text-neutral-300 text-balance max-w-2xl mx-auto leading-relaxed">
-              Join CrewCall today and experience the future of crew management
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-              <Link
-                to="/register"
-                className="inline-flex justify-center items-center rounded-lg bg-white text-neutral-900 px-8 py-4 font-semibold hover:bg-neutral-100 transition-all text-base sm:text-lg w-full sm:w-auto min-h-[52px] shadow-lg hover:shadow-xl hover:scale-105"
-              >
-                Create Account
-              </Link>
-              <Link
-                to="/dashboard"
-                className="inline-flex justify-center items-center rounded-lg border-2 border-white text-white px-8 py-4 font-semibold hover:bg-white/10 transition-all text-base sm:text-lg w-full sm:w-auto min-h-[52px] hover:scale-105"
-              >
-                View Dashboard
-              </Link>
-            </div>
-          </div>
-        </section>
-      </main>
-
-      {/* Minimal footer strip - NO LOGIN/REGISTER BUTTONS */}
-      <footer className="shrink-0 border-t border-neutral-200 py-4 sm:py-6 px-4 bg-white">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-center gap-2 text-center min-w-0">
-          <div className="flex items-center justify-center gap-2">
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-neutral-800 flex items-center justify-center shrink-0">
-              <FaVideo className="text-white text-sm" />
-            </div>
-            <span className="text-neutral-500 text-xs sm:text-sm">© 2025 CrewCall. All rights reserved.</span>
+            ))}
           </div>
         </div>
-      </footer>
+
+        {/* Scroll hint */}
+        <div className="flex flex-col items-center gap-1 mt-8 animate-bounce">
+          <p className="text-[11px] text-neutral-400 tracking-wide">Scroll to explore</p>
+          <FaChevronDown className="text-neutral-300 text-sm" />
+        </div>
+      </section>
+
+      {/* ── HOW IT WORKS ──────────────────────────────── */}
+      <section ref={s2.ref} className="bg-[#F3F4F6] py-12 sm:py-16">
+        <div className="max-w-5xl mx-auto px-5">
+          <div className={`text-center mb-8 transition-all duration-700 ${s2.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`}>
+            <SectionLabel text="HOW IT WORKS" color="text-[#3678F1] bg-[#EEF4FF] border-[#BFDBFE]" />
+            <h2 className="text-xl sm:text-2xl font-bold text-neutral-900 mb-1.5">From discovery to locked bookings</h2>
+            <p className="text-xs text-neutral-500">Three steps — no spreadsheets required</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {howItWorks.map((step, idx) => (
+              <div
+                key={step.title}
+                className={`rounded-2xl bg-white border border-neutral-200 p-5 hover:shadow-md hover:-translate-y-0.5 transition-all duration-500 ${s2.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`}
+                style={{ transitionDelay: `${idx * 120}ms` }}
+              >
+                <div className="flex items-center gap-3 mb-3">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${step.bg}`}>
+                    <step.icon className={`text-sm ${step.ic}`} />
+                  </div>
+                  <span className="text-2xl font-black text-neutral-100">{step.step}</span>
+                </div>
+                <h3 className="text-sm font-bold text-neutral-900 mb-1">{step.title}</h3>
+                <p className="text-xs text-neutral-500 leading-relaxed">{step.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── CAPABILITIES ──────────────────────────────── */}
+      <section ref={s3.ref} className="bg-white py-12 sm:py-16">
+        <div className="max-w-5xl mx-auto px-5">
+          <div className={`text-center mb-8 transition-all duration-700 ${s3.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`}>
+            <SectionLabel text="CAPABILITIES" color="text-[#15803D] bg-[#DCFCE7] border-[#86EFAC]" />
+            <h2 className="text-xl sm:text-2xl font-bold text-neutral-900 mb-1.5">Everything you need to run a production</h2>
+            <p className="text-xs text-neutral-500">Four capabilities that streamline every stage of your workflow</p>
+          </div>
+
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {features.map((feature, idx) => (
+              <div
+                key={feature.title}
+                className={`rounded-2xl bg-[#F3F4F6] border border-neutral-200 p-5 hover:bg-white hover:shadow-md hover:-translate-y-1 transition-all duration-500 ${s3.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`}
+                style={{ transitionDelay: `${idx * 100}ms` }}
+              >
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${feature.bg}`}>
+                  <feature.icon className={`text-sm ${feature.ic}`} />
+                </div>
+                <h3 className="text-sm font-bold text-neutral-900 mb-1">{feature.title}</h3>
+                <p className="text-xs text-neutral-500 leading-relaxed">{feature.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── WHO IS IT FOR ─────────────────────────────── */}
+      <section ref={s4.ref} className="bg-[#F3F4F6] py-12 sm:py-16">
+        <div className="max-w-5xl mx-auto px-5">
+          <div className={`text-center mb-8 transition-all duration-700 ${s4.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`}>
+            <SectionLabel text="WHO IS IT FOR" color="text-[#7C3AED] bg-[#F3E8FF] border-[#DDD6FE]" />
+            <h2 className="text-xl sm:text-2xl font-bold text-neutral-900 mb-1.5">Built for everyone in production</h2>
+            <p className="text-xs text-neutral-500">Whether you're hiring, getting hired, or providing equipment</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {userTypes.map((type, idx) => (
+              <div
+                key={type.title}
+                className={`rounded-2xl bg-white border border-neutral-200 p-5 hover:shadow-md transition-all duration-500 flex flex-col ${s4.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`}
+                style={{ transitionDelay: `${idx * 120}ms` }}
+              >
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${type.bg}`}>
+                  <type.icon className={`text-sm ${type.ic}`} />
+                </div>
+                <h3 className="text-sm font-bold text-neutral-900 mb-1">{type.title}</h3>
+                <p className="text-xs text-neutral-500 mb-3 leading-relaxed">{type.description}</p>
+                <ul className="space-y-1.5 mb-4 flex-1">
+                  {type.checks.map((c) => (
+                    <li key={c} className="flex items-start gap-1.5">
+                      <FaCircleCheck className="text-[#22C55E] mt-0.5 shrink-0 text-[10px]" />
+                      <span className="text-xs text-neutral-600">{c}</span>
+                    </li>
+                  ))}
+                </ul>
+                <Link to={type.to} className={`rounded-xl w-full py-2 text-xs font-bold text-center transition-all ${type.bg} ${type.ic} hover:opacity-80`}>
+                  {type.cta}
+                </Link>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── CTA ───────────────────────────────────────── */}
+      <section ref={s5.ref} className="bg-[#3678F1] py-14 sm:py-18 relative overflow-hidden">
+        <div className="absolute -top-20 -right-20 w-80 h-80 bg-white/5 rounded-full pointer-events-none" />
+        <div className="absolute -bottom-16 -left-16 w-72 h-72 bg-[#F4C430]/10 rounded-full pointer-events-none" />
+
+        <div className={`max-w-lg mx-auto px-5 text-center relative z-10 transition-all duration-700 ${s5.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`}>
+          <h2 className="text-xl sm:text-2xl font-bold text-white mb-3 leading-snug">
+            Ready to transform your production workflow?
+          </h2>
+          <p className="text-sm text-blue-100 mb-7 leading-relaxed">
+            Join CrewCall and replace scattered hiring with a structured platform built for film and advertising.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Link to="/register" className="inline-flex justify-center items-center rounded-xl bg-[#F4C430] text-neutral-900 px-7 py-3 text-sm font-bold hover:bg-[#e6b820] transition-all hover:-translate-y-0.5">
+              Create Free Account
+            </Link>
+            <Link to="/login" className="inline-flex justify-center items-center rounded-xl border-2 border-white/30 text-white px-7 py-3 text-sm font-bold hover:bg-white/10 transition-all">
+              Sign In
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      <AppFooter />
     </div>
   );
 }

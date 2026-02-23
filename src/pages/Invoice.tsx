@@ -3,7 +3,6 @@ import { Link, useParams } from 'react-router-dom';
 import { FaArrowLeft, FaDownload } from 'react-icons/fa6';
 import DashboardHeader from '../components/DashboardHeader';
 import AppFooter from '../components/AppFooter';
-import RoleIndicator from '../components/RoleIndicator';
 
 const invoiceItems = [
   { description: 'Director Services (3 days)', quantity: 3, rate: 45000, amount: 135000 },
@@ -48,16 +47,13 @@ export default function Invoice() {
                   <h1 className="text-xl sm:text-2xl md:text-3xl text-neutral-900 font-bold break-words">
                     Invoice #{invoiceId || 'INV-001'}
                   </h1>
-                  <div className="flex items-center gap-2">
-                    <RoleIndicator />
-                    <button
-                      onClick={handleDownload}
-                      className="px-4 py-2 bg-neutral-900 text-white rounded-lg hover:bg-neutral-800 text-sm font-medium flex items-center gap-2"
-                    >
-                      <FaDownload className="w-4 h-4" />
-                      Download PDF
-                    </button>
-                  </div>
+                  <button
+                    onClick={handleDownload}
+                    className="px-4 py-2 bg-[#3678F1] text-white rounded-xl hover:bg-[#2c65d4] text-sm font-semibold flex items-center gap-2 transition-colors shadow-sm shadow-[#3678F1]/20"
+                  >
+                    <FaDownload className="w-3.5 h-3.5" />
+                    Download PDF
+                  </button>
                 </div>
                 <p className="text-xs sm:text-sm text-neutral-600 break-words">
                   Commercial Shoot • Jan 8-10, 2025

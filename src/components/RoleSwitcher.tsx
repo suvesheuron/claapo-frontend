@@ -2,9 +2,9 @@ import { useRole, type UserRole } from '../contexts/RoleContext';
 import { FaUsers, FaVideo, FaTruck } from 'react-icons/fa6';
 
 const roles: { value: UserRole; label: string; icon: typeof FaUsers; description: string }[] = [
-  { value: 'company', label: 'Company', icon: FaUsers, description: 'Production Company' },
-  { value: 'individual', label: 'Individual', icon: FaVideo, description: 'Freelancer' },
-  { value: 'vendor', label: 'Vendor', icon: FaTruck, description: 'Equipment Vendor' },
+  { value: 'Company', label: 'Company', icon: FaUsers, description: 'Production Company' },
+  { value: 'Individual', label: 'Individual', icon: FaVideo, description: 'Freelancer' },
+  { value: 'Vendor', label: 'Vendor', icon: FaTruck, description: 'Equipment Vendor' },
 ];
 
 export default function RoleSwitcher() {
@@ -14,7 +14,7 @@ export default function RoleSwitcher() {
     <div className="fixed bottom-4 right-4 z-50 bg-white rounded-lg shadow-lg border border-neutral-200 p-3 max-w-xs">
       <div className="mb-2">
         <p className="text-xs font-semibold text-neutral-900 mb-1">Switch Role (Dev Mode)</p>
-        <p className="text-[10px] text-neutral-500">Change role in RoleContext.tsx for production</p>
+        <p className="text-[10px] text-neutral-500"> change roles [avoiding complex words:)]</p>
       </div>
       <div className="space-y-1">
         {roles.map((role) => {
