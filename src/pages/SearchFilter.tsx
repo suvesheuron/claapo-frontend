@@ -1,6 +1,6 @@
 import { Link, useSearchParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { FaVideo, FaTruck, FaMagnifyingGlass, FaStar, FaRegStar, FaChevronLeft, FaChevronRight, FaPlus, FaSliders, FaUsers, FaHouse, FaFolder, FaCalendar, FaUser } from 'react-icons/fa6';
+import { FaTruck, FaMagnifyingGlass, FaStar, FaRegStar, FaChevronLeft, FaChevronRight, FaPlus, FaSliders, FaHouse, FaFolder, FaCalendar, FaUser } from 'react-icons/fa6';
 import AppFooter from '../components/AppFooter';
 import Avatar from '../components/Avatar';
 import BookingRequestModal from '../components/BookingRequestModal';

@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FaPlus, FaUsers, FaTruck, FaHouse, FaFolder, FaLock, FaEye, FaCalendar, FaMagnifyingGlass, FaUser } from 'react-icons/fa6';
+import { FaPlus, FaHouse, FaFolder, FaLock, FaEye, FaCalendar, FaMagnifyingGlass, FaUser } from 'react-icons/fa6';
 import DashboardHeader from '../../components/DashboardHeader';
 import DashboardSidebar from '../../components/DashboardSidebar';
 import AppFooter from '../../components/AppFooter';
