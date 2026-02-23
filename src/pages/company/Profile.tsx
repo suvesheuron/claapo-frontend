@@ -113,7 +113,7 @@ export default function CompanyProfile() {
                             <FaPhone className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 w-3.5 h-3.5" />
                             <input
                               type="tel"
-                              defaultValue="+91 98765 43210"
+                              defaultValue="+91 98xxx xxxxx"
                               className="w-full pl-9 pr-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3678F1] focus:ring-1 focus:ring-[#3678F1]/20 transition-all"
                             />
                           </div>

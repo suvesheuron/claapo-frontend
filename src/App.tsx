@@ -6,7 +6,8 @@ const LandingPage = lazy(() => import('./pages/LandingPage'));
 const UserTypeSelect = lazy(() => import('./pages/UserTypeSelect'));
 const Login = lazy(() => import('./pages/Login'));
 const CompanyRegistration = lazy(() => import('./pages/CompanyRegistration'));
-const RegisterPlaceholder = lazy(() => import('./pages/RegisterPlaceholder'));
+const IndividualRegistration = lazy(() => import('./pages/IndividualRegistration'));
+const VendorRegistration = lazy(() => import('./pages/VendorRegistration'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const CreateProject = lazy(() => import('./pages/CreateProject'));
 const SearchFilter = lazy(() => import('./pages/SearchFilter'));
@@ -52,8 +53,8 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<UserTypeSelect />} />
           <Route path="/register/company" element={<CompanyRegistration />} />
-          <Route path="/register/individual" element={<RegisterPlaceholder />} />
-          <Route path="/register/vendor" element={<RegisterPlaceholder />} />
+          <Route path="/register/individual" element={<IndividualRegistration />} />
+          <Route path="/register/vendor" element={<VendorRegistration />} />
           <Route path="/dashboard" element={<><Dashboard /><RoleSwitcher /></>} />
           <Route path="/dashboard/projects" element={<><Projects /><RoleSwitcher /></>} />
           <Route path="/dashboard/projects/:id" element={<><ProjectDetail /><RoleSwitcher /></>} />

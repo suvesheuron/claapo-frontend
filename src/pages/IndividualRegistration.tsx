@@ -1,11 +1,11 @@
 import { Link } from 'react-router-dom';
 import { useEffect } from 'react';
-import { FaBuilding, FaShieldHalved, FaCertificate, FaHandshake, FaCircleCheck, FaLock } from 'react-icons/fa6';
+import { FaVideo, FaCircleCheck, FaCertificate, FaShieldHalved, FaHandshake, FaLock } from 'react-icons/fa6';
 import AppLayout from '../components/AppLayout';
 
-export default function CompanyRegistration() {
+export default function IndividualRegistration() {
   useEffect(() => {
-    document.title = 'Company Registration – CrewCall';
+    document.title = 'Freelancer Registration – CrewCall';
   }, []);
 
   return (
@@ -18,19 +18,19 @@ export default function CompanyRegistration() {
 
           <div className="relative z-10 flex flex-col h-full">
             <div className="w-12 h-12 rounded-xl bg-white/15 flex items-center justify-center mb-5 border border-white/20">
-              <FaBuilding className="text-white text-xl" />
+              <FaVideo className="text-white text-xl" />
             </div>
 
-            <h2 className="text-2xl font-bold mb-2 leading-tight">Register your company</h2>
+            <h2 className="text-2xl font-bold mb-2 leading-tight">Join as a freelancer</h2>
             <p className="text-sm text-blue-100 mb-8 leading-relaxed">
-              Join CrewCall to hire verified crew and vendors. Access a trusted network of production professionals.
+              Get discovered by production companies. Manage your availability, bookings, and invoices in one place.
             </p>
 
             <div className="space-y-4 flex-1">
               {[
-                { icon: FaCertificate, title: 'GST Verification', desc: 'Verified business profiles for trust and authenticity' },
-                { icon: FaShieldHalved, title: 'Secure Onboarding', desc: 'Enterprise-grade security for your business data' },
-                { icon: FaHandshake, title: 'Trusted Platform', desc: 'Thousands of production companies already on CrewCall' },
+                { icon: FaCertificate, title: 'Verified Profiles', desc: 'Build trust with verified skills and portfolio' },
+                { icon: FaShieldHalved, title: 'Secure Payments', desc: 'Get paid on time with protected transactions' },
+                { icon: FaHandshake, title: 'Direct Bookings', desc: 'Receive requests and confirm availability easily' },
               ].map(({ icon: Icon, title, desc }) => (
                 <div key={title} className="flex items-start gap-3">
                   <div className="w-9 h-9 rounded-lg bg-white/15 flex items-center justify-center shrink-0 border border-white/20">
@@ -46,46 +46,45 @@ export default function CompanyRegistration() {
 
             <div className="mt-auto pt-6 flex items-center gap-4 text-xs text-blue-100 border-t border-white/15">
               <span className="flex items-center gap-1.5">
-                <FaCircleCheck className="text-[#22C55E]" /> 24/7 Support
+                <FaCircleCheck className="text-[#22C55E]" /> Free to join
               </span>
               <span className="flex items-center gap-1.5">
-                <FaCircleCheck className="text-[#22C55E]" /> Free Setup
+                <FaCircleCheck className="text-[#22C55E]" /> No commission on first booking
               </span>
             </div>
           </div>
         </section>
 
-        {/* Right: form — compact to fit viewport without scrolling */}
-        <div className="flex-1 flex items-center justify-center bg-[#F3F4F6] p-4 sm:p-6">
-          <div className="w-full max-w-[440px]">
-            {/* Mobile header */}
+        {/* Right: form */}
+        <div className="flex-1 flex items-center justify-center bg-[#F3F4F6] p-4 sm:p-6 overflow-auto">
+          <div className="w-full max-w-[440px] py-4">
             <div className="lg:hidden text-center mb-4">
               <div className="w-10 h-10 rounded-xl bg-[#3678F1] mx-auto mb-2 flex items-center justify-center">
-                <FaBuilding className="text-white" />
+                <FaVideo className="text-white" />
               </div>
-              <h1 className="text-lg font-bold text-neutral-900">Company Registration</h1>
+              <h1 className="text-lg font-bold text-neutral-900">Freelancer Registration</h1>
             </div>
 
             <div className="rounded-2xl bg-white p-5 border border-neutral-200 shadow-sm">
               <div className="mb-4">
-                <h2 className="text-lg font-bold text-neutral-900">Create your account</h2>
-                <p className="text-xs text-neutral-500 mt-0.5">Fill in your company details to get started</p>
+                <h2 className="text-lg font-bold text-neutral-900">Create your profile</h2>
+                <p className="text-xs text-neutral-500 mt-0.5">Tell production companies about your skills and rates</p>
               </div>
 
               <form
                 className="space-y-3"
                 onSubmit={(e) => {
                   e.preventDefault();
-                  alert('Company registration submitted!');
+                  alert('Individual registration submitted!');
                 }}
               >
                 <div>
                   <label className="block text-neutral-700 text-xs mb-1 font-semibold">
-                    Company Name <span className="text-[#F40F02]">*</span>
+                    Full Name <span className="text-[#F40F02]">*</span>
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g., Production Studios Inc."
+                    placeholder="e.g., John Director"
                     required
                     className="rounded-xl w-full px-3 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all"
                   />
@@ -98,21 +97,29 @@ export default function CompanyRegistration() {
                     </label>
                     <input
                       type="tel"
-                      placeholder="+91 98765 xxxxx"
+                      placeholder="+91 98xxx xxxxx"
                       required
                       className="rounded-xl w-full px-3 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all"
                     />
                   </div>
                   <div>
                     <label className="block text-neutral-700 text-xs mb-1 font-semibold">
-                      GST
-                      <span className="ml-1 text-[9px] font-normal text-neutral-400 bg-neutral-100 px-1.5 py-0.5 rounded-full">Optional</span>
+                      Primary Role <span className="text-[#F40F02]">*</span>
                     </label>
-                    <input
-                      type="text"
-                      placeholder="27AABCU9603R1ZM"
-                      className="rounded-xl w-full px-3 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all"
-                    />
+                    <select
+                      required
+                      className="rounded-xl w-full px-3 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all"
+                    >
+                      <option value="">Select role</option>
+                      <option>Director</option>
+                      <option>DOP / Cinematographer</option>
+                      <option>Camera Operator</option>
+                      <option>Sound Engineer</option>
+                      <option>Gaffer</option>
+                      <option>Editor</option>
+                      <option>Makeup Artist</option>
+                      <option>Other</option>
+                    </select>
                   </div>
                 </div>
 
@@ -122,8 +129,36 @@ export default function CompanyRegistration() {
                   </label>
                   <input
                     type="email"
-                    placeholder="yourcompany@gmail.com"
+                    placeholder="john@example.com"
                     required
+                    className="rounded-xl w-full px-3 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-neutral-700 text-xs mb-1 font-semibold">Experience</label>
+                    <input
+                      type="text"
+                      placeholder="e.g., 8 years"
+                      className="rounded-xl w-full px-3 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-neutral-700 text-xs mb-1 font-semibold">Daily Rate (₹)</label>
+                    <input
+                      type="text"
+                      placeholder="e.g., 45,000"
+                      className="rounded-xl w-full px-3 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-neutral-700 text-xs mb-1 font-semibold">Location</label>
+                  <input
+                    type="text"
+                    placeholder="e.g., Mumbai, Maharashtra"
                     className="rounded-xl w-full px-3 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all"
                   />
                 </div>
@@ -141,11 +176,11 @@ export default function CompanyRegistration() {
                 <div className="flex items-start gap-2 pt-0.5">
                   <input
                     type="checkbox"
-                    id="terms"
+                    id="terms-ind"
                     required
                     className="w-3.5 h-3.5 mt-0.5 rounded border-neutral-300 accent-[#3678F1] cursor-pointer shrink-0"
                   />
-                  <label htmlFor="terms" className="text-xs text-neutral-500 leading-relaxed cursor-pointer">
+                  <label htmlFor="terms-ind" className="text-xs text-neutral-500 leading-relaxed cursor-pointer">
                     I agree to the{' '}
                     <Link to="#" className="text-[#3678F1] font-semibold hover:underline">Terms</Link>
                     {' '}and{' '}
@@ -157,7 +192,7 @@ export default function CompanyRegistration() {
                   type="submit"
                   className="rounded-xl w-full py-3 bg-[#3678F1] text-white text-sm font-semibold hover:bg-[#2563d4] transition-colors shadow-sm"
                 >
-                  Register Company
+                  Create Freelancer Account
                 </button>
 
                 <p className="text-center text-xs text-neutral-500">
@@ -167,7 +202,6 @@ export default function CompanyRegistration() {
               </form>
             </div>
 
-            {/* Trust badges */}
             <div className="mt-4 flex items-center justify-center gap-5">
               {[
                 { icon: FaLock, label: 'Secure' },

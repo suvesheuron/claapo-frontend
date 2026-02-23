@@ -71,7 +71,7 @@ export default function Profile() {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-neutral-700 mb-1">Phone</label>
-                        <input type="tel" defaultValue="+91 98765 43210" className="w-full px-3 py-2 border border-neutral-300 rounded-xl focus:outline-none focus:border-[#3678F1] focus:ring-1 focus:ring-[#3678F1]/20 text-sm" />
+                        <input type="tel" defaultValue="+91 98xxx xxxxx" className="w-full px-3 py-2 border border-neutral-300 rounded-xl focus:outline-none focus:border-[#3678F1] focus:ring-1 focus:ring-[#3678F1]/20 text-sm" />
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-neutral-700 mb-1">Location</label>
