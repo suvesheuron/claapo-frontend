@@ -98,7 +98,7 @@ export default function CompanyRegistration() {
                     </label>
                     <input
                       type="tel"
-                      placeholder="+91 98765 xxxxx"
+                      placeholder="+91 98xxx xxxxx"
                       required
                       className="rounded-xl w-full px-3 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all"
                     />
