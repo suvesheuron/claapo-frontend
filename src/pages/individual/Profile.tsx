@@ -14,7 +14,7 @@ const navLinks = [
 
 export default function Profile() {
   useEffect(() => {
-    document.title = 'Profile – CrewCall';
+    document.title = 'Profile – Claapo';
   }, []);
 
   return (

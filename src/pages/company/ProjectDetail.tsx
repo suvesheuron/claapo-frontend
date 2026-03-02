@@ -40,7 +40,7 @@ export default function ProjectDetail() {
   const [cancellingVendor, setCancellingVendor] = useState<number | null>(null);
 
   useEffect(() => {
-    document.title = 'Project Details – CrewCall';
+    document.title = 'Project Details – Claapo';
   }, []);
 
   const handleRemoveCrew = (id: number) => {

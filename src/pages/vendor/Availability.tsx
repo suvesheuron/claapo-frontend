@@ -88,7 +88,7 @@ const navLinks = [
 ];
 
 export default function VendorAvailability() {
-  useEffect(() => { document.title = 'Equipment Availability – CrewCall'; }, []);
+  useEffect(() => { document.title = 'Equipment Availability – Claapo'; }, []);
 
   const [monthOffset, setMonthOffset] = useState(0);
   const [panel, setPanel] = useState<PanelData | null>(null);

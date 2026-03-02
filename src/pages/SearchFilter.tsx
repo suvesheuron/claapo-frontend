@@ -49,7 +49,7 @@ export default function SearchFilter() {
   const [searchType, setSearchType] = useState<SearchType>(initType);
 
   useEffect(() => {
-    document.title = 'Find Crew & Vendors – CrewCall';
+    document.title = 'Find Crew & Vendors – Claapo';
   }, []);
 
   const results = allResults.filter((r) => searchType === 'all' || r.type === searchType);

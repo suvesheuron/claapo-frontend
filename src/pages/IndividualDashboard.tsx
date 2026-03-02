@@ -101,7 +101,7 @@ const navLinks = [
 ];
 
 export default function IndividualDashboard() {
-  useEffect(() => { document.title = 'Dashboard – CrewCall'; }, []);
+  useEffect(() => { document.title = 'Dashboard – Claapo'; }, []);
 
   const [monthOffset, setMonthOffset] = useState(0);
   const [panel, setPanel] = useState<PanelData | null>(null);
@@ -178,7 +178,7 @@ export default function IndividualDashboard() {
               <div className="grid grid-cols-3 gap-3 mb-5">
                 {[
                   { label: 'Active Bookings', value: '2', color: 'text-[#3678F1]' },
-                  { label: 'Completed', value: '12', color: 'text-neutral-900' },
+                  { label: 'Completed', value: '12', color: 'text-[#3678F1]' },
                   { label: 'This Month', value: '₹2.5L', color: 'text-[#22C55E]' },
                 ].map(({ label, value, color }) => (
                   <div key={label} className="rounded-2xl bg-white border border-neutral-200 p-4">
@@ -268,6 +268,10 @@ export default function IndividualDashboard() {
                         </div>
                       ))}
                     </div>
+
+                    <p className="mt-3 text-[11px] text-neutral-400">
+                      Navigate to past months to view your completed project history.
+                    </p>
                   </div>
                 </div>
 
@@ -300,23 +304,21 @@ export default function IndividualDashboard() {
                   <div className="rounded-2xl bg-white border border-neutral-200 p-4">
                     <h3 className="text-sm font-bold text-neutral-900 mb-3">Quick Actions</h3>
                     <div className="space-y-1.5">
-                      <Link to="/dashboard/availability" className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#EEF4FF] text-[#3678F1] text-xs font-semibold hover:bg-[#DBEAFE] transition-colors">
+                      <Link
+                        to="/dashboard/availability"
+                        className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#F3F4F6] text-neutral-700 text-xs font-semibold hover:bg-[#EEF4FF] hover:text-[#3678F1] transition-colors"
+                      >
                         <FaCalendar className="w-3 h-3" /> Manage Availability
                       </Link>
-                      <Link to="/dashboard/profile" className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#F3F4F6] text-neutral-700 text-xs font-semibold hover:bg-neutral-200 transition-colors">
+                      <Link
+                        to="/dashboard/profile"
+                        className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#F3F4F6] text-neutral-700 text-xs font-semibold hover:bg-[#EEF4FF] hover:text-[#3678F1] transition-colors"
+                      >
                         <FaUser className="w-3 h-3" /> Edit Profile
                       </Link>
                     </div>
                   </div>
 
-                  <div className="rounded-2xl bg-[#EEF4FF] border border-[#BFDBFE] p-4">
-                    <div className="flex items-start gap-2">
-                      <FaCircleInfo className="text-[#3678F1] mt-0.5 shrink-0 text-xs" />
-                      <p className="text-xs text-[#1D4ED8] leading-relaxed">
-                        Navigate to past months to view your completed project history.
-                      </p>
-                    </div>
-                  </div>
                 </div>
               </div>
 

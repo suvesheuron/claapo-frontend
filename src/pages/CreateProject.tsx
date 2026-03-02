@@ -27,7 +27,7 @@ const navLinks = [
 ];
 
 export default function CreateProject() {
-  useEffect(() => { document.title = 'Create New Project – CrewCall'; }, []);
+  useEffect(() => { document.title = 'Create New Project – Claapo'; }, []);
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
 
   const toggleRole = (title: string) => {

@@ -18,7 +18,7 @@ export default function LandingPage() {
           <div className="flex justify-between items-center h-12 sm:h-14 md:h-16 gap-2">
             <Link to="/" className="flex items-center gap-2 text-black min-w-0 shrink-0">
               <CameraIcon />
-              <span className="font-bold text-base sm:text-lg truncate">CrewCall</span>
+              <span className="font-bold text-base sm:text-lg truncate">Claapo</span>
             </Link>
 
             <nav className="hidden sm:flex items-center gap-3 md:gap-4 shrink-0">
@@ -82,7 +82,7 @@ export default function LandingPage() {
               Hire Film Crews & Vendors with Confidence
             </h1>
             <p className="text-sm sm:text-base md:text-lg text-gray-600 leading-relaxed break-words max-w-xl hidden sm:block">
-              CrewCall connects production companies with verified crew and vendors. Streamline hiring and lock your team in one platform.
+              Claapo connects production companies with verified crew and vendors. Streamline hiring and lock your team in one platform.
             </p>
             <p className="text-xs text-gray-600 leading-relaxed break-words max-w-sm sm:hidden">
               Connect with verified crew and vendors. One platform for hiring and bookings.
@@ -108,7 +108,7 @@ export default function LandingPage() {
         <footer className="shrink-0 border-t border-gray-200 py-2 sm:py-3 px-4">
           <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-2 text-center sm:text-left min-w-0">
             <p className="text-gray-500 text-xs order-2 sm:order-1">
-              © 2025 CrewCall
+              © 2025 Claapo
             </p>
             <div className="flex items-center gap-4 order-1 sm:order-2">
               <Link to="/login" className="text-gray-500 hover:text-black text-xs">

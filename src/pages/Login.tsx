@@ -5,7 +5,7 @@ import AppLayout from '../components/AppLayout';
 
 export default function Login() {
   useEffect(() => {
-    document.title = 'Welcome Back – CrewCall Login';
+    document.title = 'Welcome Back – Claapo Login';
   }, []);
 
   return (
@@ -18,7 +18,7 @@ export default function Login() {
               <FaVideo className="text-white text-lg" />
             </div>
             <h1 className="text-2xl font-bold text-neutral-900">Welcome back</h1>
-            <p className="text-sm text-neutral-500 mt-1">Sign in to your CrewCall account</p>
+            <p className="text-sm text-neutral-500 mt-1">Sign in to your Claapo account</p>
           </div>
 
           <div className="rounded-2xl bg-white border border-neutral-200 p-6 shadow-sm shadow-neutral-100">

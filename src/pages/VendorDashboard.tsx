@@ -106,7 +106,7 @@ const navLinks = [
 ];
 
 export default function VendorDashboard() {
-  useEffect(() => { document.title = 'Dashboard – CrewCall'; }, []);
+  useEffect(() => { document.title = 'Dashboard – Claapo'; }, []);
 
   const [monthOffset, setMonthOffset] = useState(0);
   const [panel, setPanel] = useState<PanelData | null>(null);
@@ -145,7 +145,7 @@ export default function VendorDashboard() {
               <div className="grid grid-cols-3 gap-3 mb-5">
                 {[
                   { label: 'Active Bookings', value: '4', color: 'text-[#3678F1]' },
-                  { label: 'Past Rentals', value: '28', color: 'text-neutral-900' },
+                  { label: 'Past Rentals', value: '28', color: 'text-[#3678F1]' },
                   { label: 'This Month', value: '₹1.2L', color: 'text-[#22C55E]' },
                 ].map(({ label, value, color }) => (
                   <div key={label} className="rounded-2xl bg-white border border-neutral-200 p-4">
@@ -162,7 +162,7 @@ export default function VendorDashboard() {
                     <div className="w-8 h-8 rounded-lg bg-[#EEF4FF] flex items-center justify-center mb-2">
                       <FaTruck className="text-[#3678F1] text-sm" />
                     </div>
-                    <h3 className="text-xs font-bold text-neutral-900 mb-0.5 line-clamp-1">{item.name}</h3>
+                    <h3 className="text-sm font-bold text-neutral-900 mb-0.5 line-clamp-1">{item.name}</h3>
                     <p className="text-[11px] text-neutral-500 mb-2">{item.rate}</p>
                     <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
                       item.status === 'available'
@@ -260,7 +260,7 @@ export default function VendorDashboard() {
                       <div className="w-6 h-6 rounded-lg bg-[#FEF9E6] flex items-center justify-center">
                         <FaBell className="text-[#F4C430] text-xs" />
                       </div>
-                      <h3 className="text-sm font-bold text-neutral-900">Requests</h3>
+                      <h3 className="text-sm font-bold text-neutral-900">Booking Requests</h3>
                       <span className="ml-auto text-xs font-bold text-white bg-[#F40F02] rounded-full w-5 h-5 flex items-center justify-center">
                         {bookingRequests.length}
                       </span>
@@ -305,7 +305,7 @@ export default function VendorDashboard() {
                         <div className="w-8 h-8 rounded-lg bg-[#EEF4FF] flex items-center justify-center shrink-0">
                           <FaTruck className="text-[#3678F1] text-xs" />
                         </div>
-                        <span className="text-[10px] text-neutral-400">{rental.date}</span>
+                        <span className="text-[10px] font-medium text-neutral-900">{rental.date}</span>
                       </div>
                       <h4 className="text-sm font-bold text-neutral-900 mb-0.5">{rental.name}</h4>
                       <p className="text-xs text-neutral-500 mb-0.5">{rental.equipment}</p>

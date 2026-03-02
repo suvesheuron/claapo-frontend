@@ -107,7 +107,7 @@ const ongoingProjects = [
 ];
 
 export default function CompanyDashboard() {
-  useEffect(() => { document.title = 'Dashboard – CrewCall'; }, []);
+  useEffect(() => { document.title = 'Dashboard – Claapo'; }, []);
 
   const [monthOffset, setMonthOffset] = useState(0);
   const [panel, setPanel] = useState<PanelData | null>(null);
@@ -147,7 +147,7 @@ export default function CompanyDashboard() {
               <div className="grid grid-cols-3 gap-3 mb-5">
                 {[
                   { label: 'Active Projects', value: '3', color: 'text-[#3678F1]' },
-                  { label: 'Crew Hired', value: '26', color: 'text-neutral-900' },
+                  { label: 'Crew Hired', value: '26', color: 'text-[#3678F1]' },
                   { label: 'This Month', value: '₹8.5L', color: 'text-[#22C55E]' },
                 ].map(({ label, value, color }) => (
                   <div key={label} className="rounded-2xl bg-white border border-neutral-200 p-4">
@@ -264,7 +264,10 @@ export default function CompanyDashboard() {
                 <div className="space-y-4 order-1 lg:order-2">
                   <div className="rounded-2xl bg-white border border-neutral-200 p-4">
                     <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-sm font-bold text-neutral-900">Ongoing Projects</h3>
+                      <h3 className="text-sm font-bold text-neutral-900 flex items-center gap-2">
+                        <FaFolder className="w-3.5 h-3.5 text-[#3678F1]" />
+                        <span>Ongoing Projects</span>
+                      </h3>
                       <Link to="/dashboard/projects" className="text-xs text-[#3678F1] hover:underline">All</Link>
                     </div>
                     <div className="space-y-2">
@@ -292,17 +295,17 @@ export default function CompanyDashboard() {
                   </div>
 
                   <div className="rounded-2xl bg-white border border-neutral-200 p-4">
-                    <h3 className="text-sm font-bold text-neutral-900 mb-3">Quick Links</h3>
+                    <h3 className="text-sm font-bold text-neutral-900 mb-3">Quick Actions</h3>
                     <div className="space-y-1.5">
                       <Link
                         to="/dashboard/search"
-                        className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#F3F4F6] text-neutral-700 text-xs font-semibold hover:bg-neutral-200 transition-colors"
+                        className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#F3F4F6] text-neutral-700 text-xs font-semibold hover:bg-[#EEF4FF] hover:text-[#3678F1] transition-colors"
                       >
                         <FaUsers className="w-3 h-3 text-neutral-500" /> Search Crew
                       </Link>
                       <Link
                         to="/dashboard/search?type=vendors"
-                        className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#F3F4F6] text-neutral-700 text-xs font-semibold hover:bg-neutral-200 transition-colors"
+                        className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#F3F4F6] text-neutral-700 text-xs font-semibold hover:bg-[#EEF4FF] hover:text-[#3678F1] transition-colors"
                       >
                         <FaTruck className="w-3 h-3 text-neutral-500" /> Search Vendors
                       </Link>

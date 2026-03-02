@@ -21,7 +21,7 @@ const initialEquipment = [
 ];
 
 export default function Equipment() {
-  useEffect(() => { document.title = 'Equipment – CrewCall'; }, []);
+  useEffect(() => { document.title = 'Equipment – Claapo'; }, []);
   const [equipment, setEquipment] = useState(initialEquipment);
 
   const toggleStatus = (id: number) => {

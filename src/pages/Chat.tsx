@@ -16,7 +16,7 @@ export default function Chat() {
   const [message, setMessage] = useState('');
 
   useEffect(() => {
-    document.title = 'Chat – CrewCall';
+    document.title = 'Chat – Claapo';
   }, []);
 
   const handleSend = (e: React.FormEvent) => {

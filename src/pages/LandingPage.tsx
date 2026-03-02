@@ -14,7 +14,7 @@ const howItWorks = [
 ];
 
 const features = [
-  { icon: FaCalendar, title: 'Calendar-First',    description: 'Crew & vendor availability on one shared calendar.',   bg: 'bg-[#EEF4FF]', ic: 'text-[#3678F1]' },
+  { icon: FaCalendar, title: 'Calendar-First',    description: 'Crew & vendor availability on one shared calendar.',   bg: 'bg-[#DBEAFE]', ic: 'text-[#1D4ED8]' },
   { icon: FaUsers,    title: 'Structured Hiring', description: 'Search, filter, chat, hire — no more WhatsApp chaos.',  bg: 'bg-[#DCFCE7]', ic: 'text-[#15803D]' },
   { icon: FaLock,     title: 'Lock & Confirm',    description: 'Once your team is set, lock it. No double-bookings.',   bg: 'bg-[#FEF9E6]', ic: 'text-[#92400E]' },
   { icon: FaVideo,    title: 'Project History',   description: 'View completed bookings by navigating past months.',     bg: 'bg-[#F3E8FF]', ic: 'text-[#7C3AED]' },
@@ -22,7 +22,7 @@ const features = [
 
 const userTypes = [
   { icon: FaUsers, title: 'Production Companies', description: 'Search, book and manage crew & vendors across all your projects.',   checks: ['Filter by skill & availability', 'Manage project calendars', 'Lock confirmed bookings'],   bg: 'bg-[#EEF4FF]', ic: 'text-[#3678F1]', cta: 'Register as Company',    to: '/register/company' },
-  { icon: FaVideo, title: 'Freelancers',           description: 'Showcase your reel and let productions find and hire you.',          checks: ['Manage your availability calendar', 'Accept booking requests', 'Track history & invoices'],  bg: 'bg-[#F3E8FF]', ic: 'text-[#7C3AED]', cta: 'Register as Individual', to: '/register/individual' },
+  { icon: FaVideo, title: 'Freelancers',           description: 'Showcase your reel and let productions find and hire you.',          checks: ['Manage your availability calendar', 'Accept booking requests', 'Track history & invoices'],  bg: 'bg-[#F3E8FF]', ic: 'text-[#7C3AED]', cta: 'Register as Freelancer', to: '/register/individual' },
   { icon: FaTruck, title: 'Vendors',               description: 'List equipment and get discovered by active productions.',           checks: ['List equipment with rates',         'Accept rental requests',    'Track bookings & payments'], bg: 'bg-[#FEF9E6]', ic: 'text-[#92400E]', cta: 'Register as Vendor',     to: '/register/vendor' },
 ];
 
@@ -55,7 +55,7 @@ function SectionLabel({ text, color }: { text: string; color: string }) {
 }
 
 export default function LandingPage() {
-  useEffect(() => { document.title = 'CrewCall – Hire Film Crews & Vendors'; }, []);
+  useEffect(() => { document.title = 'Claapo – Hire Film Crews & Vendors'; }, []);
 
   const s1 = useInView(0.1);
   const s2 = useInView();
@@ -75,7 +75,7 @@ export default function LandingPage() {
         <div className={`max-w-3xl mx-auto px-5 text-center relative z-10 transition-all duration-700 ${s1.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`}>
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#EEF4FF] text-[#3678F1] text-xs font-semibold mb-6 border border-[#BFDBFE]">
             <FaCalendar className="w-3 h-3" />
-            Streamline hiring — crews, vendors &amp; projects in one place
+            Streamline hiring—crews, vendors &amp; projects in one place
           </div>
 
           <h1 className="text-[32px] sm:text-[42px] font-bold text-neutral-900 leading-snug mb-4 tracking-tight">
@@ -114,7 +114,7 @@ export default function LandingPage() {
         </div>
 
         {/* Scroll hint */}
-        <div className="flex flex-col items-center gap-1 mt-8 animate-bounce">
+        <div className="flex flex-col items-center gap-1 mt-12 animate-bounce">
           <p className="text-[11px] text-neutral-400 tracking-wide">Scroll to explore</p>
           <FaChevronDown className="text-neutral-300 text-sm" />
         </div>
@@ -126,7 +126,7 @@ export default function LandingPage() {
           <div className={`text-center mb-8 transition-all duration-700 ${s2.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`}>
             <SectionLabel text="HOW IT WORKS" color="text-[#3678F1] bg-[#EEF4FF] border-[#BFDBFE]" />
             <h2 className="text-xl sm:text-2xl font-bold text-neutral-900 mb-1.5">From discovery to locked bookings</h2>
-            <p className="text-xs text-neutral-500">Three steps — no spreadsheets required</p>
+            <p className="text-xs text-neutral-500">Three steps—no spreadsheets required</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -140,7 +140,7 @@ export default function LandingPage() {
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${step.bg}`}>
                     <step.icon className={`text-sm ${step.ic}`} />
                   </div>
-                  <span className="text-2xl font-black text-neutral-100">{step.step}</span>
+                  <span className="text-2xl font-black text-neutral-900">{step.step}</span>
                 </div>
                 <h3 className="text-sm font-bold text-neutral-900 mb-1">{step.title}</h3>
                 <p className="text-xs text-neutral-500 leading-relaxed">{step.description}</p>
@@ -197,7 +197,23 @@ export default function LandingPage() {
                   <type.icon className={`text-sm ${type.ic}`} />
                 </div>
                 <h3 className="text-sm font-bold text-neutral-900 mb-1">{type.title}</h3>
-                <p className="text-xs text-neutral-500 mb-3 leading-relaxed">{type.description}</p>
+                <p className="text-xs text-neutral-500 mb-3 leading-relaxed">
+                  {type.title === 'Freelancers' && (
+                    <>
+                      Showcase your reel and let productions
+                      <br />
+                      find and hire you.
+                    </>
+                  )}
+                  {type.title === 'Vendors' && (
+                    <>
+                      List equipment and get discovered by
+                      <br />
+                      active productions.
+                    </>
+                  )}
+                  {type.title === 'Production Companies' && type.description}
+                </p>
                 <ul className="space-y-1.5 mb-4 flex-1">
                   {type.checks.map((c) => (
                     <li key={c} className="flex items-start gap-1.5">
@@ -222,13 +238,13 @@ export default function LandingPage() {
 
         <div className={`max-w-lg mx-auto px-5 text-center relative z-10 transition-all duration-700 ${s5.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`}>
           <h2 className="text-xl sm:text-2xl font-bold text-white mb-3 leading-snug">
-            Ready to transform your production workflow?
+            Ready to transform your <br /> production workflow?
           </h2>
           <p className="text-sm text-blue-100 mb-7 leading-relaxed">
-            Join CrewCall and replace scattered hiring with a structured platform built for film and advertising.
+            Join Claapo and replace scattered hiring with a structured platform built for film and advertising.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link to="/register" className="inline-flex justify-center items-center rounded-xl bg-[#F4C430] text-neutral-900 px-7 py-3 text-sm font-bold hover:bg-[#e6b820] transition-all hover:-translate-y-0.5">
+            <Link to="/register" className="inline-flex justify-center items-center rounded-xl bg-[#F4C430] text-white px-7 py-3 text-sm font-bold hover:bg-[#e6b820] transition-all hover:-translate-y-0.5">
               Create Free Account
             </Link>
             <Link to="/login" className="inline-flex justify-center items-center rounded-xl border-2 border-white/30 text-white px-7 py-3 text-sm font-bold hover:bg-white/10 transition-all">
@@ -238,7 +254,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <AppFooter />
+      <AppFooter variant="inverted" />
     </div>
   );
 }

@@ -5,7 +5,7 @@ import AppLayout from '../components/AppLayout';
 
 export default function CompanyRegistration() {
   useEffect(() => {
-    document.title = 'Company Registration – CrewCall';
+    document.title = 'Company Registration – Claapo';
   }, []);
 
   return (
@@ -23,14 +23,14 @@ export default function CompanyRegistration() {
 
             <h2 className="text-2xl font-bold mb-2 leading-tight">Register your company</h2>
             <p className="text-sm text-blue-100 mb-8 leading-relaxed">
-              Join CrewCall to hire verified crew and vendors. Access a trusted network of production professionals.
+              Join Claapo to hire verified crew and vendors. Access a trusted network of production professionals.
             </p>
 
             <div className="space-y-4 flex-1">
               {[
                 { icon: FaCertificate, title: 'GST Verification', desc: 'Verified business profiles for trust and authenticity' },
                 { icon: FaShieldHalved, title: 'Secure Onboarding', desc: 'Enterprise-grade security for your business data' },
-                { icon: FaHandshake, title: 'Trusted Platform', desc: 'Thousands of production companies already on CrewCall' },
+                { icon: FaHandshake, title: 'Trusted Platform', desc: 'Thousands of production companies already on Claapo' },
               ].map(({ icon: Icon, title, desc }) => (
                 <div key={title} className="flex items-start gap-3">
                   <div className="w-9 h-9 rounded-lg bg-white/15 flex items-center justify-center shrink-0 border border-white/20">
@@ -98,7 +98,7 @@ export default function CompanyRegistration() {
                     </label>
                     <input
                       type="tel"
-                      placeholder="+91 98765 xxxxx"
+                      placeholder="+91 98xxx xxxxx"
                       required
                       className="rounded-xl w-full px-3 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all"
                     />

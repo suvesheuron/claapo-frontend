@@ -57,7 +57,7 @@ const navLinks = [
 
 export default function Projects() {
   useEffect(() => {
-    document.title = 'Projects – CrewCall';
+    document.title = 'Projects – Claapo';
   }, []);
 
   return (

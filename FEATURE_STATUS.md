@@ -1,4 +1,4 @@
-# CrewCall Frontend - Feature Status
+# Claapo Frontend - Feature Status
 
 ## 🏢 Company (Client / Hiring Side)
 
