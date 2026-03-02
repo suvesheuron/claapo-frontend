@@ -81,7 +81,7 @@ const pastProjects = [
 ];
 
 export default function CompanyPastProjects() {
-  useEffect(() => { document.title = 'Past Projects – CrewCall'; }, []);
+  useEffect(() => { document.title = 'Past Projects – Claapo'; }, []);
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-[#F3F4F6] w-full">

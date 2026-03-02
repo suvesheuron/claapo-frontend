@@ -23,7 +23,7 @@ const pastRentals = [
 
 export default function PastRentals() {
   useEffect(() => {
-    document.title = 'Past Rentals – CrewCall';
+    document.title = 'Past Rentals – Claapo';
   }, []);
 
   return (

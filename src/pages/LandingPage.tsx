@@ -55,7 +55,7 @@ function SectionLabel({ text, color }: { text: string; color: string }) {
 }
 
 export default function LandingPage() {
-  useEffect(() => { document.title = 'CrewCall – Hire Film Crews & Vendors'; }, []);
+  useEffect(() => { document.title = 'Claapo – Hire Film Crews & Vendors'; }, []);
 
   const s1 = useInView(0.1);
   const s2 = useInView();
@@ -241,7 +241,7 @@ export default function LandingPage() {
             Ready to transform your <br /> production workflow?
           </h2>
           <p className="text-sm text-blue-100 mb-7 leading-relaxed">
-            Join CrewCall and replace scattered hiring with a structured platform built for film and advertising.
+            Join Claapo and replace scattered hiring with a structured platform built for film and advertising.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link to="/register" className="inline-flex justify-center items-center rounded-xl bg-[#F4C430] text-white px-7 py-3 text-sm font-bold hover:bg-[#e6b820] transition-all hover:-translate-y-0.5">

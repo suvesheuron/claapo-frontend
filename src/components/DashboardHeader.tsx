@@ -53,7 +53,7 @@ export default function DashboardHeader({ userName = 'Production Studios Inc.', 
         <div className="w-8 h-8 rounded-xl bg-[#3678F1] flex items-center justify-center shrink-0 shadow-sm shadow-[#3678F1]/30">
           <FaVideo className="text-white text-sm" />
         </div>
-        <span className="text-[15px] font-bold text-neutral-900 tracking-tight">CrewCall</span>
+        <span className="text-[15px] font-bold text-neutral-900 tracking-tight">Claapo</span>
       </Link>
 
       {/* Mobile logo */}
@@ -61,7 +61,7 @@ export default function DashboardHeader({ userName = 'Production Studios Inc.', 
         <div className="w-8 h-8 rounded-xl bg-[#3678F1] flex items-center justify-center shrink-0">
           <FaVideo className="text-white text-sm" />
         </div>
-        <span className="text-[15px] font-bold text-neutral-900">CrewCall</span>
+        <span className="text-[15px] font-bold text-neutral-900">Claapo</span>
       </Link>
 
       {/* Right section */}

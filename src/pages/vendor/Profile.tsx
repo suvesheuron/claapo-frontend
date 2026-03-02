@@ -18,7 +18,7 @@ const navLinks = [
 const specialties = ['Camera Equipment', 'Lighting Rigs', 'Audio Gear', 'Transport', 'Drones', 'Studio Rental'];
 
 export default function VendorProfile() {
-  useEffect(() => { document.title = 'Vendor Profile – CrewCall'; }, []);
+  useEffect(() => { document.title = 'Vendor Profile – Claapo'; }, []);
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-[#F3F4F6] w-full">

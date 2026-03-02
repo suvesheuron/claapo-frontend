@@ -18,7 +18,7 @@ export default function Invoice() {
   const { invoiceId } = useParams<{ invoiceId: string }>();
 
   useEffect(() => {
-    document.title = 'Invoice – CrewCall';
+    document.title = 'Invoice – Claapo';
   }, []);
 
   const handleDownload = () => {

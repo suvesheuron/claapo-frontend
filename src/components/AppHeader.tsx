@@ -15,7 +15,7 @@ export default function AppHeader({ variant = 'landing', backTo = '/', backLabel
           <div className="w-8 h-8 rounded-lg bg-[#3678F1] flex items-center justify-center shrink-0">
             <FaVideo className="text-white text-sm" />
           </div>
-          <span className="text-lg text-neutral-900 font-semibold truncate">CrewCall</span>
+          <span className="text-lg text-neutral-900 font-semibold truncate">Claapo</span>
         </Link>
 
         {variant === 'landing' && (

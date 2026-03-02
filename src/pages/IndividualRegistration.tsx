@@ -5,7 +5,7 @@ import AppLayout from '../components/AppLayout';
 
 export default function IndividualRegistration() {
   useEffect(() => {
-    document.title = 'Freelancer Registration – CrewCall';
+    document.title = 'Freelancer Registration – Claapo';
   }, []);
 
   return (

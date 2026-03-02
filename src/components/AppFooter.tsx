@@ -21,7 +21,7 @@ export default function AppFooter({ variant = 'light' }: AppFooterProps) {
     >
       <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-8 flex flex-col sm:flex-row items-center justify-between gap-2 min-w-0">
         <p className={`${inverted ? 'text-white' : 'text-neutral-400'} text-xs`}>
-          © 2026 CrewCall. All rights reserved.
+          © 2026 Claapo. All rights reserved.
         </p>
         <div className="flex items-center gap-5">
           {footerLinks.map((link) => (

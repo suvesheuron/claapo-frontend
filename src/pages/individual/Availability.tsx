@@ -95,7 +95,7 @@ const navLinks = [
 ];
 
 export default function IndividualAvailability() {
-  useEffect(() => { document.title = 'Availability – CrewCall'; }, []);
+  useEffect(() => { document.title = 'Availability – Claapo'; }, []);
 
   const [monthOffset, setMonthOffset] = useState(0);
   const [panel, setPanel] = useState<PanelData | null>(null);

@@ -106,7 +106,7 @@ const navLinks = [
 ];
 
 export default function VendorDashboard() {
-  useEffect(() => { document.title = 'Dashboard – CrewCall'; }, []);
+  useEffect(() => { document.title = 'Dashboard – Claapo'; }, []);
 
   const [monthOffset, setMonthOffset] = useState(0);
   const [panel, setPanel] = useState<PanelData | null>(null);

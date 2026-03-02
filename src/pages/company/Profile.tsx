@@ -18,7 +18,7 @@ const navLinks = [
 ];
 
 export default function CompanyProfile() {
-  useEffect(() => { document.title = 'Company Profile – CrewCall'; }, []);
+  useEffect(() => { document.title = 'Company Profile – Claapo'; }, []);
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-[#F3F4F6] w-full">

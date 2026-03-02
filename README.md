@@ -1,6 +1,6 @@
-# CrewCall
+# Claapo
 
-**CrewCall** is a modern web application for film production hiring and crew management. It connects production companies with verified freelance crew members and equipment vendors. Streamline hiring, manage availability, and lock your team in one platform.
+**Claapo** is a modern web application for film production hiring and crew management. It connects production companies with verified freelance crew members and equipment vendors. Streamline hiring, manage availability, and lock your team in one platform.
 
 ---
 

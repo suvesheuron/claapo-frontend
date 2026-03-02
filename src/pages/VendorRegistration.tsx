@@ -5,7 +5,7 @@ import AppLayout from '../components/AppLayout';
 
 export default function VendorRegistration() {
   useEffect(() => {
-    document.title = 'Vendor Registration – CrewCall';
+    document.title = 'Vendor Registration – Claapo';
   }, []);
 
   return (

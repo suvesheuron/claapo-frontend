@@ -38,7 +38,7 @@ const accountTypes = [
 
 export default function UserTypeSelect() {
   useEffect(() => {
-    document.title = 'Choose Your Account Type – CrewCall';
+    document.title = 'Choose Your Account Type – Claapo';
   }, []);
 
   return (
