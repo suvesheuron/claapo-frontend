@@ -1,14 +1,26 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { FaCalendar, FaHouse, FaUser, FaChevronLeft, FaChevronRight, FaXmark, FaCircle, FaMessage, FaFileInvoice, FaPlus, FaLock, FaCircleInfo, FaFolder } from 'react-icons/fa6';
 import DashboardHeader from '../../components/DashboardHeader';
 import DashboardSidebar from '../../components/DashboardSidebar';
 import AppFooter from '../../components/AppFooter';
+import { api, ApiException } from '../../services/api';
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 type CellStatus = 'available' | 'booked' | 'completed' | 'blocked' | null;
+
+interface AvailabilitySlot {
+  date: string;
+  status: 'available' | 'booked' | 'blocked' | 'past_work';
+  notes?: string | null;
+  projectTitle?: string | null;
+  companyName?: string | null;
+  roleName?: string | null;
+  rateOffered?: number | null;
+  invoiceId?: string | null;
+}
 
 interface CalendarCell {
   d: number;
@@ -19,6 +31,7 @@ interface CalendarCell {
   role?: string;
   payment?: string;
   invoice?: string;
+  notes?: string;
 }
 
 interface PanelData extends Omit<CalendarCell, 'muted'> {
@@ -26,53 +39,52 @@ interface PanelData extends Omit<CalendarCell, 'muted'> {
   year: number;
 }
 
-const BASE_YEAR = 2025;
-const BASE_MONTH = 0;
+function toBackendStatus(status: CellStatus): 'available' | 'blocked' | 'booked' | 'past_work' {
+  if (status === 'completed') return 'past_work';
+  if (status === 'blocked')   return 'blocked';
+  if (status === 'booked')    return 'booked';
+  return 'available';
+}
 
-const bookedByMonth: Record<number, Record<number, Omit<CalendarCell, 'd' | 'muted'>>> = {
-  0: {
-    8:  { status: 'booked', project: 'Commercial Shoot', company: 'Production Studios Inc.', role: 'Director', payment: '₹45,000', invoice: 'INV-001' },
-    9:  { status: 'booked', project: 'Commercial Shoot', company: 'Production Studios Inc.', role: 'Director', payment: '₹45,000', invoice: 'INV-001' },
-    10: { status: 'booked', project: 'Commercial Shoot', company: 'Production Studios Inc.', role: 'Director', payment: '₹45,000', invoice: 'INV-001' },
-    15: { status: 'booked', project: 'Documentary Film', company: 'Film Studios', role: 'DOP', payment: '₹38,000', invoice: 'INV-002' },
-    16: { status: 'booked', project: 'Documentary Film', company: 'Film Studios', role: 'DOP', payment: '₹38,000', invoice: 'INV-002' },
-    17: { status: 'booked', project: 'Documentary Film', company: 'Film Studios', role: 'DOP', payment: '₹38,000', invoice: 'INV-002' },
-    22: { status: 'completed', project: 'Music Video', company: 'Studio Shodwe', role: 'Director', payment: '₹52,000', invoice: 'INV-003' },
-    23: { status: 'completed', project: 'Music Video', company: 'Studio Shodwe', role: 'Director', payment: '₹52,000', invoice: 'INV-003' },
-  },
-  '-1': {
-    10: { status: 'completed', project: 'Brand Film', company: 'Ad Agency', role: 'DOP', payment: '₹60,000', invoice: 'INV-004' },
-    11: { status: 'completed', project: 'Brand Film', company: 'Ad Agency', role: 'DOP', payment: '₹60,000', invoice: 'INV-004' },
-    20: { status: 'completed', project: 'TVC Shoot', company: 'Creative Co.', role: 'Director', payment: '₹75,000', invoice: 'INV-005' },
-    21: { status: 'completed', project: 'TVC Shoot', company: 'Creative Co.', role: 'Director', payment: '₹75,000', invoice: 'INV-005' },
-    22: { status: 'completed', project: 'TVC Shoot', company: 'Creative Co.', role: 'Director', payment: '₹75,000', invoice: 'INV-005' },
-  },
-  '-2': {
-    5:  { status: 'completed', project: 'Web Series Promo', company: 'Digital Studios', role: 'Director', payment: '₹30,000', invoice: 'INV-006' },
-    6:  { status: 'completed', project: 'Web Series Promo', company: 'Digital Studios', role: 'Director', payment: '₹30,000', invoice: 'INV-006' },
-    18: { status: 'completed', project: 'Product Launch', company: 'Brand Co.', role: 'DOP', payment: '₹42,000', invoice: 'INV-007' },
-  },
-};
+function toFrontendStatus(status: string): CellStatus {
+  if (status === 'past_work') return 'completed';
+  if (status === 'blocked')   return 'blocked';
+  if (status === 'booked')    return 'booked';
+  return 'available';
+}
 
-function buildCalendar(monthOffset: number, blockedDates: Record<string, string>): CalendarCell[] {
-  const d = new Date(BASE_YEAR, BASE_MONTH + monthOffset, 1);
-  const year = d.getFullYear();
-  const month = d.getMonth();
-  const firstDay = new Date(year, month, 1).getDay();
+function buildCalendar(
+  year: number,
+  month: number,
+  apiSlots: Record<string, AvailabilitySlot>
+): CalendarCell[] {
+  const firstDay   = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const prevDays = new Date(year, month, 0).getDate();
+  const prevDays   = new Date(year, month, 0).getDate();
   const cells: CalendarCell[] = [];
+
   for (let i = firstDay - 1; i >= 0; i--) cells.push({ d: prevDays - i, muted: true, status: null });
-  const monthData = bookedByMonth[monthOffset] ?? {};
+
   for (let day = 1; day <= daysInMonth; day++) {
-    const blockKey = `${year}-${month}-${day}`;
-    if (blockedDates[blockKey]) {
-      cells.push({ d: day, muted: false, status: 'blocked' });
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const slot = apiSlots[dateStr];
+    if (slot) {
+      cells.push({
+        d: day,
+        muted: false,
+        status: toFrontendStatus(slot.status),
+        project:  slot.projectTitle ?? undefined,
+        company:  slot.companyName  ?? undefined,
+        role:     slot.roleName     ?? undefined,
+        payment:  slot.rateOffered  ? `₹${(slot.rateOffered / 100).toLocaleString('en-IN')}` : undefined,
+        invoice:  slot.invoiceId    ?? undefined,
+        notes:    slot.notes        ?? undefined,
+      });
     } else {
-      const override = monthData[day];
-      cells.push({ d: day, muted: false, ...(override ?? { status: 'available' as CellStatus }) });
+      cells.push({ d: day, muted: false, status: 'available' });
     }
   }
+
   const rem = 7 - (cells.length % 7);
   if (rem < 7) for (let d2 = 1; d2 <= rem; d2++) cells.push({ d: d2, muted: true, status: null });
   return cells;
@@ -97,57 +109,135 @@ const navLinks = [
 export default function IndividualAvailability() {
   useEffect(() => { document.title = 'Availability – Claapo'; }, []);
 
+  const today = new Date();
+  const BASE_YEAR  = today.getFullYear();
+  const BASE_MONTH = today.getMonth();
+
   const [monthOffset, setMonthOffset] = useState(0);
   const [panel, setPanel] = useState<PanelData | null>(null);
-  const [blockedDates, setBlockedDates] = useState<Record<string, string>>({});
+  const [apiSlots, setApiSlots] = useState<Record<string, AvailabilitySlot>>({});
+  const [slotsLoading, setSlotsLoading] = useState(false);
   const [blockForm, setBlockForm] = useState(false);
   const [blockReason, setBlockReason] = useState(BLOCK_REASONS[0]);
   const [blockOther, setBlockOther] = useState('');
+  const [saving, setSaving] = useState(false);
 
   const displayDate = new Date(BASE_YEAR, BASE_MONTH + monthOffset, 1);
-  const monthLabel = MONTHS[displayDate.getMonth()];
-  const yearLabel = displayDate.getFullYear();
-  const calendarDays = buildCalendar(monthOffset, blockedDates);
+  const monthLabel  = MONTHS[displayDate.getMonth()];
+  const yearLabel   = displayDate.getFullYear();
 
-  const getDateKey = (d: number) => `${yearLabel}-${displayDate.getMonth()}-${d}`;
+  // Load slots from API when month changes
+  const loadSlots = useCallback(async () => {
+    setSlotsLoading(true);
+    try {
+      const slots = await api.get<AvailabilitySlot[]>(
+        `/availability/me?year=${yearLabel}&month=${displayDate.getMonth() + 1}`
+      );
+      const map: Record<string, AvailabilitySlot> = {};
+      for (const slot of slots ?? []) map[slot.date.slice(0, 10)] = slot;
+      setApiSlots(map);
+    } catch {
+      // Silently fall through — calendar shows all available on API error
+    } finally {
+      setSlotsLoading(false);
+    }
+  }, [yearLabel, displayDate]);
+
+  useEffect(() => { loadSlots(); }, [loadSlots]);
+
+  const calendarDays = buildCalendar(yearLabel, displayDate.getMonth(), apiSlots);
+
+  const getDateStr = (d: number): string => {
+    const m = String(displayDate.getMonth() + 1).padStart(2, '0');
+    return `${yearLabel}-${m}-${String(d).padStart(2, '0')}`;
+  };
 
   const openPanel = (cell: CalendarCell) => {
     if (cell.muted) return;
     setBlockForm(false);
     setBlockReason(BLOCK_REASONS[0]);
     setBlockOther('');
-    const isBlocked = !!blockedDates[getDateKey(cell.d)];
     setPanel({
       d: cell.d,
-      status: isBlocked ? 'blocked' : cell.status,
+      status: cell.status,
       project: cell.project,
       company: cell.company,
-      role: cell.role,
+      role:    cell.role,
       payment: cell.payment,
       invoice: cell.invoice,
-      month: monthLabel,
-      year: yearLabel,
+      notes:   cell.notes,
+      month:   monthLabel,
+      year:    yearLabel,
     });
   };
 
-  const handleConfirmBlock = () => {
+  const handleConfirmBlock = async () => {
     if (!panel) return;
     const reason = blockReason === 'Other' ? blockOther : blockReason;
     if (!reason.trim()) return;
-    setBlockedDates((prev) => ({ ...prev, [getDateKey(panel.d)]: reason }));
-    setPanel(null);
-    setBlockForm(false);
+    setSaving(true);
+    try {
+      await api.put('/availability/bulk', {
+        slots: [{ date: getDateStr(panel.d), status: 'blocked', notes: reason }],
+      });
+      // Update local cache
+      setApiSlots((prev) => ({
+        ...prev,
+        [getDateStr(panel.d)]: { date: getDateStr(panel.d), status: 'blocked', notes: reason },
+      }));
+      setPanel(null);
+      setBlockForm(false);
+    } catch (err) {
+      const msg = err instanceof ApiException ? err.payload.message : 'Failed to block date.';
+      alert(msg);
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleUnblock = () => {
+  const handleUnblock = async () => {
     if (!panel) return;
-    setBlockedDates((prev) => { const next = { ...prev }; delete next[getDateKey(panel.d)]; return next; });
-    setPanel(null);
+    setSaving(true);
+    try {
+      await api.put('/availability/bulk', {
+        slots: [{ date: getDateStr(panel.d), status: 'available' }],
+      });
+      setApiSlots((prev) => ({
+        ...prev,
+        [getDateStr(panel.d)]: { date: getDateStr(panel.d), status: 'available' },
+      }));
+      setPanel(null);
+    } catch (err) {
+      const msg = err instanceof ApiException ? err.payload.message : 'Failed to unblock date.';
+      alert(msg);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleMarkAvailable = async () => {
+    if (!panel) return;
+    setSaving(true);
+    try {
+      await api.put('/availability/bulk', {
+        slots: [{ date: getDateStr(panel.d), status: 'available' }],
+      });
+      setApiSlots((prev) => ({
+        ...prev,
+        [getDateStr(panel.d)]: { date: getDateStr(panel.d), status: 'available' },
+      }));
+      setPanel(null);
+    } catch (err) {
+      const msg = err instanceof ApiException ? err.payload.message : 'Failed to update availability.';
+      alert(msg);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-[#F3F4F6] w-full">
-      <DashboardHeader userName="John Director" />
+      <DashboardHeader />
 
       <div className="flex-1 flex min-h-0 overflow-hidden">
         <DashboardSidebar links={navLinks} />
@@ -173,13 +263,16 @@ export default function IndividualAvailability() {
                       <FaChevronRight className="text-xs" />
                     </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setMonthOffset(0)}
-                    className="text-xs text-[#3678F1] hover:underline font-medium"
-                  >
-                    Today
-                  </button>
+                  <div className="flex items-center gap-3">
+                    {slotsLoading && <span className="text-xs text-neutral-400">Loading…</span>}
+                    <button
+                      type="button"
+                      onClick={() => setMonthOffset(0)}
+                      className="text-xs text-[#3678F1] hover:underline font-medium"
+                    >
+                      Today
+                    </button>
+                  </div>
                 </div>
 
                 {/* Past month hint */}
@@ -201,15 +294,13 @@ export default function IndividualAvailability() {
                 <div className="grid grid-cols-7 gap-1">
                   {calendarDays.map((cell, i) => {
                     const isSelected = panel?.d === cell.d && !cell.muted;
-                    const blockKey = getDateKey(cell.d);
-                    const blockRsn = blockedDates[blockKey];
                     return (
                       <div
                         key={i}
                         role={cell.muted ? undefined : 'button'}
                         tabIndex={cell.muted ? undefined : 0}
                         onClick={() => openPanel(cell)}
-                        title={blockRsn ? `Blocked: ${blockRsn}` : cell.project ?? undefined}
+                        title={cell.notes ? `Blocked: ${cell.notes}` : cell.project ?? undefined}
                         className={`
                           rounded-xl border text-center p-1.5 min-h-[56px] sm:min-h-[64px] select-none flex flex-col items-center justify-center gap-0.5
                           ${cell.muted
@@ -225,7 +316,7 @@ export default function IndividualAvailability() {
                             {cell.status === 'available' && 'Free'}
                             {cell.status === 'booked' && (cell.project?.split(' ')[0] ?? 'Booked')}
                             {cell.status === 'completed' && (cell.project?.split(' ')[0] ?? 'Done')}
-                            {cell.status === 'blocked' && (blockRsn ? blockRsn.slice(0, 9) + (blockRsn.length > 9 ? '…' : '') : 'Blocked')}
+                            {cell.status === 'blocked' && (cell.notes ? cell.notes.slice(0, 9) + (cell.notes.length > 9 ? '…' : '') : 'Blocked')}
                           </span>
                         )}
                       </div>
@@ -321,8 +412,8 @@ export default function IndividualAvailability() {
                     )}
                   </div>
                   <div className="flex gap-2">
-                    <button type="button" onClick={handleConfirmBlock} className="flex-1 rounded-xl py-2.5 bg-[#3678F1] text-white text-sm font-semibold hover:bg-[#2563d4] transition-colors">Confirm Block</button>
-                    <button type="button" onClick={() => setBlockForm(false)} className="flex-1 rounded-xl py-2.5 bg-[#F3F4F6] text-neutral-700 text-sm font-semibold hover:bg-neutral-200 transition-colors">Cancel</button>
+                    <button type="button" onClick={handleConfirmBlock} disabled={saving} className="flex-1 rounded-xl py-2.5 bg-[#3678F1] text-white text-sm font-semibold hover:bg-[#2563d4] transition-colors disabled:opacity-50">{saving ? 'Saving…' : 'Confirm Block'}</button>
+                    <button type="button" onClick={() => setBlockForm(false)} disabled={saving} className="flex-1 rounded-xl py-2.5 bg-[#F3F4F6] text-neutral-700 text-sm font-semibold hover:bg-neutral-200 transition-colors">Cancel</button>
                   </div>
                 </div>
               )}
@@ -331,9 +422,11 @@ export default function IndividualAvailability() {
                 <div className="space-y-4">
                   <div className="rounded-xl bg-[#F3F4F6] p-4">
                     <p className="text-xs text-neutral-500 mb-1">Reason</p>
-                    <p className="text-sm font-semibold text-neutral-900">{blockedDates[getDateKey(panel.d)] ?? '—'}</p>
+                    <p className="text-sm font-semibold text-neutral-900">{panel.notes ?? '—'}</p>
                   </div>
-                  <button type="button" onClick={handleUnblock} className="rounded-xl w-full py-2.5 bg-[#F4C430] text-neutral-900 text-sm font-bold hover:bg-[#e6b820] transition-colors">Unblock this date</button>
+                  <button type="button" onClick={handleUnblock} disabled={saving} className="rounded-xl w-full py-2.5 bg-[#F4C430] text-neutral-900 text-sm font-bold hover:bg-[#e6b820] transition-colors disabled:opacity-50">
+                    {saving ? 'Saving…' : 'Unblock this date'}
+                  </button>
                 </div>
               )}
 
@@ -369,8 +462,8 @@ export default function IndividualAvailability() {
 
             {panel.status === 'available' && !blockForm && (
               <div className="px-5 py-4 border-t border-neutral-100">
-                <button type="button" className="flex items-center justify-center gap-2 w-full rounded-xl py-2.5 bg-[#F4C430] text-neutral-900 text-sm font-bold hover:bg-[#e6b820] transition-colors" onClick={() => alert('Availability confirmed')}>
-                  <FaPlus className="w-3 h-3" /> Mark as Available
+                <button type="button" className="flex items-center justify-center gap-2 w-full rounded-xl py-2.5 bg-[#F4C430] text-neutral-900 text-sm font-bold hover:bg-[#e6b820] transition-colors disabled:opacity-50" onClick={handleMarkAvailable} disabled={saving}>
+                  <FaPlus className="w-3 h-3" /> {saving ? 'Saving…' : 'Mark as Available'}
                 </button>
               </div>
             )}

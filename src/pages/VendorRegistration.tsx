@@ -1,12 +1,79 @@
-import { Link } from 'react-router-dom';
-import { useEffect } from 'react';
-import { FaTruck, FaShieldHalved, FaCertificate, FaHandshake, FaCircleCheck, FaLock } from 'react-icons/fa6';
+import { Link, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { FaTruck, FaShieldHalved, FaCertificate, FaHandshake, FaCircleCheck, FaLock, FaTriangleExclamation } from 'react-icons/fa6';
 import AppLayout from '../components/AppLayout';
+import { api, ApiException } from '../services/api';
+import { toE164India } from '../utils/phone';
+
+const VENDOR_TYPES = [
+  { value: 'equipment',  label: 'Camera & Equipment' },
+  { value: 'lighting',   label: 'Lighting' },
+  { value: 'transport',  label: 'Transport' },
+  { value: 'catering',   label: 'Catering' },
+] as const;
+
+type VendorType = typeof VENDOR_TYPES[number]['value'];
 
 export default function VendorRegistration() {
+  const navigate = useNavigate();
+
+  const [businessName, setBusinessName] = useState('');
+  const [phone, setPhone]               = useState('');
+  const [gst, setGst]                   = useState('');
+  const [email, setEmail]               = useState('');
+  const [vendorType, setVendorType]     = useState<VendorType | ''>('');
+  const [password, setPassword]         = useState('');
+  const [loading, setLoading]           = useState(false);
+  const [error, setError]               = useState<string | null>(null);
+
   useEffect(() => {
     document.title = 'Vendor Registration – Claapo';
   }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    const e164Phone = toE164India(phone.trim());
+    if (e164Phone.replace(/\D/g, '').length < 10) {
+      setError('Please enter a valid 10-digit mobile number.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Step 1: register account
+      await api.post('/auth/register/vendor', {
+        email: email.trim(),
+        phone: e164Phone,
+        password,
+      });
+
+      // Step 2: send OTP
+      const otpRes = await api.post<unknown>('/auth/otp/send', { phone: e164Phone });
+      console.log('[DEV] OTP send response:', otpRes);
+
+      // Step 3: go to OTP verification with pending profile data
+      navigate('/otp-verify', {
+        state: {
+          phone: e164Phone,
+          userType: 'vendor',
+          pendingProfile: {
+            companyName: businessName.trim() || undefined,
+            vendorType: vendorType || undefined,
+          },
+        },
+      });
+    } catch (err) {
+      const msg =
+        err instanceof ApiException
+          ? err.payload.message
+          : 'Registration failed. Please try again.';
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <AppLayout headerVariant="back" backTo="/register" backLabel="Back" showFooter={false}>
@@ -71,22 +138,19 @@ export default function VendorRegistration() {
                 <p className="text-xs text-neutral-500 mt-0.5">Add your business and equipment details</p>
               </div>
 
-              <form
-                className="space-y-3"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  alert('Vendor registration submitted!');
-                }}
-              >
+              <form className="space-y-3" onSubmit={handleSubmit}>
                 <div>
                   <label className="block text-neutral-700 text-xs mb-1 font-semibold">
                     Business Name <span className="text-[#F40F02]">*</span>
                   </label>
                   <input
                     type="text"
+                    value={businessName}
+                    onChange={(e) => setBusinessName(e.target.value)}
                     placeholder="e.g., Pro Gear Rentals"
                     required
-                    className="rounded-xl w-full px-3 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all"
+                    disabled={loading}
+                    className="rounded-xl w-full px-3 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all disabled:opacity-50"
                   />
                 </div>
 
@@ -97,9 +161,12 @@ export default function VendorRegistration() {
                     </label>
                     <input
                       type="tel"
-                      placeholder="+91 98xxx xxxxx"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="+91 98765 43210"
                       required
-                      className="rounded-xl w-full px-3 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all"
+                      disabled={loading}
+                      className="rounded-xl w-full px-3 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all disabled:opacity-50"
                     />
                   </div>
                   <div>
@@ -109,8 +176,11 @@ export default function VendorRegistration() {
                     </label>
                     <input
                       type="text"
+                      value={gst}
+                      onChange={(e) => setGst(e.target.value)}
                       placeholder="27AABCU9603R1ZM"
-                      className="rounded-xl w-full px-3 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all"
+                      disabled={loading}
+                      className="rounded-xl w-full px-3 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all disabled:opacity-50"
                     />
                   </div>
                 </div>
@@ -121,37 +191,46 @@ export default function VendorRegistration() {
                   </label>
                   <input
                     type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     placeholder="vendor@example.com"
                     required
-                    className="rounded-xl w-full px-3 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all"
+                    disabled={loading}
+                    className="rounded-xl w-full px-3 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all disabled:opacity-50"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-neutral-700 text-xs mb-1 font-semibold">Business Address</label>
-                  <input
-                    type="text"
-                    placeholder="e.g., Andheri West, Mumbai"
-                    className="rounded-xl w-full px-3 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all"
-                  />
+                  <label className="block text-neutral-700 text-xs mb-1 font-semibold">
+                    Business Type <span className="text-[#F40F02]">*</span>
+                  </label>
+                  <select
+                    value={vendorType}
+                    onChange={(e) => setVendorType(e.target.value as VendorType)}
+                    required
+                    disabled={loading}
+                    className="rounded-xl w-full px-3 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all disabled:opacity-50"
+                  >
+                    <option value="">Select type</option>
+                    {VENDOR_TYPES.map(({ value, label }) => (
+                      <option key={value} value={value}>{label}</option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
-                  <label className="block text-neutral-700 text-xs mb-1 font-semibold">Equipment / Services</label>
-                  <input
-                    type="text"
-                    placeholder="e.g., Cameras, Lighting, Grip, Sound"
-                    className="rounded-xl w-full px-3 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-neutral-700 text-xs mb-1 font-semibold">Password <span className="text-[#F40F02]">*</span></label>
+                  <label className="block text-neutral-700 text-xs mb-1 font-semibold">
+                    Password <span className="text-[#F40F02]">*</span>
+                  </label>
                   <input
                     type="password"
-                    placeholder="Create a strong password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="At least 8 characters"
                     required
-                    className="rounded-xl w-full px-3 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all"
+                    minLength={8}
+                    disabled={loading}
+                    className="rounded-xl w-full px-3 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all disabled:opacity-50"
                   />
                 </div>
 
@@ -160,6 +239,7 @@ export default function VendorRegistration() {
                     type="checkbox"
                     id="terms-vendor"
                     required
+                    disabled={loading}
                     className="w-3.5 h-3.5 mt-0.5 rounded border-neutral-300 accent-[#3678F1] cursor-pointer shrink-0"
                   />
                   <label htmlFor="terms-vendor" className="text-xs text-neutral-500 leading-relaxed cursor-pointer">
@@ -170,11 +250,26 @@ export default function VendorRegistration() {
                   </label>
                 </div>
 
+                {error && (
+                  <div className="flex items-start gap-2.5 rounded-xl bg-red-50 border border-red-200 px-3.5 py-3">
+                    <FaTriangleExclamation className="text-red-500 text-sm shrink-0 mt-0.5" />
+                    <p className="text-xs text-red-700 leading-snug">{error}</p>
+                  </div>
+                )}
+
                 <button
                   type="submit"
-                  className="rounded-xl w-full py-3 bg-[#3678F1] text-white text-sm font-semibold hover:bg-[#2563d4] transition-colors shadow-sm"
+                  disabled={loading}
+                  className="rounded-xl w-full py-3 bg-[#3678F1] text-white text-sm font-semibold hover:bg-[#2563d4] transition-colors shadow-sm disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
-                  Create Vendor Account
+                  {loading ? (
+                    <>
+                      <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                      Creating account…
+                    </>
+                  ) : (
+                    'Create Vendor Account'
+                  )}
                 </button>
 
                 <p className="text-center text-xs text-neutral-500">

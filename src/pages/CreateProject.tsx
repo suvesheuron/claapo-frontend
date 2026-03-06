@@ -1,12 +1,15 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import {
   FaArrowLeft, FaFolderPlus, FaCircleInfo, FaUsers, FaIndianRupeeSign,
   FaClipboardCheck, FaCalendar, FaPlus, FaLightbulb, FaHouse, FaFolder, FaMagnifyingGlass, FaUser,
+  FaTriangleExclamation,
 } from 'react-icons/fa6';
 import DashboardHeader from '../components/DashboardHeader';
 import DashboardSidebar from '../components/DashboardSidebar';
 import AppFooter from '../components/AppFooter';
+import { api, ApiException } from '../services/api';
+import { rupeesToPaise } from '../utils/currency';
 
 const roles = [
   { title: 'Director of Photography', sub: 'Camera & Lighting Lead' },
@@ -26,14 +29,80 @@ const navLinks = [
   { icon: FaUser,            label: 'Profile',      to: '/dashboard/company-profile' },
 ];
 
+interface ProjectResponse {
+  id: string;
+  title: string;
+}
+
 export default function CreateProject() {
+  const navigate = useNavigate();
   useEffect(() => { document.title = 'Create New Project – Claapo'; }, []);
+
+  // Form state
+  const [title, setTitle]           = useState('');
+  const [description, setDescription] = useState('');
+  const [startDate, setStartDate]   = useState('');
+  const [endDate, setEndDate]       = useState('');
+  const [locationCity, setLocationCity] = useState('');
+  const [budgetMin, setBudgetMin]   = useState('');
+  const [budgetMax, setBudgetMax]   = useState('');
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
 
-  const toggleRole = (title: string) => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError]     = useState<string | null>(null);
+
+  const toggleRole = (roleTitle: string) => {
     setSelectedRoles((prev) =>
-      prev.includes(title) ? prev.filter((r) => r !== title) : [...prev, title]
+      prev.includes(roleTitle) ? prev.filter((r) => r !== roleTitle) : [...prev, roleTitle]
     );
+  };
+
+  // Duration display for summary panel
+  const duration = startDate && endDate
+    ? (() => {
+        const s = new Date(startDate);
+        const e = new Date(endDate);
+        const days = Math.max(1, Math.round((e.getTime() - s.getTime()) / 86_400_000) + 1);
+        return `${days} day${days > 1 ? 's' : ''}`;
+      })()
+    : 'Not set';
+
+  const handleCreate = async (isDraft: boolean) => {
+    if (!title.trim()) { setError('Project name is required.'); return; }
+    if (!startDate)    { setError('Start date is required.'); return; }
+    if (!endDate)      { setError('End date is required.'); return; }
+    setError(null);
+    setLoading(true);
+
+    try {
+      // Step 1: create the project
+      const project = await api.post<ProjectResponse>('/projects', {
+        title: title.trim(),
+        description: description.trim() || undefined,
+        startDate,
+        endDate,
+        locationCity: locationCity.trim() || undefined,
+        budgetMin:  budgetMin  ? rupeesToPaise(budgetMin)  : undefined,
+        budgetMax:  budgetMax  ? rupeesToPaise(budgetMax)  : undefined,
+        ...(isDraft ? {} : {}), // status is controlled by the backend
+      });
+
+      // Step 2: add roles (one request per role)
+      if (selectedRoles.length > 0) {
+        await Promise.all(
+          selectedRoles.map((roleName) =>
+            api.post(`/projects/${project.id}/roles`, { roleName, qty: 1 })
+          )
+        );
+      }
+
+      navigate('/dashboard/projects');
+    } catch (err) {
+      const msg = err instanceof ApiException ? err.payload.message : 'Failed to create project.';
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -73,31 +142,31 @@ export default function CreateProject() {
                     <div className="space-y-4">
                       <div>
                         <label className="block text-neutral-700 text-xs mb-1.5 font-semibold">Project Name <span className="text-[#F40F02]">*</span></label>
-                        <input type="text" placeholder="e.g., Summer Commercial Campaign 2025" className="rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all" />
+                        <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., Summer Commercial Campaign 2025" disabled={loading} className="rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all disabled:opacity-50" />
                       </div>
                       <div>
                         <label className="block text-neutral-700 text-xs mb-1.5 font-semibold">Project Description</label>
-                        <textarea rows={3} placeholder="Brief description of the project, locations, and requirements..." className="rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all resize-none" />
+                        <textarea rows={3} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Brief description of the project, locations, and requirements..." disabled={loading} className="rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all resize-none disabled:opacity-50" />
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <label className="block text-neutral-700 text-xs mb-1.5 font-semibold">Start Date <span className="text-[#F40F02]">*</span></label>
                           <div className="relative">
-                            <input type="date" className="date-input-no-native-icon rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all" />
+                            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} disabled={loading} className="date-input-no-native-icon rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all disabled:opacity-50" />
                             <FaCalendar className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 text-xs pointer-events-none" />
                           </div>
                         </div>
                         <div>
                           <label className="block text-neutral-700 text-xs mb-1.5 font-semibold">End Date <span className="text-[#F40F02]">*</span></label>
                           <div className="relative">
-                            <input type="date" className="date-input-no-native-icon rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all" />
+                            <input type="date" value={endDate} min={startDate} onChange={(e) => setEndDate(e.target.value)} disabled={loading} className="date-input-no-native-icon rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all disabled:opacity-50" />
                             <FaCalendar className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 text-xs pointer-events-none" />
                           </div>
                         </div>
                       </div>
                       <div>
-                        <label className="block text-neutral-700 text-xs mb-1.5 font-semibold">Shooting Location</label>
-                        <input type="text" placeholder="e.g., Mumbai, Maharashtra" className="rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all" />
+                        <label className="block text-neutral-700 text-xs mb-1.5 font-semibold">Shooting Location (City)</label>
+                        <input type="text" value={locationCity} onChange={(e) => setLocationCity(e.target.value)} placeholder="e.g., Mumbai" disabled={loading} className="rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all disabled:opacity-50" />
                       </div>
                     </div>
                   </div>
@@ -145,14 +214,14 @@ export default function CreateProject() {
                     </h2>
                     <div>
                       <label className="block text-neutral-700 text-xs mb-1.5 font-semibold">Total Project Budget <span className="text-[#F40F02]">*</span></label>
-                      <div className="grid grid-cols-2 gap-3 mb-3">
+                        <div className="grid grid-cols-2 gap-3 mb-3">
                         <div className="relative">
                           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-sm">₹</span>
-                          <input type="number" placeholder="Min Budget" className="rounded-xl w-full pl-7 pr-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all" />
+                          <input type="number" value={budgetMin} onChange={(e) => setBudgetMin(e.target.value)} placeholder="Min Budget" disabled={loading} className="rounded-xl w-full pl-7 pr-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all disabled:opacity-50" />
                         </div>
                         <div className="relative">
                           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-sm">₹</span>
-                          <input type="number" placeholder="Max Budget" className="rounded-xl w-full pl-7 pr-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all" />
+                          <input type="number" value={budgetMax} onChange={(e) => setBudgetMax(e.target.value)} placeholder="Max Budget" disabled={loading} className="rounded-xl w-full pl-7 pr-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all disabled:opacity-50" />
                         </div>
                       </div>
                       <div className="rounded-xl bg-[#EEF4FF] border border-[#BFDBFE] p-3">
@@ -176,14 +245,14 @@ export default function CreateProject() {
                     </h3>
                     <div className="space-y-3 mb-5">
                       {[
-                        { label: 'Project Name', value: 'Not set' },
-                        { label: 'Duration', value: 'Not set' },
-                        { label: 'Roles', value: selectedRoles.length ? `${selectedRoles.length} selected` : '0 selected' },
-                        { label: 'Budget', value: 'Not set' },
+                        { label: 'Project Name', value: title.trim() || 'Not set' },
+                        { label: 'Duration',     value: duration },
+                        { label: 'Roles',        value: selectedRoles.length ? `${selectedRoles.length} selected` : '0 selected' },
+                        { label: 'Budget',       value: budgetMin ? `₹${Number(budgetMin).toLocaleString('en-IN')} – ₹${Number(budgetMax || budgetMin).toLocaleString('en-IN')}` : 'Not set' },
                       ].map(({ label, value }) => (
                         <div key={label} className="flex justify-between gap-2">
                           <span className="text-xs text-neutral-400">{label}</span>
-                          <span className={`text-xs font-semibold ${value === 'Not set' || value === '0 selected' ? 'text-neutral-400' : 'text-neutral-900'}`}>{value}</span>
+                          <span className={`text-xs font-semibold text-right max-w-[160px] ${value === 'Not set' || value === '0 selected' ? 'text-neutral-400' : 'text-neutral-900'}`}>{value}</span>
                         </div>
                       ))}
                     </div>
@@ -200,17 +269,25 @@ export default function CreateProject() {
                       </ul>
                     </div>
 
+                    {error && (
+                      <div className="flex items-start gap-2 rounded-xl bg-red-50 border border-red-200 px-3 py-2.5 mb-2">
+                        <FaTriangleExclamation className="text-red-500 text-xs shrink-0 mt-0.5" />
+                        <p className="text-xs text-red-700 leading-snug">{error}</p>
+                      </div>
+                    )}
                     <button
                       type="button"
-                      onClick={() => alert('Project created successfully!')}
-                      className="rounded-xl w-full py-3 bg-[#3678F1] text-white font-semibold text-sm hover:bg-[#2563d4] mb-2 flex items-center justify-center gap-2 transition-colors shadow-sm"
+                      onClick={() => handleCreate(false)}
+                      disabled={loading}
+                      className="rounded-xl w-full py-3 bg-[#3678F1] text-white font-semibold text-sm hover:bg-[#2563d4] mb-2 flex items-center justify-center gap-2 transition-colors shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
                     >
-                      <FaClipboardCheck /> Create Project
+                      {loading ? <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Creating…</> : <><FaClipboardCheck /> Create Project</>}
                     </button>
                     <button
                       type="button"
-                      onClick={() => alert('Saved as draft!')}
-                      className="rounded-xl w-full py-2.5 border border-neutral-300 text-neutral-700 text-sm font-medium hover:bg-neutral-50 transition-colors"
+                      onClick={() => handleCreate(true)}
+                      disabled={loading}
+                      className="rounded-xl w-full py-2.5 border border-neutral-300 text-neutral-700 text-sm font-medium hover:bg-neutral-50 transition-colors disabled:opacity-50"
                     >
                       Save as Draft
                     </button>

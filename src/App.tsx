@@ -1,6 +1,9 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import RoleSwitcher from './components/RoleSwitcher';
+import ProtectedRoute from './components/ProtectedRoute';
+import { useAuth, type BackendRole } from './contexts/AuthContext';
+import { useRole, type UserRole } from './contexts/RoleContext';
 
 const LandingPage = lazy(() => import('./pages/LandingPage'));
 const UserTypeSelect = lazy(() => import('./pages/UserTypeSelect'));
@@ -35,6 +38,34 @@ const VendorProfile = lazy(() => import('./pages/vendor/Profile'));
 // Shared routes
 const Chat = lazy(() => import('./pages/Chat'));
 const Invoice = lazy(() => import('./pages/Invoice'));
+const Bookings = lazy(() => import('./pages/Bookings'));
+const OtpVerify = lazy(() => import('./pages/OtpVerify'));
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
+
+/**
+ * Syncs the authenticated user's backend role ('individual' | 'company' | 'vendor')
+ * into the existing RoleContext ('Individual' | 'Company' | 'Vendor').
+ * This keeps all existing components that call useRole() working without changes.
+ */
+const ROLE_MAP: Record<BackendRole, UserRole> = {
+  individual: 'Individual',
+  company: 'Company',
+  vendor: 'Vendor',
+  admin: 'Company', // admin uses the company dashboard view
+};
+
+function AuthRoleSyncBridge() {
+  const { user } = useAuth();
+  const { setCurrentRole } = useRole();
+
+  useEffect(() => {
+    if (user?.role) {
+      setCurrentRole(ROLE_MAP[user.role]);
+    }
+  }, [user?.role, setCurrentRole]);
+
+  return null;
+}
 
 function PageFallback() {
   return (
@@ -47,39 +78,44 @@ function PageFallback() {
 export default function App() {
   return (
     <BrowserRouter>
+      {/* Syncs auth role into RoleContext — must be inside BrowserRouter + both providers */}
+      <AuthRoleSyncBridge />
       <Suspense fallback={<PageFallback />}>
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/otp-verify" element={<OtpVerify />} />
           <Route path="/register" element={<UserTypeSelect />} />
           <Route path="/register/company" element={<CompanyRegistration />} />
           <Route path="/register/individual" element={<IndividualRegistration />} />
           <Route path="/register/vendor" element={<VendorRegistration />} />
-          <Route path="/dashboard" element={<><Dashboard /><RoleSwitcher /></>} />
-          <Route path="/dashboard/projects" element={<><Projects /><RoleSwitcher /></>} />
-          <Route path="/dashboard/projects/:id" element={<><ProjectDetail /><RoleSwitcher /></>} />
-          <Route path="/dashboard/company-availability" element={<><CompanyAvailability /><RoleSwitcher /></>} />
-          <Route path="/dashboard/projects/new" element={<CreateProject />} />
-          <Route path="/dashboard/search" element={<SearchFilter />} />
-          
+          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /><RoleSwitcher /></ProtectedRoute>} />
+          <Route path="/dashboard/projects" element={<ProtectedRoute allowedRoles={['company', 'admin']}><Projects /><RoleSwitcher /></ProtectedRoute>} />
+          <Route path="/dashboard/projects/:id" element={<ProtectedRoute><ProjectDetail /><RoleSwitcher /></ProtectedRoute>} />
+          <Route path="/dashboard/company-availability" element={<ProtectedRoute allowedRoles={['company', 'admin']}><CompanyAvailability /><RoleSwitcher /></ProtectedRoute>} />
+          <Route path="/dashboard/projects/new" element={<ProtectedRoute allowedRoles={['company', 'admin']}><CreateProject /></ProtectedRoute>} />
+          <Route path="/dashboard/search" element={<ProtectedRoute allowedRoles={['company', 'admin']}><SearchFilter /></ProtectedRoute>} />
+
           {/* Shared routes */}
-          <Route path="/dashboard/chat/:userId" element={<><Chat /><RoleSwitcher /></>} />
-          <Route path="/dashboard/invoice/:invoiceId" element={<><Invoice /><RoleSwitcher /></>} />
-          
+          <Route path="/dashboard/chat/:userId" element={<ProtectedRoute><Chat /><RoleSwitcher /></ProtectedRoute>} />
+          <Route path="/dashboard/invoice/:invoiceId" element={<ProtectedRoute><Invoice /><RoleSwitcher /></ProtectedRoute>} />
+          <Route path="/dashboard/bookings" element={<ProtectedRoute allowedRoles={['individual', 'vendor']}><Bookings /><RoleSwitcher /></ProtectedRoute>} />
+
           {/* Individual routes */}
-          <Route path="/dashboard/availability" element={<><IndividualAvailability /><RoleSwitcher /></>} />
-          <Route path="/dashboard/past-projects" element={<><IndividualPastProjects /><RoleSwitcher /></>} />
-          <Route path="/dashboard/profile" element={<><IndividualProfile /><RoleSwitcher /></>} />
-          
+          <Route path="/dashboard/availability" element={<ProtectedRoute allowedRoles={['individual']}><IndividualAvailability /><RoleSwitcher /></ProtectedRoute>} />
+          <Route path="/dashboard/past-projects" element={<ProtectedRoute allowedRoles={['individual']}><IndividualPastProjects /><RoleSwitcher /></ProtectedRoute>} />
+          <Route path="/dashboard/profile" element={<ProtectedRoute allowedRoles={['individual']}><IndividualProfile /><RoleSwitcher /></ProtectedRoute>} />
+
           {/* Vendor routes */}
-          <Route path="/dashboard/equipment" element={<><VendorEquipment /><RoleSwitcher /></>} />
-          <Route path="/dashboard/vendor-availability" element={<><VendorAvailability /><RoleSwitcher /></>} />
-          <Route path="/dashboard/past-rentals" element={<><VendorPastRentals /><RoleSwitcher /></>} />
-          <Route path="/dashboard/vendor-profile" element={<><VendorProfile /><RoleSwitcher /></>} />
+          <Route path="/dashboard/equipment" element={<ProtectedRoute allowedRoles={['vendor']}><VendorEquipment /><RoleSwitcher /></ProtectedRoute>} />
+          <Route path="/dashboard/vendor-availability" element={<ProtectedRoute allowedRoles={['vendor']}><VendorAvailability /><RoleSwitcher /></ProtectedRoute>} />
+          <Route path="/dashboard/past-rentals" element={<ProtectedRoute allowedRoles={['vendor']}><VendorPastRentals /><RoleSwitcher /></ProtectedRoute>} />
+          <Route path="/dashboard/vendor-profile" element={<ProtectedRoute allowedRoles={['vendor']}><VendorProfile /><RoleSwitcher /></ProtectedRoute>} />
 
           {/* Company extended routes */}
-          <Route path="/dashboard/company-past-projects" element={<><CompanyPastProjects /><RoleSwitcher /></>} />
-          <Route path="/dashboard/company-profile" element={<><CompanyProfile /><RoleSwitcher /></>} />
+          <Route path="/dashboard/company-past-projects" element={<ProtectedRoute allowedRoles={['company', 'admin']}><CompanyPastProjects /><RoleSwitcher /></ProtectedRoute>} />
+          <Route path="/dashboard/company-profile" element={<ProtectedRoute allowedRoles={['company', 'admin']}><CompanyProfile /><RoleSwitcher /></ProtectedRoute>} />
         </Routes>
       </Suspense>
     </BrowserRouter>

@@ -1,12 +1,83 @@
-import { Link } from 'react-router-dom';
-import { useEffect } from 'react';
-import { FaVideo, FaCircleCheck, FaCertificate, FaShieldHalved, FaHandshake, FaLock } from 'react-icons/fa6';
+import { Link, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { FaVideo, FaCircleCheck, FaCertificate, FaShieldHalved, FaHandshake, FaLock, FaTriangleExclamation } from 'react-icons/fa6';
 import AppLayout from '../components/AppLayout';
+import { api, ApiException } from '../services/api';
+import { toE164India } from '../utils/phone';
 
 export default function IndividualRegistration() {
+  const navigate = useNavigate();
+
+  const [fullName, setFullName]     = useState('');
+  const [phone, setPhone]           = useState('');
+  const [primaryRole, setPrimaryRole] = useState('');
+  const [email, setEmail]           = useState('');
+  const [experience, setExperience] = useState('');
+  const [dailyRate, setDailyRate]   = useState('');
+  const [location, setLocation]     = useState('');
+  const [password, setPassword]     = useState('');
+  const [loading, setLoading]       = useState(false);
+  const [error, setError]           = useState<string | null>(null);
+
   useEffect(() => {
     document.title = 'Freelancer Registration – Claapo';
   }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    const e164Phone = toE164India(phone.trim());
+    if (e164Phone.replace(/\D/g, '').length < 10) {
+      setError('Please enter a valid 10-digit mobile number.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Step 1: create account — only the 3 fields the backend needs
+      await api.post('/auth/register/individual', {
+        email: email.trim(),
+        phone: e164Phone,
+        password,
+      });
+
+      // Step 2: send OTP to the registered phone
+      const otpRes = await api.post<unknown>('/auth/otp/send', { phone: e164Phone });
+      // DEV: log response so OTP can be read from backend terminal
+      console.log('[DEV] OTP send response:', otpRes);
+
+      // Parse location into city / state
+      const [locationCity = '', locationState = ''] = location.trim().split(',').map((s) => s.trim());
+
+      // Parse daily rate (rupees → paise for backend, or just rupees for profile min)
+      const rateNum = parseInt(dailyRate.replace(/[^0-9]/g, ''), 10) || undefined;
+
+      // Step 3: navigate to OTP verification, passing extra profile fields
+      navigate('/otp-verify', {
+        state: {
+          phone: e164Phone,
+          userType: 'individual',
+          pendingProfile: {
+            displayName: fullName.trim() || undefined,
+            skills: primaryRole ? [primaryRole] : undefined,
+            locationCity: locationCity || undefined,
+            locationState: locationState || undefined,
+            dailyRateMin: rateNum,
+          },
+        },
+        replace: false,
+      });
+    } catch (err) {
+      const msg =
+        err instanceof ApiException
+          ? err.payload.message
+          : 'Registration failed. Please try again.';
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <AppLayout headerVariant="back" backTo="/register" backLabel="Back" showFooter={false}>
@@ -71,22 +142,19 @@ export default function IndividualRegistration() {
                 <p className="text-xs text-neutral-500 mt-0.5">Tell production companies about your skills and rates</p>
               </div>
 
-              <form
-                className="space-y-3"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  alert('Individual registration submitted!');
-                }}
-              >
+              <form className="space-y-3" onSubmit={handleSubmit}>
                 <div>
                   <label className="block text-neutral-700 text-xs mb-1 font-semibold">
                     Full Name <span className="text-[#F40F02]">*</span>
                   </label>
                   <input
                     type="text"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
                     placeholder="e.g., John Director"
                     required
-                    className="rounded-xl w-full px-3 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all"
+                    disabled={loading}
+                    className="rounded-xl w-full px-3 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all disabled:opacity-50"
                   />
                 </div>
 
@@ -97,9 +165,12 @@ export default function IndividualRegistration() {
                     </label>
                     <input
                       type="tel"
-                      placeholder="+91 98xxx xxxxx"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="+91 98765 43210"
                       required
-                      className="rounded-xl w-full px-3 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all"
+                      disabled={loading}
+                      className="rounded-xl w-full px-3 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all disabled:opacity-50"
                     />
                   </div>
                   <div>
@@ -107,8 +178,11 @@ export default function IndividualRegistration() {
                       Primary Role <span className="text-[#F40F02]">*</span>
                     </label>
                     <select
+                      value={primaryRole}
+                      onChange={(e) => setPrimaryRole(e.target.value)}
                       required
-                      className="rounded-xl w-full px-3 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all"
+                      disabled={loading}
+                      className="rounded-xl w-full px-3 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all disabled:opacity-50"
                     >
                       <option value="">Select role</option>
                       <option>Director</option>
@@ -129,9 +203,12 @@ export default function IndividualRegistration() {
                   </label>
                   <input
                     type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     placeholder="john@example.com"
                     required
-                    className="rounded-xl w-full px-3 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all"
+                    disabled={loading}
+                    className="rounded-xl w-full px-3 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all disabled:opacity-50"
                   />
                 </div>
 
@@ -140,16 +217,22 @@ export default function IndividualRegistration() {
                     <label className="block text-neutral-700 text-xs mb-1 font-semibold">Experience</label>
                     <input
                       type="text"
+                      value={experience}
+                      onChange={(e) => setExperience(e.target.value)}
                       placeholder="e.g., 8 years"
-                      className="rounded-xl w-full px-3 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all"
+                      disabled={loading}
+                      className="rounded-xl w-full px-3 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all disabled:opacity-50"
                     />
                   </div>
                   <div>
                     <label className="block text-neutral-700 text-xs mb-1 font-semibold">Daily Rate (₹)</label>
                     <input
                       type="text"
+                      value={dailyRate}
+                      onChange={(e) => setDailyRate(e.target.value)}
                       placeholder="e.g., 45,000"
-                      className="rounded-xl w-full px-3 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all"
+                      disabled={loading}
+                      className="rounded-xl w-full px-3 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all disabled:opacity-50"
                     />
                   </div>
                 </div>
@@ -158,18 +241,27 @@ export default function IndividualRegistration() {
                   <label className="block text-neutral-700 text-xs mb-1 font-semibold">Location</label>
                   <input
                     type="text"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
                     placeholder="e.g., Mumbai, Maharashtra"
-                    className="rounded-xl w-full px-3 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all"
+                    disabled={loading}
+                    className="rounded-xl w-full px-3 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all disabled:opacity-50"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-neutral-700 text-xs mb-1 font-semibold">Password <span className="text-[#F40F02]">*</span></label>
+                  <label className="block text-neutral-700 text-xs mb-1 font-semibold">
+                    Password <span className="text-[#F40F02]">*</span>
+                  </label>
                   <input
                     type="password"
-                    placeholder="Create a strong password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="At least 8 characters"
                     required
-                    className="rounded-xl w-full px-3 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all"
+                    minLength={8}
+                    disabled={loading}
+                    className="rounded-xl w-full px-3 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all disabled:opacity-50"
                   />
                 </div>
 
@@ -178,6 +270,7 @@ export default function IndividualRegistration() {
                     type="checkbox"
                     id="terms-ind"
                     required
+                    disabled={loading}
                     className="w-3.5 h-3.5 mt-0.5 rounded border-neutral-300 accent-[#3678F1] cursor-pointer shrink-0"
                   />
                   <label htmlFor="terms-ind" className="text-xs text-neutral-500 leading-relaxed cursor-pointer">
@@ -188,11 +281,26 @@ export default function IndividualRegistration() {
                   </label>
                 </div>
 
+                {error && (
+                  <div className="flex items-start gap-2.5 rounded-xl bg-red-50 border border-red-200 px-3.5 py-3">
+                    <FaTriangleExclamation className="text-red-500 text-sm shrink-0 mt-0.5" />
+                    <p className="text-xs text-red-700 leading-snug">{error}</p>
+                  </div>
+                )}
+
                 <button
                   type="submit"
-                  className="rounded-xl w-full py-3 bg-[#3678F1] text-white text-sm font-semibold hover:bg-[#2563d4] transition-colors shadow-sm"
+                  disabled={loading}
+                  className="rounded-xl w-full py-3 bg-[#3678F1] text-white text-sm font-semibold hover:bg-[#2563d4] transition-colors shadow-sm disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
-                  Create Freelancer Account
+                  {loading ? (
+                    <>
+                      <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                      Creating account…
+                    </>
+                  ) : (
+                    'Create Freelancer Account'
+                  )}
                 </button>
 
                 <p className="text-center text-xs text-neutral-500">

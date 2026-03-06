@@ -1,30 +1,131 @@
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { FaArrowLeft, FaPaperPlane } from 'react-icons/fa6';
+/**
+ * Chat page — direct messages between the authenticated user and one other user.
+ * Route: /dashboard/chat/:targetUserId
+ *
+ * API calls:
+ *   GET  /v1/chat/messages/with/:targetUserId?page=1&limit=50  — load history
+ *   POST /v1/chat/messages                                     — send message
+ *
+ * Polls for new messages every 5 s while the tab is active.
+ */
+
+import { useEffect, useState, useRef, useCallback } from 'react';
+import { Link, useParams } from 'react-router-dom';
+import { FaArrowLeft, FaPaperPlane, FaTriangleExclamation } from 'react-icons/fa6';
 import DashboardHeader from '../components/DashboardHeader';
 import AppFooter from '../components/AppFooter';
 import Avatar from '../components/Avatar';
+import { api, ApiException } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 
-const messages = [
-  { id: 1, sender: 'other', text: 'Hi! I\'m interested in your project. I have 12 years of experience in directing commercial films.', time: '10:30 AM' },
-  { id: 2, sender: 'me', text: 'Great! Can you share your showreel?', time: '10:32 AM' },
-  { id: 3, sender: 'other', text: 'Sure! Here\'s the link: [Showreel URL]', time: '10:35 AM' },
-  { id: 4, sender: 'me', text: 'Perfect! I\'ll review it and get back to you.', time: '10:36 AM' },
-];
+interface ChatMessage {
+  id: string;
+  senderId: string;
+  content: string;
+  createdAt: string;
+  readAt: string | null;
+}
+
+interface OtherUser {
+  displayName?: string;
+  companyName?: string;
+  role?: string;
+  isOnline?: boolean;
+}
+
+function formatTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+}
+
+const POLL_INTERVAL_MS = 5000;
 
 export default function Chat() {
-  const [message, setMessage] = useState('');
+  const { userId: targetUserId } = useParams<{ userId: string }>();
+  const { user } = useAuth();
+
+  const [messages,      setMessages]     = useState<ChatMessage[]>([]);
+  const [otherUser,     setOtherUser]    = useState<OtherUser | null>(null);
+  const [input,         setInput]        = useState('');
+  const [loadingInit,   setLoadingInit]  = useState(true);
+  const [sending,       setSending]      = useState(false);
+  const [loadError,     setLoadError]    = useState<string | null>(null);
+  const [sendError,     setSendError]    = useState<string | null>(null);
+
+  const bottomRef   = useRef<HTMLDivElement>(null);
+  const pollRef     = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lastMsgTime = useRef<string | null>(null);
 
   useEffect(() => {
     document.title = 'Chat – Claapo';
   }, []);
 
-  const handleSend = (e: React.FormEvent) => {
+  // Load messages — used for initial fetch + polling
+  const fetchMessages = useCallback(async (isPolling = false) => {
+    if (!targetUserId) return;
+    try {
+      const data = await api.get<ChatMessage[]>(
+        `/chat/messages/with/${targetUserId}?limit=50`
+      );
+      if (!data?.length) return;
+      const newest = data[data.length - 1]?.createdAt;
+      if (isPolling && newest === lastMsgTime.current) return; // nothing new
+      lastMsgTime.current = newest ?? null;
+      setMessages(data);
+    } catch (err) {
+      if (!isPolling) {
+        setLoadError(err instanceof ApiException ? err.payload.message : 'Failed to load messages.');
+      }
+    } finally {
+      if (!isPolling) setLoadingInit(false);
+    }
+  }, [targetUserId]);
+
+  // Load other user's public profile for the header
+  const fetchOtherUser = useCallback(async () => {
+    if (!targetUserId) return;
+    try {
+      const profile = await api.get<OtherUser>(`/profile/user/${targetUserId}`);
+      setOtherUser(profile);
+    } catch {
+      // Non-fatal — header will just show the userId
+    }
+  }, [targetUserId]);
+
+  // Initial load
+  useEffect(() => {
+    fetchMessages(false);
+    fetchOtherUser();
+  }, [fetchMessages, fetchOtherUser]);
+
+  // Poll every 5 s
+  useEffect(() => {
+    pollRef.current = setInterval(() => fetchMessages(true), POLL_INTERVAL_MS);
+    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+  }, [fetchMessages]);
+
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  const otherName = otherUser?.displayName ?? otherUser?.companyName ?? targetUserId ?? 'User';
+  const otherRole = otherUser?.role ?? '';
+
+  const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (message.trim()) {
-      // In real app, this would send message via API
-      console.log('Sending message:', message);
-      setMessage('');
+    const content = input.trim();
+    if (!content || sending) return;
+    setSendError(null);
+    setSending(true);
+    try {
+      await api.post('/chat/messages', { receiverId: targetUserId, content });
+      setInput('');
+      // Immediately re-fetch to show the sent message
+      await fetchMessages(false);
+    } catch (err) {
+      setSendError(err instanceof ApiException ? err.payload.message : 'Failed to send message.');
+    } finally {
+      setSending(false);
     }
   };
 
@@ -35,67 +136,92 @@ export default function Chat() {
       <div className="flex-1 flex min-h-0 overflow-hidden">
         <main className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
           <div className="flex-1 flex flex-col min-h-0">
+
             {/* Chat Header */}
-            <div className="bg-white border-b border-neutral-200 p-4 flex items-center gap-3">
-              <Link
-                to="/dashboard"
-                className="p-2 hover:bg-neutral-100 rounded-lg transition"
-              >
-                <FaArrowLeft className="w-5 h-5 text-neutral-600" />
+            <div className="bg-white border-b border-neutral-200 px-4 py-3 flex items-center gap-3 shrink-0">
+              <Link to="/dashboard" className="p-2 hover:bg-neutral-100 rounded-xl transition-colors">
+                <FaArrowLeft className="w-4 h-4 text-neutral-600" />
               </Link>
-              <Avatar name="John Director" size="sm" />
+              <Avatar name={otherName} size="sm" />
               <div className="flex-1 min-w-0">
-                <h2 className="font-semibold text-neutral-900 truncate">John Director</h2>
-                <p className="text-xs text-neutral-600">Director • Online</p>
+                <h2 className="text-sm font-bold text-neutral-900 truncate">{otherName}</h2>
+                {otherRole && <p className="text-xs text-neutral-500 capitalize">{otherRole.replace(/_/g, ' ')}</p>}
               </div>
             </div>
 
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {messages.map((msg) => (
-                <div
-                  key={msg.id}
-                  className={`flex gap-3 ${msg.sender === 'me' ? 'justify-end' : 'justify-start'}`}
-                >
-                  {msg.sender === 'other' && (
-                    <Avatar name="John Director" size="sm" />
-                  )}
-                  <div className={`max-w-[70%] ${msg.sender === 'me' ? 'order-2' : ''}`}>
-                    <div
-                      className={`rounded-lg p-3 ${
-                        msg.sender === 'me'
-                          ? 'bg-neutral-900 text-white'
-                          : 'bg-white border border-neutral-200 text-neutral-900'
-                      }`}
-                    >
-                      <p className="text-sm break-words">{msg.text}</p>
-                      <p className={`text-xs mt-1 ${msg.sender === 'me' ? 'text-neutral-300' : 'text-neutral-500'}`}>
-                        {msg.time}
-                      </p>
-                    </div>
-                  </div>
-                  {msg.sender === 'me' && (
-                    <Avatar name="Me" size="sm" />
-                  )}
+            {/* Messages area */}
+            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+              {loadingInit && (
+                <div className="flex items-center justify-center py-12">
+                  <span className="w-6 h-6 border-2 border-[#3678F1]/30 border-t-[#3678F1] rounded-full animate-spin" />
                 </div>
-              ))}
+              )}
+
+              {loadError && (
+                <div className="flex items-center gap-3 rounded-2xl bg-red-50 border border-red-200 p-4">
+                  <FaTriangleExclamation className="text-red-500 shrink-0" />
+                  <p className="text-sm text-red-700">{loadError}</p>
+                </div>
+              )}
+
+              {!loadingInit && !loadError && messages.length === 0 && (
+                <div className="text-center py-12">
+                  <p className="text-sm text-neutral-400">No messages yet. Say hello!</p>
+                </div>
+              )}
+
+              {messages.map((msg) => {
+                const isMe = msg.senderId === user?.id;
+                return (
+                  <div key={msg.id} className={`flex gap-2.5 ${isMe ? 'justify-end' : 'justify-start'}`}>
+                    {!isMe && <Avatar name={otherName} size="sm" />}
+                    <div className={`max-w-[70%] ${isMe ? 'order-2' : ''}`}>
+                      <div className={`rounded-2xl px-4 py-2.5 ${
+                        isMe
+                          ? 'bg-[#3678F1] text-white rounded-br-md'
+                          : 'bg-white border border-neutral-200 text-neutral-900 rounded-bl-md'
+                      }`}>
+                        <p className="text-sm leading-relaxed break-words">{msg.content}</p>
+                        <p className={`text-[10px] mt-1 ${isMe ? 'text-blue-200' : 'text-neutral-400'}`}>
+                          {formatTime(msg.createdAt)}
+                          {isMe && msg.readAt && <span className="ml-1.5">✓✓</span>}
+                        </p>
+                      </div>
+                    </div>
+                    {isMe && <Avatar name={user?.email ?? 'Me'} size="sm" />}
+                  </div>
+                );
+              })}
+              <div ref={bottomRef} />
             </div>
 
-            {/* Message Input */}
-            <form onSubmit={handleSend} className="bg-white border-t border-neutral-200 p-4">
-              <div className="flex items-center gap-2">
+            {/* Send error */}
+            {sendError && (
+              <div className="px-4 py-2 bg-red-50 border-t border-red-200">
+                <p className="text-xs text-red-700">{sendError}</p>
+              </div>
+            )}
+
+            {/* Message input */}
+            <form onSubmit={handleSend} className="bg-white border-t border-neutral-200 px-4 py-3 shrink-0">
+              <div className="flex items-center gap-2 max-w-4xl mx-auto">
                 <input
                   type="text"
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Type a message..."
-                  className="flex-1 px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:border-neutral-900"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder="Type a message…"
+                  disabled={sending}
+                  className="flex-1 px-4 py-2.5 border border-neutral-300 rounded-xl focus:outline-none focus:border-[#3678F1] text-sm transition-all disabled:opacity-50"
                 />
                 <button
                   type="submit"
-                  className="p-2 bg-neutral-900 text-white rounded-lg hover:bg-neutral-800"
+                  disabled={!input.trim() || sending}
+                  className="w-10 h-10 bg-[#3678F1] text-white rounded-xl hover:bg-[#2563d4] flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
                 >
-                  <FaPaperPlane className="w-5 h-5" />
+                  {sending
+                    ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                    : <FaPaperPlane className="w-4 h-4" />
+                  }
                 </button>
               </div>
             </form>
@@ -107,4 +233,3 @@ export default function Chat() {
     </div>
   );
 }
-

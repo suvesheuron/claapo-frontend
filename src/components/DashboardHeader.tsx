@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaVideo, FaBell, FaChevronDown, FaRightFromBracket, FaCircle } from 'react-icons/fa6';
 import Avatar from './Avatar';
+import { useAuth } from '../contexts/AuthContext';
 
 type DashboardHeaderProps = {
   userName?: string;
@@ -23,6 +24,7 @@ export default function DashboardHeader({ userName = 'Production Studios Inc.', 
   const notifRef = useRef<HTMLDivElement>(null);
   const userRef  = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  const { logout } = useAuth();
 
   const unreadCount = notifications.filter((n) => n.unread).length;
 
@@ -38,8 +40,9 @@ export default function DashboardHeader({ userName = 'Production Studios Inc.', 
 
   const markAllRead = () => setNotifications((prev) => prev.map((n) => ({ ...n, unread: false })));
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     setUserOpen(false);
+    await logout();
     navigate('/login');
   };
 

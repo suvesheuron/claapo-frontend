@@ -1,32 +1,116 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
   FaHouse, FaCalendar, FaFolder, FaMagnifyingGlass, FaUser,
-  FaBuilding, FaPhone, FaEnvelope, FaLocationDot, FaIdCard,
+  FaBuilding, FaLocationDot, FaIdCard, FaTriangleExclamation, FaCircleCheck,
 } from 'react-icons/fa6';
 import DashboardHeader from '../../components/DashboardHeader';
 import DashboardSidebar from '../../components/DashboardSidebar';
 import AppFooter from '../../components/AppFooter';
 import Avatar from '../../components/Avatar';
+import { api, ApiException } from '../../services/api';
+import { useApiQuery } from '../../hooks/useApiQuery';
 
 const navLinks = [
-  { icon: FaHouse,           label: 'Dashboard',      to: '/dashboard' },
-  { icon: FaCalendar,        label: 'Availability',   to: '/dashboard/company-availability' },
-  { icon: FaFolder,          label: 'Projects',        to: '/dashboard/projects' },
-  { icon: FaFolder,          label: 'Past Projects',   to: '/dashboard/company-past-projects' },
-  { icon: FaMagnifyingGlass, label: 'Search',          to: '/dashboard/search' },
-  { icon: FaUser,            label: 'Profile',         to: '/dashboard/company-profile' },
+  { icon: FaHouse,           label: 'Dashboard',    to: '/dashboard' },
+  { icon: FaCalendar,        label: 'Availability', to: '/dashboard/company-availability' },
+  { icon: FaFolder,          label: 'Projects',     to: '/dashboard/projects' },
+  { icon: FaFolder,          label: 'Past Projects', to: '/dashboard/company-past-projects' },
+  { icon: FaMagnifyingGlass, label: 'Search',       to: '/dashboard/search' },
+  { icon: FaUser,            label: 'Profile',      to: '/dashboard/company-profile' },
 ];
+
+interface CompanyProfileData {
+  companyName: string;
+  locationCity: string | null;
+  locationState: string | null;
+  bio: string | null;
+  gstNumber: string | null;
+  isGstVerified: boolean;
+}
+
+interface MeResponse {
+  id: string;
+  email: string;
+  phone: string;
+  role: string;
+  isVerified: boolean;
+  profile: CompanyProfileData | null;
+}
 
 export default function CompanyProfile() {
   useEffect(() => { document.title = 'Company Profile – Claapo'; }, []);
 
+  const { data: me, loading: meLoading } = useApiQuery<MeResponse>('/profile/me');
+
+  const [companyName,    setCompanyName]    = useState('');
+  const [locationCity,   setLocationCity]   = useState('');
+  const [locationState,  setLocationState]  = useState('');
+  const [bio,            setBio]            = useState('');
+
+  const [saving,  setSaving]  = useState(false);
+  const [saved,   setSaved]   = useState(false);
+  const [error,   setError]   = useState<string | null>(null);
+
+  // Password change state
+  const [curPass,  setCurPass]  = useState('');
+  const [newPass,  setNewPass]  = useState('');
+  const [confPass, setConfPass] = useState('');
+  const [pwSaving, setPwSaving] = useState(false);
+  const [pwError,  setPwError]  = useState<string | null>(null);
+  const [pwSaved,  setPwSaved]  = useState(false);
+
+  useEffect(() => {
+    if (!me?.profile) return;
+    const p = me.profile;
+    setCompanyName(p.companyName ?? '');
+    setLocationCity(p.locationCity ?? '');
+    setLocationState(p.locationState ?? '');
+    setBio(p.bio ?? '');
+  }, [me]);
+
+  const handleSave = async () => {
+    setError(null); setSaved(false); setSaving(true);
+    try {
+      await api.patch('/profile/company', {
+        companyName:   companyName.trim()   || undefined,
+        locationCity:  locationCity.trim()  || undefined,
+        locationState: locationState.trim() || undefined,
+        bio:           bio.trim()           || undefined,
+      });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (err) {
+      setError(err instanceof ApiException ? err.payload.message : 'Failed to save profile.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handlePasswordChange = async () => {
+    setPwError(null); setPwSaved(false);
+    if (!curPass || !newPass || !confPass) { setPwError('All password fields are required.'); return; }
+    if (newPass !== confPass) { setPwError('New passwords do not match.'); return; }
+    if (newPass.length < 8)  { setPwError('New password must be at least 8 characters.'); return; }
+    setPwSaving(true);
+    try {
+      await api.post('/auth/change-password', { currentPassword: curPass, newPassword: newPass });
+      setPwSaved(true);
+      setCurPass(''); setNewPass(''); setConfPass('');
+      setTimeout(() => setPwSaved(false), 3000);
+    } catch (err) {
+      setPwError(err instanceof ApiException ? err.payload.message : 'Failed to update password.');
+    } finally {
+      setPwSaving(false);
+    }
+  };
+
+  const profile = me?.profile;
+
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-[#F3F4F6] w-full">
       <DashboardHeader />
-
       <div className="flex-1 flex min-h-0 overflow-hidden">
         <DashboardSidebar links={navLinks} />
-
         <main className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
           <div className="flex-1 min-h-0 overflow-auto">
             <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-6 xl:px-8 py-5">
@@ -36,165 +120,150 @@ export default function CompanyProfile() {
                 <p className="text-sm text-neutral-500 mt-0.5">Manage your company details and settings</p>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+              {meLoading ? (
+                <div className="animate-pulse space-y-4">
+                  <div className="h-48 bg-neutral-200 rounded-2xl" />
+                  <div className="h-64 bg-neutral-200 rounded-2xl" />
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
-                {/* Left — Company card */}
-                <div className="lg:col-span-1 space-y-4">
-                  <div className="rounded-2xl bg-white border border-neutral-200 p-5 text-center">
-                    <div className="flex justify-center mb-3">
-                      <div className="relative">
-                        <Avatar name="Production Studios Inc." size="lg" />
-                        <button
-                          type="button"
-                          className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[#3678F1] text-white flex items-center justify-center shadow-sm hover:bg-[#2c65d4] transition-colors"
-                          title="Change logo"
-                        >
-                          <span className="text-[10px] font-bold">✎</span>
+                  {/* Left — Company card */}
+                  <div className="lg:col-span-1 space-y-4">
+                    <div className="rounded-2xl bg-white border border-neutral-200 p-5 text-center">
+                      <div className="flex justify-center mb-3">
+                        <Avatar name={companyName || 'Co'} size="lg" />
+                      </div>
+                      <h2 className="text-base font-bold text-neutral-900 mb-0.5">{companyName || '—'}</h2>
+                      <p className="text-xs text-neutral-500 mb-1">Production Company</p>
+                      {me?.isVerified && (
+                        <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-[#D1FAE5] text-[#065F46] font-semibold">
+                          ✓ Verified
+                        </span>
+                      )}
+                      <div className="mt-4 pt-4 border-t border-neutral-100 space-y-2 text-left">
+                        {locationCity && (
+                          <div className="flex items-center gap-2 text-xs text-neutral-500">
+                            <FaLocationDot className="w-3 h-3 text-neutral-400 shrink-0" />
+                            <span>{locationCity}{locationState ? `, ${locationState}` : ''}</span>
+                          </div>
+                        )}
+                        {profile?.gstNumber && (
+                          <div className="flex items-center gap-2 text-xs text-neutral-500">
+                            <FaIdCard className="w-3 h-3 text-neutral-400 shrink-0" />
+                            <span>GST: {profile.gstNumber}</span>
+                          </div>
+                        )}
+                        {me?.email && (
+                          <div className="flex items-center gap-2 text-xs text-neutral-500">
+                            <FaBuilding className="w-3 h-3 text-neutral-400 shrink-0" />
+                            <span className="truncate">{me.email}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right — Forms */}
+                  <div className="lg:col-span-2 space-y-4">
+                    {/* Company info */}
+                    <div className="rounded-2xl bg-white border border-neutral-200 p-5">
+                      <h3 className="text-sm font-bold text-neutral-900 mb-4">Company Information</h3>
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-xs font-medium text-neutral-600 mb-1">Company Name</label>
+                          <div className="relative">
+                            <FaBuilding className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 w-3.5 h-3.5" />
+                            <input type="text" value={companyName} onChange={(e) => setCompanyName(e.target.value)} disabled={saving} placeholder="Your company name" className="w-full pl-9 pr-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3678F1] transition-all disabled:bg-neutral-50" />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-neutral-600 mb-1">Email (read-only)</label>
+                          <input type="email" value={me?.email ?? ''} readOnly className="w-full px-3 py-2.5 border border-neutral-200 rounded-xl text-sm bg-neutral-50 text-neutral-500 cursor-not-allowed" />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-neutral-600 mb-1">Phone (read-only)</label>
+                          <input type="tel" value={me?.phone ?? ''} readOnly className="w-full px-3 py-2.5 border border-neutral-200 rounded-xl text-sm bg-neutral-50 text-neutral-500 cursor-not-allowed" />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs font-medium text-neutral-600 mb-1">City</label>
+                            <input type="text" value={locationCity} onChange={(e) => setLocationCity(e.target.value)} disabled={saving} placeholder="e.g., Mumbai" className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3678F1] transition-all disabled:bg-neutral-50" />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-neutral-600 mb-1">State</label>
+                            <input type="text" value={locationState} onChange={(e) => setLocationState(e.target.value)} disabled={saving} placeholder="e.g., Maharashtra" className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3678F1] transition-all disabled:bg-neutral-50" />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-neutral-600 mb-1">About / Description</label>
+                          <textarea value={bio} onChange={(e) => setBio(e.target.value)} rows={3} disabled={saving} placeholder="Brief description of your company…" className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3678F1] transition-all resize-none disabled:bg-neutral-50" />
+                        </div>
+                        {profile?.gstNumber && (
+                          <div>
+                            <label className="block text-xs font-medium text-neutral-600 mb-1">GST Number (read-only)</label>
+                            <div className="relative">
+                              <FaIdCard className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 w-3.5 h-3.5" />
+                              <input type="text" value={profile.gstNumber} readOnly className="w-full pl-9 pr-3 py-2.5 border border-neutral-200 rounded-xl text-sm bg-neutral-50 text-neutral-500 cursor-not-allowed" />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {error && (
+                        <div className="flex items-start gap-2 mt-3 rounded-xl bg-red-50 border border-red-200 px-3 py-2.5">
+                          <FaTriangleExclamation className="text-red-500 text-xs shrink-0 mt-0.5" />
+                          <p className="text-xs text-red-700">{error}</p>
+                        </div>
+                      )}
+                      {saved && (
+                        <div className="flex items-center gap-2 mt-3 text-[#15803D] text-sm font-semibold">
+                          <FaCircleCheck /> Profile saved!
+                        </div>
+                      )}
+
+                      <div className="mt-4 flex justify-end">
+                        <button type="button" onClick={handleSave} disabled={saving} className="px-5 py-2.5 bg-[#3678F1] text-white rounded-xl text-sm font-semibold hover:bg-[#2c65d4] transition-colors disabled:opacity-60 flex items-center gap-2">
+                          {saving ? <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Saving…</> : 'Save Changes'}
                         </button>
                       </div>
                     </div>
-                    <h2 className="text-base font-bold text-neutral-900 mb-0.5">Production Studios Inc.</h2>
-                    <p className="text-xs text-neutral-500 mb-1">Production Company</p>
-                    <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-[#D1FAE5] text-[#065F46] font-semibold">
-                      ✓ Verified
-                    </span>
 
-                    <div className="mt-4 pt-4 border-t border-neutral-100 space-y-2 text-left">
-                      {[
-                        { icon: FaBuilding, label: 'Mumbai, Maharashtra' },
-                        { icon: FaIdCard,   label: 'GST: 27AABCU9603R1ZM' },
-                      ].map(({ icon: Icon, label }) => (
-                        <div key={label} className="flex items-center gap-2 text-xs text-neutral-500">
-                          <Icon className="w-3 h-3 text-neutral-400 shrink-0" />
-                          <span>{label}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Stats */}
-                  <div className="rounded-2xl bg-white border border-neutral-200 p-4">
-                    <h3 className="text-xs font-bold text-neutral-700 mb-3 uppercase tracking-wide">Activity</h3>
-                    {[
-                      { label: 'Total Projects', value: '24' },
-                      { label: 'Crew Hired', value: '148' },
-                      { label: 'Vendors Used', value: '37' },
-                      { label: 'Active This Month', value: '3' },
-                    ].map(({ label, value }) => (
-                      <div key={label} className="flex justify-between items-center py-2 border-b border-neutral-100 last:border-0">
-                        <span className="text-xs text-neutral-500">{label}</span>
-                        <span className="text-sm font-bold text-neutral-900">{value}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Right — Forms */}
-                <div className="lg:col-span-2 space-y-4">
-                  {/* Company info */}
-                  <div className="rounded-2xl bg-white border border-neutral-200 p-5">
-                    <h3 className="text-sm font-bold text-neutral-900 mb-4">Company Information</h3>
-                    <div className="space-y-3">
-                      <div>
-                        <label className="block text-xs font-medium text-neutral-600 mb-1">Company Name</label>
-                        <div className="relative">
-                          <FaBuilding className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 w-3.5 h-3.5" />
-                          <input
-                            type="text"
-                            defaultValue="Production Studios Inc."
-                            className="w-full pl-9 pr-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3678F1] focus:ring-1 focus:ring-[#3678F1]/20 transition-all"
-                          />
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-xs font-medium text-neutral-600 mb-1">Phone</label>
-                          <div className="relative">
-                            <FaPhone className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 w-3.5 h-3.5" />
-                            <input
-                              type="tel"
-                              defaultValue="+91 98xxx xxxxx"
-                              className="w-full pl-9 pr-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3678F1] focus:ring-1 focus:ring-[#3678F1]/20 transition-all"
-                            />
+                    {/* Change password */}
+                    <div className="rounded-2xl bg-white border border-neutral-200 p-5">
+                      <h3 className="text-sm font-bold text-neutral-900 mb-4">Change Password</h3>
+                      <div className="space-y-3">
+                        {[
+                          { label: 'Current Password', val: curPass, set: setCurPass },
+                          { label: 'New Password',     val: newPass, set: setNewPass },
+                          { label: 'Confirm Password', val: confPass, set: setConfPass },
+                        ].map(({ label, val, set }) => (
+                          <div key={label}>
+                            <label className="block text-xs font-medium text-neutral-600 mb-1">{label}</label>
+                            <input type="password" value={val} onChange={(e) => set(e.target.value)} placeholder="••••••••" disabled={pwSaving} className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3678F1] transition-all disabled:bg-neutral-50" />
                           </div>
-                        </div>
-                        <div>
-                          <label className="block text-xs font-medium text-neutral-600 mb-1">
-                            GST Number
-                            <span className="ml-1 text-[10px] font-normal text-neutral-400 bg-neutral-100 px-1.5 py-0.5 rounded-full">Optional</span>
-                          </label>
-                          <div className="relative">
-                            <FaIdCard className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 w-3.5 h-3.5" />
-                            <input
-                              type="text"
-                              defaultValue="27AABCU9603R1ZM"
-                              className="w-full pl-9 pr-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3678F1] focus:ring-1 focus:ring-[#3678F1]/20 transition-all"
-                            />
-                          </div>
-                        </div>
+                        ))}
                       </div>
-                      <div>
-                        <label className="block text-xs font-medium text-neutral-600 mb-1">Business Email</label>
-                        <div className="relative">
-                          <FaEnvelope className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 w-3.5 h-3.5" />
-                          <input
-                            type="email"
-                            defaultValue="contact@productionstudios.in"
-                            className="w-full pl-9 pr-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3678F1] focus:ring-1 focus:ring-[#3678F1]/20 transition-all"
-                          />
+                      {pwError && (
+                        <div className="flex items-start gap-2 mt-3 rounded-xl bg-red-50 border border-red-200 px-3 py-2.5">
+                          <FaTriangleExclamation className="text-red-500 text-xs shrink-0 mt-0.5" />
+                          <p className="text-xs text-red-700">{pwError}</p>
                         </div>
+                      )}
+                      {pwSaved && (
+                        <div className="flex items-center gap-2 mt-3 text-[#15803D] text-sm font-semibold">
+                          <FaCircleCheck /> Password updated!
+                        </div>
+                      )}
+                      <div className="mt-4 flex justify-end">
+                        <button type="button" onClick={handlePasswordChange} disabled={pwSaving} className="px-5 py-2.5 bg-[#3678F1] text-white rounded-xl text-sm font-semibold hover:bg-[#2c65d4] transition-colors disabled:opacity-60 flex items-center gap-2">
+                          {pwSaving ? <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Saving…</> : 'Update Password'}
+                        </button>
                       </div>
-                      <div>
-                        <label className="block text-xs font-medium text-neutral-600 mb-1">Address</label>
-                        <div className="relative">
-                          <FaLocationDot className="absolute left-3 top-3 text-neutral-400 w-3.5 h-3.5" />
-                          <textarea
-                            defaultValue="Studio 4, Film City, Goregaon East, Mumbai — 400065"
-                            rows={2}
-                            className="w-full pl-9 pr-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3678F1] focus:ring-1 focus:ring-[#3678F1]/20 transition-all resize-none"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                    <div className="mt-4 flex justify-end">
-                      <button
-                        type="button"
-                        onClick={() => alert('Company info saved!')}
-                        className="px-5 py-2.5 bg-[#3678F1] text-white rounded-xl text-sm font-semibold hover:bg-[#2c65d4] transition-colors"
-                      >
-                        Save Changes
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Password */}
-                  <div className="rounded-2xl bg-white border border-neutral-200 p-5">
-                    <h3 className="text-sm font-bold text-neutral-900 mb-4">Change Password</h3>
-                    <div className="space-y-3">
-                      {['Current Password', 'New Password', 'Confirm Password'].map((label) => (
-                        <div key={label}>
-                          <label className="block text-xs font-medium text-neutral-600 mb-1">{label}</label>
-                          <input
-                            type="password"
-                            placeholder="••••••••"
-                            className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3678F1] focus:ring-1 focus:ring-[#3678F1]/20 transition-all"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                    <div className="mt-4 flex justify-end">
-                      <button
-                        type="button"
-                        onClick={() => alert('Password updated!')}
-                        className="px-5 py-2.5 bg-[#3678F1] text-white rounded-xl text-sm font-semibold hover:bg-[#2c65d4] transition-colors"
-                      >
-                        Update Password
-                      </button>
                     </div>
                   </div>
                 </div>
-              </div>
-
+              )}
             </div>
           </div>
           <AppFooter />

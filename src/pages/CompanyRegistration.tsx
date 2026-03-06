@@ -1,12 +1,69 @@
-import { Link } from 'react-router-dom';
-import { useEffect } from 'react';
-import { FaBuilding, FaShieldHalved, FaCertificate, FaHandshake, FaCircleCheck, FaLock } from 'react-icons/fa6';
+import { Link, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { FaBuilding, FaShieldHalved, FaCertificate, FaHandshake, FaCircleCheck, FaLock, FaTriangleExclamation } from 'react-icons/fa6';
 import AppLayout from '../components/AppLayout';
+import { api, ApiException } from '../services/api';
+import { toE164India } from '../utils/phone';
 
 export default function CompanyRegistration() {
+  const navigate = useNavigate();
+
+  const [companyName, setCompanyName] = useState('');
+  const [phone, setPhone]             = useState('');
+  const [gst, setGst]                 = useState('');
+  const [email, setEmail]             = useState('');
+  const [password, setPassword]       = useState('');
+  const [loading, setLoading]         = useState(false);
+  const [error, setError]             = useState<string | null>(null);
+
   useEffect(() => {
     document.title = 'Company Registration – Claapo';
   }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    const e164Phone = toE164India(phone.trim());
+    if (e164Phone.replace(/\D/g, '').length < 10) {
+      setError('Please enter a valid 10-digit mobile number.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Step 1: register account
+      await api.post('/auth/register/company', {
+        email: email.trim(),
+        phone: e164Phone,
+        password,
+        ...(gst.trim() ? { gstNumber: gst.trim().toUpperCase() } : {}),
+      });
+
+      // Step 2: send OTP
+      const otpRes = await api.post<unknown>('/auth/otp/send', { phone: e164Phone });
+      console.log('[DEV] OTP send response:', otpRes);
+
+      // Step 3: go to OTP verification with pending profile data
+      navigate('/otp-verify', {
+        state: {
+          phone: e164Phone,
+          userType: 'company',
+          pendingProfile: {
+            companyName: companyName.trim() || undefined,
+          },
+        },
+      });
+    } catch (err) {
+      const msg =
+        err instanceof ApiException
+          ? err.payload.message
+          : 'Registration failed. Please try again.';
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <AppLayout headerVariant="back" backTo="/register" backLabel="Back" showFooter={false}>
@@ -55,10 +112,9 @@ export default function CompanyRegistration() {
           </div>
         </section>
 
-        {/* Right: form — compact to fit viewport without scrolling */}
+        {/* Right: form */}
         <div className="flex-1 flex items-center justify-center bg-[#F3F4F6] p-4 sm:p-6">
           <div className="w-full max-w-[440px]">
-            {/* Mobile header */}
             <div className="lg:hidden text-center mb-4">
               <div className="w-10 h-10 rounded-xl bg-[#3678F1] mx-auto mb-2 flex items-center justify-center">
                 <FaBuilding className="text-white" />
@@ -72,22 +128,19 @@ export default function CompanyRegistration() {
                 <p className="text-xs text-neutral-500 mt-0.5">Fill in your company details to get started</p>
               </div>
 
-              <form
-                className="space-y-3"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  alert('Company registration submitted!');
-                }}
-              >
+              <form className="space-y-3" onSubmit={handleSubmit}>
                 <div>
                   <label className="block text-neutral-700 text-xs mb-1 font-semibold">
                     Company Name <span className="text-[#F40F02]">*</span>
                   </label>
                   <input
                     type="text"
+                    value={companyName}
+                    onChange={(e) => setCompanyName(e.target.value)}
                     placeholder="e.g., Production Studios Inc."
                     required
-                    className="rounded-xl w-full px-3 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all"
+                    disabled={loading}
+                    className="rounded-xl w-full px-3 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all disabled:opacity-50"
                   />
                 </div>
 
@@ -98,9 +151,12 @@ export default function CompanyRegistration() {
                     </label>
                     <input
                       type="tel"
-                      placeholder="+91 98xxx xxxxx"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="+91 98765 43210"
                       required
-                      className="rounded-xl w-full px-3 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all"
+                      disabled={loading}
+                      className="rounded-xl w-full px-3 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all disabled:opacity-50"
                     />
                   </div>
                   <div>
@@ -110,8 +166,11 @@ export default function CompanyRegistration() {
                     </label>
                     <input
                       type="text"
+                      value={gst}
+                      onChange={(e) => setGst(e.target.value)}
                       placeholder="27AABCU9603R1ZM"
-                      className="rounded-xl w-full px-3 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all"
+                      disabled={loading}
+                      className="rounded-xl w-full px-3 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all disabled:opacity-50"
                     />
                   </div>
                 </div>
@@ -122,19 +181,28 @@ export default function CompanyRegistration() {
                   </label>
                   <input
                     type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     placeholder="yourcompany@gmail.com"
                     required
-                    className="rounded-xl w-full px-3 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all"
+                    disabled={loading}
+                    className="rounded-xl w-full px-3 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all disabled:opacity-50"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-neutral-700 text-xs mb-1 font-semibold">Password <span className="text-[#F40F02]">*</span></label>
+                  <label className="block text-neutral-700 text-xs mb-1 font-semibold">
+                    Password <span className="text-[#F40F02]">*</span>
+                  </label>
                   <input
                     type="password"
-                    placeholder="Create a strong password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="At least 8 characters"
                     required
-                    className="rounded-xl w-full px-3 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all"
+                    minLength={8}
+                    disabled={loading}
+                    className="rounded-xl w-full px-3 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all disabled:opacity-50"
                   />
                 </div>
 
@@ -143,6 +211,7 @@ export default function CompanyRegistration() {
                     type="checkbox"
                     id="terms"
                     required
+                    disabled={loading}
                     className="w-3.5 h-3.5 mt-0.5 rounded border-neutral-300 accent-[#3678F1] cursor-pointer shrink-0"
                   />
                   <label htmlFor="terms" className="text-xs text-neutral-500 leading-relaxed cursor-pointer">
@@ -153,11 +222,26 @@ export default function CompanyRegistration() {
                   </label>
                 </div>
 
+                {error && (
+                  <div className="flex items-start gap-2.5 rounded-xl bg-red-50 border border-red-200 px-3.5 py-3">
+                    <FaTriangleExclamation className="text-red-500 text-sm shrink-0 mt-0.5" />
+                    <p className="text-xs text-red-700 leading-snug">{error}</p>
+                  </div>
+                )}
+
                 <button
                   type="submit"
-                  className="rounded-xl w-full py-3 bg-[#3678F1] text-white text-sm font-semibold hover:bg-[#2563d4] transition-colors shadow-sm"
+                  disabled={loading}
+                  className="rounded-xl w-full py-3 bg-[#3678F1] text-white text-sm font-semibold hover:bg-[#2563d4] transition-colors shadow-sm disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
-                  Register Company
+                  {loading ? (
+                    <>
+                      <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                      Registering…
+                    </>
+                  ) : (
+                    'Register Company'
+                  )}
                 </button>
 
                 <p className="text-center text-xs text-neutral-500">
@@ -167,7 +251,6 @@ export default function CompanyRegistration() {
               </form>
             </div>
 
-            {/* Trust badges */}
             <div className="mt-4 flex items-center justify-center gap-5">
               {[
                 { icon: FaLock, label: 'Secure' },

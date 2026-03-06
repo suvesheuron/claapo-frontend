@@ -1,12 +1,57 @@
-import { Link } from 'react-router-dom';
-import { useEffect } from 'react';
-import { FaVideo } from 'react-icons/fa6';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { FaVideo, FaTriangleExclamation } from 'react-icons/fa6';
 import AppLayout from '../components/AppLayout';
+import { useAuth } from '../contexts/AuthContext';
+import { ApiException } from '../services/api';
 
 export default function Login() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { login, isAuthenticated, clearError } = useAuth();
+
+  const [identifier, setIdentifier] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // If already authenticated, redirect away from login page
+  useEffect(() => {
+    if (isAuthenticated) {
+      const from = (location.state as { from?: Location })?.from?.pathname ?? '/dashboard';
+      navigate(from, { replace: true });
+    }
+  }, [isAuthenticated, navigate, location.state]);
+
   useEffect(() => {
     document.title = 'Welcome Back – Claapo Login';
-  }, []);
+    return () => clearError();
+  }, [clearError]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    const trimmed = identifier.trim();
+    if (!trimmed || !password) {
+      setError('Please fill in all fields.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await login(trimmed, password);
+      // Navigation is handled by the isAuthenticated effect above
+    } catch (err) {
+      const msg =
+        err instanceof ApiException
+          ? err.payload.message
+          : 'Login failed. Please check your credentials.';
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <AppLayout headerVariant="back" backTo="/" backLabel="Back to Home">
@@ -22,48 +67,63 @@ export default function Login() {
           </div>
 
           <div className="rounded-2xl bg-white border border-neutral-200 p-6 shadow-sm shadow-neutral-100">
-            <form className="space-y-4">
+            <form className="space-y-4" onSubmit={handleSubmit}>
               <div>
                 <label className="block text-neutral-700 text-sm mb-1.5 font-medium">
-                  Email or Phone Number
+                  Email Address
                 </label>
                 <input
-                  type="text"
+                  type="email"
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
                   placeholder="you@example.com"
-                  className="rounded-xl w-full px-4 py-3 border border-neutral-300 bg-white text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:ring-3 focus:ring-[#3678F1]/10 text-sm transition-all"
+                  autoComplete="email"
+                  required
+                  disabled={loading}
+                  className="rounded-xl w-full px-4 py-3 border border-neutral-300 bg-white text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:ring-3 focus:ring-[#3678F1]/10 text-sm transition-all disabled:opacity-50"
                 />
               </div>
 
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="block text-neutral-700 text-sm font-medium">Password</label>
-                  <Link to="#" className="text-xs text-[#3678F1] hover:underline">
+                  <Link to="/forgot-password" className="text-xs text-[#3678F1] hover:underline">
                     Forgot password?
                   </Link>
                 </div>
                 <input
                   type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
-                  className="rounded-xl w-full px-4 py-3 border border-neutral-300 bg-white text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:ring-3 focus:ring-[#3678F1]/10 text-sm transition-all"
+                  autoComplete="current-password"
+                  required
+                  disabled={loading}
+                  className="rounded-xl w-full px-4 py-3 border border-neutral-300 bg-white text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:ring-3 focus:ring-[#3678F1]/10 text-sm transition-all disabled:opacity-50"
                 />
               </div>
 
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="remember"
-                  className="w-4 h-4 border border-neutral-300 rounded accent-[#3678F1] cursor-pointer"
-                />
-                <label htmlFor="remember" className="text-sm text-neutral-600 cursor-pointer">
-                  Keep me signed in
-                </label>
-              </div>
+              {/* Inline error */}
+              {error && (
+                <div className="flex items-start gap-2.5 rounded-xl bg-red-50 border border-red-200 px-3.5 py-3">
+                  <FaTriangleExclamation className="text-red-500 text-sm shrink-0 mt-0.5" />
+                  <p className="text-xs text-red-700 leading-snug">{error}</p>
+                </div>
+              )}
 
               <button
                 type="submit"
-                className="rounded-xl w-full py-3 bg-[#3678F1] text-white text-sm font-semibold hover:bg-[#2563d4] transition-colors shadow-sm mt-2"
+                disabled={loading}
+                className="rounded-xl w-full py-3 bg-[#3678F1] text-white text-sm font-semibold hover:bg-[#2563d4] transition-colors shadow-sm mt-2 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                Sign In
+                {loading ? (
+                  <>
+                    <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                    Signing in…
+                  </>
+                ) : (
+                  'Sign In'
+                )}
               </button>
             </form>
 
