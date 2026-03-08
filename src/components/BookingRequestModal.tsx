@@ -30,10 +30,13 @@ type BookingRequestModalProps = {
   isOpen: boolean;
   onClose: () => void;
   userName: string;
+  /** Display label e.g. "equipment", "Director" */
   userRole: string;
   userRate: string;
   /** UUID of the user being booked — required for the API call */
   targetUserId: string;
+  /** True when booking a vendor (so we fetch and show their equipment + rates) */
+  isVendor?: boolean;
   onSuccess?: () => void;
 };
 
@@ -44,6 +47,7 @@ export default function BookingRequestModal({
   userRole,
   userRate,
   targetUserId,
+  isVendor = false,
   onSuccess,
 }: BookingRequestModalProps) {
   const [projectId, setProjectId] = useState('');
@@ -57,6 +61,32 @@ export default function BookingRequestModal({
   const { data: projectsData } = useApiQuery<ProjectsResponse>(
     isOpen ? '/projects?limit=50' : null
   );
+
+  // When booking a vendor, load their equipment list (names + daily rates)
+  const { data: vendorEquipment, loading: equipmentLoading } = useApiQuery<{ id: string; name: string; dailyRateMin?: number | null; dailyRateMax?: number | null; daily_rate_min?: number | null; daily_rate_max?: number | null }[] | { data?: unknown[]; items?: unknown[] }>(
+    isOpen && targetUserId && isVendor ? `/equipment/vendor/${targetUserId}` : null
+  );
+  const rawList = Array.isArray(vendorEquipment) ? vendorEquipment : (vendorEquipment as { data?: unknown[]; items?: unknown[] })?.data ?? (vendorEquipment as { items?: unknown[] })?.items ?? [];
+  const equipmentList = Array.isArray(rawList) ? rawList : [];
+
+  const getPaise = (eq: Record<string, unknown>): number[] => {
+    const min = (eq.dailyRateMin ?? eq.daily_rate_min) as number | null | undefined;
+    const max = (eq.dailyRateMax ?? eq.daily_rate_max) as number | null | undefined;
+    return [min, max].filter((n): n is number => typeof n === 'number' && !Number.isNaN(n));
+  };
+
+  const vendorRateDisplay = (() => {
+    if (!isVendor) return userRate;
+    if (userRate && userRate !== '—') return userRate;
+    if (equipmentLoading) return 'Loading…';
+    if (equipmentList.length === 0) return 'Rates on request';
+    const paiseList = equipmentList.flatMap((eq) => getPaise(eq as Record<string, unknown>));
+    if (paiseList.length === 0) return 'Rates on request';
+    const minPaise = Math.min(...paiseList);
+    const maxPaise = Math.max(...paiseList);
+    if (minPaise === maxPaise) return `₹${(minPaise / 100).toLocaleString('en-IN')}/day`;
+    return `From ₹${(minPaise / 100).toLocaleString('en-IN')}/day`;
+  })();
 
   const activeProjects = (projectsData?.data ?? []).filter(
     (p) => p.status === 'active' || p.status === 'open' || p.status === 'draft'
@@ -138,8 +168,33 @@ export default function BookingRequestModal({
             {/* Target user info */}
             <div className="rounded-xl bg-neutral-50 border border-neutral-200 p-4">
               <h3 className="text-sm font-bold text-neutral-900 mb-0.5">{userName}</h3>
-              <p className="text-xs text-neutral-500">{userRole}</p>
-              <p className="text-sm font-semibold text-neutral-900 mt-1">{userRate}</p>
+              <p className="text-xs text-neutral-500 capitalize">{userRole}</p>
+              <p className="text-sm font-semibold text-neutral-900 mt-1">{vendorRateDisplay}</p>
+              {isVendor && (
+                <div className="mt-3 pt-3 border-t border-neutral-200">
+                  <p className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider mb-1.5">Equipment offered & daily rate</p>
+                  {equipmentLoading ? (
+                    <p className="text-xs text-neutral-500">Loading equipment…</p>
+                  ) : equipmentList.length === 0 ? (
+                    <p className="text-xs text-neutral-500">No equipment listed yet.</p>
+                  ) : (
+                    <ul className="space-y-1.5">
+                      {equipmentList.slice(0, 8).map((eq: Record<string, unknown>, idx: number) => {
+                        const paise = getPaise(eq);
+                        const ratePaise = paise.length ? Math.min(...paise) : null;
+                        const rateStr = ratePaise != null ? `₹${(ratePaise / 100).toLocaleString('en-IN')}/day` : 'Rate on request';
+                        return (
+                          <li key={(eq.id as string) || idx} className="text-xs text-neutral-800 flex justify-between items-center gap-3">
+                            <span className="truncate font-medium">{String(eq.name ?? '')}</span>
+                            <span className="shrink-0 font-semibold text-[#3678F1]">{rateStr}</span>
+                          </li>
+                        );
+                      })}
+                      {equipmentList.length > 8 && <li className="text-[10px] text-neutral-400">+{equipmentList.length - 8} more</li>}
+                    </ul>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Project selector */}

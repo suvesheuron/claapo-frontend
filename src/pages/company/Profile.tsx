@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   FaHouse, FaCalendar, FaFolder, FaMagnifyingGlass, FaUser,
   FaBuilding, FaLocationDot, FaIdCard, FaTriangleExclamation, FaCircleCheck,
+  FaMessage, FaPeopleGroup, FaPen, FaEye, FaEyeSlash,
 } from 'react-icons/fa6';
 import DashboardHeader from '../../components/DashboardHeader';
 import DashboardSidebar from '../../components/DashboardSidebar';
@@ -14,8 +15,10 @@ const navLinks = [
   { icon: FaHouse,           label: 'Dashboard',    to: '/dashboard' },
   { icon: FaCalendar,        label: 'Availability', to: '/dashboard/company-availability' },
   { icon: FaFolder,          label: 'Projects',     to: '/dashboard/projects' },
-  { icon: FaFolder,          label: 'Past Projects', to: '/dashboard/company-past-projects' },
+  { icon: FaFolder,          label: 'Past Projects',to: '/dashboard/company-past-projects' },
   { icon: FaMagnifyingGlass, label: 'Search',       to: '/dashboard/search' },
+  { icon: FaMessage,         label: 'Chat',         to: '/dashboard/conversations' },
+  { icon: FaPeopleGroup,     label: 'Team',         to: '/dashboard/team' },
   { icon: FaUser,            label: 'Profile',      to: '/dashboard/company-profile' },
 ];
 
@@ -50,11 +53,13 @@ export default function CompanyProfile() {
   const [saving,  setSaving]  = useState(false);
   const [saved,   setSaved]   = useState(false);
   const [error,   setError]   = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
 
   // Password change state
   const [curPass,  setCurPass]  = useState('');
   const [newPass,  setNewPass]  = useState('');
   const [confPass, setConfPass] = useState('');
+  const [showPw, setShowPw] = useState<{ cur: boolean; new: boolean; conf: boolean }>({ cur: false, new: false, conf: false });
   const [pwSaving, setPwSaving] = useState(false);
   const [pwError,  setPwError]  = useState<string | null>(null);
   const [pwSaved,  setPwSaved]  = useState(false);
@@ -72,10 +77,10 @@ export default function CompanyProfile() {
     setError(null); setSaved(false); setSaving(true);
     try {
       await api.patch('/profile/company', {
-        companyName:   companyName.trim()   || undefined,
-        locationCity:  locationCity.trim()  || undefined,
+        companyName: companyName.trim() || undefined,
+        locationCity: locationCity.trim() || undefined,
         locationState: locationState.trim() || undefined,
-        bio:           bio.trim()           || undefined,
+        bio: bio.trim() || undefined,
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
@@ -126,11 +131,10 @@ export default function CompanyProfile() {
                   <div className="h-64 bg-neutral-200 rounded-2xl" />
                 </div>
               ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+                <div className="space-y-5 max-w-2xl">
 
-                  {/* Left — Company card */}
-                  <div className="lg:col-span-1 space-y-4">
-                    <div className="rounded-2xl bg-white border border-neutral-200 p-5 text-center">
+                  {/* Profile card (top) */}
+                  <div className="rounded-2xl bg-white border border-neutral-200 p-5 text-center">
                       <div className="flex justify-center mb-3">
                         <Avatar name={companyName || 'Co'} size="lg" />
                       </div>
@@ -161,14 +165,34 @@ export default function CompanyProfile() {
                           </div>
                         )}
                       </div>
+                      {!editing && (
+                        <button type="button" onClick={() => setEditing(true)} className="mt-4 w-full px-4 py-2.5 bg-[#3678F1] text-white rounded-xl text-sm font-semibold hover:bg-[#2c65d4] transition-colors flex items-center justify-center gap-2">
+                          <FaPen className="w-3.5 h-3.5" /> Edit Profile
+                        </button>
+                      )}
                     </div>
-                  </div>
 
-                  {/* Right — Forms */}
-                  <div className="lg:col-span-2 space-y-4">
-                    {/* Company info */}
+                  {/* Profile Details (below profile card) — read-only, no Edit button */}
+                  {!editing ? (
                     <div className="rounded-2xl bg-white border border-neutral-200 p-5">
-                      <h3 className="text-sm font-bold text-neutral-900 mb-4">Company Information</h3>
+                      <h3 className="text-sm font-bold text-neutral-900 mb-4">Profile Details</h3>
+                      <dl className="space-y-3">
+                        <div><dt className="text-xs text-neutral-500 mb-0.5">Company Name</dt><dd className="text-sm font-medium text-neutral-900">{companyName || '—'}</dd></div>
+                        <div><dt className="text-xs text-neutral-500 mb-0.5">Email</dt><dd className="text-sm text-neutral-700">{me?.email ?? '—'}</dd></div>
+                        <div><dt className="text-xs text-neutral-500 mb-0.5">Phone</dt><dd className="text-sm text-neutral-700">{me?.phone ?? '—'}</dd></div>
+                        <div><dt className="text-xs text-neutral-500 mb-0.5">City</dt><dd className="text-sm text-neutral-700">{locationCity || '—'}</dd></div>
+                        <div><dt className="text-xs text-neutral-500 mb-0.5">State</dt><dd className="text-sm text-neutral-700">{locationState || '—'}</dd></div>
+                        <div><dt className="text-xs text-neutral-500 mb-0.5">About</dt><dd className="text-sm text-neutral-700 whitespace-pre-wrap">{bio || '—'}</dd></div>
+                      </dl>
+                    </div>
+                  ) : (
+                      <>
+                    {/* Company info — edit form */}
+                    <div className="rounded-2xl bg-white border border-neutral-200 p-5">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-sm font-bold text-neutral-900">Company Information</h3>
+                        <button type="button" onClick={() => setEditing(false)} className="text-xs text-neutral-500 hover:text-neutral-700 font-medium">Cancel</button>
+                      </div>
                       <div className="space-y-3">
                         <div>
                           <label className="block text-xs font-medium text-neutral-600 mb-1">Company Name</label>
@@ -222,8 +246,9 @@ export default function CompanyProfile() {
                         </div>
                       )}
 
-                      <div className="mt-4 flex justify-end">
-                        <button type="button" onClick={handleSave} disabled={saving} className="px-5 py-2.5 bg-[#3678F1] text-white rounded-xl text-sm font-semibold hover:bg-[#2c65d4] transition-colors disabled:opacity-60 flex items-center gap-2">
+                      <div className="mt-4 flex justify-end gap-2">
+                        <button type="button" onClick={() => setEditing(false)} className="px-5 py-2.5 border border-neutral-300 text-neutral-700 rounded-xl text-sm font-medium hover:bg-neutral-50 transition-colors">Cancel</button>
+                        <button type="button" onClick={() => { handleSave(); setEditing(false); }} disabled={saving} className="px-5 py-2.5 bg-[#3678F1] text-white rounded-xl text-sm font-semibold hover:bg-[#2c65d4] transition-colors disabled:opacity-60 flex items-center gap-2">
                           {saving ? <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Saving…</> : 'Save Changes'}
                         </button>
                       </div>
@@ -234,13 +259,18 @@ export default function CompanyProfile() {
                       <h3 className="text-sm font-bold text-neutral-900 mb-4">Change Password</h3>
                       <div className="space-y-3">
                         {[
-                          { label: 'Current Password', val: curPass, set: setCurPass },
-                          { label: 'New Password',     val: newPass, set: setNewPass },
-                          { label: 'Confirm Password', val: confPass, set: setConfPass },
-                        ].map(({ label, val, set }) => (
+                          { label: 'Current Password', val: curPass, set: setCurPass, key: 'cur' as const },
+                          { label: 'New Password',     val: newPass, set: setNewPass, key: 'new' as const },
+                          { label: 'Confirm Password', val: confPass, set: setConfPass, key: 'conf' as const },
+                        ].map(({ label, val, set, key }) => (
                           <div key={label}>
                             <label className="block text-xs font-medium text-neutral-600 mb-1">{label}</label>
-                            <input type="password" value={val} onChange={(e) => set(e.target.value)} placeholder="••••••••" disabled={pwSaving} className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3678F1] transition-all disabled:bg-neutral-50" />
+                            <div className="relative">
+                              <input type={showPw[key] ? 'text' : 'password'} value={val} onChange={(e) => set(e.target.value)} placeholder="••••••••" disabled={pwSaving} className="w-full px-3 py-2.5 pr-11 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3678F1] transition-all disabled:bg-neutral-50" />
+                              <button type="button" onClick={() => setShowPw((p) => ({ ...p, [key]: !p[key] }))} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 p-1" aria-label={showPw[key] ? 'Hide password' : 'Show password'}>
+                                {showPw[key] ? <FaEyeSlash className="w-4 h-4" /> : <FaEye className="w-4 h-4" />}
+                              </button>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -261,7 +291,8 @@ export default function CompanyProfile() {
                         </button>
                       </div>
                     </div>
-                  </div>
+                      </>
+                  )}
                 </div>
               )}
             </div>

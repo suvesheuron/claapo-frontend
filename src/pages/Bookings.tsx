@@ -1,18 +1,8 @@
-/**
- * Bookings page — for individual crew and vendors to manage incoming booking requests.
- *
- * API calls:
- *   GET   /v1/bookings/me?role=target        — incoming requests where the user is the target
- *   PATCH /v1/bookings/:id/accept            — accept a request
- *   PATCH /v1/bookings/:id/decline           — decline a request
- *   PATCH /v1/bookings/:id/complete          — mark as completed (after the job)
- */
-
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   FaCalendar, FaHouse, FaUser, FaCircleCheck, FaXmark,
-  FaMessage, FaTriangleExclamation, FaClock, FaFolder,
+  FaMessage, FaTriangleExclamation, FaClock, FaFolder, FaBan,
 } from 'react-icons/fa6';
 import DashboardHeader from '../components/DashboardHeader';
 import DashboardSidebar from '../components/DashboardSidebar';
@@ -23,24 +13,21 @@ import { useApiQuery } from '../hooks/useApiQuery';
 import { useRole } from '../contexts/RoleContext';
 import { formatPaise } from '../utils/currency';
 
-type BookingStatus = 'pending' | 'accepted' | 'declined' | 'completed' | 'cancelled';
+type BookingStatus = 'pending' | 'accepted' | 'declined' | 'completed' | 'cancelled' | 'locked' | 'expired';
 
 interface Booking {
   id: string;
   status: BookingStatus;
   projectId: string;
-  projectTitle: string | null;
-  requesterName: string | null;
   rateOffered: number | null;
   message: string | null;
-  startDate: string | null;
-  endDate: string | null;
   createdAt: string;
+  project: { id: string; title: string; startDate: string; endDate: string };
+  requester: { id: string; email: string; companyProfile?: { companyName?: string } | null };
 }
 
 interface BookingsResponse {
-  data: Booking[];
-  meta: { page: number; limit: number; total: number };
+  items: Booking[];
 }
 
 const STATUS_CONFIG: Record<BookingStatus, { bg: string; text: string; label: string }> = {
@@ -84,22 +71,37 @@ export default function Bookings() {
   const [tab, setTab]       = useState<TabFilter>('all');
   const [actioning, setActioning] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
 
-  const qs = tab === 'all' ? '' : `&status=${tab}`;
-  const { data, loading, error, refetch } = useApiQuery<BookingsResponse>(
-    `/bookings/me?role=target&limit=50${qs}`
-  );
+  const { data, loading, error, refetch } = useApiQuery<BookingsResponse>('/bookings/incoming');
 
-  const bookings = data?.data ?? [];
+  const allBookings = data?.items ?? [];
+  const bookings = tab === 'all' ? allBookings : allBookings.filter(b => b.status === tab);
 
-  const doAction = async (bookingId: string, action: 'accept' | 'decline' | 'complete') => {
+  const doAction = async (bookingId: string, action: 'accept' | 'decline') => {
     setActioning(bookingId + action);
     setActionError(null);
     try {
-      await api.patch(`/bookings/${bookingId}/${action}`);
+      await api.patch(`/bookings/${bookingId}/${action}`, {});
       refetch();
     } catch (err) {
       setActionError(err instanceof ApiException ? err.payload.message : `Failed to ${action} booking.`);
+    } finally {
+      setActioning(null);
+    }
+  };
+
+  const doCancel = async (bookingId: string) => {
+    setActioning(bookingId + 'cancel');
+    setActionError(null);
+    try {
+      await api.patch(`/bookings/${bookingId}/cancel`, { reason: cancelReason || undefined });
+      setCancellingId(null);
+      setCancelReason('');
+      refetch();
+    } catch (err) {
+      setActionError(err instanceof ApiException ? err.payload.message : 'Failed to cancel booking.');
     } finally {
       setActioning(null);
     }
@@ -174,23 +176,20 @@ export default function Bookings() {
               {!loading && bookings.length > 0 && (
                 <div className="space-y-3">
                   {bookings.map((booking) => {
-                    const cfg = STATUS_CONFIG[booking.status] ?? STATUS_CONFIG.pending;
+                    const cfg = STATUS_CONFIG[booking.status as BookingStatus] ?? STATUS_CONFIG.pending;
                     const isActioning = actioning?.startsWith(booking.id);
+                    const companyName = booking.requester.companyProfile?.companyName ?? booking.requester.email;
                     return (
                       <div key={booking.id} className="rounded-2xl bg-white border border-neutral-200 p-5 hover:border-neutral-300 transition-all">
                         <div className="flex items-start justify-between gap-4 mb-3">
                           <div className="flex items-start gap-3 flex-1 min-w-0">
-                            <Avatar name={booking.requesterName ?? 'Company'} size="md" />
+                            <Avatar name={companyName} size="md" />
                             <div className="min-w-0">
-                              <h3 className="text-sm font-bold text-neutral-900 truncate">
-                                {booking.requesterName ?? 'Production Company'}
-                              </h3>
-                              {booking.projectTitle && (
-                                <p className="text-xs text-neutral-500 truncate">{booking.projectTitle}</p>
-                              )}
+                              <h3 className="text-sm font-bold text-neutral-900 truncate">{companyName}</h3>
+                              <p className="text-xs text-neutral-500 truncate">{booking.project.title}</p>
                               <p className="text-xs text-neutral-400 mt-0.5">
-                                {formatDate(booking.startDate)}
-                                {booking.endDate && booking.endDate !== booking.startDate && ` – ${formatDate(booking.endDate)}`}
+                                {formatDate(booking.project.startDate)}
+                                {booking.project.endDate !== booking.project.startDate && ` – ${formatDate(booking.project.endDate)}`}
                               </p>
                             </div>
                           </div>
@@ -198,9 +197,7 @@ export default function Bookings() {
                             {booking.rateOffered && (
                               <span className="text-sm font-bold text-neutral-900">{formatPaise(booking.rateOffered)}</span>
                             )}
-                            <span className={`text-[11px] px-2.5 py-1 rounded-full font-semibold ${cfg.bg} ${cfg.text}`}>
-                              {cfg.label}
-                            </span>
+                            <span className={`text-[11px] px-2.5 py-1 rounded-full font-semibold ${cfg.bg} ${cfg.text}`}>{cfg.label}</span>
                           </div>
                         </div>
 
@@ -211,48 +208,29 @@ export default function Bookings() {
                         )}
 
                         <div className="flex items-center gap-2 flex-wrap">
-                          {/* Message button — always available */}
-                          <Link
-                            to={`/dashboard/chat/${booking.projectId}`}
-                            className="rounded-xl px-4 py-2 border border-neutral-200 text-neutral-700 text-xs font-semibold hover:bg-neutral-50 flex items-center gap-1.5 transition-colors"
-                          >
+                          <Link to={`/dashboard/chat/${booking.requester.id}`} className="rounded-xl px-4 py-2 border border-neutral-200 text-neutral-700 text-xs font-semibold hover:bg-neutral-50 flex items-center gap-1.5 transition-colors">
                             <FaMessage className="w-3 h-3" /> Message
                           </Link>
 
-                          {/* Pending actions */}
                           {booking.status === 'pending' && (
                             <>
-                              <button
-                                type="button"
-                                onClick={() => doAction(booking.id, 'accept')}
-                                disabled={!!isActioning}
-                                className="rounded-xl px-4 py-2 bg-[#3678F1] text-white text-xs font-semibold hover:bg-[#2563d4] flex items-center gap-1.5 transition-colors disabled:opacity-50"
-                              >
+                              <button type="button" onClick={() => doAction(booking.id, 'accept')} disabled={!!isActioning}
+                                className="rounded-xl px-4 py-2 bg-[#3678F1] text-white text-xs font-semibold hover:bg-[#2563d4] flex items-center gap-1.5 transition-colors disabled:opacity-50">
                                 <FaCircleCheck className="w-3 h-3" />
                                 {actioning === booking.id + 'accept' ? 'Accepting…' : 'Accept'}
                               </button>
-                              <button
-                                type="button"
-                                onClick={() => doAction(booking.id, 'decline')}
-                                disabled={!!isActioning}
-                                className="rounded-xl px-4 py-2 bg-[#FEE2E2] text-[#B91C1C] text-xs font-semibold hover:bg-[#FECACA] flex items-center gap-1.5 transition-colors disabled:opacity-50"
-                              >
+                              <button type="button" onClick={() => doAction(booking.id, 'decline')} disabled={!!isActioning}
+                                className="rounded-xl px-4 py-2 bg-[#FEE2E2] text-[#B91C1C] text-xs font-semibold hover:bg-[#FECACA] flex items-center gap-1.5 transition-colors disabled:opacity-50">
                                 <FaXmark className="w-3 h-3" />
                                 {actioning === booking.id + 'decline' ? 'Declining…' : 'Decline'}
                               </button>
                             </>
                           )}
 
-                          {/* Accepted: can mark complete */}
-                          {booking.status === 'accepted' && (
-                            <button
-                              type="button"
-                              onClick={() => doAction(booking.id, 'complete')}
-                              disabled={!!isActioning}
-                              className="rounded-xl px-4 py-2 bg-[#DCFCE7] text-[#15803D] text-xs font-semibold hover:bg-[#BBF7D0] flex items-center gap-1.5 transition-colors disabled:opacity-50"
-                            >
-                              <FaCircleCheck className="w-3 h-3" />
-                              {actioning === booking.id + 'complete' ? 'Updating…' : 'Mark Complete'}
+                          {(booking.status === 'accepted' || booking.status === 'pending') && (
+                            <button type="button" onClick={() => { setCancellingId(booking.id); setCancelReason(''); }} disabled={!!isActioning}
+                              className="rounded-xl px-4 py-2 bg-[#FEF9E6] text-[#92400E] text-xs font-semibold hover:bg-[#FDE68A] flex items-center gap-1.5 transition-colors disabled:opacity-50 ml-auto">
+                              <FaBan className="w-3 h-3" /> Request Cancellation
                             </button>
                           )}
                         </div>
@@ -266,6 +244,39 @@ export default function Bookings() {
           <AppFooter />
         </main>
       </div>
+
+      {/* Cancel Confirmation Modal */}
+      {cancellingId && (
+        <>
+          <div className="fixed inset-0 bg-black/40 z-40" onClick={() => setCancellingId(null)} />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+              <h2 className="text-base font-bold text-neutral-900 mb-2">Request Cancellation</h2>
+              <p className="text-sm text-neutral-600 mb-4">
+                A cancellation notice will be sent to the production company. This will cancel the booking if both parties agree.
+              </p>
+              <div className="mb-4">
+                <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Reason for cancellation <span className="font-normal text-neutral-400">(optional)</span></label>
+                <textarea value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} rows={3} placeholder="e.g., Already booked for another project during these dates…"
+                  className="w-full px-4 py-2.5 border border-neutral-300 rounded-xl text-sm bg-[#F3F4F6] focus:bg-white focus:outline-none focus:border-[#3678F1] resize-none transition-all" />
+              </div>
+              {actionError && (
+                <div className="flex items-center gap-2 mb-4 p-3 bg-red-50 border border-red-200 rounded-xl">
+                  <FaTriangleExclamation className="text-red-500 text-xs shrink-0" />
+                  <p className="text-xs text-red-700">{actionError}</p>
+                </div>
+              )}
+              <div className="flex gap-3">
+                <button type="button" onClick={() => setCancellingId(null)} className="flex-1 rounded-xl py-2.5 border border-neutral-300 text-neutral-700 text-sm font-medium hover:bg-neutral-50 transition-colors">Keep Booking</button>
+                <button type="button" onClick={() => doCancel(cancellingId)} disabled={!!actioning}
+                  className="flex-1 rounded-xl py-2.5 bg-red-500 text-white text-sm font-semibold hover:bg-red-600 transition-colors disabled:opacity-60 flex items-center justify-center gap-2">
+                  {actioning ? <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Cancelling…</> : 'Confirm Cancellation'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

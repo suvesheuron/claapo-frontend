@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
-  FaHouse, FaCalendar, FaTruck, FaUser,
+  FaHouse, FaCalendar, FaTruck, FaUser, FaEye, FaEyeSlash, FaMessage, FaPen,
   FaBuilding, FaIdCard, FaLocationDot, FaTriangleExclamation, FaCircleCheck,
 } from 'react-icons/fa6';
 import DashboardHeader from '../../components/DashboardHeader';
@@ -14,6 +14,7 @@ const navLinks = [
   { icon: FaHouse,     label: 'Dashboard',   to: '/dashboard' },
   { icon: FaCalendar,  label: 'Availability', to: '/dashboard/vendor-availability' },
   { icon: FaTruck,     label: 'Equipment',   to: '/dashboard/equipment' },
+  { icon: FaMessage,   label: 'Chat',        to: '/dashboard/conversations' },
   { icon: FaUser,      label: 'Profile',     to: '/dashboard/vendor-profile' },
 ];
 
@@ -58,6 +59,7 @@ export default function VendorProfile() {
   const [locationState, setLocationState] = useState('');
   const [bio,           setBio]           = useState('');
 
+  const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved,  setSaved]  = useState(false);
   const [error,  setError]  = useState<string | null>(null);
@@ -65,6 +67,7 @@ export default function VendorProfile() {
   const [curPass,  setCurPass]  = useState('');
   const [newPass,  setNewPass]  = useState('');
   const [confPass, setConfPass] = useState('');
+  const [showPw, setShowPw] = useState<{ cur: boolean; new: boolean; conf: boolean }>({ cur: false, new: false, conf: false });
   const [pwSaving, setPwSaving] = useState(false);
   const [pwError,  setPwError]  = useState<string | null>(null);
   const [pwSaved,  setPwSaved]  = useState(false);
@@ -138,48 +141,63 @@ export default function VendorProfile() {
                   <div className="h-64 bg-neutral-200 rounded-2xl" />
                 </div>
               ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-
-                  {/* Left — Vendor card */}
-                  <div className="lg:col-span-1 space-y-4">
-                    <div className="rounded-2xl bg-white border border-neutral-200 p-5 text-center">
-                      <div className="flex justify-center mb-3">
-                        <Avatar name={companyName || 'Vendor'} size="lg" />
-                      </div>
-                      <h2 className="text-base font-bold text-neutral-900 mb-0.5">{companyName || '—'}</h2>
-                      <p className="text-xs text-neutral-500 mb-1 capitalize">
-                        {VENDOR_TYPE_LABELS[vendorType] ?? vendorType ?? 'Equipment Vendor'}
-                      </p>
-                      {me?.isVerified && (
-                        <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-[#D1FAE5] text-[#065F46] font-semibold">
-                          ✓ Verified Vendor
-                        </span>
-                      )}
-                      <div className="mt-4 pt-4 border-t border-neutral-100 space-y-2 text-left">
-                        {locationCity && (
-                          <div className="flex items-center gap-2 text-xs text-neutral-500">
-                            <FaLocationDot className="w-3 h-3 text-neutral-400 shrink-0" />
-                            <span>{locationCity}{locationState ? `, ${locationState}` : ''}</span>
-                          </div>
-                        )}
-                        {profile?.gstNumber && (
-                          <div className="flex items-center gap-2 text-xs text-neutral-500">
-                            <FaIdCard className="w-3 h-3 text-neutral-400 shrink-0" />
-                            <span>GST: {profile.gstNumber}</span>
-                            {profile.isGstVerified && (
-                              <span className="text-[10px] text-[#15803D] font-semibold">✓</span>
-                            )}
-                          </div>
-                        )}
-                      </div>
+                <div className="space-y-5 max-w-2xl">
+                  {/* Profile card (top) */}
+                  <div className="rounded-2xl bg-white border border-neutral-200 p-5 text-center">
+                    <div className="flex justify-center mb-3">
+                      <Avatar name={companyName || 'Vendor'} size="lg" />
                     </div>
+                    <h2 className="text-base font-bold text-neutral-900 mb-0.5">{companyName || '—'}</h2>
+                    <p className="text-xs text-neutral-500 mb-1 capitalize">
+                      {VENDOR_TYPE_LABELS[vendorType] ?? vendorType ?? 'Equipment Vendor'}
+                    </p>
+                    {me?.isVerified && (
+                      <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-[#D1FAE5] text-[#065F46] font-semibold">
+                        ✓ Verified Vendor
+                      </span>
+                    )}
+                    <div className="mt-4 pt-4 border-t border-neutral-100 space-y-2 text-left">
+                      {locationCity && (
+                        <div className="flex items-center gap-2 text-xs text-neutral-500">
+                          <FaLocationDot className="w-3 h-3 text-neutral-400 shrink-0" />
+                          <span>{locationCity}{locationState ? `, ${locationState}` : ''}</span>
+                        </div>
+                      )}
+                      {profile?.gstNumber && (
+                        <div className="flex items-center gap-2 text-xs text-neutral-500">
+                          <FaIdCard className="w-3 h-3 text-neutral-400 shrink-0" />
+                          <span>GST: {profile.gstNumber}</span>
+                          {profile.isGstVerified && <span className="text-[10px] text-[#15803D] font-semibold">✓</span>}
+                        </div>
+                      )}
+                    </div>
+                    {!editing && (
+                      <button type="button" onClick={() => setEditing(true)} className="mt-4 w-full px-4 py-2.5 bg-[#3678F1] text-white rounded-xl text-sm font-semibold hover:bg-[#2c65d4] transition-colors flex items-center justify-center gap-2">
+                        <FaPen className="w-3.5 h-3.5" /> Edit Profile
+                      </button>
+                    )}
                   </div>
 
-                  {/* Right — Forms */}
-                  <div className="lg:col-span-2 space-y-4">
-                    {/* Business info */}
+                  {!editing ? (
                     <div className="rounded-2xl bg-white border border-neutral-200 p-5">
-                      <h3 className="text-sm font-bold text-neutral-900 mb-4">Business Information</h3>
+                      <h3 className="text-sm font-bold text-neutral-900 mb-4">Profile Details</h3>
+                      <dl className="space-y-3">
+                        <div><dt className="text-xs text-neutral-500 mb-0.5">Business Name</dt><dd className="text-sm font-medium text-neutral-900">{companyName || '—'}</dd></div>
+                        <div><dt className="text-xs text-neutral-500 mb-0.5">Vendor Type</dt><dd className="text-sm text-neutral-700">{VENDOR_TYPE_LABELS[vendorType] ?? vendorType ?? '—'}</dd></div>
+                        <div><dt className="text-xs text-neutral-500 mb-0.5">Email</dt><dd className="text-sm text-neutral-700">{me?.email ?? '—'}</dd></div>
+                        <div><dt className="text-xs text-neutral-500 mb-0.5">Phone</dt><dd className="text-sm text-neutral-700">{me?.phone ?? '—'}</dd></div>
+                        <div><dt className="text-xs text-neutral-500 mb-0.5">City</dt><dd className="text-sm text-neutral-700">{locationCity || '—'}</dd></div>
+                        <div><dt className="text-xs text-neutral-500 mb-0.5">State</dt><dd className="text-sm text-neutral-700">{locationState || '—'}</dd></div>
+                        <div><dt className="text-xs text-neutral-500 mb-0.5">About</dt><dd className="text-sm text-neutral-700 whitespace-pre-wrap">{bio || '—'}</dd></div>
+                      </dl>
+                    </div>
+                  ) : (
+                    <>
+                    <div className="rounded-2xl bg-white border border-neutral-200 p-5">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-sm font-bold text-neutral-900">Business Information</h3>
+                        <button type="button" onClick={() => setEditing(false)} className="text-xs text-neutral-500 hover:text-neutral-700 font-medium">Cancel</button>
+                      </div>
                       <div className="space-y-3">
                         <div>
                           <label className="block text-xs font-medium text-neutral-600 mb-1">Business Name</label>
@@ -241,8 +259,9 @@ export default function VendorProfile() {
                         </div>
                       )}
 
-                      <div className="mt-4 flex justify-end">
-                        <button type="button" onClick={handleSave} disabled={saving} className="px-5 py-2.5 bg-[#3678F1] text-white rounded-xl text-sm font-semibold hover:bg-[#2c65d4] transition-colors disabled:opacity-60 flex items-center gap-2">
+                      <div className="mt-4 flex justify-end gap-2">
+                        <button type="button" onClick={() => setEditing(false)} className="px-5 py-2.5 border border-neutral-300 text-neutral-700 rounded-xl text-sm font-medium hover:bg-neutral-50">Cancel</button>
+                        <button type="button" onClick={() => { handleSave(); setEditing(false); }} disabled={saving} className="px-5 py-2.5 bg-[#3678F1] text-white rounded-xl text-sm font-semibold hover:bg-[#2c65d4] disabled:opacity-60 flex items-center gap-2">
                           {saving ? <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Saving…</> : 'Save Changes'}
                         </button>
                       </div>
@@ -253,13 +272,18 @@ export default function VendorProfile() {
                       <h3 className="text-sm font-bold text-neutral-900 mb-4">Change Password</h3>
                       <div className="space-y-3">
                         {[
-                          { label: 'Current Password', val: curPass, set: setCurPass },
-                          { label: 'New Password',     val: newPass, set: setNewPass },
-                          { label: 'Confirm Password', val: confPass, set: setConfPass },
-                        ].map(({ label, val, set }) => (
+                          { label: 'Current Password', val: curPass, set: setCurPass, key: 'cur' as const },
+                          { label: 'New Password',     val: newPass, set: setNewPass, key: 'new' as const },
+                          { label: 'Confirm Password', val: confPass, set: setConfPass, key: 'conf' as const },
+                        ].map(({ label, val, set, key }) => (
                           <div key={label}>
                             <label className="block text-xs font-medium text-neutral-600 mb-1">{label}</label>
-                            <input type="password" value={val} onChange={(e) => set(e.target.value)} placeholder="••••••••" disabled={pwSaving} className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3678F1] transition-all disabled:bg-neutral-50" />
+                            <div className="relative">
+                              <input type={showPw[key] ? 'text' : 'password'} value={val} onChange={(e) => set(e.target.value)} placeholder="••••••••" disabled={pwSaving} className="w-full px-3 py-2.5 pr-11 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3678F1] transition-all disabled:bg-neutral-50" />
+                              <button type="button" onClick={() => setShowPw((p) => ({ ...p, [key]: !p[key] }))} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 p-1" aria-label={showPw[key] ? 'Hide password' : 'Show password'}>
+                                {showPw[key] ? <FaEyeSlash className="w-4 h-4" /> : <FaEye className="w-4 h-4" />}
+                              </button>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -280,7 +304,8 @@ export default function VendorProfile() {
                         </button>
                       </div>
                     </div>
-                  </div>
+                    </>
+                  )}
                 </div>
               )}
             </div>

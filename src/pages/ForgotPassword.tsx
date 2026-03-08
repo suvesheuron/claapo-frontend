@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaVideo, FaTriangleExclamation, FaCircleCheck, FaChevronLeft } from 'react-icons/fa6';
+import { FaVideo, FaTriangleExclamation, FaCircleCheck, FaChevronLeft, FaEye, FaEyeSlash } from 'react-icons/fa6';
 import AppLayout from '../components/AppLayout';
 import { api, ApiException } from '../services/api';
 import { toE164India, maskPhone } from '../utils/phone';
@@ -19,6 +19,8 @@ export default function ForgotPassword() {
   const [digits, setDigits]       = useState<string[]>(Array(OTP_LENGTH).fill(''));
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showNewPass, setShowNewPass] = useState(false);
+  const [showConfPass, setShowConfPass] = useState(false);
 
   const [loading, setLoading]     = useState(false);
   const [error, setError]         = useState<string | null>(null);
@@ -317,29 +319,39 @@ export default function ForgotPassword() {
 
                 <div>
                   <label className="block text-neutral-700 text-sm mb-1.5 font-medium">New Password</label>
-                  <input
-                    type="password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="At least 8 characters"
-                    required
-                    minLength={8}
-                    disabled={loading}
-                    className="rounded-xl w-full px-4 py-3 border border-neutral-300 bg-white text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:ring-3 focus:ring-[#3678F1]/10 text-sm transition-all disabled:opacity-50"
-                  />
+                  <div className="relative">
+                    <input
+                      type={showNewPass ? 'text' : 'password'}
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="At least 8 characters"
+                      required
+                      minLength={8}
+                      disabled={loading}
+                      className="rounded-xl w-full px-4 py-3 pr-11 border border-neutral-300 bg-white text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:ring-3 focus:ring-[#3678F1]/10 text-sm transition-all disabled:opacity-50"
+                    />
+                    <button type="button" onClick={() => setShowNewPass((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 p-1" aria-label={showNewPass ? 'Hide password' : 'Show password'}>
+                      {showNewPass ? <FaEyeSlash className="w-4 h-4" /> : <FaEye className="w-4 h-4" />}
+                    </button>
+                  </div>
                 </div>
 
                 <div>
                   <label className="block text-neutral-700 text-sm mb-1.5 font-medium">Confirm Password</label>
-                  <input
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Repeat your new password"
-                    required
-                    disabled={loading}
-                    className="rounded-xl w-full px-4 py-3 border border-neutral-300 bg-white text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:ring-3 focus:ring-[#3678F1]/10 text-sm transition-all disabled:opacity-50"
-                  />
+                  <div className="relative">
+                    <input
+                      type={showConfPass ? 'text' : 'password'}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Repeat your new password"
+                      required
+                      disabled={loading}
+                      className="rounded-xl w-full px-4 py-3 pr-11 border border-neutral-300 bg-white text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:ring-3 focus:ring-[#3678F1]/10 text-sm transition-all disabled:opacity-50"
+                    />
+                    <button type="button" onClick={() => setShowConfPass((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 p-1" aria-label={showConfPass ? 'Hide password' : 'Show password'}>
+                      {showConfPass ? <FaEyeSlash className="w-4 h-4" /> : <FaEye className="w-4 h-4" />}
+                    </button>
+                  </div>
                 </div>
 
                 {error && (

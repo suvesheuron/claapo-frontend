@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { FaCalendar, FaTruck, FaFileInvoice, FaBell, FaHouse, FaChevronLeft, FaChevronRight, FaXmark, FaCircle, FaMessage, FaPlus, FaUser } from 'react-icons/fa6';
+import { FaCalendar, FaTruck, FaBell, FaHouse, FaChevronLeft, FaChevronRight, FaXmark, FaCircle, FaMessage, FaUser, FaTriangleExclamation, FaFileInvoice, FaPlus } from 'react-icons/fa6';
+import { api, ApiException } from '../services/api';
+import { useApiQuery } from '../hooks/useApiQuery';
+import { formatPaise, formatRateRange } from '../utils/currency';
 import DashboardHeader from '../components/DashboardHeader';
 import DashboardSidebar from '../components/DashboardSidebar';
 import AppFooter from '../components/AppFooter';
-import RoleIndicator from '../components/RoleIndicator';
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -32,31 +34,21 @@ interface PanelData {
   invoice?: string;
 }
 
-const BASE_YEAR = 2025;
-const BASE_MONTH = 0;
+const _today = new Date();
+const BASE_YEAR = _today.getFullYear();
+const BASE_MONTH = _today.getMonth();
 
-const bookedByMonth: Record<number, Record<number, Omit<CalendarCell, 'd' | 'muted'>>> = {
-  0: { // January 2025
-    8:  { status: 'booked',    equipment: 'RED Camera Package', company: 'Production Studios Inc.', project: 'Commercial Shoot', invoice: 'INV-001' },
-    9:  { status: 'booked',    equipment: 'RED Camera Package', company: 'Production Studios Inc.', project: 'Commercial Shoot', invoice: 'INV-001' },
-    10: { status: 'booked',    equipment: 'RED Camera Package', company: 'Production Studios Inc.', project: 'Commercial Shoot', invoice: 'INV-001' },
-    15: { status: 'booked',    equipment: 'Lighting Kit (LED)', company: 'Creative Agency',         project: 'Music Video',       invoice: 'INV-002' },
-    16: { status: 'booked',    equipment: 'Lighting Kit (LED)', company: 'Creative Agency',         project: 'Music Video',       invoice: 'INV-002' },
-    17: { status: 'booked',    equipment: 'Lighting Kit (LED)', company: 'Creative Agency',         project: 'Music Video',       invoice: 'INV-002' },
-    22: { status: 'completed', equipment: 'Gimbal Stabilizer',  company: 'Studio Shodwe',           project: 'Music Video Prod',  invoice: 'INV-003' },
-    23: { status: 'completed', equipment: 'Gimbal Stabilizer',  company: 'Studio Shodwe',           project: 'Music Video Prod',  invoice: 'INV-003' },
-  },
-  '-1': { // December 2024
-    5:  { status: 'completed', equipment: 'RED Camera Package', company: 'Film Studios',   project: 'Documentary',     invoice: 'INV-004' },
-    6:  { status: 'completed', equipment: 'RED Camera Package', company: 'Film Studios',   project: 'Documentary',     invoice: 'INV-004' },
-    18: { status: 'completed', equipment: 'Transport Van',      company: 'Brand Co.',      project: 'Product Launch',  invoice: 'INV-005' },
-    19: { status: 'completed', equipment: 'Transport Van',      company: 'Brand Co.',      project: 'Product Launch',  invoice: 'INV-005' },
-    22: { status: 'completed', equipment: 'Lighting Kit (LED)', company: 'Creative Agency',project: 'Commercial Ad',   invoice: 'INV-006' },
-    23: { status: 'completed', equipment: 'Lighting Kit (LED)', company: 'Creative Agency',project: 'Commercial Ad',   invoice: 'INV-006' },
-  },
-};
+function datesBetween(start: string, end: string): string[] {
+  const out: string[] = [];
+  const s = new Date(start);
+  const e = new Date(end);
+  for (let d = new Date(s); d <= e; d.setDate(d.getDate() + 1)) {
+    out.push(d.toISOString().slice(0, 10));
+  }
+  return out;
+}
 
-function buildCalendar(monthOffset: number): CalendarCell[] {
+function buildCalendar(monthOffset: number, bookingsByDay?: Record<string, { status: CellStatus; equipment?: string; company?: string; project?: string; invoice?: string }>): CalendarCell[] {
   const d = new Date(BASE_YEAR, BASE_MONTH + monthOffset, 1);
   const year = d.getFullYear();
   const month = d.getMonth();
@@ -65,9 +57,10 @@ function buildCalendar(monthOffset: number): CalendarCell[] {
   const prevDays = new Date(year, month, 0).getDate();
   const cells: CalendarCell[] = [];
   for (let i = firstDay - 1; i >= 0; i--) cells.push({ d: prevDays - i, muted: true, status: null });
-  const monthData = bookedByMonth[monthOffset] ?? {};
+  const monthData = bookingsByDay ?? {};
   for (let day = 1; day <= daysInMonth; day++) {
-    const override = monthData[day];
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const override = monthData[dateStr];
     cells.push({ d: day, muted: false, ...(override ?? { status: 'available' as CellStatus }) });
   }
   const rem = 7 - (cells.length % 7);
@@ -81,28 +74,29 @@ const cellStyle: Record<string, string> = {
   completed:     'bg-[#DBEAFE] border-[#93C5FD] text-[#1D4ED8]',
 };
 
-const equipment = [
-  { name: 'RED Camera Package', rate: '₹15,000/day', status: 'available' },
-  { name: 'Lighting Kit (LED)', rate: '₹8,000/day', status: 'available' },
-  { name: 'Gimbal Stabilizer', rate: '₹5,000/day', status: 'booked' },
-  { name: 'Transport Van', rate: '₹3,500/day', status: 'available' },
-];
+interface EquipmentItem {
+  id: string;
+  name: string;
+  dailyRateMin?: number | null;
+  dailyRateMax?: number | null;
+}
 
-const bookingRequests = [
-  { id: 1, company: 'Production Studios Inc.', equipment: 'RED Camera Package', dates: 'Jan 8–10' },
-  { id: 2, company: 'Creative Agency', equipment: 'Lighting Kit', dates: 'Jan 15–17' },
-];
-
-const pastRentals = [
-  { name: 'Music Video Production', date: 'Dec 22–23, 2024', company: 'Studio Shodwe', equipment: 'RED Camera Package', invoice: 'INV-001' },
-  { name: 'Commercial Ad', date: 'Dec 15–17, 2024', company: 'Creative Agency', equipment: 'Lighting Kit', invoice: 'INV-002' },
-];
+interface IncomingBooking {
+  id: string; status: string; rateOffered?: number | null; message?: string | null;
+  project: { id: string; title: string; startDate?: string; endDate?: string };
+  requester: { id: string; email: string; companyProfile?: { companyName?: string } | null };
+}
+interface PastBookingItem {
+  id: string; project: { id: string; title: string; startDate: string; endDate: string };
+  requester: { companyProfile?: { companyName?: string } | null };
+}
 
 const navLinks = [
-  { icon: FaHouse,     label: 'Dashboard',   to: '/dashboard' },
-  { icon: FaCalendar,  label: 'Availability', to: '/dashboard/vendor-availability' },
-  { icon: FaTruck,     label: 'Equipment',   to: '/dashboard/equipment' },
-  { icon: FaUser,      label: 'Profile',     to: '/dashboard/vendor-profile' },
+  { icon: FaHouse,        label: 'Dashboard',   to: '/dashboard' },
+  { icon: FaCalendar,     label: 'Availability', to: '/dashboard/vendor-availability' },
+  { icon: FaTruck,        label: 'Equipment',   to: '/dashboard/equipment' },
+  { icon: FaMessage,      label: 'Chat',        to: '/dashboard/conversations' },
+  { icon: FaUser,         label: 'Profile',     to: '/dashboard/vendor-profile' },
 ];
 
 export default function VendorDashboard() {
@@ -110,11 +104,55 @@ export default function VendorDashboard() {
 
   const [monthOffset, setMonthOffset] = useState(0);
   const [panel, setPanel] = useState<PanelData | null>(null);
+  const [actioning, setActioning] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
-  const displayDate = new Date(2025, monthOffset, 1);
+  const displayDate = new Date(BASE_YEAR, BASE_MONTH + monthOffset, 1);
   const monthLabel = MONTHS[displayDate.getMonth()];
   const yearLabel = displayDate.getFullYear();
-  const calendarDays = buildCalendar(monthOffset);
+
+  const { data: bookingsData, loading: bookingsLoading, refetch: refetchBookings } =
+    useApiQuery<{ items: IncomingBooking[] }>('/bookings/incoming');
+  const { data: pastData } = useApiQuery<{ items: PastBookingItem[] }>('/bookings/past');
+  const { data: equipmentList } = useApiQuery<EquipmentItem[] | { items: EquipmentItem[] }>('/equipment/me');
+
+  const incomingItems = bookingsData?.items ?? [];
+  const pendingBookings = incomingItems.filter(b => b.status === 'pending').slice(0, 5);
+  const activeCount = incomingItems.filter(b => b.status === 'accepted' || b.status === 'locked').length;
+  const pastItems = pastData?.items ?? [];
+  const pastCount = pastItems.length;
+  const equipmentArray = Array.isArray(equipmentList) ? equipmentList : (equipmentList as { items?: EquipmentItem[] })?.items ?? [];
+
+  const bookingsByDay = (() => {
+    const map: Record<string, { status: CellStatus; project?: string; company?: string }> = {};
+    const add = (start: string, end: string, status: CellStatus, project?: string, company?: string) => {
+      datesBetween(start, end).forEach((dateStr) => {
+        map[dateStr] = { status, project, company };
+      });
+    };
+    incomingItems.filter(b => (b.status === 'accepted' || b.status === 'locked') && b.project?.startDate && b.project?.endDate).forEach((b) => {
+      add(b.project.startDate!, b.project.endDate!, 'booked', b.project.title, b.requester.companyProfile?.companyName ?? undefined);
+    });
+    pastItems.forEach((b) => {
+      add(b.project.startDate, b.project.endDate, 'completed', b.project.title, b.requester.companyProfile?.companyName ?? undefined);
+    });
+    return map;
+  })();
+
+  const calendarDays = buildCalendar(monthOffset, bookingsByDay);
+
+  const doAction = useCallback(async (id: string, action: 'accept' | 'decline') => {
+    setActioning(id);
+    setActionError(null);
+    try {
+      await api.patch(`/bookings/${id}/${action}`, {});
+      refetchBookings();
+    } catch (err) {
+      setActionError(err instanceof ApiException ? err.payload.message : 'Action failed');
+    } finally {
+      setActioning(null);
+    }
+  }, [refetchBookings]);
 
   const openPanel = (cell: CalendarCell) => {
     if (cell.muted) return;
@@ -123,7 +161,7 @@ export default function VendorDashboard() {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-[#F3F4F6] w-full">
-      <DashboardHeader userName="Equipment Rentals Co." />
+      <DashboardHeader />
 
       <div className="flex-1 flex min-h-0 overflow-hidden">
         <DashboardSidebar links={navLinks} />
@@ -133,51 +171,13 @@ export default function VendorDashboard() {
           <div className="flex-1 min-h-0 overflow-auto">
             <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-6 xl:px-8 py-5">
 
-              <div className="flex items-center justify-between mb-5">
-                <div>
-                  <h1 className="text-xl font-bold text-neutral-900">Vendor Dashboard</h1>
-                  <p className="text-sm text-neutral-500 mt-0.5">Equipment availability and rental management</p>
-                </div>
-                <RoleIndicator />
+              <div className="mb-5">
+                <h1 className="text-xl font-bold text-neutral-900">Vendor Dashboard</h1>
+                <p className="text-sm text-neutral-500 mt-0.5">Equipment availability and rental management</p>
               </div>
 
-              {/* Stats */}
-              <div className="grid grid-cols-3 gap-3 mb-5">
-                {[
-                  { label: 'Active Bookings', value: '4', color: 'text-[#3678F1]' },
-                  { label: 'Past Rentals', value: '28', color: 'text-[#3678F1]' },
-                  { label: 'This Month', value: '₹1.2L', color: 'text-[#22C55E]' },
-                ].map(({ label, value, color }) => (
-                  <div key={label} className="rounded-2xl bg-white border border-neutral-200 p-4">
-                    <p className="text-xs text-neutral-500">{label}</p>
-                    <p className={`text-xl font-bold mt-1 ${color}`}>{value}</p>
-                  </div>
-                ))}
-              </div>
-
-              {/* Equipment overview */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
-                {equipment.map((item) => (
-                  <div key={item.name} className="rounded-2xl bg-white border border-neutral-200 p-4">
-                    <div className="w-8 h-8 rounded-lg bg-[#EEF4FF] flex items-center justify-center mb-2">
-                      <FaTruck className="text-[#3678F1] text-sm" />
-                    </div>
-                    <h3 className="text-sm font-bold text-neutral-900 mb-0.5 line-clamp-1">{item.name}</h3>
-                    <p className="text-[11px] text-neutral-500 mb-2">{item.rate}</p>
-                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-                      item.status === 'available'
-                        ? 'bg-[#DCFCE7] text-[#15803D]'
-                        : 'bg-[#FEE2E2] text-[#B91C1C]'
-                    }`}>
-                      {item.status === 'available' ? 'Available' : 'Booked'}
-                    </span>
-                  </div>
-                ))}
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-5">
-                {/* Calendar */}
-                <div className="lg:col-span-3 order-2 lg:order-1">
+              {/* Calendar first */}
+              <div className="mb-5">
                   <div className="rounded-2xl bg-white border border-neutral-200 p-4 sm:p-5">
                     <div className="flex items-center justify-between mb-4">
                       <h2 className="text-base font-bold text-neutral-900">Equipment Calendar</h2>
@@ -253,79 +253,80 @@ export default function VendorDashboard() {
                   </div>
                 </div>
 
+              {/* Active bookings (Booking requests) + Past rentals after calendar */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-5">
                 {/* Booking requests */}
-                <div className="space-y-4 order-1 lg:order-2">
                   <div className="rounded-2xl bg-white border border-neutral-200 p-4">
                     <div className="flex items-center gap-2 mb-3">
                       <div className="w-6 h-6 rounded-lg bg-[#FEF9E6] flex items-center justify-center">
                         <FaBell className="text-[#F4C430] text-xs" />
                       </div>
                       <h3 className="text-sm font-bold text-neutral-900">Booking Requests</h3>
-                      <span className="ml-auto text-xs font-bold text-white bg-[#F40F02] rounded-full w-5 h-5 flex items-center justify-center">
-                        {bookingRequests.length}
-                      </span>
+                      {pendingBookings.length > 0 && (
+                        <span className="ml-auto text-xs font-bold text-white bg-[#F40F02] rounded-full w-5 h-5 flex items-center justify-center">{pendingBookings.length}</span>
+                      )}
                     </div>
-                    <div className="space-y-2">
-                      {bookingRequests.map((r) => (
-                        <div key={r.id} className="rounded-xl border border-neutral-200 p-3 bg-[#FAFAFA]">
-                          <p className="text-xs font-semibold text-neutral-900 mb-0.5">{r.company}</p>
-                          <p className="text-[11px] text-neutral-500 mb-0.5">{r.equipment}</p>
-                          <p className="text-[11px] text-neutral-400 mb-2">{r.dates}</p>
-                          <div className="flex gap-1.5">
-                            <button
-                              onClick={() => alert(`Accepted: ${r.equipment} for ${r.company}`)}
-                              className="flex-1 text-[11px] py-1.5 bg-[#22C55E] text-white rounded-lg hover:bg-[#16a34a] font-semibold transition-colors"
-                            >
-                              Accept
-                            </button>
-                            <button
-                              onClick={() => alert(`Declined: ${r.equipment} for ${r.company}`)}
-                              className="flex-1 text-[11px] py-1.5 bg-[#F3F4F6] text-neutral-600 rounded-lg hover:bg-neutral-200 font-medium transition-colors"
-                            >
-                              Decline
-                            </button>
+                    {actionError && (
+                      <div className="flex items-center gap-2 mb-3 p-2.5 bg-red-50 border border-red-200 rounded-xl">
+                        <FaTriangleExclamation className="text-red-500 text-xs shrink-0" />
+                        <p className="text-xs text-red-700">{actionError}</p>
+                      </div>
+                    )}
+                    {bookingsLoading ? (
+                      <div className="space-y-2">{[1,2].map(i => <div key={i} className="h-16 rounded-xl bg-neutral-100 animate-pulse" />)}</div>
+                    ) : pendingBookings.length === 0 ? (
+                      <p className="text-xs text-neutral-400 text-center py-4">No pending requests</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {pendingBookings.map((b) => (
+                          <div key={b.id} className="rounded-xl border border-neutral-200 p-3 bg-[#FAFAFA]">
+                            <p className="text-xs font-semibold text-neutral-900 mb-0.5 truncate">{b.project.title}</p>
+                            <p className="text-[11px] text-neutral-500 mb-1.5 truncate">{b.requester.companyProfile?.companyName ?? b.requester.email}{b.rateOffered ? ` · ${formatPaise(b.rateOffered)}` : ''}</p>
+                            <div className="flex gap-1.5">
+                              <button disabled={actioning === b.id} onClick={() => doAction(b.id, 'accept')} className="flex-1 text-[11px] py-1.5 bg-[#22C55E] text-white rounded-lg hover:bg-[#16a34a] font-semibold transition-colors disabled:opacity-60">Accept</button>
+                              <button disabled={actioning === b.id} onClick={() => doAction(b.id, 'decline')} className="flex-1 text-[11px] py-1.5 bg-[#F3F4F6] text-neutral-600 rounded-lg hover:bg-neutral-200 font-medium transition-colors disabled:opacity-60">Decline</button>
+                            </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
+                        ))}
+                      </div>
+                    )}
+                    <Link to="/dashboard/bookings" className="mt-3 rounded-xl block w-full py-2 text-xs text-[#3678F1] bg-[#EEF4FF] hover:bg-[#DBEAFE] text-center font-semibold transition-colors">View All Bookings</Link>
                   </div>
-                </div>
-              </div>
 
-              {/* Past Rentals */}
-              <div className="rounded-2xl bg-white border border-neutral-200 p-4 sm:p-5">
+                {/* Past Rentals */}
+                <div className="rounded-2xl bg-white border border-neutral-200 p-4 sm:p-5">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-base font-bold text-neutral-900">Recent Rentals</h2>
                   <Link to="/dashboard/past-rentals" className="text-xs text-[#3678F1] hover:underline font-medium">View all</Link>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {pastRentals.map((rental, idx) => (
-                    <div key={idx} className="rounded-xl border border-neutral-200 p-4 hover:shadow-sm hover:border-neutral-300 transition-all">
-                      <div className="flex items-start justify-between gap-2 mb-3">
-                        <div className="w-8 h-8 rounded-lg bg-[#EEF4FF] flex items-center justify-center shrink-0">
-                          <FaTruck className="text-[#3678F1] text-xs" />
-                        </div>
-                        <span className="text-[10px] font-medium text-neutral-900">{rental.date}</span>
+                <p className="text-xs text-neutral-400">Go to <Link to="/dashboard/bookings" className="text-[#3678F1] hover:underline">Bookings</Link> to manage rental history.</p>
+                </div>
+              </div>
+
+              {/* Equipment overview from API */}
+              {equipmentArray.length > 0 && (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+                  {equipmentArray.map((item) => (
+                    <Link key={item.id} to="/dashboard/equipment" className="rounded-2xl bg-white border border-neutral-200 p-4 hover:border-[#3678F1]/30 transition-colors">
+                      <div className="w-8 h-8 rounded-lg bg-[#EEF4FF] flex items-center justify-center mb-2">
+                        <FaTruck className="text-[#3678F1] text-sm" />
                       </div>
-                      <h4 className="text-sm font-bold text-neutral-900 mb-0.5">{rental.name}</h4>
-                      <p className="text-xs text-neutral-500 mb-0.5">{rental.equipment}</p>
-                      <p className="text-xs text-neutral-400 mb-3">{rental.company}</p>
-                      <div className="flex items-center gap-2">
-                        <Link
-                          to={`/dashboard/chat/${rental.name.toLowerCase().replace(/\s+/g, '-')}`}
-                          className="flex-1 text-[11px] py-1.5 border border-neutral-200 text-neutral-600 rounded-lg hover:bg-neutral-50 text-center flex items-center justify-center gap-1 transition-colors"
-                        >
-                          <FaMessage className="w-3 h-3" /> Chat
-                        </Link>
-                        <Link
-                          to={`/dashboard/invoice/${rental.invoice}`}
-                          className="flex-1 text-[11px] py-1.5 bg-[#F3F4F6] text-neutral-800 rounded-lg hover:bg-neutral-200 text-center flex items-center justify-center gap-1 font-medium transition-colors"
-                        >
-                          <FaFileInvoice className="w-3 h-3" /> Invoice
-                        </Link>
-                      </div>
-                    </div>
+                      <h3 className="text-sm font-bold text-neutral-900 mb-0.5 line-clamp-1">{item.name}</h3>
+                      <p className="text-[11px] text-neutral-500">{item.dailyRateMin != null || item.dailyRateMax != null ? formatRateRange(item.dailyRateMin, item.dailyRateMax) : '—'}</p>
+                    </Link>
                   ))}
+                </div>
+              )}
+
+              {/* Stats from API */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-2xl bg-white border border-neutral-200 p-4">
+                  <p className="text-xs text-neutral-500">Active Bookings</p>
+                  <p className="text-xl font-bold text-[#3678F1]">{activeCount}</p>
+                </div>
+                <div className="rounded-2xl bg-white border border-neutral-200 p-4">
+                  <p className="text-xs text-neutral-500">Past Rentals</p>
+                  <p className="text-xl font-bold text-[#3678F1]">{pastCount}</p>
                 </div>
               </div>
 

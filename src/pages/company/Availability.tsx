@@ -1,90 +1,66 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
   FaHouse, FaFolder, FaCalendar, FaMagnifyingGlass,
   FaChevronLeft, FaChevronRight, FaXmark, FaCircle, FaEye, FaPlus, FaUser,
+  FaMessage, FaPeopleGroup,
 } from 'react-icons/fa6';
 import DashboardHeader from '../../components/DashboardHeader';
 import DashboardSidebar from '../../components/DashboardSidebar';
 import AppFooter from '../../components/AppFooter';
 import RoleIndicator from '../../components/RoleIndicator';
+import { useApiQuery } from '../../hooks/useApiQuery';
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December'];
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-interface ProjectInfo {
-  name: string;
-  crew: number;
-  vendors: number;
-  budget: string;
-  status: 'active' | 'planning' | 'in-progress' | 'completed';
-  id: number;
+interface ProjectItem {
+  id: string;
+  title: string;
+  status: string;
+  startDate: string;
+  endDate: string;
+  productionHouseName?: string | null;
+  _count?: { bookings: number };
 }
 
 interface CalendarCell {
   d: number;
   muted: boolean;
-  project?: ProjectInfo | null;
+  project?: ProjectItem | null;
 }
 
 interface PanelData {
   date: number;
   month: string;
   year: number;
-  project: ProjectInfo | null;
+  project: ProjectItem | null;
 }
 
-const BASE_YEAR = 2025;
-const BASE_MONTH = 0;
-
-// Month-keyed project data
-const projectsByMonth: Record<number, Record<number, ProjectInfo>> = {
-  0: { // Jan 2025
-    8:  { name: 'Commercial Shoot', crew: 12, vendors: 3, budget: '₹8.5L', status: 'active', id: 1 },
-    9:  { name: 'Commercial Shoot', crew: 12, vendors: 3, budget: '₹8.5L', status: 'active', id: 1 },
-    10: { name: 'Commercial Shoot', crew: 12, vendors: 3, budget: '₹8.5L', status: 'active', id: 1 },
-    15: { name: 'Documentary', crew: 8, vendors: 2, budget: '₹5.2L', status: 'planning', id: 2 },
-    16: { name: 'Documentary', crew: 8, vendors: 2, budget: '₹5.2L', status: 'planning', id: 2 },
-    17: { name: 'Documentary', crew: 8, vendors: 2, budget: '₹5.2L', status: 'planning', id: 2 },
-    22: { name: 'Music Video', crew: 6, vendors: 1, budget: '₹3.8L', status: 'in-progress', id: 3 },
-    23: { name: 'Music Video', crew: 6, vendors: 1, budget: '₹3.8L', status: 'in-progress', id: 3 },
-  },
-  '-1': { // Dec 2024
-    5:  { name: 'Brand Campaign', crew: 9, vendors: 2, budget: '₹6.1L', status: 'completed', id: 4 },
-    6:  { name: 'Brand Campaign', crew: 9, vendors: 2, budget: '₹6.1L', status: 'completed', id: 4 },
-    18: { name: 'Product Launch', crew: 14, vendors: 4, budget: '₹11.2L', status: 'completed', id: 5 },
-    19: { name: 'Product Launch', crew: 14, vendors: 4, budget: '₹11.2L', status: 'completed', id: 5 },
-    20: { name: 'Product Launch', crew: 14, vendors: 4, budget: '₹11.2L', status: 'completed', id: 5 },
-  },
-  '-2': { // Nov 2024
-    12: { name: 'Music Festival', crew: 20, vendors: 6, budget: '₹18L', status: 'completed', id: 6 },
-    13: { name: 'Music Festival', crew: 20, vendors: 6, budget: '₹18L', status: 'completed', id: 6 },
-    14: { name: 'Music Festival', crew: 20, vendors: 6, budget: '₹18L', status: 'completed', id: 6 },
-    25: { name: 'Web Series Ep 3', crew: 11, vendors: 3, budget: '₹9.5L', status: 'completed', id: 7 },
-    26: { name: 'Web Series Ep 3', crew: 11, vendors: 3, budget: '₹9.5L', status: 'completed', id: 7 },
-  },
+const statusConfig: Record<string, { bg: string; border: string; text: string; dot: string; label: string }> = {
+  draft:     { bg: 'bg-[#F3F4F6]', border: 'border-neutral-300', text: 'text-neutral-600', dot: 'bg-neutral-400', label: 'Draft' },
+  open:     { bg: 'bg-[#DBEAFE]', border: 'border-[#93C5FD]', text: 'text-[#1D4ED8]', dot: 'bg-[#3678F1]', label: 'Open' },
+  active:   { bg: 'bg-[#DBEAFE]', border: 'border-[#93C5FD]', text: 'text-[#1D4ED8]', dot: 'bg-[#3678F1]', label: 'Active' },
+  completed: { bg: 'bg-[#D1FAE5]', border: 'border-[#6EE7B7]', text: 'text-[#065F46]', dot: 'bg-[#22C55E]', label: 'Completed' },
+  cancelled: { bg: 'bg-[#FEE2E2]', border: 'border-[#FCA5A5]', text: 'text-[#B91C1C]', dot: 'bg-red-400', label: 'Cancelled' },
 };
 
-const statusConfig = {
-  active:      { bg: 'bg-[#DBEAFE]', border: 'border-[#93C5FD]', text: 'text-[#1D4ED8]', dot: 'bg-[#3678F1]', label: 'Active' },
-  planning:    { bg: 'bg-[#F3F4F6]', border: 'border-neutral-300', text: 'text-neutral-600', dot: 'bg-neutral-400', label: 'Planning' },
-  'in-progress': { bg: 'bg-[#FEF9E6]', border: 'border-[#FDE68A]', text: 'text-[#92400E]', dot: 'bg-[#F4C430]', label: 'In Progress' },
-  completed:   { bg: 'bg-[#D1FAE5]', border: 'border-[#6EE7B7]', text: 'text-[#065F46]', dot: 'bg-[#22C55E]', label: 'Completed' },
-};
-
-function buildCalendar(monthOffset: number): CalendarCell[] {
-  const d = new Date(BASE_YEAR, BASE_MONTH + monthOffset, 1);
-  const year = d.getFullYear();
-  const month = d.getMonth();
+function buildCalendar(year: number, month: number, projects: ProjectItem[]): CalendarCell[] {
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const prevDays = new Date(year, month, 0).getDate();
-  const data = projectsByMonth[monthOffset] ?? {};
-
+  const dayMap: Record<number, ProjectItem> = {};
+  for (const p of projects) {
+    const start = new Date(p.startDate);
+    const end = new Date(p.endDate);
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      if (d.getFullYear() === year && d.getMonth() === month) dayMap[d.getDate()] = p;
+    }
+  }
   const cells: CalendarCell[] = [];
   for (let i = firstDay - 1; i >= 0; i--) cells.push({ d: prevDays - i, muted: true });
-  for (let day = 1; day <= daysInMonth; day++) cells.push({ d: day, muted: false, project: data[day] ?? null });
+  for (let day = 1; day <= daysInMonth; day++) cells.push({ d: day, muted: false, project: dayMap[day] ?? null });
   const rem = 7 - (cells.length % 7);
   if (rem < 7) for (let d2 = 1; d2 <= rem; d2++) cells.push({ d: d2, muted: true });
   return cells;
@@ -94,21 +70,30 @@ const navLinks = [
   { icon: FaHouse,           label: 'Dashboard',    to: '/dashboard' },
   { icon: FaCalendar,        label: 'Availability', to: '/dashboard/company-availability' },
   { icon: FaFolder,          label: 'Projects',     to: '/dashboard/projects' },
-  { icon: FaFolder,          label: 'Past Projects', to: '/dashboard/company-past-projects' },
+  { icon: FaFolder,          label: 'Past Projects',to: '/dashboard/company-past-projects' },
   { icon: FaMagnifyingGlass, label: 'Search',       to: '/dashboard/search' },
+  { icon: FaMessage,         label: 'Chat',         to: '/dashboard/conversations' },
+  { icon: FaPeopleGroup,     label: 'Team',         to: '/dashboard/team' },
   { icon: FaUser,            label: 'Profile',      to: '/dashboard/company-profile' },
 ];
 
 export default function CompanyAvailability() {
   useEffect(() => { document.title = 'Availability – Claapo'; }, []);
 
+  const today = new Date();
   const [monthOffset, setMonthOffset] = useState(0);
   const [panel, setPanel] = useState<PanelData | null>(null);
 
-  const displayDate = new Date(BASE_YEAR, BASE_MONTH + monthOffset, 1);
+  const { data: projectsData } = useApiQuery<{ items: ProjectItem[] }>('/projects?limit=100');
+  const projects = projectsData?.items ?? [];
+
+  const displayDate = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
   const monthLabel = MONTHS[displayDate.getMonth()];
   const yearLabel = displayDate.getFullYear();
-  const calendarDays = buildCalendar(monthOffset);
+  const calendarDays = useMemo(
+    () => buildCalendar(yearLabel, displayDate.getMonth(), projects),
+    [yearLabel, displayDate.getMonth(), projects]
+  );
 
   const openPanel = (cell: CalendarCell) => {
     if (cell.muted) return;
@@ -179,7 +164,7 @@ export default function CompanyAvailability() {
                 <div className="grid grid-cols-7 gap-0.5">
                   {calendarDays.map((cell, i) => {
                     const proj = cell.project;
-                    const cfg = proj ? statusConfig[proj.status] : null;
+                    const cfg = proj ? (statusConfig[proj.status] ?? statusConfig.draft) : null;
                     return (
                       <button
                         key={i}
@@ -194,7 +179,7 @@ export default function CompanyAvailability() {
                         </span>
                         {proj && !cell.muted && (
                           <span className={`text-[9px] font-medium leading-tight text-center line-clamp-2 w-full ${cfg!.text}`}>
-                            {proj.name}
+                            {proj.title}
                           </span>
                         )}
                       </button>
@@ -247,7 +232,7 @@ export default function CompanyAvailability() {
               {panel.project ? (
                 <>
                   {(() => {
-                    const cfg = statusConfig[panel.project.status];
+                    const cfg = statusConfig[panel.project.status] ?? statusConfig.draft;
                     return (
                       <div className={`rounded-xl p-4 mb-4 ${cfg.bg} border ${cfg.border}`}>
                         <div className="flex items-center gap-2 mb-2">
@@ -256,24 +241,21 @@ export default function CompanyAvailability() {
                             {cfg.label}
                           </span>
                         </div>
-                        <h3 className="font-bold text-neutral-900 text-base mb-1">{panel.project.name}</h3>
+                        <h3 className="font-bold text-neutral-900 text-base mb-1">{panel.project.title}</h3>
+                        {panel.project.productionHouseName && (
+                          <p className="text-xs text-neutral-600 mt-0.5">{panel.project.productionHouseName}</p>
+                        )}
                       </div>
                     );
                   })()}
 
                   <div className="space-y-3 text-sm">
-                    <div className="flex justify-between py-2 border-b border-neutral-100">
-                      <span className="text-neutral-500">Crew Members</span>
-                      <span className="font-semibold text-neutral-900">{panel.project.crew}</span>
-                    </div>
-                    <div className="flex justify-between py-2 border-b border-neutral-100">
-                      <span className="text-neutral-500">Vendors</span>
-                      <span className="font-semibold text-neutral-900">{panel.project.vendors}</span>
-                    </div>
-                    <div className="flex justify-between py-2 border-b border-neutral-100">
-                      <span className="text-neutral-500">Budget</span>
-                      <span className="font-semibold text-neutral-900">{panel.project.budget}</span>
-                    </div>
+                    {panel.project._count && (
+                      <div className="flex justify-between py-2 border-b border-neutral-100">
+                        <span className="text-neutral-500">Bookings</span>
+                        <span className="font-semibold text-neutral-900">{panel.project._count.bookings}</span>
+                      </div>
+                    )}
                   </div>
 
                   <Link

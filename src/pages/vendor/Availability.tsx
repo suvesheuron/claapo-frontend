@@ -48,7 +48,12 @@ function toFrontendStatus(s: string): CellStatus {
   return 'available';
 }
 
-function buildCalendar(year: number, month: number, slots: Record<string, AvailabilitySlot>): CalendarCell[] {
+function buildCalendar(
+  year: number,
+  month: number,
+  slots: Record<string, AvailabilitySlot>,
+  equipmentByDate?: Record<string, string[]>,
+): CalendarCell[] {
   const firstDay    = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const prevDays    = new Date(year, month, 0).getDate();
@@ -57,6 +62,8 @@ function buildCalendar(year: number, month: number, slots: Record<string, Availa
   for (let day = 1; day <= daysInMonth; day++) {
     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     const slot = slots[dateStr];
+    const equipmentList = equipmentByDate?.[dateStr];
+    const equipment = equipmentList?.length ? equipmentList.join(', ') : undefined;
     if (slot) {
       cells.push({
         d: day, muted: false,
@@ -66,9 +73,10 @@ function buildCalendar(year: number, month: number, slots: Record<string, Availa
         payment:   slot.rateOffered  ? `₹${(slot.rateOffered / 100).toLocaleString('en-IN')}` : undefined,
         invoice:   slot.invoiceId    ?? undefined,
         notes:     slot.notes        ?? undefined,
+        equipment,
       });
     } else {
-      cells.push({ d: day, muted: false, status: 'available' });
+      cells.push({ d: day, muted: false, status: 'available', equipment });
     }
   }
   const rem = 7 - (cells.length % 7);
@@ -89,6 +97,7 @@ const navLinks = [
   { icon: FaHouse,     label: 'Dashboard',   to: '/dashboard' },
   { icon: FaCalendar,  label: 'Availability', to: '/dashboard/vendor-availability' },
   { icon: FaTruck,     label: 'Equipment',   to: '/dashboard/equipment' },
+  { icon: FaMessage,   label: 'Chat',        to: '/dashboard/conversations' },
   { icon: FaUser,      label: 'Profile',     to: '/dashboard/vendor-profile' },
 ];
 
@@ -115,11 +124,16 @@ export default function VendorAvailability() {
   const loadSlots = useCallback(async () => {
     setSlotsLoading(true);
     try {
-      const slots = await api.get<AvailabilitySlot[]>(
+      const res = await api.get<{ slots?: Record<string, string>; slotNotes?: Record<string, string | null> }>(
         `/availability/me?year=${yearLabel}&month=${displayDate.getMonth() + 1}`
       );
       const map: Record<string, AvailabilitySlot> = {};
-      for (const slot of slots ?? []) map[slot.date.slice(0, 10)] = slot;
+      if (res?.slots && typeof res.slots === 'object') {
+        for (const [dateStr, status] of Object.entries(res.slots)) {
+          const key = dateStr.slice(0, 10);
+          map[key] = { date: key, status: status as AvailabilitySlot['status'], notes: res.slotNotes?.[key] ?? undefined };
+        }
+      }
       setApiSlots(map);
     } catch { /* fall through — calendar shows all available */ }
     finally { setSlotsLoading(false); }
@@ -127,7 +141,33 @@ export default function VendorAvailability() {
 
   useEffect(() => { loadSlots(); }, [loadSlots]);
 
-  const calendarDays = buildCalendar(yearLabel, displayDate.getMonth(), apiSlots);
+  const { data: equipmentList } = useApiQuery<{ id: string; name: string; availabilities?: { availableFrom: string; availableTo: string }[] }[]>(
+    '/equipment/me',
+  );
+  const equipmentItems = equipmentList ?? [];
+
+  const equipmentByDate = (() => {
+    const map: Record<string, string[]> = {};
+    const monthStart = new Date(yearLabel, displayDate.getMonth(), 1);
+    const monthEnd = new Date(yearLabel, displayDate.getMonth() + 1, 0);
+    for (const eq of equipmentItems) {
+      const avails = eq.availabilities ?? [];
+      for (const a of avails) {
+        const from = new Date(a.availableFrom);
+        const to = new Date(a.availableTo);
+        const start = from < monthStart ? monthStart : from;
+        const end = to > monthEnd ? monthEnd : to;
+        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+          const key = d.toISOString().slice(0, 10);
+          if (!map[key]) map[key] = [];
+          if (!map[key].includes(eq.name)) map[key].push(eq.name);
+        }
+      }
+    }
+    return map;
+  })();
+
+  const calendarDays = buildCalendar(yearLabel, displayDate.getMonth(), apiSlots, equipmentByDate);
 
   const getDateStr = (d: number): string => {
     const m = String(displayDate.getMonth() + 1).padStart(2, '0');
@@ -303,7 +343,11 @@ export default function VendorAvailability() {
                     <FaTruck className="text-[#22C55E] text-lg" />
                   </div>
                   <p className="text-sm font-semibold text-neutral-900 mb-1">Equipment available!</p>
-                  <p className="text-xs text-neutral-500 mb-5">Open for rental booking requests</p>
+                  <p className="text-xs text-neutral-500 mb-3">Open for rental booking requests</p>
+                  {panel.equipment && (
+                    <p className="text-xs text-neutral-600 mb-5 px-2">This day: {panel.equipment}</p>
+                  )}
+                  {!panel.equipment && <div className="mb-5" />}
                   <button type="button" onClick={() => setBlockForm(true)} className="rounded-xl w-full py-2.5 bg-[#F3F4F6] text-neutral-700 text-sm font-semibold hover:bg-neutral-200 transition-colors flex items-center justify-center gap-2">
                     <FaLock className="w-3 h-3" /> Block this date
                   </button>

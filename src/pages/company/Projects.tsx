@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FaPlus, FaHouse, FaFolder, FaLock, FaEye, FaCalendar, FaMagnifyingGlass, FaUser, FaTriangleExclamation } from 'react-icons/fa6';
+import { FaPlus, FaHouse, FaFolder, FaLock, FaEye, FaCalendar, FaMagnifyingGlass, FaUser, FaTriangleExclamation, FaBan, FaMessage, FaPeopleGroup } from 'react-icons/fa6';
 import DashboardHeader from '../../components/DashboardHeader';
 import DashboardSidebar from '../../components/DashboardSidebar';
 import AppFooter from '../../components/AppFooter';
@@ -24,7 +24,7 @@ interface Project {
 }
 
 interface ProjectsResponse {
-  data: Project[];
+  items: Project[];
   meta: { page: number; limit: number; total: number };
 }
 
@@ -60,14 +60,18 @@ const navLinks = [
   { icon: FaHouse,           label: 'Dashboard',    to: '/dashboard' },
   { icon: FaCalendar,        label: 'Availability', to: '/dashboard/company-availability' },
   { icon: FaFolder,          label: 'Projects',     to: '/dashboard/projects' },
-  { icon: FaFolder,          label: 'Past Projects', to: '/dashboard/company-past-projects' },
+  { icon: FaFolder,          label: 'Past Projects',to: '/dashboard/company-past-projects' },
   { icon: FaMagnifyingGlass, label: 'Search',       to: '/dashboard/search' },
+  { icon: FaMessage,         label: 'Chat',         to: '/dashboard/conversations' },
+  { icon: FaPeopleGroup,     label: 'Team',         to: '/dashboard/team' },
   { icon: FaUser,            label: 'Profile',      to: '/dashboard/company-profile' },
 ];
 
 export default function Projects() {
   const { data, loading, error, refetch } = useApiQuery<ProjectsResponse>('/projects?limit=50');
   const [lockingId, setLockingId] = useState<string | null>(null);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [cancelActionError, setCancelActionError] = useState<string | null>(null);
 
   useEffect(() => {
     document.title = 'Projects – Claapo';
@@ -76,7 +80,7 @@ export default function Projects() {
   const handleLock = async (projectId: string) => {
     setLockingId(projectId);
     try {
-      await api.patch(`/bookings/${projectId}/lock`);
+      await api.patch(`/bookings/${projectId}/lock`, {});
       refetch();
     } catch (err) {
       const msg = err instanceof ApiException ? err.payload.message : 'Could not lock project.';
@@ -86,7 +90,18 @@ export default function Projects() {
     }
   };
 
-  const projects = data?.data ?? [];
+  const handleCancel = async (projectId: string) => {
+    setCancelActionError(null);
+    try {
+      await api.patch(`/projects/${projectId}`, { status: 'cancelled' });
+      setCancellingId(null);
+      refetch();
+    } catch (err) {
+      setCancelActionError(err instanceof ApiException ? err.payload.message : 'Could not cancel project.');
+    }
+  };
+
+  const projects = data?.items ?? [];
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-[#F3F4F6] w-full">
@@ -206,21 +221,21 @@ export default function Projects() {
                         </div>
 
                         <div className="flex items-center gap-2 mt-auto">
-                          <Link
-                            to={`/dashboard/projects/${project.id}`}
-                            className="flex-1 rounded-xl py-2 border border-neutral-200 text-neutral-700 text-xs font-semibold text-center hover:bg-neutral-50 flex items-center justify-center gap-1.5 transition-colors"
-                          >
+                          <Link to={`/dashboard/projects/${project.id}`} className="flex-1 rounded-xl py-2 border border-neutral-200 text-neutral-700 text-xs font-semibold text-center hover:bg-neutral-50 flex items-center justify-center gap-1.5 transition-colors">
                             <FaEye className="w-3 h-3" /> View
                           </Link>
                           {project.status !== 'completed' && project.status !== 'cancelled' && (
-                            <button
-                              onClick={() => handleLock(project.id)}
-                              disabled={lockingId === project.id}
-                              className="rounded-xl px-3.5 py-2 bg-[#3678F1] text-white text-xs font-semibold hover:bg-[#2563d4] flex items-center gap-1.5 transition-colors disabled:opacity-50"
-                            >
-                              <FaLock className="w-3 h-3" />
-                              {lockingId === project.id ? '…' : 'Lock'}
-                            </button>
+                            <>
+                              <button onClick={() => handleLock(project.id)} disabled={lockingId === project.id}
+                                className="rounded-xl px-3.5 py-2 bg-[#3678F1] text-white text-xs font-semibold hover:bg-[#2563d4] flex items-center gap-1.5 transition-colors disabled:opacity-50">
+                                <FaLock className="w-3 h-3" />
+                                {lockingId === project.id ? '…' : 'Lock'}
+                              </button>
+                              <button onClick={() => { setCancellingId(project.id); setCancelActionError(null); }}
+                                className="rounded-xl px-3.5 py-2 bg-[#FEE2E2] text-[#B91C1C] text-xs font-semibold hover:bg-[#FECACA] flex items-center gap-1.5 transition-colors">
+                                <FaBan className="w-3 h-3" />
+                              </button>
+                            </>
                           )}
                         </div>
                       </div>
@@ -235,6 +250,33 @@ export default function Projects() {
           <AppFooter />
         </main>
       </div>
+
+      {/* Cancel Project Modal */}
+      {cancellingId && (
+        <>
+          <div className="fixed inset-0 bg-black/40 z-40" onClick={() => setCancellingId(null)} />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+              <h2 className="text-base font-bold text-neutral-900 mb-2">Cancel Project?</h2>
+              <p className="text-sm text-neutral-600 mb-4">
+                This will cancel the project and notify all booked crew and vendors. This action cannot be undone.
+              </p>
+              {cancelActionError && (
+                <div className="flex items-center gap-2 mb-4 p-3 bg-red-50 border border-red-200 rounded-xl">
+                  <FaTriangleExclamation className="text-red-500 text-xs shrink-0" />
+                  <p className="text-xs text-red-700">{cancelActionError}</p>
+                </div>
+              )}
+              <div className="flex gap-3">
+                <button type="button" onClick={() => setCancellingId(null)} className="flex-1 rounded-xl py-2.5 border border-neutral-300 text-neutral-700 text-sm font-medium hover:bg-neutral-50 transition-colors">Keep Project</button>
+                <button type="button" onClick={() => handleCancel(cancellingId)} className="flex-1 rounded-xl py-2.5 bg-red-500 text-white text-sm font-semibold hover:bg-red-600 transition-colors flex items-center justify-center gap-1.5">
+                  <FaBan className="w-3 h-3" /> Cancel Project
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

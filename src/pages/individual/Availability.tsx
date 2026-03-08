@@ -102,6 +102,7 @@ const BLOCK_REASONS = ['Personal', 'Already booked externally', 'Not available',
 const navLinks = [
   { icon: FaHouse,     label: 'Dashboard',    to: '/dashboard' },
   { icon: FaCalendar,  label: 'Availability', to: '/dashboard/availability' },
+  { icon: FaMessage,   label: 'Chat',         to: '/dashboard/conversations' },
   { icon: FaFolder,    label: 'Past Projects', to: '/dashboard/past-projects' },
   { icon: FaUser,      label: 'Profile',      to: '/dashboard/profile' },
 ];

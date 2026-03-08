@@ -3,8 +3,8 @@
  * Route: /dashboard/chat/:targetUserId
  *
  * API calls:
- *   GET  /v1/chat/messages/with/:targetUserId?page=1&limit=50  — load history
- *   POST /v1/chat/messages                                     — send message
+ *   GET  /v1/conversations/with/:targetUserId?limit=50  — load history
+ *   POST /v1/conversations/with/:targetUserId/messages  — send message (body: { content })
  *
  * Polls for new messages every 5 s while the tab is active.
  */
@@ -21,15 +21,18 @@ import { useAuth } from '../contexts/AuthContext';
 interface ChatMessage {
   id: string;
   senderId: string;
-  content: string;
+  content: string | null;
   createdAt: string;
-  readAt: string | null;
+  readAt?: string | null;
+  isRead?: boolean;
 }
 
 interface OtherUser {
+  id?: string;
+  role?: string;
   displayName?: string;
   companyName?: string;
-  role?: string;
+  profile?: { displayName?: string; companyName?: string };
   isOnline?: boolean;
 }
 
@@ -63,10 +66,14 @@ export default function Chat() {
   const fetchMessages = useCallback(async (isPolling = false) => {
     if (!targetUserId) return;
     try {
-      const data = await api.get<ChatMessage[]>(
-        `/chat/messages/with/${targetUserId}?limit=50`
+      const res = await api.get<{ items: ChatMessage[] }>(
+        `/conversations/with/${targetUserId}?limit=50`
       );
-      if (!data?.length) return;
+      const data = res?.items ?? [];
+      if (!data.length) {
+        if (!isPolling) setMessages([]);
+        return;
+      }
       const newest = data[data.length - 1]?.createdAt;
       if (isPolling && newest === lastMsgTime.current) return; // nothing new
       lastMsgTime.current = newest ?? null;
@@ -84,7 +91,7 @@ export default function Chat() {
   const fetchOtherUser = useCallback(async () => {
     if (!targetUserId) return;
     try {
-      const profile = await api.get<OtherUser>(`/profile/user/${targetUserId}`);
+      const profile = await api.get<OtherUser>(`/profile/${targetUserId}`);
       setOtherUser(profile);
     } catch {
       // Non-fatal — header will just show the userId
@@ -108,7 +115,13 @@ export default function Chat() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const otherName = otherUser?.displayName ?? otherUser?.companyName ?? targetUserId ?? 'User';
+  const otherName =
+    otherUser?.displayName ??
+    otherUser?.companyName ??
+    otherUser?.profile?.displayName ??
+    otherUser?.profile?.companyName ??
+    targetUserId ??
+    'User';
   const otherRole = otherUser?.role ?? '';
 
   const handleSend = async (e: React.FormEvent) => {
@@ -118,7 +131,7 @@ export default function Chat() {
     setSendError(null);
     setSending(true);
     try {
-      await api.post('/chat/messages', { receiverId: targetUserId, content });
+      await api.post(`/conversations/with/${targetUserId}/messages`, { content });
       setInput('');
       // Immediately re-fetch to show the sent message
       await fetchMessages(false);
@@ -181,10 +194,10 @@ export default function Chat() {
                           ? 'bg-[#3678F1] text-white rounded-br-md'
                           : 'bg-white border border-neutral-200 text-neutral-900 rounded-bl-md'
                       }`}>
-                        <p className="text-sm leading-relaxed break-words">{msg.content}</p>
+                        <p className="text-sm leading-relaxed break-words">{msg.content ?? ''}</p>
                         <p className={`text-[10px] mt-1 ${isMe ? 'text-blue-200' : 'text-neutral-400'}`}>
                           {formatTime(msg.createdAt)}
-                          {isMe && msg.readAt && <span className="ml-1.5">✓✓</span>}
+                          {isMe && (msg.readAt || msg.isRead) && <span className="ml-1.5">✓✓</span>}
                         </p>
                       </div>
                     </div>

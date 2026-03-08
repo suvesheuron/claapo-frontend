@@ -3,32 +3,57 @@ import { Link, useNavigate } from 'react-router-dom';
 import { FaVideo, FaBell, FaChevronDown, FaRightFromBracket, FaCircle } from 'react-icons/fa6';
 import Avatar from './Avatar';
 import { useAuth } from '../contexts/AuthContext';
+import { useApiQuery } from '../hooks/useApiQuery';
+import { api } from '../services/api';
 
 type DashboardHeaderProps = {
   userName?: string;
   userAvatar?: string;
 };
 
-const sampleNotifications = [
-  { id: 1, title: 'Booking Request',       body: 'Rajesh Kumar sent a booking request for Commercial Shoot.',   time: '2m ago',  unread: true },
-  { id: 2, title: 'Project Update',        body: 'Documentary project status changed to Planning.',              time: '18m ago', unread: true },
-  { id: 3, title: 'Invoice Paid',          body: 'INV-C002 for Product Launch has been paid — ₹11.2L.',         time: '1h ago',  unread: true },
-  { id: 4, title: 'New Crew Application',  body: 'Priya Sharma applied for Sound Engineer role.',               time: '3h ago',  unread: false },
-  { id: 5, title: 'Vendor Confirmed',      body: 'CineGear Rentals confirmed equipment for Music Video.',       time: 'Yesterday', unread: false },
-];
+interface NotificationItem {
+  id: string;
+  type: string;
+  title: string;
+  body: string;
+  readAt: string | null;
+  createdAt: string;
+  data?: Record<string, unknown>;
+}
 
-export default function DashboardHeader({ userName = 'Production Studios Inc.', userAvatar }: DashboardHeaderProps) {
+interface NotificationsResponse {
+  items: NotificationItem[];
+  meta: { unreadCount: number };
+}
+
+function timeAgo(iso: string): string {
+  const sec = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (sec < 60) return 'Just now';
+  if (sec < 3600) return `${Math.floor(sec / 60)}m ago`;
+  if (sec < 86400) return `${Math.floor(sec / 3600)}h ago`;
+  if (sec < 604800) return `${Math.floor(sec / 86400)}d ago`;
+  return 'Earlier';
+}
+
+export default function DashboardHeader({ userName: propUserName, userAvatar: propUserAvatar }: DashboardHeaderProps) {
   const [notifOpen, setNotifOpen] = useState(false);
   const [userOpen, setUserOpen]   = useState(false);
-  const [notifications, setNotifications] = useState(sampleNotifications);
   const notifRef = useRef<HTMLDivElement>(null);
   const userRef  = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { user, logout, isAuthenticated } = useAuth();
 
-  const unreadCount = notifications.filter((n) => n.unread).length;
+  const { data: notifData, refetch: refetchNotifs } = useApiQuery<NotificationsResponse>(isAuthenticated ? '/notifications?limit=20' : null);
+  const notifications = notifData?.items ?? [];
+  const unreadCount = notifData?.meta?.unreadCount ?? 0;
 
-  // Close dropdowns on outside click
+  interface MeResponse { profile?: { companyName?: string; displayName?: string; avatarUrl?: string | null } | null }
+  const { data: meData } = useApiQuery<MeResponse>(isAuthenticated ? '/profile/me' : null);
+  const profile = meData?.profile;
+
+  const displayName = propUserName ?? profile?.companyName ?? profile?.displayName ?? user?.email?.split('@')[0] ?? 'Account';
+  const userAvatar = propUserAvatar ?? profile?.avatarUrl ?? undefined;
+
   useEffect(() => {
     function handle(e: MouseEvent) {
       if (notifRef.current && !notifRef.current.contains(e.target as Node)) setNotifOpen(false);
@@ -38,7 +63,14 @@ export default function DashboardHeader({ userName = 'Production Studios Inc.', 
     return () => document.removeEventListener('mousedown', handle);
   }, []);
 
-  const markAllRead = () => setNotifications((prev) => prev.map((n) => ({ ...n, unread: false })));
+  const markAllRead = async () => {
+    try {
+      await api.patch('/notifications/read-all');
+      refetchNotifs();
+    } catch {
+      refetchNotifs();
+    }
+  };
 
   const handleLogout = async () => {
     setUserOpen(false);
@@ -48,7 +80,6 @@ export default function DashboardHeader({ userName = 'Production Studios Inc.', 
 
   return (
     <header className="h-[64px] border-b border-neutral-200 bg-white shrink-0 flex items-center overflow-visible z-30 relative">
-      {/* Logo column — fixed width matching sidebar */}
       <Link
         to="/"
         className="hidden lg:flex items-center gap-2.5 w-56 xl:w-60 shrink-0 px-5 h-full border-r border-neutral-100 hover:bg-[#F8FAFF] transition-colors"
@@ -59,7 +90,6 @@ export default function DashboardHeader({ userName = 'Production Studios Inc.', 
         <span className="text-[15px] font-bold text-neutral-900 tracking-tight">Claapo</span>
       </Link>
 
-      {/* Mobile logo */}
       <Link to="/" className="lg:hidden flex items-center gap-2.5 px-4 shrink-0">
         <div className="w-8 h-8 rounded-xl bg-[#3678F1] flex items-center justify-center shrink-0">
           <FaVideo className="text-white text-sm" />
@@ -67,10 +97,8 @@ export default function DashboardHeader({ userName = 'Production Studios Inc.', 
         <span className="text-[15px] font-bold text-neutral-900">Claapo</span>
       </Link>
 
-      {/* Right section */}
       <div className="flex-1 flex items-center justify-end gap-1 sm:gap-2 px-4 sm:px-6 lg:px-5 min-w-0">
 
-        {/* ── Notification bell ── */}
         <div ref={notifRef} className="relative">
           <button
             type="button"
@@ -93,50 +121,44 @@ export default function DashboardHeader({ userName = 'Production Studios Inc.', 
                     <span className="text-[10px] font-bold px-1.5 py-0.5 bg-[#F40F02] text-white rounded-full">{unreadCount}</span>
                   )}
                 </div>
-                <button
-                  type="button"
-                  onClick={markAllRead}
-                  className="text-[11px] text-[#3678F1] hover:underline font-medium"
-                >
-                  Mark all read
-                </button>
+                {unreadCount > 0 && (
+                  <button type="button" onClick={markAllRead} className="text-[11px] text-[#3678F1] hover:underline font-medium">
+                    Mark all read
+                  </button>
+                )}
               </div>
 
               <div className="max-h-72 overflow-y-auto divide-y divide-neutral-100">
-                {notifications.map((n) => (
-                  <div
-                    key={n.id}
-                    className={`flex gap-3 px-4 py-3 transition-colors cursor-pointer hover:bg-[#F8FAFF] ${n.unread ? 'bg-[#F0F6FF]' : 'bg-white'}`}
-                    onClick={() => setNotifications((prev) => prev.map((x) => x.id === n.id ? { ...x, unread: false } : x))}
-                  >
-                    <div className="shrink-0 mt-0.5">
-                      {n.unread
-                        ? <FaCircle className="text-[#3678F1] text-[8px] mt-1" />
-                        : <FaCircle className="text-neutral-200 text-[8px] mt-1" />}
+                {notifications.length === 0 ? (
+                  <div className="px-4 py-6 text-center text-xs text-neutral-400">No notifications</div>
+                ) : (
+                  notifications.map((n) => (
+                    <div
+                      key={n.id}
+                      className={`flex gap-3 px-4 py-3 transition-colors cursor-default hover:bg-[#F8FAFF] ${!n.readAt ? 'bg-[#F0F6FF]' : 'bg-white'}`}
+                    >
+                      <div className="shrink-0 mt-0.5">
+                        {!n.readAt ? <FaCircle className="text-[#3678F1] text-[8px] mt-1" /> : <FaCircle className="text-neutral-200 text-[8px] mt-1" />}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className={`text-xs font-semibold truncate ${!n.readAt ? 'text-neutral-900' : 'text-neutral-600'}`}>{n.title}</p>
+                        <p className="text-[11px] text-neutral-500 leading-snug mt-0.5 line-clamp-2">{n.body}</p>
+                        <p className="text-[10px] text-neutral-400 mt-1">{timeAgo(n.createdAt)}</p>
+                      </div>
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p className={`text-xs font-semibold truncate ${n.unread ? 'text-neutral-900' : 'text-neutral-600'}`}>{n.title}</p>
-                      <p className="text-[11px] text-neutral-500 leading-snug mt-0.5 line-clamp-2">{n.body}</p>
-                      <p className="text-[10px] text-neutral-400 mt-1">{n.time}</p>
-                    </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
 
               <div className="px-4 py-2.5 border-t border-neutral-100 text-center">
-                <button
-                  type="button"
-                  className="text-xs text-[#3678F1] font-semibold hover:underline"
-                  onClick={() => setNotifOpen(false)}
-                >
-                  View all notifications
+                <button type="button" className="text-xs text-[#3678F1] font-semibold hover:underline" onClick={() => setNotifOpen(false)}>
+                  Close
                 </button>
               </div>
             </div>
           )}
         </div>
 
-        {/* ── User pill / dropdown ── */}
         <div ref={userRef} className="relative">
           <button
             type="button"
@@ -145,9 +167,9 @@ export default function DashboardHeader({ userName = 'Production Studios Inc.', 
               userOpen ? 'bg-[#F3F4F6] border-neutral-200' : 'border-transparent hover:bg-[#F3F4F6] hover:border-neutral-200'
             }`}
           >
-            <Avatar src={userAvatar} alt="Profile" name={userName} size="sm" />
+            <Avatar src={userAvatar} name={displayName} size="sm" />
             <span className="text-sm font-medium text-neutral-800 hidden md:inline truncate max-w-[140px] lg:max-w-[180px]">
-              {userName}
+              {displayName}
             </span>
             <FaChevronDown className={`w-2.5 h-2.5 text-neutral-400 hidden md:inline shrink-0 transition-transform duration-200 ${userOpen ? 'rotate-180' : ''}`} />
           </button>
@@ -155,10 +177,9 @@ export default function DashboardHeader({ userName = 'Production Studios Inc.', 
           {userOpen && (
             <div className="absolute right-0 top-[calc(100%+8px)] w-52 bg-white rounded-2xl border border-neutral-200 shadow-xl overflow-hidden z-50">
               <div className="px-4 py-3 border-b border-neutral-100">
-                <p className="text-xs font-bold text-neutral-900 truncate">{userName}</p>
-                <p className="text-[11px] text-neutral-400 truncate">Production Company</p>
+                <p className="text-xs font-bold text-neutral-900 truncate">{displayName}</p>
+                <p className="text-[11px] text-neutral-400 truncate">{user?.email ?? ''}</p>
               </div>
-
               <div className="p-1.5">
                 <button
                   type="button"
@@ -172,7 +193,6 @@ export default function DashboardHeader({ userName = 'Production Studios Inc.', 
             </div>
           )}
         </div>
-
       </div>
     </header>
   );

@@ -1,5 +1,4 @@
 import React from 'react';
-import { FaUser } from 'react-icons/fa6';
 
 type AvatarProps = {
   src?: string;
@@ -24,20 +23,26 @@ export default function Avatar({ src, alt = 'Profile', name, size = 'md', classN
     lg: 'text-xl sm:text-2xl',
   };
 
-  // Generate a seed from name or use a default
+  // Generate a seed from name for consistent bg color
   const seed = name ? name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) : 42;
-  
-  // Default avatar URL using DiceBear notionists style (black and white)
-  const defaultAvatar = `https://api.dicebear.com/7.x/notionists/svg?seed=${seed}`;
+  const initials = name
+    ? name
+        .trim()
+        .split(/\s+/)
+        .slice(0, 2)
+        .map((w) => w[0])
+        .join('')
+        .toUpperCase() || '?'
+    : '?';
+  const hue = (seed % 360);
+  const bgColor = `hsl(${hue}, 55%, 45%)`;
+  const hasValidSrc = src && src.trim() !== '';
+  const showImage = hasValidSrc && !imageError;
 
-  // Use provided src, or default avatar, or fallback to icon
-  const imageSrc = src && src.trim() !== '' ? src : defaultAvatar;
-
-  // Show image if no error occurred
-  if (!imageError) {
+  if (showImage) {
     return (
       <img
-        src={imageSrc}
+        src={src!.trim()}
         alt={alt}
         className={`${sizeClasses[size]} rounded-full object-cover shrink-0 ${className}`}
         onError={() => setImageError(true)}
@@ -45,10 +50,12 @@ export default function Avatar({ src, alt = 'Profile', name, size = 'md', classN
     );
   }
 
-  // Fallback to user icon only if image fails to load
   return (
-    <div className={`${sizeClasses[size]} rounded-full bg-neutral-200 flex items-center justify-center shrink-0 ${className}`}>
-      <FaUser className={`${iconSizes[size]} text-neutral-600`} />
+    <div
+      className={`${sizeClasses[size]} rounded-full flex items-center justify-center shrink-0 font-semibold text-white ${className}`}
+      style={{ backgroundColor: bgColor }}
+    >
+      <span className={iconSizes[size]}>{initials}</span>
     </div>
   );
 }
