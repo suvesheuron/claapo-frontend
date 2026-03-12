@@ -10,6 +10,8 @@
  */
 
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { FaXmark, FaCircleCheck, FaTriangleExclamation } from 'react-icons/fa6';
 import { api, ApiException } from '../services/api';
 import { useApiQuery } from '../hooks/useApiQuery';
@@ -23,7 +25,8 @@ interface Project {
 }
 
 interface ProjectsResponse {
-  data: Project[];
+  items: Project[];
+  meta?: { total: number; page: number; limit: number };
 }
 
 type BookingRequestModalProps = {
@@ -57,10 +60,15 @@ export default function BookingRequestModal({
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
 
-  // Load company's active / open projects for the dropdown
-  const { data: projectsData } = useApiQuery<ProjectsResponse>(
+  // Load company's active / open projects for the dropdown (API returns { items, meta })
+  const { data: projectsData, loading: projectsLoading, error: projectsError, refetch: refetchProjects } = useApiQuery<ProjectsResponse>(
     isOpen ? '/projects?limit=50' : null
   );
+
+  // Refetch projects when modal opens so the list is always fresh
+  useEffect(() => {
+    if (isOpen) refetchProjects();
+  }, [isOpen, refetchProjects]);
 
   // When booking a vendor, load their equipment list (names + daily rates)
   const { data: vendorEquipment, loading: equipmentLoading } = useApiQuery<{ id: string; name: string; dailyRateMin?: number | null; dailyRateMax?: number | null; daily_rate_min?: number | null; daily_rate_max?: number | null }[] | { data?: unknown[]; items?: unknown[] }>(
@@ -88,7 +96,9 @@ export default function BookingRequestModal({
     return `From ₹${(minPaise / 100).toLocaleString('en-IN')}/day`;
   })();
 
-  const activeProjects = (projectsData?.data ?? []).filter(
+  // Support both { items } and direct array from API
+  const rawItems = Array.isArray(projectsData) ? projectsData : (projectsData as ProjectsResponse | undefined)?.items;
+  const activeProjects = (rawItems ?? []).filter(
     (p) => p.status === 'active' || p.status === 'open' || p.status === 'draft'
   );
 
@@ -118,11 +128,13 @@ export default function BookingRequestModal({
         rateOffered: rateOffered ? Math.round(parseFloat(rateOffered.replace(/[^0-9.]/g, '')) * 100) : undefined,
         message: message.trim() || undefined,
       });
+      toast.success('Booking request sent!');
       setSent(true);
       onSuccess?.();
     } catch (err) {
       const msg =
         err instanceof ApiException ? err.payload.message : 'Failed to send request. Please try again.';
+      toast.error(msg);
       setError(msg);
     } finally {
       setLoading(false);
@@ -206,18 +218,23 @@ export default function BookingRequestModal({
                 value={projectId}
                 onChange={(e) => setProjectId(e.target.value)}
                 required
-                disabled={loading}
+                disabled={loading || projectsLoading}
                 className="rounded-xl w-full px-3 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 text-sm focus:outline-none focus:border-[#3678F1] focus:bg-white transition-all disabled:opacity-50"
               >
-                <option value="">— Select a project —</option>
+                <option value="">
+                  {projectsLoading ? 'Loading projects…' : '— Select a project —'}
+                </option>
                 {activeProjects.map((p) => (
                   <option key={p.id} value={p.id}>{p.title}</option>
                 ))}
               </select>
-              {activeProjects.length === 0 && projectsData && (
+              {projectsError && (
+                <p className="text-xs text-red-600 mt-1">{projectsError}</p>
+              )}
+              {!projectsLoading && !projectsError && activeProjects.length === 0 && (projectsData !== undefined || rawItems !== undefined) && (
                 <p className="text-xs text-neutral-400 mt-1">
                   No active projects found.{' '}
-                  <a href="/dashboard/projects/new" className="text-[#3678F1] hover:underline">Create one first.</a>
+                  <Link to="/dashboard/projects/new" className="text-[#3678F1] hover:underline">Create one first.</Link>
                 </p>
               )}
             </div>

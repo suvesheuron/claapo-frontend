@@ -5,6 +5,7 @@ import DashboardSidebar from '../../components/DashboardSidebar';
 import AppFooter from '../../components/AppFooter';
 import Avatar from '../../components/Avatar';
 import { api, ApiException } from '../../services/api';
+import toast from 'react-hot-toast';
 import { useApiQuery } from '../../hooks/useApiQuery';
 import { toE164India } from '../../utils/phone';
 
@@ -64,13 +65,16 @@ export default function TeamPage() {
     setCreating(true); setCreateError(null);
     try {
       await api.post('/profile/sub-users', { email: email.trim(), phone: e164Phone, password });
+      toast.success('Sub-user created.');
       setCreateSuccess(true);
       setShowCreate(false);
       setEmail(''); setPhone(''); setPassword('');
       refetchUsers();
       setTimeout(() => setCreateSuccess(false), 3000);
     } catch (err) {
-      setCreateError(err instanceof ApiException ? err.payload.message : 'Failed to create sub-user.');
+      const msg = err instanceof ApiException ? err.payload.message : 'Failed to create sub-user.';
+      toast.error(msg);
+      setCreateError(msg);
     } finally {
       setCreating(false);
     }
@@ -81,12 +85,15 @@ export default function TeamPage() {
     setAssigning(true); setAssignError(null);
     try {
       await api.post(`/profile/sub-users/${assigningUser.id}/assign-project`, { projectId: assignProjectId });
+      toast.success('Project assigned.');
       setAssignSuccess(true);
       setAssigningUser(null);
       setAssignProjectId('');
       setTimeout(() => setAssignSuccess(false), 3000);
     } catch (err) {
-      setAssignError(err instanceof ApiException ? err.payload.message : 'Failed to assign project.');
+      const msg = err instanceof ApiException ? err.payload.message : 'Failed to assign project.';
+      toast.error(msg);
+      setAssignError(msg);
     } finally {
       setAssigning(false);
     }
@@ -97,10 +104,13 @@ export default function TeamPage() {
     setDeleting(true); setDeleteError(null);
     try {
       await api.delete(`/profile/sub-users/${deletingUser.id}`);
+      toast.success('Sub-user removed.');
       setDeletingUser(null);
       refetchUsers();
     } catch (err) {
-      setDeleteError(err instanceof ApiException ? err.payload.message : 'Failed to remove sub-user.');
+      const msg = err instanceof ApiException ? err.payload.message : 'Failed to remove sub-user.';
+      toast.error(msg);
+      setDeleteError(msg);
     } finally {
       setDeleting(false);
     }

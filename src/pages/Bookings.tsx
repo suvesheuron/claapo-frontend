@@ -9,6 +9,7 @@ import DashboardSidebar from '../components/DashboardSidebar';
 import AppFooter from '../components/AppFooter';
 import Avatar from '../components/Avatar';
 import { api, ApiException } from '../services/api';
+import toast from 'react-hot-toast';
 import { useApiQuery } from '../hooks/useApiQuery';
 import { useRole } from '../contexts/RoleContext';
 import { formatPaise } from '../utils/currency';
@@ -84,9 +85,12 @@ export default function Bookings() {
     setActionError(null);
     try {
       await api.patch(`/bookings/${bookingId}/${action}`, {});
+      toast.success(action === 'accept' ? 'Booking accepted.' : 'Booking declined.');
       refetch();
     } catch (err) {
-      setActionError(err instanceof ApiException ? err.payload.message : `Failed to ${action} booking.`);
+      const msg = err instanceof ApiException ? err.payload.message : `Failed to ${action} booking.`;
+      toast.error(msg);
+      setActionError(msg);
     } finally {
       setActioning(null);
     }
@@ -97,11 +101,14 @@ export default function Bookings() {
     setActionError(null);
     try {
       await api.patch(`/bookings/${bookingId}/cancel`, { reason: cancelReason || undefined });
+      toast.success('Booking cancelled.');
       setCancellingId(null);
       setCancelReason('');
       refetch();
     } catch (err) {
-      setActionError(err instanceof ApiException ? err.payload.message : 'Failed to cancel booking.');
+      const msg = err instanceof ApiException ? err.payload.message : 'Failed to cancel booking.';
+      toast.error(msg);
+      setActionError(msg);
     } finally {
       setActioning(null);
     }

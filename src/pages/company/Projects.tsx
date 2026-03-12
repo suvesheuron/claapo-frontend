@@ -7,6 +7,7 @@ import AppFooter from '../../components/AppFooter';
 import { useApiQuery } from '../../hooks/useApiQuery';
 import { formatBudgetCompact } from '../../utils/currency';
 import { api, ApiException } from '../../services/api';
+import toast from 'react-hot-toast';
 import { useState } from 'react';
 
 interface ProjectRole { id: string; roleName: string; qty: number }
@@ -80,11 +81,18 @@ export default function Projects() {
   const handleLock = async (projectId: string) => {
     setLockingId(projectId);
     try {
-      await api.patch(`/bookings/${projectId}/lock`, {});
+      const { items } = await api.get<{ items: Array<{ id: string; projectId: string; status: string }> }>('/bookings/outgoing');
+      const accepted = items.filter((b) => b.projectId === projectId && b.status === 'accepted');
+      if (accepted.length === 0) {
+        toast.error('No accepted bookings to lock. Crew/vendors must accept requests first.');
+        return;
+      }
+      await Promise.all(accepted.map((b) => api.patch(`/bookings/${b.id}/lock`, {})));
+      toast.success('Project locked.');
       refetch();
     } catch (err) {
       const msg = err instanceof ApiException ? err.payload.message : 'Could not lock project.';
-      alert(msg);
+      toast.error(msg);
     } finally {
       setLockingId(null);
     }
@@ -94,10 +102,13 @@ export default function Projects() {
     setCancelActionError(null);
     try {
       await api.patch(`/projects/${projectId}`, { status: 'cancelled' });
+      toast.success('Project cancelled.');
       setCancellingId(null);
       refetch();
     } catch (err) {
-      setCancelActionError(err instanceof ApiException ? err.payload.message : 'Could not cancel project.');
+      const msg = err instanceof ApiException ? err.payload.message : 'Could not cancel project.';
+      toast.error(msg);
+      setCancelActionError(msg);
     }
   };
 

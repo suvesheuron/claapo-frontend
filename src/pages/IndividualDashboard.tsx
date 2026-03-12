@@ -51,11 +51,12 @@ function buildCalendar(year: number, month: number): CalendarCell[] {
 }
 
 const navLinks = [
-  { icon: FaHouse,    label: 'Dashboard',    to: '/dashboard' },
-  { icon: FaCalendar, label: 'Availability', to: '/dashboard/availability' },
-  { icon: FaMessage,  label: 'Chat',         to: '/dashboard/conversations' },
-  { icon: FaFolder,   label: 'Past Projects',to: '/dashboard/past-projects' },
-  { icon: FaUser,     label: 'Profile',      to: '/dashboard/profile' },
+  { icon: FaHouse,       label: 'Dashboard',    to: '/dashboard' },
+  { icon: FaCalendar,    label: 'Availability', to: '/dashboard/availability' },
+  { icon: FaMessage,     label: 'Chat',         to: '/dashboard/conversations' },
+  { icon: FaFileInvoice, label: 'Invoices',     to: '/dashboard/invoices' },
+  { icon: FaFolder,      label: 'Past Projects',to: '/dashboard/past-projects' },
+  { icon: FaUser,        label: 'Profile',      to: '/dashboard/profile' },
 ];
 
 export default function IndividualDashboard() {

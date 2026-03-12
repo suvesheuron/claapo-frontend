@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect } from 'react';
+import { Toaster } from 'react-hot-toast';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
 import { useAuth, type BackendRole } from './contexts/AuthContext';
@@ -45,6 +46,10 @@ const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 // Team management
 const TeamPage = lazy(() => import('./pages/company/Team'));
 
+// Invoice pages
+const InvoicesList = lazy(() => import('./pages/InvoicesList'));
+const CreateInvoice = lazy(() => import('./pages/CreateInvoice'));
+
 /**
  * Syncs the authenticated user's backend role ('individual' | 'company' | 'vendor')
  * into the existing RoleContext ('Individual' | 'Company' | 'Vendor').
@@ -81,6 +86,7 @@ function PageFallback() {
 export default function App() {
   return (
     <BrowserRouter>
+      <Toaster position="top-center" toastOptions={{ duration: 4000 }} />
       {/* Syncs auth role into RoleContext — must be inside BrowserRouter + both providers */}
       <AuthRoleSyncBridge />
       <Suspense fallback={<PageFallback />}>
@@ -103,6 +109,8 @@ export default function App() {
           {/* Shared routes */}
           <Route path="/dashboard/chat/:userId" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
           <Route path="/dashboard/conversations" element={<ProtectedRoute><Conversations /></ProtectedRoute>} />
+          <Route path="/dashboard/invoices" element={<ProtectedRoute><InvoicesList /></ProtectedRoute>} />
+          <Route path="/dashboard/invoice/new" element={<ProtectedRoute allowedRoles={['individual', 'vendor']}><CreateInvoice /></ProtectedRoute>} />
           <Route path="/dashboard/invoice/:invoiceId" element={<ProtectedRoute><Invoice /></ProtectedRoute>} />
           <Route path="/dashboard/bookings" element={<ProtectedRoute allowedRoles={['individual', 'vendor']}><Bookings /></ProtectedRoute>} />
           <Route path="/dashboard/team" element={<ProtectedRoute allowedRoles={['company', 'admin']}><TeamPage /></ProtectedRoute>} />

@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useEffect, useState, useMemo } from 'react';
-import { FaPlus, FaUsers, FaTruck, FaHouse, FaFolder, FaChevronLeft, FaChevronRight, FaXmark, FaEye, FaMagnifyingGlass, FaCalendar, FaUser, FaMessage, FaPeopleGroup } from 'react-icons/fa6';
+import { FaPlus, FaUsers, FaTruck, FaHouse, FaFolder, FaChevronLeft, FaChevronRight, FaXmark, FaEye, FaMagnifyingGlass, FaCalendar, FaUser, FaMessage, FaPeopleGroup, FaFileInvoice } from 'react-icons/fa6';
 import DashboardHeader from '../components/DashboardHeader';
 import DashboardSidebar from '../components/DashboardSidebar';
 import AppFooter from '../components/AppFooter';
@@ -31,18 +31,22 @@ interface Project {
 }
 interface ProjectsApiResponse { items: Project[]; meta: { total: number } }
 
-interface CalendarCell { d: number; muted: boolean; project?: Project | null }
-interface PanelData { date: number; month: string; year: number; project: Project | null }
+// Priority order for calendar display: active/open > draft > completed > cancelled
+const STATUS_PRIORITY: Record<string, number> = { active: 0, open: 1, in_progress: 2, draft: 3, completed: 4, cancelled: 5 };
+
+interface CalendarCell { d: number; muted: boolean; projects: Project[] }
+interface PanelData { date: number; month: string; year: number; projects: Project[] }
 
 const navLinks = [
-  { icon: FaHouse,           label: 'Dashboard',    to: '/dashboard' },
-  { icon: FaCalendar,        label: 'Availability', to: '/dashboard/company-availability' },
-  { icon: FaFolder,          label: 'Projects',     to: '/dashboard/projects' },
-  { icon: FaFolder,          label: 'Past Projects',to: '/dashboard/company-past-projects' },
-  { icon: FaMagnifyingGlass, label: 'Search',       to: '/dashboard/search' },
-  { icon: FaMessage,         label: 'Chat',         to: '/dashboard/conversations' },
-  { icon: FaPeopleGroup,     label: 'Team',         to: '/dashboard/team' },
-  { icon: FaUser,            label: 'Profile',      to: '/dashboard/company-profile' },
+  { icon: FaHouse,           label: 'Dashboard',     to: '/dashboard' },
+  { icon: FaCalendar,        label: 'Availability',  to: '/dashboard/company-availability' },
+  { icon: FaFolder,          label: 'Projects',      to: '/dashboard/projects' },
+  { icon: FaFolder,          label: 'Past Projects', to: '/dashboard/company-past-projects' },
+  { icon: FaMagnifyingGlass, label: 'Search',        to: '/dashboard/search' },
+  { icon: FaFileInvoice,     label: 'Invoices',      to: '/dashboard/invoices' },
+  { icon: FaMessage,         label: 'Chat',          to: '/dashboard/conversations' },
+  { icon: FaPeopleGroup,     label: 'Team',          to: '/dashboard/team' },
+  { icon: FaUser,            label: 'Profile',       to: '/dashboard/company-profile' },
 ];
 
 function buildCalendar(year: number, month: number, projects: Project[]): CalendarCell[] {
@@ -50,23 +54,30 @@ function buildCalendar(year: number, month: number, projects: Project[]): Calend
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const prevDays = new Date(year, month, 0).getDate();
 
-  // Build a map: day -> project
-  const dayMap: Record<number, Project> = {};
+  // Map: day -> all projects that span that day
+  const dayMap: Record<number, Project[]> = {};
   for (const p of projects) {
     const start = new Date(p.startDate);
     const end = new Date(p.endDate);
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
       if (d.getFullYear() === year && d.getMonth() === month) {
-        dayMap[d.getDate()] = p;
+        const day = d.getDate();
+        if (!dayMap[day]) dayMap[day] = [];
+        dayMap[day].push(p);
       }
     }
   }
 
+  // Sort each day's projects by priority (active first, cancelled last)
+  for (const day in dayMap) {
+    dayMap[day].sort((a, b) => (STATUS_PRIORITY[a.status] ?? 9) - (STATUS_PRIORITY[b.status] ?? 9));
+  }
+
   const cells: CalendarCell[] = [];
-  for (let i = firstDay - 1; i >= 0; i--) cells.push({ d: prevDays - i, muted: true });
-  for (let day = 1; day <= daysInMonth; day++) cells.push({ d: day, muted: false, project: dayMap[day] ?? null });
+  for (let i = firstDay - 1; i >= 0; i--) cells.push({ d: prevDays - i, muted: true, projects: [] });
+  for (let day = 1; day <= daysInMonth; day++) cells.push({ d: day, muted: false, projects: dayMap[day] ?? [] });
   const rem = 7 - (cells.length % 7);
-  if (rem < 7) for (let d2 = 1; d2 <= rem; d2++) cells.push({ d: d2, muted: true });
+  if (rem < 7) for (let d2 = 1; d2 <= rem; d2++) cells.push({ d: d2, muted: true, projects: [] });
   return cells;
 }
 
@@ -94,7 +105,7 @@ export default function CompanyDashboard() {
 
   const openPanel = (cell: CalendarCell) => {
     if (cell.muted) return;
-    setPanel({ date: cell.d, month: monthLabel, year: yearLabel, project: cell.project ?? null });
+    setPanel({ date: cell.d, month: monthLabel, year: yearLabel, projects: cell.projects });
   };
 
   return (
@@ -158,15 +169,21 @@ export default function CompanyDashboard() {
                     </div>
                     <div className="grid grid-cols-7 gap-1">
                       {calendarDays.map((cell, i) => {
-                        const cfg = cell.project ? (statusConfig[cell.project.status] ?? statusConfig.draft) : null;
+                        // Primary project is the highest-priority non-cancelled project; fall back to first
+                        const primary = cell.projects.find(p => p.status !== 'cancelled') ?? cell.projects[0] ?? null;
+                        const cfg = primary ? (statusConfig[primary.status] ?? statusConfig.draft) : null;
+                        const hasMultiple = cell.projects.length > 1;
                         return (
-                          <button key={i} type="button" onClick={() => openPanel(cell)} disabled={cell.muted} className={`cal-cell rounded-xl border text-center p-1 sm:p-1.5 min-h-[44px] sm:min-h-[52px] flex flex-col items-center justify-center gap-0.5 ${
+                          <button key={i} type="button" onClick={() => openPanel(cell)} disabled={cell.muted} className={`cal-cell rounded-xl border text-center p-1 sm:p-1.5 min-h-[44px] sm:min-h-[52px] flex flex-col items-center justify-center gap-0.5 relative ${
                             cell.muted ? 'bg-white border-neutral-100 text-neutral-300 cursor-default' :
                             cfg ? `${cfg.bg} ${cfg.border} ${cfg.text} cursor-pointer` : 'bg-white border-neutral-200 text-neutral-600 hover:bg-[#F3F4F6] cursor-pointer'
                           } ${panel?.date === cell.d && !cell.muted ? 'ring-2 ring-[#3678F1] ring-offset-1' : ''}`}>
                             <span className="text-[11px] sm:text-xs font-semibold leading-none">{cell.d}</span>
-                            {cell.project && !cell.muted && (
-                              <span className="text-[8px] sm:text-[9px] font-medium leading-tight truncate w-full opacity-80">{cell.project.title}</span>
+                            {primary && !cell.muted && (
+                              <span className="text-[8px] sm:text-[9px] font-medium leading-tight truncate w-full opacity-80">{primary.title}</span>
+                            )}
+                            {hasMultiple && !cell.muted && (
+                              <span className="absolute top-0.5 right-0.5 w-3.5 h-3.5 rounded-full bg-[#3678F1] text-white text-[7px] font-bold flex items-center justify-center leading-none">{cell.projects.length}</span>
                             )}
                           </button>
                         );
@@ -294,33 +311,7 @@ export default function CompanyDashboard() {
               </button>
             </div>
             <div className="flex-1 overflow-y-auto px-5 py-4">
-              {panel.project ? (
-                <>
-                  {(() => { const cfg = statusConfig[panel.project.status] ?? statusConfig.draft; return (
-                    <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full mb-4 ${cfg.bg} ${cfg.text}`}>{cfg.label}</span>
-                  ); })()}
-                  <div className="rounded-xl bg-[#F3F4F6] p-4 space-y-3 mb-4">
-                    {[
-                      { label: 'Project', value: panel.project.title },
-                      { label: 'Production House', value: panel.project.productionHouseName ?? '—' },
-                      { label: 'Location', value: panel.project.locationCity ?? '—' },
-                    ].map(({ label, value }) => (
-                      <div key={label} className="flex justify-between gap-2">
-                        <span className="text-xs text-neutral-500 shrink-0">{label}</span>
-                        <span className="text-xs font-semibold text-neutral-900 text-right">{value}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="space-y-2">
-                    <Link to={`/dashboard/projects/${panel.project.id}`} className="flex items-center justify-center gap-2 w-full rounded-xl py-2.5 bg-[#3678F1] text-white text-sm font-semibold hover:bg-[#2563d4] transition-colors">
-                      <FaEye className="w-3.5 h-3.5" /> View Project
-                    </Link>
-                    <Link to="/dashboard/search" className="flex items-center justify-center gap-2 w-full rounded-xl py-2.5 bg-[#F3F4F6] text-neutral-700 text-sm font-semibold hover:bg-neutral-200 transition-colors">
-                      <FaUsers className="w-3.5 h-3.5" /> Manage Crew
-                    </Link>
-                  </div>
-                </>
-              ) : (
+              {panel.projects.length === 0 ? (
                 <div className="text-center py-8">
                   <div className="w-12 h-12 rounded-full bg-[#F3F4F6] flex items-center justify-center mx-auto mb-3">
                     <FaFolder className="text-neutral-400 text-lg" />
@@ -331,8 +322,62 @@ export default function CompanyDashboard() {
                     <FaPlus className="w-3 h-3" /> Create Project
                   </Link>
                 </div>
+              ) : (
+                <div className="space-y-4">
+                  {/* Active / non-cancelled projects */}
+                  {panel.projects.filter(p => p.status !== 'cancelled').map((p) => {
+                    const cfg = statusConfig[p.status] ?? statusConfig.draft;
+                    return (
+                      <div key={p.id} className={`rounded-xl border p-4 ${cfg.bg} ${cfg.border}`}>
+                        <div className="flex items-start justify-between gap-2 mb-3">
+                          <p className="text-sm font-bold text-neutral-900 leading-tight">{p.title}</p>
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full shrink-0 font-semibold ${cfg.bg} ${cfg.text} border ${cfg.border}`}>{cfg.label}</span>
+                        </div>
+                        <div className="space-y-1.5 mb-3">
+                          {p.productionHouseName && (
+                            <p className="text-xs text-neutral-600"><span className="text-neutral-400">House</span> · {p.productionHouseName}</p>
+                          )}
+                          {p.locationCity && (
+                            <p className="text-xs text-neutral-600"><span className="text-neutral-400">Location</span> · {p.locationCity}</p>
+                          )}
+                        </div>
+                        <div className="flex gap-2">
+                          <Link to={`/dashboard/projects/${p.id}`} className="flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2 bg-[#3678F1] text-white text-xs font-semibold hover:bg-[#2563d4] transition-colors">
+                            <FaEye className="w-3 h-3" /> View
+                          </Link>
+                          <Link to="/dashboard/search" className="flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2 bg-white border border-neutral-200 text-neutral-700 text-xs font-semibold hover:bg-neutral-50 transition-colors">
+                            <FaUsers className="w-3 h-3" /> Crew
+                          </Link>
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {/* Cancelled projects — shown collapsed below */}
+                  {panel.projects.filter(p => p.status === 'cancelled').length > 0 && (
+                    <div>
+                      <p className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wider mb-2">Also on this date</p>
+                      <div className="space-y-2">
+                        {panel.projects.filter(p => p.status === 'cancelled').map((p) => (
+                          <Link key={p.id} to={`/dashboard/projects/${p.id}`}
+                            className="flex items-center justify-between gap-2 rounded-xl border border-neutral-200 px-3 py-2.5 bg-[#FAFAFA] hover:border-[#3678F1]/40 transition-colors">
+                            <p className="text-xs font-medium text-neutral-500 truncate">{p.title}</p>
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#FEE2E2] text-[#B91C1C] font-semibold shrink-0">Cancelled</span>
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
+            {panel.projects.length > 0 && (
+              <div className="px-5 py-4 border-t border-neutral-100">
+                <Link to="/dashboard/projects/new" className="flex items-center justify-center gap-2 w-full rounded-xl py-2.5 bg-[#F4C430] text-neutral-900 text-sm font-bold hover:bg-[#e6b820] transition-colors">
+                  <FaPlus className="w-3 h-3" /> New Project
+                </Link>
+              </div>
+            )}
           </aside>
         </>
       )}

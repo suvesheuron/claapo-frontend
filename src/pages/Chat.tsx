@@ -16,6 +16,7 @@ import DashboardHeader from '../components/DashboardHeader';
 import AppFooter from '../components/AppFooter';
 import Avatar from '../components/Avatar';
 import { api, ApiException } from '../services/api';
+import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 
 interface ChatMessage {
@@ -48,6 +49,7 @@ export default function Chat() {
 
   const [messages,      setMessages]     = useState<ChatMessage[]>([]);
   const [otherUser,     setOtherUser]    = useState<OtherUser | null>(null);
+  const [noConversation, setNoConversation] = useState(false);
   const [input,         setInput]        = useState('');
   const [loadingInit,   setLoadingInit]  = useState(true);
   const [sending,       setSending]      = useState(false);
@@ -66,18 +68,19 @@ export default function Chat() {
   const fetchMessages = useCallback(async (isPolling = false) => {
     if (!targetUserId) return;
     try {
-      const res = await api.get<{ items: ChatMessage[] }>(
+      const res = await api.get<{ conversationId: string | null; items: ChatMessage[] }>(
         `/conversations/with/${targetUserId}?limit=50`
       );
       const data = res?.items ?? [];
-      if (!data.length) {
-        if (!isPolling) setMessages([]);
-        return;
+      if (!isPolling) {
+        setNoConversation(res?.conversationId === null);
+        setMessages(data);
       }
+      if (!data.length) return;
       const newest = data[data.length - 1]?.createdAt;
-      if (isPolling && newest === lastMsgTime.current) return; // nothing new
+      if (isPolling && newest === lastMsgTime.current) return;
       lastMsgTime.current = newest ?? null;
-      setMessages(data);
+      if (!isPolling) setMessages(data);
     } catch (err) {
       if (!isPolling) {
         setLoadError(err instanceof ApiException ? err.payload.message : 'Failed to load messages.');
@@ -136,7 +139,9 @@ export default function Chat() {
       // Immediately re-fetch to show the sent message
       await fetchMessages(false);
     } catch (err) {
-      setSendError(err instanceof ApiException ? err.payload.message : 'Failed to send message.');
+      const msg = err instanceof ApiException ? err.payload.message : 'Failed to send message.';
+      toast.error(msg);
+      setSendError(msg);
     } finally {
       setSending(false);
     }
@@ -178,8 +183,17 @@ export default function Chat() {
               )}
 
               {!loadingInit && !loadError && messages.length === 0 && (
-                <div className="text-center py-12">
-                  <p className="text-sm text-neutral-400">No messages yet. Say hello!</p>
+                <div className="text-center py-12 px-4">
+                  {noConversation ? (
+                    <>
+                      <p className="text-sm font-medium text-neutral-700 mb-1">No conversation yet</p>
+                      <p className="text-xs text-neutral-500 max-w-sm mx-auto">
+                        You can only chat with crew or vendors you have a shared project with. Send a booking request from Search, or open a project and use the chat button there to start a conversation.
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-sm text-neutral-400">No messages yet. Say hello!</p>
+                  )}
                 </div>
               )}
 

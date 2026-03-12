@@ -8,6 +8,7 @@ import DashboardHeader from '../../components/DashboardHeader';
 import DashboardSidebar from '../../components/DashboardSidebar';
 import AppFooter from '../../components/AppFooter';
 import { api, ApiException } from '../../services/api';
+import { useApiQuery } from '../../hooks/useApiQuery';
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const DAYS   = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -190,7 +191,7 @@ export default function VendorAvailability() {
       setPanel(null);
       setBlockForm(false);
     } catch (err) {
-      alert(err instanceof ApiException ? err.payload.message : 'Failed to update availability.');
+      toast.error(err instanceof ApiException ? err.payload.message : 'Failed to update availability.');
     } finally {
       setSaving(false);
     }

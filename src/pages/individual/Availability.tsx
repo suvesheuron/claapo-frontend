@@ -5,6 +5,7 @@ import DashboardHeader from '../../components/DashboardHeader';
 import DashboardSidebar from '../../components/DashboardSidebar';
 import AppFooter from '../../components/AppFooter';
 import { api, ApiException } from '../../services/api';
+import toast from 'react-hot-toast';
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -190,7 +191,7 @@ export default function IndividualAvailability() {
       setBlockForm(false);
     } catch (err) {
       const msg = err instanceof ApiException ? err.payload.message : 'Failed to block date.';
-      alert(msg);
+      toast.error(msg);
     } finally {
       setSaving(false);
     }
@@ -230,7 +231,7 @@ export default function IndividualAvailability() {
       setPanel(null);
     } catch (err) {
       const msg = err instanceof ApiException ? err.payload.message : 'Failed to update availability.';
-      alert(msg);
+      toast.error(msg);
     } finally {
       setSaving(false);
     }

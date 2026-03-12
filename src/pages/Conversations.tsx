@@ -11,9 +11,13 @@ import { useRole } from '../contexts/RoleContext';
 interface Participant { id: string; displayName?: string; companyName?: string; email?: string }
 interface Conversation {
   id: string;
-  otherUser: Participant;
+  // Backend returns otherParticipant; support both shapes for safety
+  otherParticipant?: Participant;
+  otherUser?: Participant;
   lastMessage?: { content: string; createdAt: string; senderId: string } | null;
+  lastMessageAt?: string | null;
   unreadCount?: number;
+  project?: { id: string; title: string } | null;
 }
 interface ConversationsResponse { items: Conversation[] }
 
@@ -110,30 +114,42 @@ export default function Conversations() {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {conversations.map(conv => (
-                    <Link key={conv.id} to={`/dashboard/chat/${conv.otherUser.id}`}
-                      className="flex items-center gap-4 p-4 rounded-2xl bg-white border border-neutral-200 hover:border-[#3678F1] hover:shadow-sm transition-all group">
-                      <Avatar name={getName(conv.otherUser)} size="md" />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-2 mb-0.5">
-                          <p className="text-sm font-bold text-neutral-900 truncate group-hover:text-[#3678F1] transition-colors">{getName(conv.otherUser)}</p>
-                          {conv.lastMessage && (
-                            <span className="text-[11px] text-neutral-400 shrink-0">{timeSince(conv.lastMessage.createdAt)}</span>
+                  {conversations.map(conv => {
+                    // Backend returns otherParticipant; fall back to otherUser for safety
+                    const other = conv.otherParticipant ?? conv.otherUser;
+                    if (!other?.id) return null;
+                    const lastMsgTime = conv.lastMessage?.createdAt ?? conv.lastMessageAt ?? null;
+                    const lastMsgText = conv.lastMessage?.content ?? null;
+                    return (
+                      <Link key={conv.id} to={`/dashboard/chat/${other.id}`}
+                        className="flex items-center gap-4 p-4 rounded-2xl bg-white border border-neutral-200 hover:border-[#3678F1] hover:shadow-sm transition-all group">
+                        <Avatar name={getName(other)} size="md" />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2 mb-0.5">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-bold text-neutral-900 truncate group-hover:text-[#3678F1] transition-colors">{getName(other)}</p>
+                              {conv.project && (
+                                <p className="text-[10px] text-neutral-400 truncate">{conv.project.title}</p>
+                              )}
+                            </div>
+                            {lastMsgTime && (
+                              <span className="text-[11px] text-neutral-400 shrink-0">{timeSince(lastMsgTime)}</span>
+                            )}
+                          </div>
+                          {lastMsgText ? (
+                            <p className="text-xs text-neutral-500 truncate">{lastMsgText}</p>
+                          ) : (
+                            <p className="text-xs text-neutral-400 italic">No messages yet</p>
                           )}
                         </div>
-                        {conv.lastMessage ? (
-                          <p className="text-xs text-neutral-500 truncate">{conv.lastMessage.content}</p>
-                        ) : (
-                          <p className="text-xs text-neutral-400 italic">No messages yet</p>
+                        {(conv.unreadCount ?? 0) > 0 && (
+                          <span className="w-5 h-5 rounded-full bg-[#3678F1] text-white text-[10px] font-bold flex items-center justify-center shrink-0">
+                            {conv.unreadCount}
+                          </span>
                         )}
-                      </div>
-                      {(conv.unreadCount ?? 0) > 0 && (
-                        <span className="w-5 h-5 rounded-full bg-[#3678F1] text-white text-[10px] font-bold flex items-center justify-center shrink-0">
-                          {conv.unreadCount}
-                        </span>
-                      )}
-                    </Link>
-                  ))}
+                      </Link>
+                    );
+                  })}
                 </div>
               )}
             </div>

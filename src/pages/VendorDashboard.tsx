@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { FaCalendar, FaTruck, FaBell, FaHouse, FaChevronLeft, FaChevronRight, FaXmark, FaCircle, FaMessage, FaUser, FaTriangleExclamation, FaFileInvoice, FaPlus } from 'react-icons/fa6';
 import { api, ApiException } from '../services/api';
+import toast from 'react-hot-toast';
 import { useApiQuery } from '../hooks/useApiQuery';
 import { formatPaise, formatRateRange } from '../utils/currency';
 import DashboardHeader from '../components/DashboardHeader';
@@ -92,11 +93,12 @@ interface PastBookingItem {
 }
 
 const navLinks = [
-  { icon: FaHouse,        label: 'Dashboard',   to: '/dashboard' },
+  { icon: FaHouse,        label: 'Dashboard',    to: '/dashboard' },
   { icon: FaCalendar,     label: 'Availability', to: '/dashboard/vendor-availability' },
-  { icon: FaTruck,        label: 'Equipment',   to: '/dashboard/equipment' },
-  { icon: FaMessage,      label: 'Chat',        to: '/dashboard/conversations' },
-  { icon: FaUser,         label: 'Profile',     to: '/dashboard/vendor-profile' },
+  { icon: FaTruck,        label: 'Equipment',    to: '/dashboard/equipment' },
+  { icon: FaMessage,      label: 'Chat',         to: '/dashboard/conversations' },
+  { icon: FaFileInvoice,  label: 'Invoices',     to: '/dashboard/invoices' },
+  { icon: FaUser,         label: 'Profile',      to: '/dashboard/vendor-profile' },
 ];
 
 export default function VendorDashboard() {
@@ -176,8 +178,9 @@ export default function VendorDashboard() {
                 <p className="text-sm text-neutral-500 mt-0.5">Equipment availability and rental management</p>
               </div>
 
-              {/* Calendar first */}
-              <div className="mb-5">
+              <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+                {/* Calendar — left, 3/4 width on desktop */}
+                <div className="lg:col-span-3 order-2 lg:order-1">
                   <div className="rounded-2xl bg-white border border-neutral-200 p-4 sm:p-5">
                     <div className="flex items-center justify-between mb-4">
                       <h2 className="text-base font-bold text-neutral-900">Equipment Calendar</h2>
@@ -250,12 +253,15 @@ export default function VendorDashboard() {
                         </div>
                       ))}
                     </div>
+                    <p className="mt-3 text-[11px] text-neutral-400">
+                      Go to <Link to="/dashboard/vendor-availability" className="text-[#3678F1] hover:underline">Availability</Link> to manage your schedule.
+                    </p>
                   </div>
                 </div>
 
-              {/* Active bookings (Booking requests) + Past rentals after calendar */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-5">
-                {/* Booking requests */}
+                {/* Right column — Booking Requests, Recent Rentals, Quick Actions */}
+                <div className="space-y-4 order-1 lg:order-2">
+                  {/* Booking Requests */}
                   <div className="rounded-2xl bg-white border border-neutral-200 p-4">
                     <div className="flex items-center gap-2 mb-3">
                       <div className="w-6 h-6 rounded-lg bg-[#FEF9E6] flex items-center justify-center">
@@ -293,40 +299,75 @@ export default function VendorDashboard() {
                     <Link to="/dashboard/bookings" className="mt-3 rounded-xl block w-full py-2 text-xs text-[#3678F1] bg-[#EEF4FF] hover:bg-[#DBEAFE] text-center font-semibold transition-colors">View All Bookings</Link>
                   </div>
 
-                {/* Past Rentals */}
-                <div className="rounded-2xl bg-white border border-neutral-200 p-4 sm:p-5">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-base font-bold text-neutral-900">Recent Rentals</h2>
-                  <Link to="/dashboard/past-rentals" className="text-xs text-[#3678F1] hover:underline font-medium">View all</Link>
-                </div>
-                <p className="text-xs text-neutral-400">Go to <Link to="/dashboard/bookings" className="text-[#3678F1] hover:underline">Bookings</Link> to manage rental history.</p>
-                </div>
-              </div>
-
-              {/* Equipment overview from API */}
-              {equipmentArray.length > 0 && (
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
-                  {equipmentArray.map((item) => (
-                    <Link key={item.id} to="/dashboard/equipment" className="rounded-2xl bg-white border border-neutral-200 p-4 hover:border-[#3678F1]/30 transition-colors">
-                      <div className="w-8 h-8 rounded-lg bg-[#EEF4FF] flex items-center justify-center mb-2">
-                        <FaTruck className="text-[#3678F1] text-sm" />
+                  {/* Recent Rentals */}
+                  <div className="rounded-2xl bg-white border border-neutral-200 p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-sm font-bold text-neutral-900">Recent Rentals</h3>
+                      <Link to="/dashboard/past-rentals" className="text-xs text-[#3678F1] hover:underline font-medium">View all</Link>
+                    </div>
+                    {pastItems.length === 0 ? (
+                      <p className="text-xs text-neutral-400 text-center py-4">No past rentals yet</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {pastItems.slice(0, 4).map((b) => (
+                          <Link key={b.id} to={`/dashboard/projects/${b.project.id}`} className="block rounded-xl border border-neutral-200 p-3 bg-[#FAFAFA] hover:border-[#3678F1]/50 transition-colors">
+                            <p className="text-xs font-semibold text-neutral-900 truncate">{b.project.title}</p>
+                            <p className="text-[11px] text-neutral-500 truncate">{b.requester.companyProfile?.companyName ?? '—'}</p>
+                          </Link>
+                        ))}
                       </div>
-                      <h3 className="text-sm font-bold text-neutral-900 mb-0.5 line-clamp-1">{item.name}</h3>
-                      <p className="text-[11px] text-neutral-500">{item.dailyRateMin != null || item.dailyRateMax != null ? formatRateRange(item.dailyRateMin, item.dailyRateMax) : '—'}</p>
-                    </Link>
-                  ))}
-                </div>
-              )}
+                    )}
+                  </div>
 
-              {/* Stats from API */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-2xl bg-white border border-neutral-200 p-4">
-                  <p className="text-xs text-neutral-500">Active Bookings</p>
-                  <p className="text-xl font-bold text-[#3678F1]">{activeCount}</p>
-                </div>
-                <div className="rounded-2xl bg-white border border-neutral-200 p-4">
-                  <p className="text-xs text-neutral-500">Past Rentals</p>
-                  <p className="text-xl font-bold text-[#3678F1]">{pastCount}</p>
+                  {/* Stats — same column as individual dashboard */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="rounded-2xl bg-white border border-neutral-200 p-3">
+                      <p className="text-[11px] text-neutral-500">Active Bookings</p>
+                      <p className="text-lg font-bold text-[#3678F1]">{activeCount}</p>
+                    </div>
+                    <div className="rounded-2xl bg-white border border-neutral-200 p-3">
+                      <p className="text-[11px] text-neutral-500">Past Rentals</p>
+                      <p className="text-lg font-bold text-[#3678F1]">{pastCount}</p>
+                    </div>
+                  </div>
+
+                  {/* Equipment summary — in sidebar when present */}
+                  {equipmentArray.length > 0 && (
+                    <div className="rounded-2xl bg-white border border-neutral-200 p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-sm font-bold text-neutral-900">Equipment</h3>
+                        <Link to="/dashboard/equipment" className="text-xs text-[#3678F1] hover:underline font-medium">View all</Link>
+                      </div>
+                      <div className="space-y-2">
+                        {equipmentArray.slice(0, 3).map((item) => (
+                          <Link key={item.id} to="/dashboard/equipment" className="block rounded-xl border border-neutral-200 p-2.5 bg-[#FAFAFA] hover:border-[#3678F1]/50 transition-colors">
+                            <p className="text-xs font-semibold text-neutral-900 truncate">{item.name}</p>
+                            <p className="text-[10px] text-neutral-500">{item.dailyRateMin != null || item.dailyRateMax != null ? formatRateRange(item.dailyRateMin, item.dailyRateMax) : '—'}</p>
+                          </Link>
+                        ))}
+                        {equipmentArray.length > 3 && <p className="text-[10px] text-neutral-400">+{equipmentArray.length - 3} more</p>}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Quick Actions */}
+                  <div className="rounded-2xl bg-white border border-neutral-200 p-4">
+                    <h3 className="text-sm font-bold text-neutral-900 mb-3">Quick Actions</h3>
+                    <div className="space-y-1.5">
+                      <Link to="/dashboard/vendor-availability" className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#F3F4F6] text-neutral-700 text-xs font-semibold hover:bg-[#EEF4FF] hover:text-[#3678F1] transition-colors">
+                        <FaCalendar className="w-3 h-3" /> Manage Availability
+                      </Link>
+                      <Link to="/dashboard/conversations" className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#F3F4F6] text-neutral-700 text-xs font-semibold hover:bg-[#EEF4FF] hover:text-[#3678F1] transition-colors">
+                        <FaMessage className="w-3 h-3" /> Open Chat
+                      </Link>
+                      <Link to="/dashboard/equipment" className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#F3F4F6] text-neutral-700 text-xs font-semibold hover:bg-[#EEF4FF] hover:text-[#3678F1] transition-colors">
+                        <FaTruck className="w-3 h-3" /> Equipment
+                      </Link>
+                      <Link to="/dashboard/vendor-profile" className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#F3F4F6] text-neutral-700 text-xs font-semibold hover:bg-[#EEF4FF] hover:text-[#3678F1] transition-colors">
+                        <FaUser className="w-3 h-3" /> Edit Profile
+                      </Link>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -385,7 +426,7 @@ export default function VendorDashboard() {
                   <button
                     type="button"
                     className="rounded-xl w-full py-2.5 bg-[#F3F4F6] text-neutral-700 text-sm font-medium hover:bg-neutral-200 transition-colors"
-                    onClick={() => alert('Date blocked!')}
+                    onClick={() => toast('Go to Availability to block this date.')}
                   >
                     Block this date
                   </button>
@@ -435,7 +476,7 @@ export default function VendorDashboard() {
                 <button
                   type="button"
                   className="flex items-center justify-center gap-2 w-full rounded-xl py-2.5 bg-[#F4C430] text-neutral-900 text-sm font-bold hover:bg-[#e6b820] transition-colors"
-                  onClick={() => alert('Set equipment availability')}
+                  onClick={() => toast('Go to Availability to manage your schedule.')}
                 >
                   <FaPlus className="w-3 h-3" /> Manage Availability
                 </button>
