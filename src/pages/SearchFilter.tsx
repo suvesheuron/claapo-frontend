@@ -1,6 +1,6 @@
 import { Link, useSearchParams } from 'react-router-dom';
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { FaTruck, FaMagnifyingGlass, FaChevronLeft, FaChevronRight, FaPlus, FaHouse, FaFolder, FaCalendar, FaUser, FaTriangleExclamation, FaLocationDot, FaMessage, FaPeopleGroup } from 'react-icons/fa6';
+import { FaTruck, FaMagnifyingGlass, FaChevronLeft, FaChevronRight, FaPlus, FaTriangleExclamation, FaLocationDot, FaMessage } from 'react-icons/fa6';
 import AppFooter from '../components/AppFooter';
 import Avatar from '../components/Avatar';
 import BookingRequestModal from '../components/BookingRequestModal';
@@ -8,6 +8,7 @@ import DashboardHeader from '../components/DashboardHeader';
 import DashboardSidebar from '../components/DashboardSidebar';
 import { api, ApiException } from '../services/api';
 import { formatRateRange } from '../utils/currency';
+import { companyNavLinks } from '../navigation/dashboardNav';
 
 type SearchType = 'crew' | 'vendors';
 
@@ -31,19 +32,7 @@ interface VendorResult {
   isGstVerified: boolean;
 }
 
-interface PaginatedResponse<T> { data: T[]; meta: { page: number; limit: number; total: number } }
 interface SelectedUser { userId: string; name: string; role: string; rate: string; isVendor?: boolean }
-
-const navLinks = [
-  { icon: FaHouse,           label: 'Dashboard',    to: '/dashboard' },
-  { icon: FaCalendar,        label: 'Availability', to: '/dashboard/company-availability' },
-  { icon: FaFolder,          label: 'Projects',     to: '/dashboard/projects' },
-  { icon: FaFolder,          label: 'Past Projects',to: '/dashboard/company-past-projects' },
-  { icon: FaMagnifyingGlass, label: 'Search',       to: '/dashboard/search' },
-  { icon: FaMessage,         label: 'Chat',         to: '/dashboard/conversations' },
-  { icon: FaPeopleGroup,     label: 'Team',         to: '/dashboard/team' },
-  { icon: FaUser,            label: 'Profile',      to: '/dashboard/company-profile' },
-];
 
 const PAGE_SIZE = 15;
 
@@ -113,7 +102,7 @@ export default function SearchFilter() {
     <div className="h-screen flex flex-col overflow-hidden bg-[#F3F4F6] w-full">
       <DashboardHeader />
       <div className="flex-1 flex min-h-0 overflow-hidden">
-        <DashboardSidebar links={navLinks} />
+        <DashboardSidebar links={companyNavLinks} />
         <main className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
           <div className="flex-1 min-h-0 overflow-auto">
             <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-6 xl:px-8 py-5">

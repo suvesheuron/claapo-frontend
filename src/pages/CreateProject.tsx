@@ -1,22 +1,14 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import {
-  FaArrowLeft, FaFolderPlus, FaCircleInfo, FaClipboardCheck, FaCalendar, FaPlus,
-  FaHouse, FaFolder, FaMagnifyingGlass, FaUser, FaTriangleExclamation, FaXmark, FaLocationDot,
+  FaArrowLeft, FaFolderPlus, FaCircleInfo, FaClipboardCheck, FaPlus,
+  FaTriangleExclamation, FaXmark, FaLocationDot, FaCalendar,
 } from 'react-icons/fa6';
 import DashboardHeader from '../components/DashboardHeader';
 import DashboardSidebar from '../components/DashboardSidebar';
 import AppFooter from '../components/AppFooter';
 import { api, ApiException } from '../services/api';
-
-const navLinks = [
-  { icon: FaHouse,           label: 'Dashboard',    to: '/dashboard' },
-  { icon: FaCalendar,        label: 'Availability', to: '/dashboard/company-availability' },
-  { icon: FaFolder,          label: 'Projects',     to: '/dashboard/projects' },
-  { icon: FaFolder,          label: 'Past Projects', to: '/dashboard/company-past-projects' },
-  { icon: FaMagnifyingGlass, label: 'Search',       to: '/dashboard/search' },
-  { icon: FaUser,            label: 'Profile',      to: '/dashboard/company-profile' },
-];
+import { companyNavLinks } from '../navigation/dashboardNav';
 
 interface ProjectResponse {
   id: string;
@@ -85,7 +77,7 @@ export default function CreateProject() {
       <DashboardHeader userName="Production Co." />
 
       <div className="flex-1 flex min-h-0 overflow-hidden">
-        <DashboardSidebar links={navLinks} />
+        <DashboardSidebar links={companyNavLinks} />
 
         {/* Main */}
         <main className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">

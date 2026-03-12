@@ -24,12 +24,14 @@ export interface ApiErrorPayload {
 }
 
 export class ApiException extends Error {
-  constructor(
-    public readonly status: number,
-    public readonly payload: ApiErrorPayload,
-  ) {
+  public readonly status: number;
+  public readonly payload: ApiErrorPayload;
+
+  constructor(status: number, payload: ApiErrorPayload) {
     super(payload.message);
     this.name = 'ApiException';
+    this.status = status;
+    this.payload = payload;
   }
 }
 

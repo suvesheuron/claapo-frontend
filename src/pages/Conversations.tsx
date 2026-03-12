@@ -1,12 +1,13 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FaHouse, FaFolder, FaUser, FaMagnifyingGlass, FaCalendar, FaMessage, FaTriangleExclamation, FaPeopleGroup, FaTruck } from 'react-icons/fa6';
+import { FaMessage, FaTriangleExclamation } from 'react-icons/fa6';
 import DashboardHeader from '../components/DashboardHeader';
 import DashboardSidebar from '../components/DashboardSidebar';
 import AppFooter from '../components/AppFooter';
 import Avatar from '../components/Avatar';
 import { useApiQuery } from '../hooks/useApiQuery';
 import { useRole } from '../contexts/RoleContext';
+import { individualNavLinks, vendorNavLinks } from '../navigation/dashboardNav';
 
 interface Participant { id: string; displayName?: string; companyName?: string; email?: string }
 interface Conversation {
@@ -21,31 +22,9 @@ interface Conversation {
 }
 interface ConversationsResponse { items: Conversation[] }
 
+// Company uses its own navigation structure on other pages and keeps a slim version here.
 const companyNavLinks = [
-  { icon: FaHouse,           label: 'Dashboard',    to: '/dashboard' },
-  { icon: FaCalendar,        label: 'Availability', to: '/dashboard/company-availability' },
-  { icon: FaFolder,          label: 'Projects',     to: '/dashboard/projects' },
-  { icon: FaFolder,          label: 'Past Projects',to: '/dashboard/company-past-projects' },
-  { icon: FaMagnifyingGlass, label: 'Search',       to: '/dashboard/search' },
-  { icon: FaMessage,         label: 'Chat',         to: '/dashboard/conversations' },
-  { icon: FaPeopleGroup,     label: 'Team',         to: '/dashboard/team' },
-  { icon: FaUser,            label: 'Profile',      to: '/dashboard/company-profile' },
-];
-
-const individualNavLinks = [
-  { icon: FaHouse,    label: 'Dashboard',    to: '/dashboard' },
-  { icon: FaCalendar, label: 'Availability', to: '/dashboard/availability' },
-  { icon: FaMessage,  label: 'Chat',         to: '/dashboard/conversations' },
-  { icon: FaFolder,   label: 'Past Projects',to: '/dashboard/past-projects' },
-  { icon: FaUser,     label: 'Profile',      to: '/dashboard/profile' },
-];
-
-const vendorNavLinks = [
-  { icon: FaHouse,        label: 'Dashboard',   to: '/dashboard' },
-  { icon: FaCalendar,     label: 'Availability',to: '/dashboard/vendor-availability' },
-  { icon: FaTruck,        label: 'Equipment',   to: '/dashboard/equipment' },
-  { icon: FaMessage,      label: 'Chat',        to: '/dashboard/conversations' },
-  { icon: FaUser,         label: 'Profile',     to: '/dashboard/vendor-profile' },
+  { icon: FaMessage, label: 'Chat', to: '/dashboard/conversations' },
 ];
 
 function timeSince(dateStr: string) {
@@ -65,7 +44,12 @@ export default function Conversations() {
   const { data, loading, error } = useApiQuery<ConversationsResponse>('/conversations');
   const conversations = data?.items ?? [];
 
-  const navLinks = currentRole === 'Company' ? companyNavLinks : currentRole === 'Vendor' ? vendorNavLinks : individualNavLinks;
+  const navLinks =
+    currentRole === 'Company'
+      ? companyNavLinks
+      : currentRole === 'Vendor'
+        ? vendorNavLinks
+        : individualNavLinks;
 
   const getName = (u: Participant) => u.displayName ?? u.companyName ?? u.email ?? 'Unknown';
 

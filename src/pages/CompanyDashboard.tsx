@@ -1,11 +1,12 @@
 import { Link } from 'react-router-dom';
 import { useEffect, useState, useMemo } from 'react';
-import { FaPlus, FaUsers, FaTruck, FaHouse, FaFolder, FaChevronLeft, FaChevronRight, FaXmark, FaEye, FaMagnifyingGlass, FaCalendar, FaUser, FaMessage, FaPeopleGroup, FaFileInvoice } from 'react-icons/fa6';
+import { FaPlus, FaUsers, FaTruck, FaFolder, FaChevronLeft, FaChevronRight, FaXmark, FaEye, FaMessage, FaPeopleGroup } from 'react-icons/fa6';
 import DashboardHeader from '../components/DashboardHeader';
 import DashboardSidebar from '../components/DashboardSidebar';
 import AppFooter from '../components/AppFooter';
 import RoleIndicator from '../components/RoleIndicator';
 import { useApiQuery } from '../hooks/useApiQuery';
+import { companyNavLinks } from '../navigation/dashboardNav';
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -37,17 +38,6 @@ const STATUS_PRIORITY: Record<string, number> = { active: 0, open: 1, in_progres
 interface CalendarCell { d: number; muted: boolean; projects: Project[] }
 interface PanelData { date: number; month: string; year: number; projects: Project[] }
 
-const navLinks = [
-  { icon: FaHouse,           label: 'Dashboard',     to: '/dashboard' },
-  { icon: FaCalendar,        label: 'Availability',  to: '/dashboard/company-availability' },
-  { icon: FaFolder,          label: 'Projects',      to: '/dashboard/projects' },
-  { icon: FaFolder,          label: 'Past Projects', to: '/dashboard/company-past-projects' },
-  { icon: FaMagnifyingGlass, label: 'Search',        to: '/dashboard/search' },
-  { icon: FaFileInvoice,     label: 'Invoices',      to: '/dashboard/invoices' },
-  { icon: FaMessage,         label: 'Chat',          to: '/dashboard/conversations' },
-  { icon: FaPeopleGroup,     label: 'Team',          to: '/dashboard/team' },
-  { icon: FaUser,            label: 'Profile',       to: '/dashboard/company-profile' },
-];
 
 function buildCalendar(year: number, month: number, projects: Project[]): CalendarCell[] {
   const firstDay = new Date(year, month, 1).getDay();
@@ -112,7 +102,7 @@ export default function CompanyDashboard() {
     <div className="h-screen flex flex-col overflow-hidden bg-[#F3F4F6] w-full">
       <DashboardHeader />
       <div className="flex-1 flex min-h-0 overflow-hidden">
-        <DashboardSidebar links={navLinks} />
+        <DashboardSidebar links={companyNavLinks} />
         <main className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
           <div className="flex-1 min-h-0 overflow-auto">
             <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-6 xl:px-8 py-5">

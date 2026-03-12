@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  FaCalendar, FaHouse, FaUser, FaCircleCheck, FaXmark,
-  FaMessage, FaTriangleExclamation, FaClock, FaFolder, FaBan,
+  FaCircleCheck, FaXmark,
+  FaMessage, FaTriangleExclamation, FaClock,
 } from 'react-icons/fa6';
 import DashboardHeader from '../components/DashboardHeader';
 import DashboardSidebar from '../components/DashboardSidebar';
@@ -13,8 +13,9 @@ import toast from 'react-hot-toast';
 import { useApiQuery } from '../hooks/useApiQuery';
 import { useRole } from '../contexts/RoleContext';
 import { formatPaise } from '../utils/currency';
+import { individualNavLinks, vendorNavLinks } from '../navigation/dashboardNav';
 
-type BookingStatus = 'pending' | 'accepted' | 'declined' | 'completed' | 'cancelled' | 'locked' | 'expired';
+type BookingStatus = 'pending' | 'accepted' | 'declined' | 'completed' | 'cancelled' | 'locked' | 'expired' | 'cancel_requested';
 
 interface Booking {
   id: string;
@@ -32,11 +33,14 @@ interface BookingsResponse {
 }
 
 const STATUS_CONFIG: Record<BookingStatus, { bg: string; text: string; label: string }> = {
-  pending:   { bg: 'bg-[#FEF9E6]',  text: 'text-[#92400E]',  label: 'Pending' },
-  accepted:  { bg: 'bg-[#DCFCE7]',  text: 'text-[#15803D]',  label: 'Accepted' },
-  declined:  { bg: 'bg-[#FEE2E2]',  text: 'text-[#B91C1C]',  label: 'Declined' },
-  completed: { bg: 'bg-[#DBEAFE]',  text: 'text-[#1D4ED8]',  label: 'Completed' },
-  cancelled: { bg: 'bg-[#F3F4F6]',  text: 'text-neutral-500', label: 'Cancelled' },
+  pending:          { bg: 'bg-[#FEF9E6]',  text: 'text-[#92400E]',  label: 'Pending' },
+  accepted:         { bg: 'bg-[#DCFCE7]',  text: 'text-[#15803D]',  label: 'Accepted' },
+  declined:         { bg: 'bg-[#FEE2E2]',  text: 'text-[#B91C1C]',  label: 'Declined' },
+  completed:        { bg: 'bg-[#DBEAFE]',  text: 'text-[#1D4ED8]',  label: 'Completed' },
+  cancelled:        { bg: 'bg-[#F3F4F6]',  text: 'text-neutral-500', label: 'Cancelled' },
+  locked:           { bg: 'bg-[#DBEAFE]',  text: 'text-[#1D4ED8]',  label: 'Locked' },
+  expired:          { bg: 'bg-[#F3F4F6]',  text: 'text-neutral-400', label: 'Expired' },
+  cancel_requested: { bg: 'bg-[#FEF3C7]',  text: 'text-[#92400E]',  label: 'Cancel Requested' },
 };
 
 type TabFilter = 'all' | 'pending' | 'accepted' | 'completed';
@@ -49,31 +53,16 @@ function formatDate(iso: string | null): string {
 export default function Bookings() {
   const { currentRole } = useRole();
 
-  const isVendor = currentRole === 'Vendor';
-
-  const navLinksIndividual = [
-    { icon: FaHouse,     label: 'Dashboard',    to: '/dashboard' },
-    { icon: FaCalendar,  label: 'Availability', to: '/dashboard/availability' },
-    { icon: FaFolder,    label: 'Bookings',     to: '/dashboard/bookings' },
-    { icon: FaUser,      label: 'Profile',      to: '/dashboard/profile' },
-  ];
-
-  const navLinksVendor = [
-    { icon: FaHouse,     label: 'Dashboard',    to: '/dashboard' },
-    { icon: FaCalendar,  label: 'Availability', to: '/dashboard/vendor-availability' },
-    { icon: FaFolder,    label: 'Bookings',     to: '/dashboard/bookings' },
-    { icon: FaUser,      label: 'Profile',      to: '/dashboard/vendor-profile' },
-  ];
-
-  const navLinks = isVendor ? navLinksVendor : navLinksIndividual;
+  const navLinks =
+    currentRole === 'Vendor'
+      ? vendorNavLinks
+      : individualNavLinks;
 
   useEffect(() => { document.title = 'Booking Requests – Claapo'; }, []);
 
   const [tab, setTab]       = useState<TabFilter>('all');
   const [actioning, setActioning] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
-  const [cancellingId, setCancellingId] = useState<string | null>(null);
-  const [cancelReason, setCancelReason] = useState('');
 
   const { data, loading, error, refetch } = useApiQuery<BookingsResponse>('/bookings/incoming');
 
@@ -96,23 +85,6 @@ export default function Bookings() {
     }
   };
 
-  const doCancel = async (bookingId: string) => {
-    setActioning(bookingId + 'cancel');
-    setActionError(null);
-    try {
-      await api.patch(`/bookings/${bookingId}/cancel`, { reason: cancelReason || undefined });
-      toast.success('Booking cancelled.');
-      setCancellingId(null);
-      setCancelReason('');
-      refetch();
-    } catch (err) {
-      const msg = err instanceof ApiException ? err.payload.message : 'Failed to cancel booking.';
-      toast.error(msg);
-      setActionError(msg);
-    } finally {
-      setActioning(null);
-    }
-  };
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-[#F3F4F6] w-full">
@@ -234,12 +206,6 @@ export default function Bookings() {
                             </>
                           )}
 
-                          {(booking.status === 'accepted' || booking.status === 'pending') && (
-                            <button type="button" onClick={() => { setCancellingId(booking.id); setCancelReason(''); }} disabled={!!isActioning}
-                              className="rounded-xl px-4 py-2 bg-[#FEF9E6] text-[#92400E] text-xs font-semibold hover:bg-[#FDE68A] flex items-center gap-1.5 transition-colors disabled:opacity-50 ml-auto">
-                              <FaBan className="w-3 h-3" /> Request Cancellation
-                            </button>
-                          )}
                         </div>
                       </div>
                     );
@@ -252,38 +218,6 @@ export default function Bookings() {
         </main>
       </div>
 
-      {/* Cancel Confirmation Modal */}
-      {cancellingId && (
-        <>
-          <div className="fixed inset-0 bg-black/40 z-40" onClick={() => setCancellingId(null)} />
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
-              <h2 className="text-base font-bold text-neutral-900 mb-2">Request Cancellation</h2>
-              <p className="text-sm text-neutral-600 mb-4">
-                A cancellation notice will be sent to the production company. This will cancel the booking if both parties agree.
-              </p>
-              <div className="mb-4">
-                <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Reason for cancellation <span className="font-normal text-neutral-400">(optional)</span></label>
-                <textarea value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} rows={3} placeholder="e.g., Already booked for another project during these dates…"
-                  className="w-full px-4 py-2.5 border border-neutral-300 rounded-xl text-sm bg-[#F3F4F6] focus:bg-white focus:outline-none focus:border-[#3678F1] resize-none transition-all" />
-              </div>
-              {actionError && (
-                <div className="flex items-center gap-2 mb-4 p-3 bg-red-50 border border-red-200 rounded-xl">
-                  <FaTriangleExclamation className="text-red-500 text-xs shrink-0" />
-                  <p className="text-xs text-red-700">{actionError}</p>
-                </div>
-              )}
-              <div className="flex gap-3">
-                <button type="button" onClick={() => setCancellingId(null)} className="flex-1 rounded-xl py-2.5 border border-neutral-300 text-neutral-700 text-sm font-medium hover:bg-neutral-50 transition-colors">Keep Booking</button>
-                <button type="button" onClick={() => doCancel(cancellingId)} disabled={!!actioning}
-                  className="flex-1 rounded-xl py-2.5 bg-red-500 text-white text-sm font-semibold hover:bg-red-600 transition-colors disabled:opacity-60 flex items-center justify-center gap-2">
-                  {actioning ? <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Cancelling…</> : 'Confirm Cancellation'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
     </div>
   );
 }

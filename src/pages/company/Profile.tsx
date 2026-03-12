@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
-  FaHouse, FaCalendar, FaFolder, FaMagnifyingGlass, FaUser,
   FaBuilding, FaLocationDot, FaIdCard, FaTriangleExclamation, FaCircleCheck,
-  FaMessage, FaPeopleGroup, FaPen, FaEye, FaEyeSlash,
+  FaPen, FaEye, FaEyeSlash,
 } from 'react-icons/fa6';
 import DashboardHeader from '../../components/DashboardHeader';
 import DashboardSidebar from '../../components/DashboardSidebar';
@@ -10,17 +9,7 @@ import AppFooter from '../../components/AppFooter';
 import Avatar from '../../components/Avatar';
 import { api, ApiException } from '../../services/api';
 import { useApiQuery } from '../../hooks/useApiQuery';
-
-const navLinks = [
-  { icon: FaHouse,           label: 'Dashboard',    to: '/dashboard' },
-  { icon: FaCalendar,        label: 'Availability', to: '/dashboard/company-availability' },
-  { icon: FaFolder,          label: 'Projects',     to: '/dashboard/projects' },
-  { icon: FaFolder,          label: 'Past Projects',to: '/dashboard/company-past-projects' },
-  { icon: FaMagnifyingGlass, label: 'Search',       to: '/dashboard/search' },
-  { icon: FaMessage,         label: 'Chat',         to: '/dashboard/conversations' },
-  { icon: FaPeopleGroup,     label: 'Team',         to: '/dashboard/team' },
-  { icon: FaUser,            label: 'Profile',      to: '/dashboard/company-profile' },
-];
+import { companyNavLinks } from '../../navigation/dashboardNav';
 
 interface CompanyProfileData {
   companyName: string;
@@ -115,7 +104,7 @@ export default function CompanyProfile() {
     <div className="h-screen flex flex-col overflow-hidden bg-[#F3F4F6] w-full">
       <DashboardHeader />
       <div className="flex-1 flex min-h-0 overflow-hidden">
-        <DashboardSidebar links={navLinks} />
+        <DashboardSidebar links={companyNavLinks} />
         <main className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
           <div className="flex-1 min-h-0 overflow-auto">
             <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-6 xl:px-8 py-5">

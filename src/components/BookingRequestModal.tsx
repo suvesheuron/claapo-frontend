@@ -75,7 +75,7 @@ export default function BookingRequestModal({
     isOpen && targetUserId && isVendor ? `/equipment/vendor/${targetUserId}` : null
   );
   const rawList = Array.isArray(vendorEquipment) ? vendorEquipment : (vendorEquipment as { data?: unknown[]; items?: unknown[] })?.data ?? (vendorEquipment as { items?: unknown[] })?.items ?? [];
-  const equipmentList = Array.isArray(rawList) ? rawList : [];
+  const equipmentList = (Array.isArray(rawList) ? rawList : []) as Record<string, unknown>[];
 
   const getPaise = (eq: Record<string, unknown>): number[] => {
     const min = (eq.dailyRateMin ?? eq.daily_rate_min) as number | null | undefined;
@@ -88,7 +88,7 @@ export default function BookingRequestModal({
     if (userRate && userRate !== '—') return userRate;
     if (equipmentLoading) return 'Loading…';
     if (equipmentList.length === 0) return 'Rates on request';
-    const paiseList = equipmentList.flatMap((eq) => getPaise(eq as Record<string, unknown>));
+    const paiseList = equipmentList.flatMap((eq) => getPaise(eq));
     if (paiseList.length === 0) return 'Rates on request';
     const minPaise = Math.min(...paiseList);
     const maxPaise = Math.max(...paiseList);
@@ -191,7 +191,7 @@ export default function BookingRequestModal({
                     <p className="text-xs text-neutral-500">No equipment listed yet.</p>
                   ) : (
                     <ul className="space-y-1.5">
-                      {equipmentList.slice(0, 8).map((eq: Record<string, unknown>, idx: number) => {
+                      {equipmentList.slice(0, 8).map((eq, idx) => {
                         const paise = getPaise(eq);
                         const ratePaise = paise.length ? Math.min(...paise) : null;
                         const rateStr = ratePaise != null ? `₹${(ratePaise / 100).toLocaleString('en-IN')}/day` : 'Rate on request';

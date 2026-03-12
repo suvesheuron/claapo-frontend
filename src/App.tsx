@@ -50,6 +50,12 @@ const TeamPage = lazy(() => import('./pages/company/Team'));
 const InvoicesList = lazy(() => import('./pages/InvoicesList'));
 const CreateInvoice = lazy(() => import('./pages/CreateInvoice'));
 
+// Ongoing projects (individual + vendor)
+const OngoingProjects = lazy(() => import('./pages/OngoingProjects'));
+
+// Company cancel requests
+const CancelRequests = lazy(() => import('./pages/company/CancelRequests'));
+
 /**
  * Syncs the authenticated user's backend role ('individual' | 'company' | 'vendor')
  * into the existing RoleContext ('Individual' | 'Company' | 'Vendor').
@@ -113,6 +119,7 @@ export default function App() {
           <Route path="/dashboard/invoice/new" element={<ProtectedRoute allowedRoles={['individual', 'vendor']}><CreateInvoice /></ProtectedRoute>} />
           <Route path="/dashboard/invoice/:invoiceId" element={<ProtectedRoute><Invoice /></ProtectedRoute>} />
           <Route path="/dashboard/bookings" element={<ProtectedRoute allowedRoles={['individual', 'vendor']}><Bookings /></ProtectedRoute>} />
+          <Route path="/dashboard/ongoing-projects" element={<ProtectedRoute allowedRoles={['individual', 'vendor']}><OngoingProjects /></ProtectedRoute>} />
           <Route path="/dashboard/team" element={<ProtectedRoute allowedRoles={['company', 'admin']}><TeamPage /></ProtectedRoute>} />
 
           {/* Individual routes */}
@@ -129,6 +136,7 @@ export default function App() {
           {/* Company extended routes */}
           <Route path="/dashboard/company-past-projects" element={<ProtectedRoute allowedRoles={['company', 'admin']}><CompanyPastProjects /></ProtectedRoute>} />
           <Route path="/dashboard/company-profile" element={<ProtectedRoute allowedRoles={['company', 'admin']}><CompanyProfile /></ProtectedRoute>} />
+          <Route path="/dashboard/cancel-requests" element={<ProtectedRoute allowedRoles={['company', 'admin']}><CancelRequests /></ProtectedRoute>} />
         </Routes>
       </Suspense>
     </BrowserRouter>

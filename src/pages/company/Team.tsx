@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { FaHouse, FaFolder, FaCalendar, FaMagnifyingGlass, FaUser, FaPlus, FaXmark, FaPeopleGroup, FaTriangleExclamation, FaCircleCheck, FaMessage, FaTrash, FaEye, FaEyeSlash } from 'react-icons/fa6';
+import { FaPlus, FaXmark, FaTriangleExclamation, FaCircleCheck, FaTrash, FaEye, FaEyeSlash, FaPeopleGroup } from 'react-icons/fa6';
 import DashboardHeader from '../../components/DashboardHeader';
 import DashboardSidebar from '../../components/DashboardSidebar';
 import AppFooter from '../../components/AppFooter';
@@ -8,17 +8,7 @@ import { api, ApiException } from '../../services/api';
 import toast from 'react-hot-toast';
 import { useApiQuery } from '../../hooks/useApiQuery';
 import { toE164India } from '../../utils/phone';
-
-const navLinks = [
-  { icon: FaHouse,           label: 'Dashboard',    to: '/dashboard' },
-  { icon: FaCalendar,        label: 'Availability', to: '/dashboard/company-availability' },
-  { icon: FaFolder,          label: 'Projects',     to: '/dashboard/projects' },
-  { icon: FaFolder,          label: 'Past Projects',to: '/dashboard/company-past-projects' },
-  { icon: FaMagnifyingGlass, label: 'Search',       to: '/dashboard/search' },
-  { icon: FaMessage,         label: 'Chat',         to: '/dashboard/conversations' },
-  { icon: FaPeopleGroup,     label: 'Team',         to: '/dashboard/team' },
-  { icon: FaUser,            label: 'Profile',      to: '/dashboard/company-profile' },
-];
+import { companyNavLinks } from '../../navigation/dashboardNav';
 
 interface SubUser { id: string; email: string; phone: string; isActive: boolean; createdAt: string }
 interface SubUsersResponse { items: SubUser[] }
@@ -120,7 +110,7 @@ export default function TeamPage() {
     <div className="h-screen flex flex-col overflow-hidden bg-[#F3F4F6] w-full">
       <DashboardHeader />
       <div className="flex-1 flex min-h-0 overflow-hidden">
-        <DashboardSidebar links={navLinks} />
+        <DashboardSidebar links={companyNavLinks} />
         <main className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
           <div className="flex-1 min-h-0 overflow-auto">
             <div className="max-w-[900px] mx-auto px-4 sm:px-6 lg:px-8 py-5">

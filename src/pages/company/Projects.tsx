@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FaPlus, FaHouse, FaFolder, FaLock, FaEye, FaCalendar, FaMagnifyingGlass, FaUser, FaTriangleExclamation, FaBan, FaMessage, FaPeopleGroup } from 'react-icons/fa6';
+import { FaPlus, FaLock, FaEye, FaTriangleExclamation, FaBan, FaFolder, FaCalendar } from 'react-icons/fa6';
 import DashboardHeader from '../../components/DashboardHeader';
 import DashboardSidebar from '../../components/DashboardSidebar';
 import AppFooter from '../../components/AppFooter';
@@ -9,6 +9,7 @@ import { formatBudgetCompact } from '../../utils/currency';
 import { api, ApiException } from '../../services/api';
 import toast from 'react-hot-toast';
 import { useState } from 'react';
+import { companyNavLinks } from '../../navigation/dashboardNav';
 
 interface ProjectRole { id: string; roleName: string; qty: number }
 
@@ -56,17 +57,6 @@ function formatDateRange(start: string, end: string): string {
   }
   return `${months[s.getMonth()]} ${s.getDate()}, ${s.getFullYear()} – ${months[e.getMonth()]} ${e.getDate()}, ${e.getFullYear()}`;
 }
-
-const navLinks = [
-  { icon: FaHouse,           label: 'Dashboard',    to: '/dashboard' },
-  { icon: FaCalendar,        label: 'Availability', to: '/dashboard/company-availability' },
-  { icon: FaFolder,          label: 'Projects',     to: '/dashboard/projects' },
-  { icon: FaFolder,          label: 'Past Projects',to: '/dashboard/company-past-projects' },
-  { icon: FaMagnifyingGlass, label: 'Search',       to: '/dashboard/search' },
-  { icon: FaMessage,         label: 'Chat',         to: '/dashboard/conversations' },
-  { icon: FaPeopleGroup,     label: 'Team',         to: '/dashboard/team' },
-  { icon: FaUser,            label: 'Profile',      to: '/dashboard/company-profile' },
-];
 
 export default function Projects() {
   const { data, loading, error, refetch } = useApiQuery<ProjectsResponse>('/projects?limit=50');
@@ -119,7 +109,7 @@ export default function Projects() {
       <DashboardHeader />
 
       <div className="flex-1 flex min-h-0 overflow-hidden">
-        <DashboardSidebar links={navLinks} />
+        <DashboardSidebar links={companyNavLinks} />
 
         <main className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
           <div className="flex-1 min-h-0 overflow-auto">

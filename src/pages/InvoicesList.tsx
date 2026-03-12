@@ -1,15 +1,13 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import {
-  FaFileInvoice, FaHouse, FaFolder, FaUser, FaMagnifyingGlass,
-  FaCalendar, FaMessage, FaPlus, FaTriangleExclamation, FaTruck, FaPeopleGroup,
-} from 'react-icons/fa6';
+import { FaFileInvoice, FaPlus, FaTriangleExclamation } from 'react-icons/fa6';
 import DashboardHeader from '../components/DashboardHeader';
 import DashboardSidebar from '../components/DashboardSidebar';
 import AppFooter from '../components/AppFooter';
 import { useApiQuery } from '../hooks/useApiQuery';
 import { useRole } from '../contexts/RoleContext';
 import { formatPaise } from '../utils/currency';
+import { companyNavLinks, individualNavLinks, vendorNavLinks } from '../navigation/dashboardNav';
 
 interface InvoiceItem {
   id: string;
@@ -33,35 +31,6 @@ const STATUS_CFG = {
   overdue:   { bg: 'bg-red-50',       text: 'text-red-700',      label: 'Overdue' },
   cancelled: { bg: 'bg-neutral-100',  text: 'text-neutral-400',  label: 'Cancelled' },
 };
-
-const companyNavLinks = [
-  { icon: FaHouse,           label: 'Dashboard',     to: '/dashboard' },
-  { icon: FaCalendar,        label: 'Availability',  to: '/dashboard/company-availability' },
-  { icon: FaFolder,          label: 'Projects',      to: '/dashboard/projects' },
-  { icon: FaMagnifyingGlass, label: 'Search',        to: '/dashboard/search' },
-  { icon: FaMessage,         label: 'Chat',          to: '/dashboard/conversations' },
-  { icon: FaFileInvoice,     label: 'Invoices',      to: '/dashboard/invoices' },
-  { icon: FaPeopleGroup,     label: 'Team',          to: '/dashboard/team' },
-  { icon: FaUser,            label: 'Profile',       to: '/dashboard/company-profile' },
-];
-
-const individualNavLinks = [
-  { icon: FaHouse,       label: 'Dashboard',     to: '/dashboard' },
-  { icon: FaCalendar,    label: 'Availability',  to: '/dashboard/availability' },
-  { icon: FaMessage,     label: 'Chat',          to: '/dashboard/conversations' },
-  { icon: FaFileInvoice, label: 'Invoices',      to: '/dashboard/invoices' },
-  { icon: FaFolder,      label: 'Past Projects', to: '/dashboard/past-projects' },
-  { icon: FaUser,        label: 'Profile',       to: '/dashboard/profile' },
-];
-
-const vendorNavLinks = [
-  { icon: FaHouse,       label: 'Dashboard',     to: '/dashboard' },
-  { icon: FaCalendar,    label: 'Availability',  to: '/dashboard/vendor-availability' },
-  { icon: FaTruck,       label: 'Equipment',     to: '/dashboard/equipment' },
-  { icon: FaMessage,     label: 'Chat',          to: '/dashboard/conversations' },
-  { icon: FaFileInvoice, label: 'Invoices',      to: '/dashboard/invoices' },
-  { icon: FaUser,        label: 'Profile',       to: '/dashboard/vendor-profile' },
-];
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });

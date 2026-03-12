@@ -1,9 +1,9 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import {
-  FaArrowLeft, FaUsers, FaTruck, FaLock, FaUnlock, FaHouse, FaFolder,
-  FaTrash, FaBan, FaMessage, FaFileInvoice, FaMagnifyingGlass, FaUser,
-  FaCalendar, FaTriangleExclamation, FaPeopleGroup,
+  FaArrowLeft, FaUsers, FaTruck, FaLock, FaUnlock,
+  FaTrash, FaBan, FaMessage, FaFileInvoice,
+  FaTriangleExclamation,
 } from 'react-icons/fa6';
 import DashboardHeader from '../../components/DashboardHeader';
 import DashboardSidebar from '../../components/DashboardSidebar';
@@ -12,6 +12,7 @@ import Avatar from '../../components/Avatar';
 import { api, ApiException } from '../../services/api';
 import toast from 'react-hot-toast';
 import { formatBudgetCompact } from '../../utils/currency';
+import { companyNavLinks } from '../../navigation/dashboardNav';
 
 interface Project {
   id: string;
@@ -41,17 +42,6 @@ interface Booking {
   target: BookingTarget;
   projectRole?: { roleName: string } | null;
 }
-
-const navLinks = [
-  { icon: FaHouse,           label: 'Dashboard',    to: '/dashboard' },
-  { icon: FaCalendar,        label: 'Availability', to: '/dashboard/company-availability' },
-  { icon: FaFolder,          label: 'Projects',     to: '/dashboard/projects' },
-  { icon: FaFolder,          label: 'Past Projects', to: '/dashboard/company-past-projects' },
-  { icon: FaMagnifyingGlass, label: 'Search',       to: '/dashboard/search' },
-  { icon: FaMessage,         label: 'Chat',         to: '/dashboard/conversations' },
-  { icon: FaPeopleGroup,     label: 'Team',         to: '/dashboard/team' },
-  { icon: FaUser,            label: 'Profile',      to: '/dashboard/company-profile' },
-];
 
 function formatDateRange(start: string, end: string): string {
   const s = new Date(start);
@@ -189,7 +179,7 @@ export default function ProjectDetail() {
       <DashboardHeader />
 
       <div className="flex-1 flex min-h-0 overflow-hidden">
-        <DashboardSidebar links={navLinks} />
+        <DashboardSidebar links={companyNavLinks} />
 
         <main className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
           <div className="flex-1 min-h-0 overflow-auto">

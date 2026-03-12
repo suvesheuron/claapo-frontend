@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { FaHouse, FaCalendar, FaFolder, FaUser, FaTriangleExclamation, FaCircleCheck, FaMessage, FaPen } from 'react-icons/fa6';
+import { FaTriangleExclamation, FaCircleCheck, FaPen } from 'react-icons/fa6';
 import DashboardHeader from '../../components/DashboardHeader';
 import DashboardSidebar from '../../components/DashboardSidebar';
 import AppFooter from '../../components/AppFooter';
@@ -7,16 +7,9 @@ import Avatar from '../../components/Avatar';
 import { api, ApiException } from '../../services/api';
 import { useApiQuery } from '../../hooks/useApiQuery';
 import { paiseToRupees, rupeesToPaise } from '../../utils/currency';
+import { individualNavLinks } from '../../navigation/dashboardNav';
 
 const GENRES = ['Action', 'Comedy', 'Drama', 'Romance', 'Science Fiction', 'Fantasy', 'Horror', 'Beauty', 'Noir', 'Fashion', 'Documentary', 'Thriller'];
-
-const navLinks = [
-  { icon: FaHouse,     label: 'Dashboard',    to: '/dashboard' },
-  { icon: FaCalendar,  label: 'Availability', to: '/dashboard/availability' },
-  { icon: FaMessage,   label: 'Chat',         to: '/dashboard/conversations' },
-  { icon: FaFolder,    label: 'Past Projects', to: '/dashboard/past-projects' },
-  { icon: FaUser,      label: 'Profile',       to: '/dashboard/profile' },
-];
 
 interface ProfileData {
   displayName: string;
@@ -115,7 +108,7 @@ export default function IndividualProfile() {
       <DashboardHeader />
 
       <div className="flex-1 flex min-h-0 overflow-hidden">
-        <DashboardSidebar links={navLinks} />
+        <DashboardSidebar links={individualNavLinks} />
 
         <main className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
           <div className="flex-1 min-h-0 overflow-auto">
@@ -160,8 +153,8 @@ export default function IndividualProfile() {
                         <div><dt className="text-xs text-neutral-500 mb-0.5">Skills</dt><dd className="text-sm text-neutral-700">{skills || '—'}</dd></div>
                         <div><dt className="text-xs text-neutral-500 mb-0.5">Genre</dt><dd className="text-sm text-neutral-700">{genre || '—'}</dd></div>
                         <div><dt className="text-xs text-neutral-500 mb-0.5">Bio</dt><dd className="text-sm text-neutral-700 whitespace-pre-wrap">{bio || '—'}</dd></div>
-                        <div><dt className="text-xs text-neutral-500 mb-0.5">Daily rate (min–max)</dt><dd className="text-sm text-neutral-700">{(dailyRateMin || dailyRateMax) ? `₹${dailyRateMin || '—'} – ₹${dailyRateMax || '—'}` : '—'}</dd></div>
-                        <div><dt className="text-xs text-neutral-500 mb-0.5">IMDb</dt><dd className="text-sm text-neutral-700">{imdbUrl ? <a href={imdbUrl} target="_blank" rel="noreferrer" className="text-[#3678F1] hover:underline">{imdbUrl}</a> : '—'}</dd></div>
+                        <div><dt className="text-xs text-neutral-500 mb-0.5">Budget (min–max per day)</dt><dd className="text-sm text-neutral-700">{(dailyRateMin || dailyRateMax) ? `₹${dailyRateMin || '—'} – ₹${dailyRateMax || '—'}` : '—'}</dd></div>
+                        <div><dt className="text-xs text-neutral-500 mb-0.5">Work Portfolio Link</dt><dd className="text-sm text-neutral-700">{imdbUrl ? <a href={imdbUrl} target="_blank" rel="noreferrer" className="text-[#3678F1] hover:underline">{imdbUrl}</a> : '—'}</dd></div>
                         <div><dt className="text-xs text-neutral-500 mb-0.5">Instagram</dt><dd className="text-sm text-neutral-700">{instagramUrl ? <a href={instagramUrl} target="_blank" rel="noreferrer" className="text-[#3678F1] hover:underline">{instagramUrl}</a> : '—'}</dd></div>
                       </dl>
                     </div>
@@ -203,10 +196,10 @@ export default function IndividualProfile() {
                           <div><label className="block text-xs font-medium text-neutral-600 mb-1">Genre</label><select value={genre} onChange={(e) => setGenre(e.target.value)} disabled={saving} className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm disabled:bg-neutral-50 bg-white"><option value="">Select…</option>{GENRES.map(g => <option key={g} value={g}>{g}</option>)}</select></div>
                           <div><label className="block text-xs font-medium text-neutral-600 mb-1">Bio</label><textarea value={bio} onChange={(e) => setBio(e.target.value)} rows={3} disabled={saving} className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm resize-none disabled:bg-neutral-50" /></div>
                           <div className="grid grid-cols-2 gap-3">
-                            <div><label className="block text-xs font-medium text-neutral-600 mb-1">Daily rate min (₹)</label><input type="number" value={dailyRateMin} onChange={(e) => setDailyRateMin(e.target.value)} disabled={saving} className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm disabled:bg-neutral-50" /></div>
-                            <div><label className="block text-xs font-medium text-neutral-600 mb-1">Daily rate max (₹)</label><input type="number" value={dailyRateMax} onChange={(e) => setDailyRateMax(e.target.value)} disabled={saving} className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm disabled:bg-neutral-50" /></div>
+                            <div><label className="block text-xs font-medium text-neutral-600 mb-1">Budget min (₹/day)</label><input type="number" value={dailyRateMin} onChange={(e) => setDailyRateMin(e.target.value)} disabled={saving} className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm disabled:bg-neutral-50" /></div>
+                            <div><label className="block text-xs font-medium text-neutral-600 mb-1">Budget max (₹/day)</label><input type="number" value={dailyRateMax} onChange={(e) => setDailyRateMax(e.target.value)} disabled={saving} className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm disabled:bg-neutral-50" /></div>
                           </div>
-                          <div><label className="block text-xs font-medium text-neutral-600 mb-1">IMDb URL</label><input type="url" value={imdbUrl} onChange={(e) => setImdbUrl(e.target.value)} disabled={saving} className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm disabled:bg-neutral-50" /></div>
+                          <div><label className="block text-xs font-medium text-neutral-600 mb-1">Work Portfolio Link (IMDb / Behance / etc.)</label><input type="url" value={imdbUrl} onChange={(e) => setImdbUrl(e.target.value)} disabled={saving} className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm disabled:bg-neutral-50" /></div>
                           <div><label className="block text-xs font-medium text-neutral-600 mb-1">Instagram URL</label><input type="url" value={instagramUrl} onChange={(e) => setInstagramUrl(e.target.value)} disabled={saving} className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm disabled:bg-neutral-50" /></div>
                         </div>
                         <div className="mt-4 flex justify-end gap-2">

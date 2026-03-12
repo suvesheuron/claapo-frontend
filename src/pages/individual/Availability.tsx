@@ -1,11 +1,12 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { FaCalendar, FaHouse, FaUser, FaChevronLeft, FaChevronRight, FaXmark, FaCircle, FaMessage, FaFileInvoice, FaPlus, FaLock, FaCircleInfo, FaFolder } from 'react-icons/fa6';
+import { FaCalendar, FaChevronLeft, FaChevronRight, FaXmark, FaCircle, FaMessage, FaFileInvoice, FaPlus, FaLock, FaCircleInfo } from 'react-icons/fa6';
 import DashboardHeader from '../../components/DashboardHeader';
 import DashboardSidebar from '../../components/DashboardSidebar';
 import AppFooter from '../../components/AppFooter';
 import { api, ApiException } from '../../services/api';
 import toast from 'react-hot-toast';
+import { individualNavLinks } from '../../navigation/dashboardNav';
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -38,13 +39,6 @@ interface CalendarCell {
 interface PanelData extends Omit<CalendarCell, 'muted'> {
   month: string;
   year: number;
-}
-
-function toBackendStatus(status: CellStatus): 'available' | 'blocked' | 'booked' | 'past_work' {
-  if (status === 'completed') return 'past_work';
-  if (status === 'blocked')   return 'blocked';
-  if (status === 'booked')    return 'booked';
-  return 'available';
 }
 
 function toFrontendStatus(status: string): CellStatus {
@@ -100,14 +94,6 @@ const cellStyle: Record<string, string> = {
 
 const BLOCK_REASONS = ['Personal', 'Already booked externally', 'Not available', 'Traveling', 'Other'];
 
-const navLinks = [
-  { icon: FaHouse,     label: 'Dashboard',    to: '/dashboard' },
-  { icon: FaCalendar,  label: 'Availability', to: '/dashboard/availability' },
-  { icon: FaMessage,   label: 'Chat',         to: '/dashboard/conversations' },
-  { icon: FaFolder,    label: 'Past Projects', to: '/dashboard/past-projects' },
-  { icon: FaUser,      label: 'Profile',      to: '/dashboard/profile' },
-];
-
 export default function IndividualAvailability() {
   useEffect(() => { document.title = 'Availability – Claapo'; }, []);
 
@@ -125,29 +111,40 @@ export default function IndividualAvailability() {
   const [saving, setSaving] = useState(false);
 
   const displayDate = new Date(BASE_YEAR, BASE_MONTH + monthOffset, 1);
-  const monthLabel  = MONTHS[displayDate.getMonth()];
-  const yearLabel   = displayDate.getFullYear();
+  const displayYear = displayDate.getFullYear();
+  const displayMonth = displayDate.getMonth();
+  const monthLabel  = MONTHS[displayMonth];
+  const yearLabel   = displayYear;
 
   // Load slots from API when month changes
   const loadSlots = useCallback(async () => {
     setSlotsLoading(true);
     try {
-      const slots = await api.get<AvailabilitySlot[]>(
-        `/availability/me?year=${yearLabel}&month=${displayDate.getMonth() + 1}`
+      const res = await api.get<{ year: number; month: number; slots?: Record<string, string>; slotNotes?: Record<string, string | null> }>(
+        `/availability/me?year=${displayYear}&month=${displayMonth + 1}`,
       );
       const map: Record<string, AvailabilitySlot> = {};
-      for (const slot of slots ?? []) map[slot.date.slice(0, 10)] = slot;
+      if (res?.slots && typeof res.slots === 'object') {
+        for (const [dateStr, status] of Object.entries(res.slots)) {
+          const key = dateStr.slice(0, 10);
+          map[key] = {
+            date: key,
+            status: status as AvailabilitySlot['status'],
+            notes: res.slotNotes?.[key] ?? undefined,
+          };
+        }
+      }
       setApiSlots(map);
     } catch {
       // Silently fall through — calendar shows all available on API error
     } finally {
       setSlotsLoading(false);
     }
-  }, [yearLabel, displayDate]);
+  }, [displayYear, displayMonth]);
 
   useEffect(() => { loadSlots(); }, [loadSlots]);
 
-  const calendarDays = buildCalendar(yearLabel, displayDate.getMonth(), apiSlots);
+  const calendarDays = buildCalendar(displayYear, displayMonth, apiSlots);
 
   const getDateStr = (d: number): string => {
     const m = String(displayDate.getMonth() + 1).padStart(2, '0');
@@ -242,7 +239,7 @@ export default function IndividualAvailability() {
       <DashboardHeader />
 
       <div className="flex-1 flex min-h-0 overflow-hidden">
-        <DashboardSidebar links={navLinks} />
+        <DashboardSidebar links={individualNavLinks} />
 
         <main className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
           <div className="flex-1 min-h-0 overflow-auto">

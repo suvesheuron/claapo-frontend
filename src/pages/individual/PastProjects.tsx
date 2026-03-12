@@ -1,20 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FaVideo, FaFileInvoice, FaHouse, FaCalendar, FaUser, FaMessage, FaCircleInfo, FaFolder, FaChevronLeft, FaChevronRight } from 'react-icons/fa6';
+import { FaVideo, FaFileInvoice, FaCircleInfo, FaChevronLeft, FaChevronRight, FaMessage } from 'react-icons/fa6';
 import DashboardHeader from '../../components/DashboardHeader';
 import DashboardSidebar from '../../components/DashboardSidebar';
 import AppFooter from '../../components/AppFooter';
 import { useApiQuery } from '../../hooks/useApiQuery';
 import { formatPaise } from '../../utils/currency';
-
-const navLinks = [
-  { icon: FaHouse,       label: 'Dashboard',    to: '/dashboard' },
-  { icon: FaCalendar,    label: 'Availability', to: '/dashboard/availability' },
-  { icon: FaMessage,     label: 'Chat',         to: '/dashboard/conversations' },
-  { icon: FaFileInvoice, label: 'Invoices',     to: '/dashboard/invoices' },
-  { icon: FaFolder,      label: 'Past Projects', to: '/dashboard/past-projects' },
-  { icon: FaUser,        label: 'Profile',      to: '/dashboard/profile' },
-];
+import { individualNavLinks } from '../../navigation/dashboardNav';
 
 interface InvoiceRef { id: string }
 interface InvoicesResponse { items: InvoiceRef[] }
@@ -88,7 +80,7 @@ export default function PastProjects() {
       <DashboardHeader />
 
       <div className="flex-1 flex min-h-0 overflow-hidden">
-        <DashboardSidebar links={navLinks} />
+        <DashboardSidebar links={individualNavLinks} />
 
         <main className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
           <div className="flex-1 min-h-0 overflow-auto">

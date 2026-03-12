@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { FaCalendar, FaFileInvoice, FaBell, FaHouse, FaUser, FaChevronLeft, FaChevronRight, FaXmark, FaCircle, FaMessage, FaLock, FaCircleInfo, FaFolder, FaTriangleExclamation } from 'react-icons/fa6';
+import { FaCalendar, FaBell, FaChevronLeft, FaChevronRight, FaXmark, FaCircle, FaMessage, FaLock, FaCircleInfo, FaTriangleExclamation, FaUser } from 'react-icons/fa6';
 import DashboardHeader from '../components/DashboardHeader';
 import DashboardSidebar from '../components/DashboardSidebar';
 import AppFooter from '../components/AppFooter';
@@ -8,6 +8,7 @@ import RoleIndicator from '../components/RoleIndicator';
 import { api, ApiException } from '../services/api';
 import { useApiQuery } from '../hooks/useApiQuery';
 import { formatPaise } from '../utils/currency';
+import { individualNavLinks } from '../navigation/dashboardNav';
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -50,15 +51,6 @@ function buildCalendar(year: number, month: number): CalendarCell[] {
   return cells;
 }
 
-const navLinks = [
-  { icon: FaHouse,       label: 'Dashboard',    to: '/dashboard' },
-  { icon: FaCalendar,    label: 'Availability', to: '/dashboard/availability' },
-  { icon: FaMessage,     label: 'Chat',         to: '/dashboard/conversations' },
-  { icon: FaFileInvoice, label: 'Invoices',     to: '/dashboard/invoices' },
-  { icon: FaFolder,      label: 'Past Projects',to: '/dashboard/past-projects' },
-  { icon: FaUser,        label: 'Profile',      to: '/dashboard/profile' },
-];
-
 export default function IndividualDashboard() {
   useEffect(() => { document.title = 'Dashboard – Claapo'; }, []);
 
@@ -93,7 +85,7 @@ export default function IndividualDashboard() {
     <div className="h-screen flex flex-col overflow-hidden bg-[#F3F4F6] w-full">
       <DashboardHeader />
       <div className="flex-1 flex min-h-0 overflow-hidden">
-        <DashboardSidebar links={navLinks} />
+        <DashboardSidebar links={individualNavLinks} />
         <main className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
           <div className="flex-1 min-h-0 overflow-auto">
             <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-6 xl:px-8 py-5">

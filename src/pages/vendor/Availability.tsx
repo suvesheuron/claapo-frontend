@@ -1,14 +1,16 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  FaCalendar, FaTruck, FaHouse, FaChevronLeft, FaChevronRight, FaXmark,
-  FaCircle, FaMessage, FaFileInvoice, FaPlus, FaLock, FaCircleInfo, FaUser,
+  FaTruck, FaChevronLeft, FaChevronRight, FaXmark,
+  FaCircle, FaMessage, FaFileInvoice, FaPlus, FaLock, FaCircleInfo,
 } from 'react-icons/fa6';
 import DashboardHeader from '../../components/DashboardHeader';
 import DashboardSidebar from '../../components/DashboardSidebar';
 import AppFooter from '../../components/AppFooter';
 import { api, ApiException } from '../../services/api';
+import toast from 'react-hot-toast';
 import { useApiQuery } from '../../hooks/useApiQuery';
+import { vendorNavLinks } from '../../navigation/dashboardNav';
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const DAYS   = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -93,14 +95,6 @@ const cellStyle: Record<string, string> = {
 };
 
 const BLOCK_REASONS = ['Equipment maintenance', 'Unavailable for rental', 'Reserved for other use', 'Other'];
-
-const navLinks = [
-  { icon: FaHouse,     label: 'Dashboard',   to: '/dashboard' },
-  { icon: FaCalendar,  label: 'Availability', to: '/dashboard/vendor-availability' },
-  { icon: FaTruck,     label: 'Equipment',   to: '/dashboard/equipment' },
-  { icon: FaMessage,   label: 'Chat',        to: '/dashboard/conversations' },
-  { icon: FaUser,      label: 'Profile',     to: '/dashboard/vendor-profile' },
-];
 
 export default function VendorAvailability() {
   useEffect(() => { document.title = 'Equipment Availability – Claapo'; }, []);
@@ -208,7 +202,7 @@ export default function VendorAvailability() {
     <div className="h-screen flex flex-col overflow-hidden bg-[#F3F4F6] w-full">
       <DashboardHeader />
       <div className="flex-1 flex min-h-0 overflow-hidden">
-        <DashboardSidebar links={navLinks} />
+        <DashboardSidebar links={vendorNavLinks} />
         <main className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
           <div className="flex-1 min-h-0 overflow-auto">
             <div className="max-w-[1000px] mx-auto px-4 sm:px-6 lg:px-8 py-5">

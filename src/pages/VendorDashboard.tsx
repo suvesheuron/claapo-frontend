@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { FaCalendar, FaTruck, FaBell, FaHouse, FaChevronLeft, FaChevronRight, FaXmark, FaCircle, FaMessage, FaUser, FaTriangleExclamation, FaFileInvoice, FaPlus } from 'react-icons/fa6';
+import { FaCalendar, FaTruck, FaBell, FaChevronLeft, FaChevronRight, FaXmark, FaCircle, FaMessage, FaTriangleExclamation, FaFileInvoice, FaPlus, FaUser } from 'react-icons/fa6';
 import { api, ApiException } from '../services/api';
 import toast from 'react-hot-toast';
 import { useApiQuery } from '../hooks/useApiQuery';
@@ -8,6 +8,7 @@ import { formatPaise, formatRateRange } from '../utils/currency';
 import DashboardHeader from '../components/DashboardHeader';
 import DashboardSidebar from '../components/DashboardSidebar';
 import AppFooter from '../components/AppFooter';
+import { vendorNavLinks } from '../navigation/dashboardNav';
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -92,15 +93,6 @@ interface PastBookingItem {
   requester: { companyProfile?: { companyName?: string } | null };
 }
 
-const navLinks = [
-  { icon: FaHouse,        label: 'Dashboard',    to: '/dashboard' },
-  { icon: FaCalendar,     label: 'Availability', to: '/dashboard/vendor-availability' },
-  { icon: FaTruck,        label: 'Equipment',    to: '/dashboard/equipment' },
-  { icon: FaMessage,      label: 'Chat',         to: '/dashboard/conversations' },
-  { icon: FaFileInvoice,  label: 'Invoices',     to: '/dashboard/invoices' },
-  { icon: FaUser,         label: 'Profile',      to: '/dashboard/vendor-profile' },
-];
-
 export default function VendorDashboard() {
   useEffect(() => { document.title = 'Dashboard – Claapo'; }, []);
 
@@ -166,7 +158,7 @@ export default function VendorDashboard() {
       <DashboardHeader />
 
       <div className="flex-1 flex min-h-0 overflow-hidden">
-        <DashboardSidebar links={navLinks} />
+        <DashboardSidebar links={vendorNavLinks} />
 
         {/* Main content */}
         <main className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
