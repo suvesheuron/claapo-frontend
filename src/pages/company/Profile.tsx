@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   FaBuilding, FaLocationDot, FaIdCard, FaTriangleExclamation, FaCircleCheck,
-  FaPen, FaEye, FaEyeSlash,
+  FaPen, FaEye, FaEyeSlash, FaGlobe, FaInstagram, FaFileContract,
 } from 'react-icons/fa6';
 import DashboardHeader from '../../components/DashboardHeader';
 import DashboardSidebar from '../../components/DashboardSidebar';
@@ -17,6 +17,11 @@ interface CompanyProfileData {
   locationState: string | null;
   bio: string | null;
   gstNumber: string | null;
+  panNumber: string | null;
+  companyType: string | null;
+  website: string | null;
+  instagramUrl: string | null;
+  address: string | null;
   isGstVerified: boolean;
 }
 
@@ -37,7 +42,12 @@ export default function CompanyProfile() {
   const [companyName,    setCompanyName]    = useState('');
   const [locationCity,   setLocationCity]   = useState('');
   const [locationState,  setLocationState]  = useState('');
+  const [address,        setAddress]        = useState('');
   const [bio,            setBio]            = useState('');
+  const [companyType,    setCompanyType]    = useState('');
+  const [website,        setWebsite]        = useState('');
+  const [instagramUrl,   setInstagramUrl]   = useState('');
+  const [panNumber,      setPanNumber]      = useState('');
 
   const [saving,  setSaving]  = useState(false);
   const [saved,   setSaved]   = useState(false);
@@ -59,7 +69,12 @@ export default function CompanyProfile() {
     setCompanyName(p.companyName ?? '');
     setLocationCity(p.locationCity ?? '');
     setLocationState(p.locationState ?? '');
+    setAddress(p.address ?? '');
     setBio(p.bio ?? '');
+    setCompanyType(p.companyType ?? '');
+    setWebsite(p.website ?? '');
+    setInstagramUrl(p.instagramUrl ?? '');
+    setPanNumber(p.panNumber ?? '');
   }, [me]);
 
   const handleSave = async () => {
@@ -69,7 +84,12 @@ export default function CompanyProfile() {
         companyName: companyName.trim() || undefined,
         locationCity: locationCity.trim() || undefined,
         locationState: locationState.trim() || undefined,
+        address: address.trim() || undefined,
         bio: bio.trim() || undefined,
+        companyType: companyType.trim() || undefined,
+        website: website.trim() || undefined,
+        instagramUrl: instagramUrl.trim() || undefined,
+        panNumber: panNumber.trim() || undefined,
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
@@ -135,16 +155,34 @@ export default function CompanyProfile() {
                         </span>
                       )}
                       <div className="mt-4 pt-4 border-t border-neutral-100 space-y-2 text-left">
+                        {companyType && (
+                          <div className="flex items-center gap-2 text-xs text-neutral-500">
+                            <FaBuilding className="w-3 h-3 text-neutral-400 shrink-0" />
+                            <span>{companyType}</span>
+                          </div>
+                        )}
                         {locationCity && (
                           <div className="flex items-center gap-2 text-xs text-neutral-500">
                             <FaLocationDot className="w-3 h-3 text-neutral-400 shrink-0" />
                             <span>{locationCity}{locationState ? `, ${locationState}` : ''}</span>
                           </div>
                         )}
+                        {website && (
+                          <div className="flex items-center gap-2 text-xs text-neutral-500">
+                            <FaGlobe className="w-3 h-3 text-neutral-400 shrink-0" />
+                            <a href={website} target="_blank" rel="noopener noreferrer" className="text-[#3678F1] hover:underline truncate">{website.replace(/^https?:\/\//, '')}</a>
+                          </div>
+                        )}
+                        {instagramUrl && (
+                          <div className="flex items-center gap-2 text-xs text-neutral-500">
+                            <FaInstagram className="w-3 h-3 text-neutral-400 shrink-0" />
+                            <a href={instagramUrl} target="_blank" rel="noopener noreferrer" className="text-[#3678F1] hover:underline truncate">{instagramUrl.replace(/^https?:\/\//, '')}</a>
+                          </div>
+                        )}
                         {profile?.gstNumber && (
                           <div className="flex items-center gap-2 text-xs text-neutral-500">
                             <FaIdCard className="w-3 h-3 text-neutral-400 shrink-0" />
-                            <span>GST: {profile.gstNumber}</span>
+                            <span>GST: {profile.gstNumber}{profile.isGstVerified ? ' ✓' : ''}</span>
                           </div>
                         )}
                         {me?.email && (
@@ -167,10 +205,16 @@ export default function CompanyProfile() {
                       <h3 className="text-sm font-bold text-neutral-900 mb-4">Profile Details</h3>
                       <dl className="space-y-3">
                         <div><dt className="text-xs text-neutral-500 mb-0.5">Company Name</dt><dd className="text-sm font-medium text-neutral-900">{companyName || '—'}</dd></div>
+                        <div><dt className="text-xs text-neutral-500 mb-0.5">Company Type</dt><dd className="text-sm text-neutral-700">{companyType || '—'}</dd></div>
                         <div><dt className="text-xs text-neutral-500 mb-0.5">Email</dt><dd className="text-sm text-neutral-700">{me?.email ?? '—'}</dd></div>
                         <div><dt className="text-xs text-neutral-500 mb-0.5">Phone</dt><dd className="text-sm text-neutral-700">{me?.phone ?? '—'}</dd></div>
                         <div><dt className="text-xs text-neutral-500 mb-0.5">City</dt><dd className="text-sm text-neutral-700">{locationCity || '—'}</dd></div>
                         <div><dt className="text-xs text-neutral-500 mb-0.5">State</dt><dd className="text-sm text-neutral-700">{locationState || '—'}</dd></div>
+                        <div><dt className="text-xs text-neutral-500 mb-0.5">Address</dt><dd className="text-sm text-neutral-700 whitespace-pre-wrap">{address || '—'}</dd></div>
+                        <div><dt className="text-xs text-neutral-500 mb-0.5">Website</dt><dd className="text-sm text-neutral-700">{website ? <a href={website} target="_blank" rel="noopener noreferrer" className="text-[#3678F1] hover:underline">{website}</a> : '—'}</dd></div>
+                        <div><dt className="text-xs text-neutral-500 mb-0.5">Instagram</dt><dd className="text-sm text-neutral-700">{instagramUrl ? <a href={instagramUrl} target="_blank" rel="noopener noreferrer" className="text-[#3678F1] hover:underline">{instagramUrl}</a> : '—'}</dd></div>
+                        <div><dt className="text-xs text-neutral-500 mb-0.5">PAN Number</dt><dd className="text-sm text-neutral-700 font-mono">{panNumber || '—'}</dd></div>
+                        <div><dt className="text-xs text-neutral-500 mb-0.5">GST Number</dt><dd className="text-sm text-neutral-700 font-mono flex items-center gap-2">{profile?.gstNumber || '—'}{profile?.isGstVerified && <span className="text-[10px] px-1.5 py-0.5 bg-[#D1FAE5] text-[#065F46] rounded-full font-semibold">Verified</span>}</dd></div>
                         <div><dt className="text-xs text-neutral-500 mb-0.5">About</dt><dd className="text-sm text-neutral-700 whitespace-pre-wrap">{bio || '—'}</dd></div>
                       </dl>
                     </div>
@@ -209,8 +253,37 @@ export default function CompanyProfile() {
                           </div>
                         </div>
                         <div>
+                          <label className="block text-xs font-medium text-neutral-600 mb-1">Company Type</label>
+                          <input type="text" value={companyType} onChange={(e) => setCompanyType(e.target.value)} disabled={saving} placeholder="e.g., Production House, Ad Agency, OTT" className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3678F1] transition-all disabled:bg-neutral-50" />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-neutral-600 mb-1">Address</label>
+                          <textarea value={address} onChange={(e) => setAddress(e.target.value)} rows={2} disabled={saving} placeholder="Office address…" className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3678F1] transition-all resize-none disabled:bg-neutral-50" />
+                        </div>
+                        <div>
                           <label className="block text-xs font-medium text-neutral-600 mb-1">About / Description</label>
                           <textarea value={bio} onChange={(e) => setBio(e.target.value)} rows={3} disabled={saving} placeholder="Brief description of your company…" className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3678F1] transition-all resize-none disabled:bg-neutral-50" />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-neutral-600 mb-1">Website</label>
+                          <div className="relative">
+                            <FaGlobe className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 w-3.5 h-3.5" />
+                            <input type="url" value={website} onChange={(e) => setWebsite(e.target.value)} disabled={saving} placeholder="https://yourcompany.com" className="w-full pl-9 pr-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3678F1] transition-all disabled:bg-neutral-50" />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-neutral-600 mb-1">Instagram URL</label>
+                          <div className="relative">
+                            <FaInstagram className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 w-3.5 h-3.5" />
+                            <input type="url" value={instagramUrl} onChange={(e) => setInstagramUrl(e.target.value)} disabled={saving} placeholder="https://instagram.com/yourcompany" className="w-full pl-9 pr-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3678F1] transition-all disabled:bg-neutral-50" />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-neutral-600 mb-1">PAN Number</label>
+                          <div className="relative">
+                            <FaFileContract className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 w-3.5 h-3.5" />
+                            <input type="text" value={panNumber} onChange={(e) => setPanNumber(e.target.value.toUpperCase())} disabled={saving} placeholder="AAAAA1234A" maxLength={10} className="w-full pl-9 pr-3 py-2.5 border border-neutral-300 rounded-xl text-sm font-mono focus:outline-none focus:border-[#3678F1] transition-all disabled:bg-neutral-50" />
+                          </div>
                         </div>
                         {profile?.gstNumber && (
                           <div>

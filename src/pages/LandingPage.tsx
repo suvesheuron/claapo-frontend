@@ -127,7 +127,7 @@ export default function LandingPage() {
             <div className="hidden lg:flex flex-1 justify-end">
               <div className="relative w-full max-w-md">
                 <div className="absolute inset-0 blur-3xl bg-gradient-to-tr from-[#3B5BDB]/20 via-sky-300/20 to-indigo-400/10 rounded-[40px] pointer-events-none" />
-                <div className="relative rounded-[32px] overflow-hidden border border-white/40 shadow-2xl shadow-[#3B5BDB]/30 bg-slate-950">
+                <div className="relative rounded-[32px] overflow-hidden">
                   <img
                     src={speakerImg}
                     alt="Announce your productions without the chaos"

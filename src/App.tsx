@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
 import { useAuth, type BackendRole } from './contexts/AuthContext';
 import { useRole, type UserRole } from './contexts/RoleContext';
+import { ChatUnreadProvider } from './contexts/ChatUnreadContext';
 
 const LandingPage = lazy(() => import('./pages/LandingPage'));
 const UserTypeSelect = lazy(() => import('./pages/UserTypeSelect'));
@@ -92,11 +93,12 @@ function PageFallback() {
 export default function App() {
   return (
     <BrowserRouter>
-      <Toaster position="top-center" toastOptions={{ duration: 4000 }} />
-      {/* Syncs auth role into RoleContext — must be inside BrowserRouter + both providers */}
-      <AuthRoleSyncBridge />
-      <Suspense fallback={<PageFallback />}>
-        <Routes>
+      <ChatUnreadProvider>
+        <Toaster position="top-center" toastOptions={{ duration: 4000 }} />
+        {/* Syncs auth role into RoleContext — must be inside BrowserRouter + both providers */}
+        <AuthRoleSyncBridge />
+        <Suspense fallback={<PageFallback />}>
+          <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -137,8 +139,9 @@ export default function App() {
           <Route path="/dashboard/company-past-projects" element={<ProtectedRoute allowedRoles={['company', 'admin']}><CompanyPastProjects /></ProtectedRoute>} />
           <Route path="/dashboard/company-profile" element={<ProtectedRoute allowedRoles={['company', 'admin']}><CompanyProfile /></ProtectedRoute>} />
           <Route path="/dashboard/cancel-requests" element={<ProtectedRoute allowedRoles={['company', 'admin']}><CancelRequests /></ProtectedRoute>} />
-        </Routes>
-      </Suspense>
+          </Routes>
+        </Suspense>
+      </ChatUnreadProvider>
     </BrowserRouter>
   );
 }

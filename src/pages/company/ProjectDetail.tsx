@@ -26,6 +26,15 @@ interface Project {
   roles?: Array<{ id: string; roleName: string; qty: number }>;
 }
 
+/** Total budget from project (supports camelCase or snake_case from API) */
+function getProjectTotalBudget(p: Project | null | undefined): number {
+  if (!p) return 0;
+  const max = p.budgetMax ?? (p as Record<string, unknown>).budget_max;
+  const min = p.budgetMin ?? (p as Record<string, unknown>).budget_min;
+  const num = (typeof max === 'number' && max > 0 ? max : undefined) ?? (typeof min === 'number' && min > 0 ? min : undefined);
+  return typeof num === 'number' ? num : 0;
+}
+
 interface BookingTarget {
   id: string;
   email: string;
@@ -110,7 +119,7 @@ export default function ProjectDetail() {
   const allLocked      = bookings.length > 0 && bookings.every((b) => b.status === 'locked');
   const canDeleteProject = project && (project.status === 'draft' || project.status === 'cancelled');
 
-  const totalBudget = project?.budgetMax ?? project?.budgetMin ?? 0;
+  const totalBudget = getProjectTotalBudget(project);
   const crewCost    = crewBookings.filter((b) => b.status === 'accepted' || b.status === 'locked').reduce((s, b) => s + (b.rateOffered ?? 0), 0);
   const vendorCost  = vendorBookings.filter((b) => b.status === 'accepted' || b.status === 'locked').reduce((s, b) => s + (b.rateOffered ?? 0), 0);
   const remaining   = totalBudget - crewCost - vendorCost;
@@ -208,7 +217,7 @@ export default function ProjectDetail() {
                     <h1 className="text-xl font-bold text-neutral-900">{project.title}</h1>
                     <p className="text-sm text-neutral-500 mt-0.5">
                       {formatDateRange(project.startDate, project.endDate)}
-                      {project.budgetMax ? ` · Budget: ${formatBudgetCompact(project.budgetMax)}` : project.budgetMin ? ` · Budget: ${formatBudgetCompact(project.budgetMin)}` : ''}
+                      {getProjectTotalBudget(project) > 0 ? ` · Budget: ${formatBudgetCompact(getProjectTotalBudget(project))}` : ''}
                       {project.locationCity ? ` · ${project.locationCity}` : ''}
                     </p>
                   </div>
@@ -427,10 +436,10 @@ export default function ProjectDetail() {
                   ) : (
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                       {[
-                        { label: 'Total Budget', value: totalBudget ? formatBudgetCompact(totalBudget) : '—', color: 'text-neutral-900' },
-                        { label: 'Crew Cost',    value: crewCost   ? formatBudgetCompact(crewCost)    : '—', color: 'text-[#3678F1]' },
-                        { label: 'Vendor Cost',  value: vendorCost ? formatBudgetCompact(vendorCost)  : '—', color: 'text-[#F4C430]' },
-                        { label: 'Remaining',    value: totalBudget ? formatBudgetCompact(remaining)  : '—', color: remaining >= 0 ? 'text-[#22C55E]' : 'text-red-500' },
+                        { label: 'Total Budget', value: formatBudgetCompact(totalBudget), color: 'text-neutral-900' },
+                        { label: 'Crew Cost',    value: formatBudgetCompact(crewCost),    color: 'text-[#3678F1]' },
+                        { label: 'Vendor Cost',  value: formatBudgetCompact(vendorCost),  color: 'text-[#F4C430]' },
+                        { label: 'Remaining',    value: formatBudgetCompact(remaining),   color: remaining >= 0 ? 'text-[#22C55E]' : 'text-red-500' },
                       ].map(({ label, value, color }) => (
                         <div key={label} className="rounded-xl bg-[#F3F4F6] p-3">
                           <p className="text-xs text-neutral-500">{label}</p>

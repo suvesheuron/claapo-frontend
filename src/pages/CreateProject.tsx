@@ -29,6 +29,9 @@ export default function CreateProject() {
   const [locationCity, setLocationCity]       = useState('');
   const [shootLocations, setShootLocations]   = useState<string[]>(['']);
 
+  const [budgetMin, setBudgetMin] = useState('');
+  const [budgetMax, setBudgetMax] = useState('');
+
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState<string | null>(null);
 
@@ -62,6 +65,8 @@ export default function CreateProject() {
         deliveryDate: deliveryDate || undefined,
         locationCity: locationCity.trim() || undefined,
         shootLocations: shootLocations.filter(s => s.trim()),
+        budgetMin: budgetMin ? Math.round(parseFloat(budgetMin)) : undefined,
+        budgetMax: budgetMax ? Math.round(parseFloat(budgetMax)) : undefined,
       });
 
       navigate('/dashboard/projects');
@@ -74,7 +79,7 @@ export default function CreateProject() {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-[#F3F4F6] w-full">
-      <DashboardHeader userName="Production Co." />
+      <DashboardHeader />
 
       <div className="flex-1 flex min-h-0 overflow-hidden">
         <DashboardSidebar links={companyNavLinks} />
@@ -147,6 +152,19 @@ export default function CreateProject() {
                         <input type="text" value={locationCity} onChange={(e) => setLocationCity(e.target.value)} placeholder="e.g., Mumbai" disabled={loading} className="rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all disabled:opacity-50" />
                       </div>
                       <div>
+                        <label className="block text-neutral-700 text-xs mb-1.5 font-semibold">Budget (₹) <span className="text-neutral-400 font-normal">(optional)</span></label>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-neutral-400 text-[11px] mb-1">Minimum</label>
+                            <input type="number" min="0" value={budgetMin} onChange={(e) => setBudgetMin(e.target.value)} placeholder="e.g., 500000" disabled={loading} className="rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all disabled:opacity-50" />
+                          </div>
+                          <div>
+                            <label className="block text-neutral-400 text-[11px] mb-1">Maximum</label>
+                            <input type="number" min="0" value={budgetMax} onChange={(e) => setBudgetMax(e.target.value)} placeholder="e.g., 1000000" disabled={loading} className="rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all disabled:opacity-50" />
+                          </div>
+                        </div>
+                      </div>
+                      <div>
                         <div className="flex items-center justify-between mb-2">
                           <label className="text-neutral-700 text-xs font-semibold">Shoot Locations</label>
                           <button type="button" onClick={addLocation} className="text-xs text-[#3678F1] hover:underline flex items-center gap-1">
@@ -184,6 +202,7 @@ export default function CreateProject() {
                         { label: 'Project Name',      value: title.trim() || 'Not set' },
                         { label: 'Production House',  value: productionHouseName.trim() || 'Not set' },
                         { label: 'Duration',          value: duration },
+                        { label: 'Budget',            value: budgetMin || budgetMax ? `₹${budgetMin || '—'} – ₹${budgetMax || '—'}` : 'Not set' },
                         { label: 'Locations',         value: shootLocations.filter(s => s.trim()).join(', ') || 'Not set' },
                       ].map(({ label, value }) => (
                         <div key={label} className="flex justify-between gap-2">

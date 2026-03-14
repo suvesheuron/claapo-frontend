@@ -24,15 +24,20 @@ interface CrewResult {
   bio?: string;
 }
 
+interface VendorEquipmentItem {
+  id: string;
+  name: string;
+}
 interface VendorResult {
   userId: string;
   companyName: string;
   vendorType: string;
   locationCity?: string;
   isGstVerified: boolean;
+  equipment?: VendorEquipmentItem[];
 }
 
-interface SelectedUser { userId: string; name: string; role: string; rate: string; isVendor?: boolean }
+interface SelectedUser { userId: string; name: string; role: string; rate: string; isVendor?: boolean; initialVendorEquipmentId?: string }
 
 const PAGE_SIZE = 15;
 
@@ -66,8 +71,23 @@ export default function SearchFilter() {
     setLoading(true);
     setError(null);
     try {
-      const qs = new URLSearchParams({ page: String(pg), limit: String(PAGE_SIZE), ...(q ? { skill: q } : {}), ...(loc ? { city: loc } : {}), ...(skill ? { skill } : {}) });
-      const raw = await api.get<{ items?: CrewResult[] | VendorResult[]; data?: CrewResult[] | VendorResult[]; meta?: { total?: number } }>(`/search/${type === 'crew' ? 'crew' : 'vendors'}?${qs}`);
+      const params: Record<string, string> = {
+        page: String(pg),
+        limit: String(PAGE_SIZE),
+      };
+
+      if (type === 'crew') {
+        if (loc) params.city = loc;
+        const combinedSkill = [q, skill].map((s) => s.trim()).filter(Boolean).join(', ');
+        if (combinedSkill) params.skill = combinedSkill;
+      } else {
+        if (loc) params.city = loc;
+        if (skill) params.type = skill;
+        if (q) params.equipmentName = q;
+      }
+
+      const qs = new URLSearchParams(params);
+      const raw = await api.get<{ items?: CrewResult[] | VendorResult[]; data?: CrewResult[] | VendorResult[]; meta?: { total?: number } }>(`/search/${type === 'crew' ? 'crew' : 'vendors'}?${qs.toString()}`);
       const list = Array.isArray(raw?.items) ? raw.items : Array.isArray(raw?.data) ? raw.data : [];
       const total = raw?.meta?.total ?? 0;
       if (type === 'crew') {
@@ -295,7 +315,7 @@ export default function SearchFilter() {
                             <h3 className="text-sm font-bold text-neutral-900 truncate">{r.companyName}</h3>
                             {r.isGstVerified && <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#DCFCE7] text-[#15803D] shrink-0">GST Verified</span>}
                           </div>
-                          <p className="text-xs text-neutral-500 capitalize">{r.vendorType?.replace(/_/g, ' ')}</p>
+                          <p className="text-xs text-neutral-500">{r.vendorType === 'all' ? 'All types' : (r.vendorType?.replace(/_/g, ' ') ?? 'Vendor')}</p>
                           {r.locationCity && (
                             <span className="text-xs text-neutral-400 flex items-center gap-1 mt-1">
                               <FaLocationDot className="text-[10px]" /> {r.locationCity}
@@ -306,7 +326,7 @@ export default function SearchFilter() {
                           <Link to={`/dashboard/chat/${r.userId}`} className="rounded-xl px-3 py-2 border border-neutral-200 text-neutral-700 text-xs font-medium hover:bg-neutral-50 text-center transition-colors flex items-center gap-1.5">
                             <FaMessage className="w-3 h-3" /> Message
                           </Link>
-                          <button type="button" onClick={() => handleSendRequest({ userId: r.userId, name: r.companyName, role: r.vendorType?.replace(/_/g, ' ') ?? 'Vendor', rate: '—', isVendor: true })}
+                          <button type="button" onClick={() => handleSendRequest({ userId: r.userId, name: r.companyName, role: r.vendorType === 'all' ? 'All types' : (r.vendorType?.replace(/_/g, ' ') ?? 'Vendor'), rate: '—', isVendor: true, initialVendorEquipmentId: r.equipment?.length === 1 ? r.equipment[0].id : undefined })}
                             className="rounded-xl px-3 py-2 bg-[#3678F1] text-white text-xs font-bold hover:bg-[#2563d4] text-center transition-colors">
                             Book
                           </button>
@@ -350,6 +370,7 @@ export default function SearchFilter() {
         userRate={selectedUser?.rate ?? ''}
         targetUserId={selectedUser?.userId ?? ''}
         isVendor={selectedUser?.isVendor ?? false}
+        initialVendorEquipmentId={selectedUser?.initialVendorEquipmentId}
         onSuccess={() => { setIsModalOpen(false); setSelectedUser(null); }}
       />
     </div>

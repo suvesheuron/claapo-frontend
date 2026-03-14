@@ -26,8 +26,15 @@ interface OngoingBooking {
   createdAt: string;
   cancelRequestReason: string | null;
   cancelRequestedAt: string | null;
-  project: { id: string; title: string; startDate: string; endDate: string };
+  project: { id: string; title: string; startDate: string; endDate: string; status: string };
   requester: { id: string; email: string; companyProfile?: { companyName?: string } | null };
+}
+
+/** Backend excludes cancelled projects; this is a safety filter in case of stale/cached data. */
+function isOngoingBooking(b: OngoingBooking): boolean {
+  const statusOk = b.status === 'accepted' || b.status === 'locked' || b.status === 'cancel_requested';
+  const projectNotCancelled = b.project?.status !== 'cancelled';
+  return !!statusOk && !!projectNotCancelled;
 }
 
 interface BookingsResponse {
@@ -59,10 +66,7 @@ export default function OngoingProjects() {
 
   const { data, loading, error, refetch } = useApiQuery<BookingsResponse>('/bookings/incoming');
 
-  // Only show accepted / locked / cancel_requested bookings
-  const ongoingBookings = (data?.items ?? []).filter(
-    (b) => b.status === 'accepted' || b.status === 'locked' || b.status === 'cancel_requested',
-  );
+  const ongoingBookings = (data?.items ?? []).filter(isOngoingBooking);
 
   const doRequestCancel = async (bookingId: string) => {
     setActioning(bookingId + 'req-cancel');

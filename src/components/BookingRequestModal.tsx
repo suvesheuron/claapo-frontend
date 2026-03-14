@@ -40,6 +40,8 @@ type BookingRequestModalProps = {
   targetUserId: string;
   /** True when booking a vendor (so we fetch and show their equipment + rates) */
   isVendor?: boolean;
+  /** When booking a vendor, pre-select this equipment (e.g. from search result) */
+  initialVendorEquipmentId?: string;
   onSuccess?: () => void;
 };
 
@@ -51,11 +53,13 @@ export default function BookingRequestModal({
   userRate,
   targetUserId,
   isVendor = false,
+  initialVendorEquipmentId,
   onSuccess,
 }: BookingRequestModalProps) {
   const [projectId, setProjectId] = useState('');
   const [rateOffered, setRateOffered] = useState('');
   const [message, setMessage] = useState('');
+  const [selectedEquipmentId, setSelectedEquipmentId] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
@@ -102,7 +106,7 @@ export default function BookingRequestModal({
     (p) => p.status === 'active' || p.status === 'open' || p.status === 'draft'
   );
 
-  // Reset state when modal opens
+  // Reset state when modal opens; pre-select equipment when provided or only one
   useEffect(() => {
     if (isOpen) {
       setProjectId('');
@@ -110,8 +114,18 @@ export default function BookingRequestModal({
       setMessage('');
       setError(null);
       setSent(false);
+      setSelectedEquipmentId('');
     }
   }, [isOpen]);
+  useEffect(() => {
+    if (!isOpen || !isVendor) return;
+    const list = (Array.isArray(rawList) ? rawList : []) as { id?: string }[];
+    if (initialVendorEquipmentId && list.some((eq) => eq.id === initialVendorEquipmentId)) {
+      setSelectedEquipmentId(initialVendorEquipmentId);
+    } else if (list.length === 1 && list[0]?.id) {
+      setSelectedEquipmentId(list[0].id);
+    }
+  }, [isOpen, isVendor, initialVendorEquipmentId, rawList]);
 
   if (!isOpen) return null;
 
@@ -125,6 +139,7 @@ export default function BookingRequestModal({
       await api.post('/bookings/request', {
         projectId,
         targetUserId,
+        vendorEquipmentId: selectedEquipmentId || undefined,
         rateOffered: rateOffered ? Math.round(parseFloat(rateOffered.replace(/[^0-9.]/g, '')) * 100) : undefined,
         message: message.trim() || undefined,
       });
@@ -208,6 +223,27 @@ export default function BookingRequestModal({
                 </div>
               )}
             </div>
+
+            {/* Equipment selector (vendor only) */}
+            {isVendor && equipmentList.length > 0 && (
+              <div>
+                <label className="block text-xs font-semibold text-neutral-700 mb-1.5">
+                  Equipment for this request
+                  <span className="ml-1 text-[9px] font-normal text-neutral-400 bg-neutral-100 px-1.5 py-0.5 rounded-full">Optional</span>
+                </label>
+                <select
+                  value={selectedEquipmentId}
+                  onChange={(e) => setSelectedEquipmentId(e.target.value)}
+                  disabled={loading || equipmentLoading}
+                  className="rounded-xl w-full px-3 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 text-sm focus:outline-none focus:border-[#3678F1] focus:bg-white transition-all disabled:opacity-50"
+                >
+                  <option value="">— Any equipment —</option>
+                  {equipmentList.map((eq, idx) => (
+                    <option key={(eq.id as string) || idx} value={(eq.id as string) ?? ''}>{String(eq.name ?? '')}</option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             {/* Project selector */}
             <div>

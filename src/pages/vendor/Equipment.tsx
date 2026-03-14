@@ -16,6 +16,11 @@ interface EquipmentAvailability {
   notes?: string | null;
 }
 
+interface ActiveBooking {
+  id: string;
+  project: { title: string; startDate: string; endDate: string };
+}
+
 interface EquipmentItem {
   id: string;
   name: string;
@@ -24,6 +29,7 @@ interface EquipmentItem {
   dailyRateMin?: number | null;
   dailyRateMax?: number | null;
   availabilities?: EquipmentAvailability[];
+  bookingRequests?: ActiveBooking[];
 }
 
 export default function Equipment() {
@@ -176,7 +182,13 @@ export default function Equipment() {
     return '—';
   };
 
+  const formatBookingDate = (start: string, end: string) => {
+    const d = (s: string) => new Date(s).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+    return start === end ? d(start) : `${d(start)} – ${d(end)}`;
+  };
+
   const availableCount = equipment.filter((e) => (e.availabilities?.length ?? 0) > 0).length;
+  const bookedCount = equipment.filter((e) => (e.bookingRequests?.length ?? 0) > 0).length;
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-[#F3F4F6] w-full">
@@ -219,8 +231,8 @@ export default function Equipment() {
                   <p className="text-xl font-bold mt-1 text-[#22C55E]">{availableCount}</p>
                 </div>
                 <div className="rounded-2xl bg-white border border-neutral-200 p-4">
-                  <p className="text-xs text-neutral-500">Without availability</p>
-                  <p className="text-xl font-bold mt-1 text-neutral-600">{equipment.length - availableCount}</p>
+                  <p className="text-xs text-neutral-500">Currently booked</p>
+                  <p className="text-xl font-bold mt-1 text-[#1D4ED8]">{bookedCount}</p>
                 </div>
               </div>
 
@@ -245,13 +257,25 @@ export default function Equipment() {
                         <div className="w-10 h-10 rounded-xl bg-[#EEF4FF] flex items-center justify-center shrink-0">
                           <FaTruck className="text-sm text-[#3678F1]" />
                         </div>
-                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#F3F4F6] text-neutral-600">
-                          {(item.availabilities?.length ?? 0) > 0 ? 'Has dates' : 'No dates'}
-                        </span>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {(item.bookingRequests?.length ?? 0) > 0 && (
+                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#DBEAFE] text-[#1D4ED8]">
+                              Booked
+                            </span>
+                          )}
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#F3F4F6] text-neutral-600">
+                            {(item.availabilities?.length ?? 0) > 0 ? 'Has dates' : 'No dates'}
+                          </span>
+                        </div>
                       </div>
                       <h3 className="text-sm font-bold text-neutral-900 mb-1 truncate">{item.name}</h3>
                       {item.currentCity && <p className="text-[10px] text-neutral-400 mb-1">{item.currentCity}</p>}
                       <p className="text-sm font-semibold text-[#3678F1] mb-2">{formatRate(item)}</p>
+                      {(item.bookingRequests?.length ?? 0) > 0 && (
+                        <p className="text-[10px] text-[#1D4ED8] font-medium mb-2">
+                          Given to: {(item.bookingRequests ?? []).map((br) => `${br.project.title} (${formatBookingDate(br.project.startDate, br.project.endDate)})`).join(' · ')}
+                        </p>
+                      )}
                       {(item.availabilities?.length ?? 0) > 0 && (
                         <p className="text-[10px] text-neutral-500 mb-2">
                           {(item.availabilities ?? []).slice(0, 2).map((a) => `${a.locationCity} ${a.availableFrom.slice(0, 10)}–${a.availableTo.slice(0, 10)}`).join(' · ')}

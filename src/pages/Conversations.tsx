@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { FaMessage, FaTriangleExclamation } from 'react-icons/fa6';
 import DashboardHeader from '../components/DashboardHeader';
@@ -7,7 +7,8 @@ import AppFooter from '../components/AppFooter';
 import Avatar from '../components/Avatar';
 import { useApiQuery } from '../hooks/useApiQuery';
 import { useRole } from '../contexts/RoleContext';
-import { individualNavLinks, vendorNavLinks } from '../navigation/dashboardNav';
+import { useChatUnread } from '../contexts/ChatUnreadContext';
+import { individualNavLinks, vendorNavLinks, companyNavLinks } from '../navigation/dashboardNav';
 
 interface Participant { id: string; displayName?: string; companyName?: string; email?: string }
 interface Conversation {
@@ -22,10 +23,7 @@ interface Conversation {
 }
 interface ConversationsResponse { items: Conversation[] }
 
-// Company uses its own navigation structure on other pages and keeps a slim version here.
-const companyNavLinks = [
-  { icon: FaMessage, label: 'Chat', to: '/dashboard/conversations' },
-];
+type Filter = 'all' | 'unread';
 
 function timeSince(dateStr: string) {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -40,9 +38,23 @@ function timeSince(dateStr: string) {
 export default function Conversations() {
   useEffect(() => { document.title = 'Messages – Claapo'; }, []);
   const { currentRole } = useRole();
+  const { markAllConversationsAsRead } = useChatUnread();
+  const markedReadOnMount = useRef(false);
 
   const { data, loading, error } = useApiQuery<ConversationsResponse>('/conversations');
   const conversations = data?.items ?? [];
+
+  // Mark all conversations as read when user navigates to this page so the nav badge clears
+  useEffect(() => {
+    if (markedReadOnMount.current || loading || conversations.length === 0) return;
+    const hasUnread = conversations.some((c) => (c.unreadCount ?? 0) > 0);
+    if (!hasUnread) return;
+    markedReadOnMount.current = true;
+    markAllConversationsAsRead(conversations);
+  }, [loading, conversations, markAllConversationsAsRead]);
+
+  const [filter, setFilter] = useState<Filter>('all');
+  const [search, setSearch] = useState('');
 
   const navLinks =
     currentRole === 'Company'
@@ -67,6 +79,30 @@ export default function Conversations() {
                   <FaMessage className="text-[#3678F1]" /> Messages
                 </h1>
                 <p className="text-sm text-neutral-500 mt-0.5">Your conversations with crew, vendors, and clients</p>
+              </div>
+
+              <div className="flex items-center gap-2 mb-4">
+                <div className="inline-flex items-center gap-1 rounded-full bg-white border border-neutral-200 p-1">
+                  {(['all', 'unread'] as Filter[]).map((f) => (
+                    <button
+                      key={f}
+                      type="button"
+                      onClick={() => setFilter(f)}
+                      className={`px-3 py-1.5 text-[11px] font-semibold rounded-full capitalize ${
+                        filter === f ? 'bg-[#3678F1] text-white shadow-sm' : 'text-neutral-600'
+                      }`}
+                    >
+                      {f}
+                    </button>
+                  ))}
+                </div>
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search by name or project…"
+                  className="flex-1 rounded-full px-3 py-2 text-xs border border-neutral-300 bg-white focus:outline-none focus:border-[#3678F1]"
+                />
               </div>
 
               {error && (
@@ -97,8 +133,20 @@ export default function Conversations() {
                   <p className="text-sm text-neutral-400">Start a conversation from any user's profile or search results</p>
                 </div>
               ) : (
-                <div className="space-y-2">
-                  {conversations.map(conv => {
+              <div className="space-y-2">
+                  {conversations
+                    .filter((conv) => {
+                      if (filter === 'unread' && !(conv.unreadCount && conv.unreadCount > 0)) {
+                        return false;
+                      }
+                      if (!search.trim()) return true;
+                      const other = conv.otherParticipant ?? conv.otherUser;
+                      const name = other ? getName(other).toLowerCase() : '';
+                      const proj = conv.project?.title?.toLowerCase() ?? '';
+                      const q = search.toLowerCase();
+                      return name.includes(q) || proj.includes(q);
+                    })
+                    .map(conv => {
                     // Backend returns otherParticipant; fall back to otherUser for safety
                     const other = conv.otherParticipant ?? conv.otherUser;
                     if (!other?.id) return null;

@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import type { ComponentType, SVGProps } from 'react';
+import { useChatUnread } from '../contexts/ChatUnreadContext';
 
 export interface NavItem {
   icon: ComponentType<SVGProps<SVGSVGElement> & { className?: string }>;
@@ -11,8 +12,11 @@ interface Props {
   links: NavItem[];
 }
 
+const CHAT_PATH = '/dashboard/conversations';
+
 export default function DashboardSidebar({ links }: Props) {
   const { pathname } = useLocation();
+  const { totalUnread } = useChatUnread();
 
   const isActive = (to: string) => {
     if (to === '/dashboard') return pathname === '/dashboard';
@@ -24,6 +28,7 @@ export default function DashboardSidebar({ links }: Props) {
       <nav className="flex-1 overflow-y-auto p-3 pt-4 space-y-0.5">
         {links.map((item) => {
           const active = isActive(item.to);
+          const showChatBadge = item.to === CHAT_PATH && totalUnread > 0;
           return (
             <Link
               key={item.to}
@@ -40,7 +45,12 @@ export default function DashboardSidebar({ links }: Props) {
                 }`}
               />
               <span className="flex-1">{item.label}</span>
-              {active && (
+              {showChatBadge && (
+                <span className="min-w-[18px] h-[18px] rounded-full bg-[#F40F02] text-white text-[10px] font-bold flex items-center justify-center px-1.5">
+                  {totalUnread > 99 ? '99+' : totalUnread}
+                </span>
+              )}
+              {active && !showChatBadge && (
                 <span className="w-1.5 h-1.5 rounded-full bg-[#3678F1] shrink-0" />
               )}
             </Link>

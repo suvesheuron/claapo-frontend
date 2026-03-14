@@ -24,8 +24,10 @@ interface Booking {
   rateOffered: number | null;
   message: string | null;
   createdAt: string;
-  project: { id: string; title: string; startDate: string; endDate: string };
+  project: { id: string; title: string; startDate: string; endDate: string; status?: string };
   requester: { id: string; email: string; companyProfile?: { companyName?: string } | null };
+  vendorEquipment?: { id: string; name: string } | null;
+  equipmentAlreadyBookedFor?: { projectTitle: string; startDate: string; endDate: string } | null;
 }
 
 interface BookingsResponse {
@@ -66,7 +68,8 @@ export default function Bookings() {
 
   const { data, loading, error, refetch } = useApiQuery<BookingsResponse>('/bookings/incoming');
 
-  const allBookings = data?.items ?? [];
+  // Exclude cancelled projects (backend also filters; this guards against stale data)
+  const allBookings = (data?.items ?? []).filter((b) => b.project?.status !== 'cancelled');
   const bookings = tab === 'all' ? allBookings : allBookings.filter(b => b.status === tab);
 
   const doAction = async (bookingId: string, action: 'accept' | 'decline') => {
@@ -179,6 +182,27 @@ export default function Bookings() {
                             <span className={`text-[11px] px-2.5 py-1 rounded-full font-semibold ${cfg.bg} ${cfg.text}`}>{cfg.label}</span>
                           </div>
                         </div>
+
+                        {booking.vendorEquipment && (
+                          <p className="text-xs text-neutral-600 mb-2">
+                            <span className="font-semibold text-neutral-700">Equipment requested:</span>{' '}
+                            {booking.vendorEquipment.name}
+                          </p>
+                        )}
+
+                        {booking.equipmentAlreadyBookedFor && (
+                          <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 mb-4 flex items-start gap-2">
+                            <FaTriangleExclamation className="text-amber-600 shrink-0 mt-0.5" />
+                            <div>
+                              <p className="text-xs font-semibold text-amber-800">This equipment is already given to another shoot</p>
+                              <p className="text-xs text-amber-700 mt-0.5">
+                                {booking.equipmentAlreadyBookedFor.projectTitle} ({formatDate(booking.equipmentAlreadyBookedFor.startDate)}
+                                {booking.equipmentAlreadyBookedFor.endDate !== booking.equipmentAlreadyBookedFor.startDate && ` – ${formatDate(booking.equipmentAlreadyBookedFor.endDate)}`})
+                              </p>
+                              <p className="text-[11px] text-amber-600 mt-1">You can decline this request or offer an alternative if you have another unit.</p>
+                            </div>
+                          </div>
+                        )}
 
                         {booking.message && (
                           <div className="rounded-xl bg-[#F3F4F6] px-4 py-3 mb-4">

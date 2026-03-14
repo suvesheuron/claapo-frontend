@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   FaEye, FaEyeSlash, FaPen,
   FaBuilding, FaIdCard, FaLocationDot, FaTriangleExclamation, FaCircleCheck,
+  FaGlobe, FaInstagram,
 } from 'react-icons/fa6';
 import DashboardHeader from '../../components/DashboardHeader';
 import DashboardSidebar from '../../components/DashboardSidebar';
@@ -11,16 +12,14 @@ import { api, ApiException } from '../../services/api';
 import { useApiQuery } from '../../hooks/useApiQuery';
 import { vendorNavLinks } from '../../navigation/dashboardNav';
 
-const VENDOR_TYPE_LABELS: Record<string, string> = {
-  camera_equipment:  'Camera Equipment',
-  lighting:          'Lighting',
-  audio_equipment:   'Audio Equipment',
-  transport:         'Transport',
-  drone_services:    'Drone Services',
-  studio_rental:     'Studio Rental',
-  post_production:   'Post Production',
-  other:             'Other',
-};
+/** Matches search filter options so vendor type filter works correctly */
+const VENDOR_TYPE_OPTIONS: { value: string; label: string }[] = [
+  { value: 'all',       label: 'All types' },
+  { value: 'equipment', label: 'Equipment' },
+  { value: 'lighting', label: 'Lighting' },
+  { value: 'transport', label: 'Transport' },
+  { value: 'catering', label: 'Catering' },
+];
 
 interface VendorProfileData {
   companyName: string;
@@ -28,6 +27,8 @@ interface VendorProfileData {
   locationCity: string | null;
   locationState: string | null;
   bio: string | null;
+  website: string | null;
+  instagramUrl: string | null;
   gstNumber: string | null;
   isGstVerified: boolean;
 }
@@ -51,6 +52,8 @@ export default function VendorProfile() {
   const [locationCity,  setLocationCity]  = useState('');
   const [locationState, setLocationState] = useState('');
   const [bio,           setBio]           = useState('');
+  const [website,       setWebsite]       = useState('');
+  const [instagramUrl,  setInstagramUrl]  = useState('');
 
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -73,6 +76,8 @@ export default function VendorProfile() {
     setLocationCity(p.locationCity ?? '');
     setLocationState(p.locationState ?? '');
     setBio(p.bio ?? '');
+    setWebsite(p.website ?? '');
+    setInstagramUrl(p.instagramUrl ?? '');
   }, [me]);
 
   const handleSave = async () => {
@@ -80,10 +85,12 @@ export default function VendorProfile() {
     try {
       await api.patch('/profile/vendor', {
         companyName:   companyName.trim()   || undefined,
-        vendorType:    vendorType           || undefined,
+        vendorType:    (vendorType && vendorType !== '') ? vendorType : 'all',
         locationCity:  locationCity.trim()  || undefined,
         locationState: locationState.trim() || undefined,
         bio:           bio.trim()           || undefined,
+        website:       website.trim()       || undefined,
+        instagramUrl:  instagramUrl.trim()  || undefined,
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
@@ -141,8 +148,8 @@ export default function VendorProfile() {
                       <Avatar name={companyName || 'Vendor'} size="lg" />
                     </div>
                     <h2 className="text-base font-bold text-neutral-900 mb-0.5">{companyName || '—'}</h2>
-                    <p className="text-xs text-neutral-500 mb-1 capitalize">
-                      {VENDOR_TYPE_LABELS[vendorType] ?? vendorType ?? 'Equipment Vendor'}
+                    <p className="text-xs text-neutral-500 mb-1">
+                      {VENDOR_TYPE_OPTIONS.find(o => o.value === vendorType)?.label ?? (vendorType ? String(vendorType) : 'Equipment Vendor')}
                     </p>
                     {me?.isVerified && (
                       <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-[#D1FAE5] text-[#065F46] font-semibold">
@@ -154,6 +161,18 @@ export default function VendorProfile() {
                         <div className="flex items-center gap-2 text-xs text-neutral-500">
                           <FaLocationDot className="w-3 h-3 text-neutral-400 shrink-0" />
                           <span>{locationCity}{locationState ? `, ${locationState}` : ''}</span>
+                        </div>
+                      )}
+                      {website && (
+                        <div className="flex items-center gap-2 text-xs text-neutral-500">
+                          <FaGlobe className="w-3 h-3 text-neutral-400 shrink-0" />
+                          <a href={website} target="_blank" rel="noopener noreferrer" className="text-[#3678F1] hover:underline truncate">{website.replace(/^https?:\/\//, '')}</a>
+                        </div>
+                      )}
+                      {instagramUrl && (
+                        <div className="flex items-center gap-2 text-xs text-neutral-500">
+                          <FaInstagram className="w-3 h-3 text-neutral-400 shrink-0" />
+                          <a href={instagramUrl} target="_blank" rel="noopener noreferrer" className="text-[#3678F1] hover:underline truncate">{instagramUrl.replace(/^https?:\/\//, '')}</a>
                         </div>
                       )}
                       {profile?.gstNumber && (
@@ -176,11 +195,13 @@ export default function VendorProfile() {
                       <h3 className="text-sm font-bold text-neutral-900 mb-4">Profile Details</h3>
                       <dl className="space-y-3">
                         <div><dt className="text-xs text-neutral-500 mb-0.5">Business Name</dt><dd className="text-sm font-medium text-neutral-900">{companyName || '—'}</dd></div>
-                        <div><dt className="text-xs text-neutral-500 mb-0.5">Vendor Type</dt><dd className="text-sm text-neutral-700">{VENDOR_TYPE_LABELS[vendorType] ?? vendorType ?? '—'}</dd></div>
+                        <div><dt className="text-xs text-neutral-500 mb-0.5">Equipment type</dt><dd className="text-sm text-neutral-700">{VENDOR_TYPE_OPTIONS.find(o => o.value === vendorType)?.label ?? vendorType ?? '—'}</dd></div>
                         <div><dt className="text-xs text-neutral-500 mb-0.5">Email</dt><dd className="text-sm text-neutral-700">{me?.email ?? '—'}</dd></div>
                         <div><dt className="text-xs text-neutral-500 mb-0.5">Phone</dt><dd className="text-sm text-neutral-700">{me?.phone ?? '—'}</dd></div>
                         <div><dt className="text-xs text-neutral-500 mb-0.5">City</dt><dd className="text-sm text-neutral-700">{locationCity || '—'}</dd></div>
                         <div><dt className="text-xs text-neutral-500 mb-0.5">State</dt><dd className="text-sm text-neutral-700">{locationState || '—'}</dd></div>
+                        <div><dt className="text-xs text-neutral-500 mb-0.5">Website</dt><dd className="text-sm text-neutral-700">{website ? <a href={website} target="_blank" rel="noopener noreferrer" className="text-[#3678F1] hover:underline">{website}</a> : '—'}</dd></div>
+                        <div><dt className="text-xs text-neutral-500 mb-0.5">Instagram</dt><dd className="text-sm text-neutral-700">{instagramUrl ? <a href={instagramUrl} target="_blank" rel="noopener noreferrer" className="text-[#3678F1] hover:underline">{instagramUrl}</a> : '—'}</dd></div>
                         <div><dt className="text-xs text-neutral-500 mb-0.5">About</dt><dd className="text-sm text-neutral-700 whitespace-pre-wrap">{bio || '—'}</dd></div>
                       </dl>
                     </div>
@@ -200,13 +221,13 @@ export default function VendorProfile() {
                           </div>
                         </div>
                         <div>
-                          <label className="block text-xs font-medium text-neutral-600 mb-1">Vendor Type</label>
-                          <select value={vendorType} onChange={(e) => setVendorType(e.target.value)} disabled={saving} className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3678F1] transition-all bg-white disabled:bg-neutral-50">
-                            <option value="">— Select type —</option>
-                            {Object.entries(VENDOR_TYPE_LABELS).map(([val, label]) => (
-                              <option key={val} value={val}>{label}</option>
+                          <label className="block text-xs font-medium text-neutral-600 mb-1">Equipment type</label>
+                          <select value={vendorType || 'all'} onChange={(e) => setVendorType(e.target.value)} disabled={saving} className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3678F1] transition-all bg-white disabled:bg-neutral-50">
+                            {VENDOR_TYPE_OPTIONS.map(({ value, label }) => (
+                              <option key={value} value={value}>{label}</option>
                             ))}
                           </select>
+                          <p className="text-[10px] text-neutral-400 mt-0.5">Used in search filters so companies can find you by type</p>
                         </div>
                         <div>
                           <label className="block text-xs font-medium text-neutral-600 mb-1">Email (read-only)</label>
@@ -225,6 +246,20 @@ export default function VendorProfile() {
                         <div>
                           <label className="block text-xs font-medium text-neutral-600 mb-1">About / Description</label>
                           <textarea value={bio} onChange={(e) => setBio(e.target.value)} rows={3} disabled={saving} placeholder="Brief description of your business and specialties…" className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3678F1] transition-all resize-none disabled:bg-neutral-50" />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-neutral-600 mb-1">Website</label>
+                          <div className="relative">
+                            <FaGlobe className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 w-3.5 h-3.5" />
+                            <input type="url" value={website} onChange={(e) => setWebsite(e.target.value)} disabled={saving} placeholder="https://yourcompany.com" className="w-full pl-9 pr-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3678F1] transition-all disabled:bg-neutral-50" />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-neutral-600 mb-1">Instagram URL</label>
+                          <div className="relative">
+                            <FaInstagram className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 w-3.5 h-3.5" />
+                            <input type="url" value={instagramUrl} onChange={(e) => setInstagramUrl(e.target.value)} disabled={saving} placeholder="https://instagram.com/yourcompany" className="w-full pl-9 pr-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3678F1] transition-all disabled:bg-neutral-50" />
+                          </div>
                         </div>
                         {profile?.gstNumber && (
                           <div>

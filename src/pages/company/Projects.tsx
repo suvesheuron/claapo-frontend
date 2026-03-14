@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FaPlus, FaLock, FaEye, FaTriangleExclamation, FaBan, FaFolder, FaCalendar } from 'react-icons/fa6';
+import { FaPlus, FaEye, FaTriangleExclamation, FaBan, FaFolder, FaCalendar } from 'react-icons/fa6';
 import DashboardHeader from '../../components/DashboardHeader';
 import DashboardSidebar from '../../components/DashboardSidebar';
 import AppFooter from '../../components/AppFooter';
@@ -23,6 +23,7 @@ interface Project {
   budgetMax?: number;
   locationCity?: string;
   roles?: ProjectRole[];
+  _count?: { bookings: number };
 }
 
 interface ProjectsResponse {
@@ -58,9 +59,10 @@ function formatDateRange(start: string, end: string): string {
   return `${months[s.getMonth()]} ${s.getDate()}, ${s.getFullYear()} – ${months[e.getMonth()]} ${e.getDate()}, ${e.getFullYear()}`;
 }
 
+const REFETCH_INTERVAL_MS = 25_000;
+
 export default function Projects() {
   const { data, loading, error, refetch } = useApiQuery<ProjectsResponse>('/projects?limit=50');
-  const [lockingId, setLockingId] = useState<string | null>(null);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [cancelActionError, setCancelActionError] = useState<string | null>(null);
 
@@ -68,25 +70,11 @@ export default function Projects() {
     document.title = 'Projects – Claapo';
   }, []);
 
-  const handleLock = async (projectId: string) => {
-    setLockingId(projectId);
-    try {
-      const { items } = await api.get<{ items: Array<{ id: string; projectId: string; status: string }> }>('/bookings/outgoing');
-      const accepted = items.filter((b) => b.projectId === projectId && b.status === 'accepted');
-      if (accepted.length === 0) {
-        toast.error('No accepted bookings to lock. Crew/vendors must accept requests first.');
-        return;
-      }
-      await Promise.all(accepted.map((b) => api.patch(`/bookings/${b.id}/lock`, {})));
-      toast.success('Project locked.');
-      refetch();
-    } catch (err) {
-      const msg = err instanceof ApiException ? err.payload.message : 'Could not lock project.';
-      toast.error(msg);
-    } finally {
-      setLockingId(null);
-    }
-  };
+  // Refetch periodically so people count and budget stay up to date
+  useEffect(() => {
+    const t = setInterval(refetch, REFETCH_INTERVAL_MS);
+    return () => clearInterval(t);
+  }, [refetch]);
 
   const handleCancel = async (projectId: string) => {
     setCancelActionError(null);
@@ -145,8 +133,8 @@ export default function Projects() {
                     <div key={i} className="rounded-2xl bg-white border border-neutral-200 p-5 animate-pulse">
                       <div className="h-4 bg-neutral-200 rounded w-3/4 mb-3" />
                       <div className="h-3 bg-neutral-100 rounded w-1/2 mb-4" />
-                      <div className="grid grid-cols-3 gap-2">
-                        {[1, 2, 3].map((j) => <div key={j} className="h-12 bg-neutral-100 rounded-xl" />)}
+                      <div className="grid grid-cols-2 gap-2">
+                        {[1, 2].map((j) => <div key={j} className="h-12 bg-neutral-100 rounded-xl" />)}
                       </div>
                     </div>
                   ))}
@@ -176,12 +164,9 @@ export default function Projects() {
                   {projects.map((project) => {
                     const displayStatus = statusMap[project.status];
                     const cfg = statusConfig[displayStatus];
-                    const crewCount = project.roles?.reduce((s, r) => s + r.qty, 0) ?? 0;
-                    const budget = project.budgetMax
-                      ? formatBudgetCompact(project.budgetMax)
-                      : project.budgetMin
-                      ? formatBudgetCompact(project.budgetMin)
-                      : '—';
+                    const peopleCount = project._count?.bookings ?? 0;
+                    const rawBudget = project.budgetMax ?? project.budgetMin ?? 0;
+                    const budget = formatBudgetCompact(rawBudget);
 
                     return (
                       <div
@@ -206,14 +191,10 @@ export default function Projects() {
                           </span>
                         </div>
 
-                        <div className="grid grid-cols-3 gap-2 mb-4">
+                        <div className="grid grid-cols-2 gap-2 mb-4">
                           <div className="rounded-xl bg-[#F3F4F6] p-2.5 text-center">
-                            <p className="text-xs font-bold text-neutral-900">{crewCount || '—'}</p>
-                            <p className="text-[10px] text-neutral-500 mt-0.5">Roles</p>
-                          </div>
-                          <div className="rounded-xl bg-[#F3F4F6] p-2.5 text-center">
-                            <p className="text-xs font-bold text-neutral-900">{project.status === 'active' ? 'Open' : '—'}</p>
-                            <p className="text-[10px] text-neutral-500 mt-0.5">Bookings</p>
+                            <p className="text-xs font-bold text-neutral-900">{peopleCount}</p>
+                            <p className="text-[10px] text-neutral-500 mt-0.5">People</p>
                           </div>
                           <div className="rounded-xl bg-[#F3F4F6] p-2.5 text-center">
                             <p className="text-xs font-bold text-neutral-900 truncate">{budget}</p>
@@ -226,17 +207,10 @@ export default function Projects() {
                             <FaEye className="w-3 h-3" /> View
                           </Link>
                           {project.status !== 'completed' && project.status !== 'cancelled' && (
-                            <>
-                              <button onClick={() => handleLock(project.id)} disabled={lockingId === project.id}
-                                className="rounded-xl px-3.5 py-2 bg-[#3678F1] text-white text-xs font-semibold hover:bg-[#2563d4] flex items-center gap-1.5 transition-colors disabled:opacity-50">
-                                <FaLock className="w-3 h-3" />
-                                {lockingId === project.id ? '…' : 'Lock'}
-                              </button>
-                              <button onClick={() => { setCancellingId(project.id); setCancelActionError(null); }}
-                                className="rounded-xl px-3.5 py-2 bg-[#FEE2E2] text-[#B91C1C] text-xs font-semibold hover:bg-[#FECACA] flex items-center gap-1.5 transition-colors">
-                                <FaBan className="w-3 h-3" />
-                              </button>
-                            </>
+                            <button onClick={() => { setCancellingId(project.id); setCancelActionError(null); }}
+                              className="rounded-xl px-3.5 py-2 bg-[#FEE2E2] text-[#B91C1C] text-xs font-semibold hover:bg-[#FECACA] flex items-center gap-1.5 transition-colors">
+                              <FaBan className="w-3 h-3" />
+                            </button>
                           )}
                         </div>
                       </div>
