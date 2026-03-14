@@ -1,14 +1,39 @@
 import { Link } from 'react-router-dom';
 import { useEffect, useRef, useState } from 'react';
+import { motion } from 'framer-motion';
 import {
   FaVideo, FaUsers, FaTruck, FaCircleCheck,
   FaArrowRight, FaMagnifyingGlass, FaCalendarCheck,
-  FaCheck, FaPlay, FaLock, FaLayerGroup,
-  // FaLocationDot kept for potential future use
+  FaCheck, FaPlay, FaLock,
 } from 'react-icons/fa6';
 import AppHeader from '../components/AppHeader';
 import AppFooter from '../components/AppFooter';
-import speakerImg from '../assets/speaker.png';
+
+// Load all images from assets/animate – used with clear UX mapping (no random placement)
+const animateGlob = import.meta.glob<{ default: string }>('../assets/animate/*.{png,jpg,jpeg,webp,gif}', { eager: true });
+const animateEntries = Object.entries(animateGlob);
+const animateImages: string[] = animateEntries.map(([, m]) => m.default);
+
+function getImageByKey(key: string): string | undefined {
+  const entry = animateEntries.find(([path]) => path.toLowerCase().includes(key.toLowerCase()));
+  return entry?.[1]?.default;
+}
+
+// Hero: one focal only – megaphone/together (announcements, production)
+const heroFocalSrc = getImageByKey('together') ?? getImageByKey('microphone') ?? getImageByKey('megaphone') ?? animateImages[0];
+// Features: calendar for first feature, clapper/workflow for second
+const featureCalendarSrc = getImageByKey('calendar') ?? animateImages[3];
+const featureWorkflowSrc = getImageByKey('clapper') ?? animateImages[4];
+
+function useFloating(duration: number, delay = 0, y = 18) {
+  return {
+    animate: {
+      y: [0, -y, 0, y / 2, 0],
+      rotate: [0, -1.5, 0, 1, 0],
+      transition: { duration, repeat: Infinity, ease: 'easeInOut' as const, delay },
+    },
+  };
+}
 
 function useInView(threshold = 0.12) {
   const ref = useRef<HTMLDivElement>(null);
@@ -56,56 +81,55 @@ export default function LandingPage() {
     <div className="flex flex-col w-full" style={{ background: '#eef5fd' }}>
       <AppHeader variant="landing" />
 
-      {/* ── HERO ──────────────────────────────────────── */}
+      {/* ── HERO (animated, assets from animate/) ─────── */}
       <section
         ref={hero.ref}
-        className="relative overflow-hidden py-20 lg:py-28"
-        style={{ background: 'linear-gradient(145deg, #a8c8f0 0%, #c2dcf7 30%, #d8eaf9 60%, #eaf3fd 100%)' }}
+        className="relative overflow-hidden min-h-[90vh] bg-gradient-to-br from-sky-50 via-cyan-50 to-blue-100"
       >
-        {/* Soft radial glow top-left */}
-        <div className="absolute -top-24 -left-24 w-[500px] h-[500px] rounded-full pointer-events-none"
-          style={{ background: 'radial-gradient(circle, rgba(168,200,240,0.5) 0%, transparent 70%)' }} />
+        {/* Background glow */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-20 right-24 w-[520px] h-[520px] rounded-full bg-cyan-300/25 blur-3xl" />
+          <div className="absolute bottom-0 left-1/3 w-[380px] h-[380px] rounded-full bg-sky-300/20 blur-3xl" />
+        </div>
 
-        <div className="max-w-6xl mx-auto px-6 relative z-10">
-          <div
-            className={`flex flex-col lg:flex-row lg:items-center lg:justify-between gap-10 transition-all duration-700 ${
-              hero.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
-            }`}
-          >
+        <div className="relative mx-auto max-w-7xl px-6 lg:px-12 py-20 lg:py-28">
+          <div className="grid lg:grid-cols-2 gap-14 items-center">
+            {/* Left content */}
+            <div
+              className={`max-w-xl transition-all duration-700 ${hero.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
+            >
+              <div className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-white/70 px-4 py-2 text-sm text-sky-700 backdrop-blur-md shadow-sm mb-6">
+                Production workflow, simplified
+              </div>
 
-            {/* Left – Text */}
-            <div className="max-w-xl">
-              <h1 className="text-5xl lg:text-[60px] font-extrabold text-[#0f172a] leading-[1.08] mb-6 tracking-tight">
-                Run Film<br />
-                Productions<br />
-                <span className="text-[#3B5BDB]">Without</span><br />
-                the Chaos.
+              <h1 className="text-5xl lg:text-6xl font-bold tracking-tight text-slate-900 leading-[1.05]">
+                Run Film Productions
+                <span className="block text-[#3B5BDB]">Without the Chaos</span>
               </h1>
-              <p className="text-[15px] text-slate-500 leading-relaxed mb-9 max-w-[400px]">
-                Hire verified crew, book vendors, manage schedules, and track projects,
-                an all in one vibrant platform built for modern film &amp; advertising teams.
+
+              <p className="mt-6 text-lg text-slate-600 leading-8">
+                Hire verified crew, coordinate vendors, manage schedules, and keep
+                every moving part aligned from one clean production platform.
               </p>
 
-              <div className="flex flex-wrap gap-3 mb-9">
+              <div className="mt-8 flex flex-wrap gap-4">
                 <Link
                   to="/register"
-                  className="inline-flex items-center justify-center rounded-xl bg-[#3B5BDB] text-white px-7 py-3.5 text-sm font-bold hover:bg-[#2f4ac2] transition-all shadow-xl shadow-[#3B5BDB]/30 hover:-translate-y-0.5"
+                  className="rounded-2xl bg-slate-900 px-6 py-3.5 text-white font-medium shadow-lg shadow-slate-900/15 hover:translate-y-[-1px] transition"
                 >
                   Start for Free
                 </Link>
                 <Link
                   to="/dashboard"
-                  className="inline-flex items-center justify-center gap-2.5 rounded-xl bg-white/70 backdrop-blur border border-white text-[#3B5BDB] px-7 py-3.5 text-sm font-bold hover:bg-white transition-all shadow-sm"
+                  className="rounded-2xl bg-white/80 backdrop-blur-md border border-white/60 px-6 py-3.5 text-slate-800 font-medium shadow-lg shadow-sky-200/40 hover:translate-y-[-1px] transition inline-flex items-center gap-2"
                 >
-                  <div className="w-5 h-5 rounded-full bg-[#3B5BDB] flex items-center justify-center shrink-0">
-                    <FaPlay className="text-white text-[8px] ml-[1px]" />
-                  </div>
+                  <FaPlay className="text-[10px]" />
                   Watch Demo
                 </Link>
               </div>
 
               {/* Social proof */}
-              <div className="flex items-center gap-3">
+              <div className="mt-8 flex items-center gap-3">
                 <div className="flex -space-x-2">
                   {avatarInitials.map((init, i) => (
                     <div
@@ -123,18 +147,22 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Right – Speaker visual */}
-            <div className="hidden lg:flex flex-1 justify-end">
-              <div className="relative w-full max-w-md">
-                <div className="absolute inset-0 blur-3xl bg-gradient-to-tr from-[#3B5BDB]/20 via-sky-300/20 to-indigo-400/10 rounded-[40px] pointer-events-none" />
-                <div className="relative rounded-[32px] overflow-hidden">
-                  <img
-                    src={speakerImg}
-                    alt="Announce your productions without the chaos"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              </div>
+            {/* Right – single hero focal (one clear visual, no clutter) */}
+            <div className="hidden lg:flex flex-1 justify-center items-center min-h-[420px]">
+              {heroFocalSrc && (
+                <motion.div
+                  animate={useFloating(6, 0, 12).animate}
+                  className="w-full max-w-[380px] aspect-square flex items-center justify-center"
+                >
+                  <div className="w-full h-full rounded-[28px] overflow-hidden bg-white/60 backdrop-blur-sm border border-white/70 shadow-[0_24px_60px_rgba(59,91,219,0.15)] flex items-center justify-center p-6">
+                    <img
+                      src={heroFocalSrc}
+                      alt="Run film productions without the chaos"
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                </motion.div>
+              )}
             </div>
           </div>
         </div>
@@ -156,12 +184,13 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {/* Freelancers */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Freelancers – calendar visual */}
             <div
-              className={`bg-white rounded-2xl shadow-sm border border-slate-100 p-8 flex flex-col transition-all duration-700 ${ecosystem.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
+              className={`bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex flex-col transition-all duration-700 ${ecosystem.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
               style={{ transitionDelay: '0ms' }}
             >
+              <div className="p-8 flex flex-col flex-1">
               <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center mb-6">
                 <FaUsers className="text-[#3B5BDB] text-lg" />
               </div>
@@ -183,13 +212,15 @@ export default function LandingPage() {
               >
                 Join as Freelancer <FaArrowRight className="text-xs" />
               </Link>
+              </div>
             </div>
 
-            {/* Production Houses – highlighted */}
+            {/* Production Houses – clapper/film visual */}
             <div
-              className={`bg-[#3B5BDB] rounded-2xl shadow-xl p-8 flex flex-col transition-all duration-700 ${ecosystem.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
+              className={`bg-[#3B5BDB] rounded-2xl shadow-xl overflow-hidden flex flex-col transition-all duration-700 ${ecosystem.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
               style={{ transitionDelay: '100ms' }}
             >
+              <div className="p-8 flex flex-col flex-1">
               <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center mb-6">
                 <FaVideo className="text-white text-lg" />
               </div>
@@ -211,13 +242,15 @@ export default function LandingPage() {
               >
                 Get Company Access <FaArrowRight className="text-xs" />
               </Link>
+              </div>
             </div>
 
-            {/* Vendors */}
+            {/* Vendors – location/schedule visual */}
             <div
-              className={`bg-white rounded-2xl shadow-sm border border-slate-100 p-8 flex flex-col transition-all duration-700 ${ecosystem.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
+              className={`bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex flex-col transition-all duration-700 ${ecosystem.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
               style={{ transitionDelay: '200ms' }}
             >
+              <div className="p-8 flex flex-col flex-1">
               <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center mb-6">
                 <FaTruck className="text-[#3B5BDB] text-lg" />
               </div>
@@ -239,6 +272,7 @@ export default function LandingPage() {
               >
                 List Equipment <FaArrowRight className="text-xs" />
               </Link>
+              </div>
             </div>
           </div>
         </div>
@@ -253,45 +287,47 @@ export default function LandingPage() {
       >
         <div className="max-w-6xl mx-auto px-6 space-y-28">
 
-          {/* Feature 1 – Calendar */}
-          <div className={`grid grid-cols-1 lg:grid-cols-2 gap-16 items-center transition-all duration-700 ${feat.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
-            {/* Calendar mockup */}
-            <div className="flex justify-center">
-              <div className="bg-white rounded-2xl shadow-xl border border-slate-100 p-7 w-full max-w-[320px]">
-                <div className="flex items-center justify-between mb-6">
-                  <span className="font-bold text-slate-900">Availability</span>
-                  <div className="flex gap-1.5">
-                    <span className="w-3 h-3 rounded-full bg-red-400 inline-block"></span>
-                    <span className="w-3 h-3 rounded-full bg-yellow-400 inline-block"></span>
-                    <span className="w-3 h-3 rounded-full bg-green-400 inline-block"></span>
-                  </div>
+          {/* Feature 1 – Calendar (image left, copy right) */}
+            <div className={`grid grid-cols-1 lg:grid-cols-2 gap-16 items-center transition-all duration-700 ${feat.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
+            <div className="flex justify-center order-2 lg:order-1">
+              {featureCalendarSrc ? (
+                <div className="rounded-2xl overflow-hidden shadow-lg border border-slate-100 bg-white w-[470px] h-[270px] flex items-center justify-center">
+                  <img
+                    src={featureCalendarSrc}
+                    alt="Real-time centralized calendar"
+                    className="w-[420px] h-[270px] object-contain"
+                  />
                 </div>
-                <div className="flex gap-1 mb-6">
-                  {[12,13,14,15,16,17,18].map(d => (
-                    <div
-                      key={d}
-                      className={`flex flex-col items-center gap-1.5 flex-1 py-2 rounded-xl ${d === 14 ? 'bg-[#3B5BDB]' : ''}`}
-                    >
-                      <span className={`text-xs font-medium ${d === 14 ? 'text-white' : 'text-slate-400'}`}>{d}</span>
-                      {d === 14 && <span className="w-1.5 h-1.5 rounded-full bg-white inline-block"></span>}
+              ) : (
+                <div className="bg-white rounded-2xl shadow-lg border border-slate-100 p-7 w-full max-w-[320px]">
+                  <div className="flex items-center justify-between mb-6">
+                    <span className="font-bold text-slate-900">Availability</span>
+                    <div className="flex gap-1.5">
+                      <span className="w-3 h-3 rounded-full bg-red-400" />
+                      <span className="w-3 h-3 rounded-full bg-yellow-400" />
+                      <span className="w-3 h-3 rounded-full bg-green-400" />
                     </div>
-                  ))}
-                </div>
-                <div className="flex items-center gap-3 bg-slate-50 rounded-xl p-4">
-                  <div className="w-1 h-10 bg-[#3B5BDB] rounded-full shrink-0"></div>
-                  <div>
-                    <p className="text-sm font-semibold text-slate-900">Coca-Cola TVC</p>
-                    <p className="text-xs text-slate-400 mt-0.5">09:00 AM - 06:00 PM · Studio 4</p>
+                  </div>
+                  <div className="flex gap-1 mb-6">
+                    {[12,13,14,15,16,17,18].map(d => (
+                      <div key={d} className={`flex flex-col items-center gap-1.5 flex-1 py-2 rounded-xl ${d === 14 ? 'bg-[#3B5BDB]' : ''}`}>
+                        <span className={`text-xs font-medium ${d === 14 ? 'text-white' : 'text-slate-400'}`}>{d}</span>
+                        {d === 14 && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-3 bg-slate-50 rounded-xl p-4">
+                    <div className="w-1 h-10 bg-[#3B5BDB] rounded-full shrink-0" />
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900">Coca-Cola TVC</p>
+                      <p className="text-xs text-slate-400 mt-0.5">09:00 AM - 06:00 PM · Studio 4</p>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
 
-            {/* Text */}
-            <div>
-              <div className="w-12 h-12 rounded-2xl bg-blue-100 flex items-center justify-center mb-6">
-                <FaCalendarCheck className="text-[#3B5BDB] text-xl" />
-              </div>
+            <div className="order-1 lg:order-2">
               <h3 className="text-3xl font-bold text-slate-900 mb-4 leading-snug">Real-time Centralized Calendar</h3>
               <p className="text-sm text-slate-500 leading-relaxed mb-7">
                 Stop playing phone tag. Our calendar-centric interface gives you instant visibility into who is free, who is on hold, and who is booked. Changes update instantly for everyone.
@@ -312,16 +348,12 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Feature 2 – Hiring Workflow */}
+          {/* Feature 2 – Hiring Workflow (copy left, image right) */}
           <div
             className={`grid grid-cols-1 lg:grid-cols-2 gap-16 items-center transition-all duration-700 ${feat.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
             style={{ transitionDelay: '150ms' }}
           >
-            {/* Text */}
             <div>
-              <div className="w-12 h-12 rounded-2xl bg-purple-100 flex items-center justify-center mb-6">
-                <FaLayerGroup className="text-purple-600 text-xl" />
-              </div>
               <h3 className="text-3xl font-bold text-slate-900 mb-4 leading-snug">Structured Hiring Workflows</h3>
               <p className="text-sm text-slate-500 leading-relaxed mb-7">
                 Move from "Available?" to "Booked" in record time. Our workflow tools handle the negotiation, confirmation, and call sheet distribution automatically.
@@ -340,36 +372,35 @@ export default function LandingPage() {
                 ))}
               </ul>
             </div>
-
-            {/* Workflow mockup */}
             <div className="flex justify-center">
-              <div className="bg-white rounded-2xl shadow-xl border border-slate-100 p-6 w-full max-w-[320px]">
-                {[1, 2, 3].map(n => (
-                  <div
-                    key={n}
-                    className={`flex items-center gap-4 p-4 rounded-xl mb-3 last:mb-0 ${n === 2 ? 'bg-blue-50 border border-blue-200' : 'bg-slate-50'}`}
-                  >
-                    <div
-                      className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${n === 2 ? 'bg-[#3B5BDB] text-white' : 'bg-slate-200 text-slate-400'}`}
-                    >
-                      {n}
+              {featureWorkflowSrc ? (
+                <div className="rounded-2xl overflow-hidden shadow-lg border border-slate-100 bg-white w-[360px] h-[280px] flex items-center justify-center">
+                  <img
+                    src={featureWorkflowSrc}
+                    alt="Structured hiring workflows"
+                    className="w-[320px] h-auto object-contain"
+                  />
+                </div>
+              ) : (
+                <div className="bg-white rounded-2xl shadow-lg border border-slate-100 p-6 w-full max-w-[320px]">
+                  {[1, 2, 3].map(n => (
+                    <div key={n} className={`flex items-center gap-4 p-4 rounded-xl mb-3 last:mb-0 ${n === 2 ? 'bg-blue-50 border border-blue-200' : 'bg-slate-50'}`}>
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${n === 2 ? 'bg-[#3B5BDB] text-white' : 'bg-slate-200 text-slate-400'}`}>{n}</div>
+                      {n === 2 ? (
+                        <>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-slate-900">Booking Confirmed</p>
+                            <p className="text-xs text-slate-400 mt-0.5">Deal memo sent to 3 crew members.</p>
+                          </div>
+                          <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center shrink-0"><FaCheck className="text-white text-[8px]" /></div>
+                        </>
+                      ) : (
+                        <div className="flex-1 h-2 bg-slate-200 rounded-full" />
+                      )}
                     </div>
-                    {n === 2 ? (
-                      <>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-slate-900">Booking Confirmed</p>
-                          <p className="text-xs text-slate-400 mt-0.5">Deal memo sent to 3 crew members.</p>
-                        </div>
-                        <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center shrink-0">
-                          <FaCheck className="text-white text-[8px]" />
-                        </div>
-                      </>
-                    ) : (
-                      <div className="flex-1 h-2 bg-slate-200 rounded-full" />
-                    )}
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -399,8 +430,8 @@ export default function LandingPage() {
                 className={`flex flex-col items-center text-center transition-all duration-700 ${hiw.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`}
                 style={{ transitionDelay: `${idx * 120}ms` }}
               >
-                <div className="w-16 h-16 rounded-full bg-white shadow-md flex items-center justify-center mb-5">
-                  <step.Icon className="text-[#3B5BDB] text-xl" />
+                <div className="w-20 h-20 rounded-2xl bg-white shadow-md flex items-center justify-center mb-5 border border-slate-100">
+                  <step.Icon className="text-[#3B5BDB] text-2xl" />
                 </div>
                 <p className="text-base font-bold text-slate-900 mb-2">{step.num}. {step.title}</p>
                 <p className="text-sm text-slate-500 leading-relaxed max-w-[200px]">{step.desc}</p>

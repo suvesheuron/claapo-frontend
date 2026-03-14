@@ -16,40 +16,43 @@ const navLinks = [
 
 export default function AppHeader({ variant = 'landing', backTo = '/', backLabel = 'Back' }: AppHeaderProps) {
   return (
-    <header className="h-[64px] border-b border-neutral-200 bg-white shrink-0 flex items-center overflow-hidden sticky top-0 z-50">
-      <div className="w-full max-w-6xl mx-auto px-6 flex items-center justify-between gap-4">
+    <header className="h-[68px] border-b border-neutral-100 bg-white/90 backdrop-blur-md shrink-0 flex items-center sticky top-0 z-50 shadow-[0_1px_0_0_rgba(0,0,0,0.06)]">
+      <div className="w-full max-w-7xl mx-auto px-6 lg:px-10 flex items-center justify-between gap-4">
 
-        <Link to="/" className="flex items-center gap-2 shrink-0">
-          <div className="w-8 h-8 rounded-xl bg-[#3B5BDB] flex items-center justify-center shrink-0">
+        {/* Logo */}
+        <Link to="/" className="flex items-center gap-2.5 shrink-0 group">
+          <div className="w-8 h-8 rounded-xl bg-[#3B5BDB] flex items-center justify-center shrink-0 group-hover:bg-[#2f4ac2] transition-colors">
             <FaVideo className="text-white text-sm" />
           </div>
-          <span className="text-base text-neutral-900 font-bold">CrewCall</span>
+          <span className="text-[15px] text-neutral-900 font-bold tracking-tight">CrewCall</span>
         </Link>
 
         {variant === 'landing' && (
           <>
-            <nav className="hidden md:flex items-center gap-7">
+            <nav className="hidden md:flex items-center gap-1">
               {navLinks.map(link => (
                 <a
                   key={link.label}
                   href={link.href}
-                  className="text-sm text-neutral-500 hover:text-neutral-900 font-medium transition-colors"
+                  className="relative px-4 py-2 text-sm text-neutral-500 hover:text-neutral-900 font-medium transition-colors duration-200 group"
                 >
                   {link.label}
+                  {/* Underline that slides left-to-right on hover */}
+                  <span className="absolute bottom-0 left-4 right-4 h-[2px] bg-[#3B5BDB] rounded-full scale-x-0 origin-left group-hover:scale-x-100 transition-transform duration-300 ease-out" />
                 </a>
               ))}
             </nav>
 
-            <div className="flex items-center gap-3 shrink-0">
+            <div className="flex items-center gap-2 shrink-0">
               <Link
                 to="/login"
-                className="text-sm text-neutral-600 hover:text-neutral-900 font-medium transition-colors px-2"
+                className="text-sm text-neutral-600 hover:text-neutral-900 font-medium transition-colors px-4 py-2 rounded-xl hover:bg-neutral-50"
               >
                 Log in
               </Link>
               <Link
                 to="/register"
-                className="rounded-full px-5 py-2 bg-[#3B5BDB] text-white hover:bg-[#2f4ac2] text-sm font-semibold transition-all shadow-sm hover:-translate-y-0.5"
+                className="rounded-xl px-5 py-2.5 bg-[#3B5BDB] text-white hover:bg-[#2f4ac2] text-sm font-semibold transition-all shadow-sm hover:-translate-y-px"
               >
                 Get Started
               </Link>
