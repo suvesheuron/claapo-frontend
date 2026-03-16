@@ -175,10 +175,10 @@ export default function Equipment() {
 
   const formatRate = (item: EquipmentItem) => {
     if (item.dailyRateMin != null && item.dailyRateMax != null && item.dailyRateMin !== item.dailyRateMax) {
-      return `₹${formatPaise(item.dailyRateMin)} – ${formatPaise(item.dailyRateMax)}/day`;
+      return `${formatPaise(item.dailyRateMin)} – ${formatPaise(item.dailyRateMax)}/day`;
     }
     const rate = item.dailyRateMin ?? item.dailyRateMax;
-    if (rate != null) return `₹${formatPaise(rate)}/day`;
+    if (rate != null) return `${formatPaise(rate)}/day`;
     return '—';
   };
 
@@ -291,21 +291,17 @@ export default function Equipment() {
                         </button>
                         <button
                           onClick={() => openEdit(item)}
-                          className="text-[11px] py-1.5 rounded-xl font-semibold bg-[#EEF4FF] text-[#3678F1] hover:bg-[#DBEAFE] transition-colors"
+                          className="w-9 h-9 rounded-xl border-2 border-[#3678F1] bg-[#EEF4FF] flex items-center justify-center text-[#3678F1] hover:bg-[#DBEAFE] hover:border-[#2563d4] transition-colors shrink-0"
+                          title="Edit"
                         >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => openEdit(item)}
-                          className="w-8 h-8 rounded-xl bg-[#F3F4F6] flex items-center justify-center text-neutral-500 hover:bg-[#EEF4FF] hover:text-[#3678F1] transition-colors shrink-0"
-                        >
-                          <FaPencil className="text-xs" />
+                          <FaPencil className="text-sm" />
                         </button>
                         <button
                           onClick={() => setDeleteConfirm(item.id)}
-                          className="w-8 h-8 rounded-xl bg-[#F3F4F6] flex items-center justify-center text-neutral-500 hover:bg-[#FEE2E2] hover:text-[#F40F02] transition-colors shrink-0"
+                          className="w-9 h-9 rounded-xl bg-[#F3F4F6] flex items-center justify-center text-neutral-500 hover:bg-[#FEE2E2] hover:text-[#F40F02] transition-colors shrink-0"
+                          title="Delete"
                         >
-                          <FaTrash className="text-xs" />
+                          <FaTrash className="text-sm" />
                         </button>
                       </div>
                     </div>

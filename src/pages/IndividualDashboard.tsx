@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { FaCalendar, FaBell, FaChevronLeft, FaChevronRight, FaXmark, FaCircle, FaMessage, FaLock, FaCircleInfo, FaTriangleExclamation, FaUser } from 'react-icons/fa6';
+import { FaCalendar, FaBell, FaChevronLeft, FaChevronRight, FaXmark, FaCircle, FaMessage, FaLock, FaCircleInfo, FaTriangleExclamation, FaUser, FaBan } from 'react-icons/fa6';
 import DashboardHeader from '../components/DashboardHeader';
 import DashboardSidebar from '../components/DashboardSidebar';
 import AppFooter from '../components/AppFooter';
@@ -9,6 +9,7 @@ import { api, ApiException } from '../services/api';
 import { useApiQuery } from '../hooks/useApiQuery';
 import { formatPaise } from '../utils/currency';
 import { individualNavLinks } from '../navigation/dashboardNav';
+import toast from 'react-hot-toast';
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -19,15 +20,15 @@ const BASE_MONTH = today.getMonth();
 
 type CellStatus = 'available' | 'booked' | 'completed' | 'blocked' | null;
 
-interface CalendarCell { d: number; muted: boolean; status: CellStatus; project?: string; }
-interface PanelData { d: number; status: CellStatus; project?: string; month: string; year: number; }
+interface CalendarCell { d: number; muted: boolean; status: CellStatus; project?: string; bookingId?: string; bookingStatus?: string; }
+interface PanelData { d: number; status: CellStatus; project?: string; month: string; year: number; bookingId?: string; bookingStatus?: string; }
 
 interface IncomingBooking {
   id: string;
   status: string;
   rateOffered?: number | null;
   message?: string | null;
-  project: { id: string; title: string; startDate: string; endDate: string; companyUser?: { companyProfile?: { companyName?: string } | null } };
+  project: { id: string; title: string; startDate: string; endDate: string; status?: string; companyUser?: { companyProfile?: { companyName?: string } | null } };
   requester: { id: string; email: string; companyProfile?: { companyName?: string } | null };
 }
 interface IncomingBookingsResponse { items: IncomingBooking[] }
@@ -39,13 +40,47 @@ const cellStyle: Record<string, string> = {
   blocked:   'bg-[#F3F4F6] border-neutral-300 text-neutral-400',
 };
 
-function buildCalendar(year: number, month: number): CalendarCell[] {
+function toStatus(s: string): CellStatus {
+  if (s === 'past_work') return 'completed';
+  if (s === 'blocked') return 'blocked';
+  if (s === 'booked') return 'booked';
+  return 'available';
+}
+
+function buildCalendar(
+  year: number,
+  month: number,
+  apiSlots: Record<string, string>,
+  bookings: IncomingBooking[],
+): CalendarCell[] {
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const prevDays = new Date(year, month, 0).getDate();
   const cells: CalendarCell[] = [];
   for (let i = firstDay - 1; i >= 0; i--) cells.push({ d: prevDays - i, muted: true, status: null });
-  for (let day = 1; day <= daysInMonth; day++) cells.push({ d: day, muted: false, status: 'available' });
+  const bookedStatuses = ['pending', 'accepted', 'locked', 'cancel_requested'];
+  for (let day = 1; day <= daysInMonth; day++) {
+    const m = String(month + 1).padStart(2, '0');
+    const dateStr = `${year}-${m}-${String(day).padStart(2, '0')}`;
+    const slotStatus = apiSlots[dateStr];
+    let status: CellStatus = slotStatus ? toStatus(slotStatus) : 'available';
+    let project: string | undefined;
+    let bookingId: string | undefined;
+    let bookingStatus: string | undefined;
+    for (const b of bookings) {
+      if (b.project.status === 'cancelled') continue;
+      const start = b.project.startDate.slice(0, 10);
+      const end = b.project.endDate.slice(0, 10);
+      if (dateStr >= start && dateStr <= end) {
+        project = b.project.title;
+        bookingId = b.id;
+        bookingStatus = b.status;
+        if (bookedStatuses.includes(b.status) && status !== 'completed') status = 'booked';
+        break;
+      }
+    }
+    cells.push({ d: day, muted: false, status, project, bookingId, bookingStatus });
+  }
   const rem = 7 - (cells.length % 7);
   if (rem < 7) for (let d2 = 1; d2 <= rem; d2++) cells.push({ d: d2, muted: true, status: null });
   return cells;
@@ -58,15 +93,39 @@ export default function IndividualDashboard() {
   const [panel, setPanel] = useState<PanelData | null>(null);
   const [actioning, setActioning] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [availabilitySlots, setAvailabilitySlots] = useState<Record<string, string>>({});
+  const [availabilityLoading, setAvailabilityLoading] = useState(false);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
 
   const displayDate = new Date(BASE_YEAR, BASE_MONTH + monthOffset, 1);
-  const monthLabel = MONTHS[displayDate.getMonth()];
+  const displayYear = displayDate.getFullYear();
+  const displayMonth = displayDate.getMonth();
+  const monthLabel = MONTHS[displayMonth];
   const yearLabel = displayDate.getFullYear();
-  const calendarDays = buildCalendar(displayDate.getFullYear(), displayDate.getMonth());
 
   const { data: bookingsData, loading: bookingsLoading, refetch: refetchBookings } =
     useApiQuery<IncomingBookingsResponse>('/bookings/incoming');
-  const pendingBookings = (bookingsData?.items ?? []).filter(b => b.status === 'pending').slice(0, 5);
+  const allBookings = bookingsData?.items ?? [];
+  const pendingBookings = allBookings.filter(b => b.status === 'pending').slice(0, 5);
+
+  const loadAvailability = useCallback(async () => {
+    setAvailabilityLoading(true);
+    try {
+      const res = await api.get<{ slots?: Record<string, string> }>(
+        `/availability/me?year=${displayYear}&month=${displayMonth + 1}`,
+      );
+      setAvailabilitySlots(res?.slots && typeof res.slots === 'object' ? res.slots : {});
+    } catch {
+      setAvailabilitySlots({});
+    } finally {
+      setAvailabilityLoading(false);
+    }
+  }, [displayYear, displayMonth]);
+
+  useEffect(() => { loadAvailability(); }, [loadAvailability]);
+
+  const calendarDays = buildCalendar(displayYear, displayMonth, availabilitySlots, allBookings);
 
   const doAction = useCallback(async (id: string, action: 'accept' | 'decline') => {
     setActioning(id);
@@ -80,6 +139,25 @@ export default function IndividualDashboard() {
       setActioning(null);
     }
   }, [refetchBookings]);
+
+  const doRequestCancel = useCallback(async (bookingId: string) => {
+    setActioning(bookingId + 'req-cancel');
+    setActionError(null);
+    try {
+      await api.patch(`/bookings/${bookingId}/request-cancel`, { reason: cancelReason || undefined });
+      toast.success('Cancellation request sent. Awaiting company approval.');
+      setCancellingId(null);
+      setCancelReason('');
+      refetchBookings();
+      loadAvailability();
+    } catch (err) {
+      const msg = err instanceof ApiException ? err.payload.message : 'Failed to request cancellation.';
+      toast.error(msg);
+      setActionError(msg);
+    } finally {
+      setActioning(null);
+    }
+  }, [cancelReason, refetchBookings, loadAvailability]);
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-[#F3F4F6] w-full">
@@ -101,7 +179,7 @@ export default function IndividualDashboard() {
               <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
                 {/* Calendar */}
                 <div className="lg:col-span-3 order-2 lg:order-1">
-                  <div className="rounded-2xl bg-white border border-neutral-200 p-4 sm:p-5">
+                  <div className="rounded-2xl bg-white border border-neutral-200 p-4 sm:p-5 relative">
                     <div className="flex items-center justify-between mb-2">
                       <h2 className="text-base font-bold text-neutral-900">Availability Calendar</h2>
                       <div className="flex items-center gap-2">
@@ -125,10 +203,15 @@ export default function IndividualDashboard() {
                     <div className="grid grid-cols-7 gap-1 mb-1">
                       {DAYS.map((day) => <div key={day} className="text-center text-[11px] font-semibold text-neutral-400 py-1">{day}</div>)}
                     </div>
+                    {(availabilityLoading || bookingsLoading) && (
+                      <div className="absolute inset-0 rounded-2xl bg-white/80 flex items-center justify-center">
+                        <span className="text-xs text-neutral-500">Loading calendar…</span>
+                      </div>
+                    )}
                     <div className="grid grid-cols-7 gap-1">
                       {calendarDays.map((cell, i) => (
                         <div key={i} role={cell.muted ? undefined : 'button'} tabIndex={cell.muted ? undefined : 0}
-                          onClick={() => !cell.muted && setPanel({ d: cell.d, status: cell.status, project: cell.project, month: monthLabel, year: yearLabel })}
+                          onClick={() => !cell.muted && setPanel({ d: cell.d, status: cell.status, project: cell.project, month: monthLabel, year: yearLabel, bookingId: cell.bookingId, bookingStatus: cell.bookingStatus })}
                           className={`rounded-xl border text-center p-1 sm:p-1.5 min-h-[44px] sm:min-h-[52px] select-none flex flex-col items-center justify-center gap-0.5 ${
                             cell.muted ? 'bg-white border-neutral-100 text-neutral-300 cursor-default' :
                             `${cellStyle[cell.status ?? 'available'] ?? cellStyle.available} cal-cell cursor-pointer`
@@ -255,6 +338,18 @@ export default function IndividualDashboard() {
                   <p className="text-xs font-bold text-neutral-900">{panel.project}</p>
                 </div>
               )}
+              {(panel.bookingId && (panel.bookingStatus === 'accepted' || panel.bookingStatus === 'locked')) && (
+                <div className="mt-4">
+                  <button
+                    type="button"
+                    onClick={() => setCancellingId(panel.bookingId!)}
+                    disabled={!!actioning}
+                    className="flex items-center justify-center gap-2 w-full rounded-xl py-2.5 border border-amber-300 bg-[#FEF3C7] text-[#92400E] text-sm font-semibold hover:bg-[#FDE68A] transition-colors disabled:opacity-60"
+                  >
+                    <FaBan className="w-3.5 h-3.5" /> Request Cancellation
+                  </button>
+                </div>
+              )}
             </div>
             <div className="px-5 py-4 border-t border-neutral-100">
               <Link to="/dashboard/availability" onClick={() => setPanel(null)} className="flex items-center justify-center gap-2 w-full rounded-xl py-2.5 bg-[#3678F1] text-white text-sm font-semibold hover:bg-[#2563d4] transition-colors">
@@ -262,6 +357,60 @@ export default function IndividualDashboard() {
               </Link>
             </div>
           </aside>
+        </>
+      )}
+
+      {/* Request Cancellation Modal */}
+      {cancellingId && (
+        <>
+          <div className="fixed inset-0 bg-black/40 z-[60]" onClick={() => setCancellingId(null)} />
+          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+              <h2 className="text-base font-bold text-neutral-900 mb-2">Request Cancellation</h2>
+              <p className="text-sm text-neutral-600 mb-4">
+                This will send a cancellation request to the production company. Your booking will remain active until the company approves the cancellation.
+              </p>
+              <div className="mb-4">
+                <label className="block text-xs font-semibold text-neutral-700 mb-1.5">
+                  Reason for cancellation <span className="font-normal text-neutral-400">(optional)</span>
+                </label>
+                <textarea
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  rows={3}
+                  placeholder="e.g., Already booked for another project during these dates…"
+                  className="w-full px-4 py-2.5 border border-neutral-300 rounded-xl text-sm bg-[#F3F4F6] focus:bg-white focus:outline-none focus:border-[#3678F1] resize-none transition-all"
+                />
+              </div>
+              {actionError && (
+                <div className="flex items-center gap-2 mb-4 p-3 bg-red-50 border border-red-200 rounded-xl">
+                  <FaTriangleExclamation className="text-red-500 text-xs shrink-0" />
+                  <p className="text-xs text-red-700">{actionError}</p>
+                </div>
+              )}
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => { setCancellingId(null); setActionError(null); }}
+                  className="flex-1 rounded-xl py-2.5 border border-neutral-300 text-neutral-700 text-sm font-medium hover:bg-neutral-50 transition-colors"
+                >
+                  Keep Booking
+                </button>
+                <button
+                  type="button"
+                  onClick={() => doRequestCancel(cancellingId)}
+                  disabled={!!actioning}
+                  className="flex-1 rounded-xl py-2.5 bg-[#F59E0B] text-white text-sm font-semibold hover:bg-[#D97706] transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+                >
+                  {actioning ? (
+                    <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Sending…</>
+                  ) : (
+                    'Send Request'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
         </>
       )}
     </div>

@@ -184,6 +184,7 @@ export default function IndividualAvailability() {
         ...prev,
         [getDateStr(panel.d)]: { date: getDateStr(panel.d), status: 'blocked', notes: reason },
       }));
+      await loadSlots();
       setPanel(null);
       setBlockForm(false);
     } catch (err) {
@@ -205,6 +206,7 @@ export default function IndividualAvailability() {
         ...prev,
         [getDateStr(panel.d)]: { date: getDateStr(panel.d), status: 'available' },
       }));
+      await loadSlots();
       setPanel(null);
     } catch (err) {
       const msg = err instanceof ApiException ? err.payload.message : 'Failed to unblock date.';

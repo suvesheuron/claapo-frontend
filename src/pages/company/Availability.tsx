@@ -175,14 +175,17 @@ export default function CompanyAvailability() {
                   })}
                 </div>
 
-                {/* Legend */}
+                {/* Legend — only statuses used on calendar */}
                 <div className="flex flex-wrap items-center gap-4 mt-4 pt-4 border-t border-neutral-100">
-                  {Object.entries(statusConfig).map(([, cfg]) => (
-                    <div key={cfg.label} className="flex items-center gap-1.5">
-                      <span className={`w-2.5 h-2.5 rounded-full ${cfg.dot}`} />
-                      <span className="text-xs text-neutral-500">{cfg.label}</span>
-                    </div>
-                  ))}
+                  {(['open', 'active', 'completed', 'cancelled'] as const).map((key) => {
+                    const cfg = statusConfig[key];
+                    return (
+                      <div key={key} className="flex items-center gap-1.5">
+                        <span className={`w-2.5 h-2.5 rounded-full ${cfg.dot}`} />
+                        <span className="text-xs text-neutral-500">{cfg.label}</span>
+                      </div>
+                    );
+                  })}
                   <div className="flex items-center gap-1.5">
                     <span className="w-2.5 h-2.5 rounded-full bg-[#F3F4F6] border border-neutral-300" />
                     <span className="text-xs text-neutral-500">No Projects</span>

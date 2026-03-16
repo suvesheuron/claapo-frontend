@@ -180,12 +180,15 @@ export default function CompanyDashboard() {
                       })}
                     </div>
                     <div className="flex flex-wrap gap-4 mt-4 pt-4 border-t border-neutral-100">
-                      {Object.entries(statusConfig).map(([key, val]) => (
-                        <div key={key} className="flex items-center gap-2">
-                          <div className={`w-2.5 h-2.5 rounded-full ${val.dot}`} />
-                          <span className="text-xs text-neutral-500">{val.label}</span>
-                        </div>
-                      ))}
+                      {(['open', 'active', 'completed', 'cancelled'] as const).map((key) => {
+                        const val = statusConfig[key];
+                        return (
+                          <div key={key} className="flex items-center gap-2">
+                            <div className={`w-2.5 h-2.5 rounded-full ${val.dot}`} />
+                            <span className="text-xs text-neutral-500">{val.label}</span>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
 
