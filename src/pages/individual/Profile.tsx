@@ -14,6 +14,7 @@ const GENRES = ['Action', 'Comedy', 'Drama', 'Romance', 'Science Fiction', 'Fant
 interface ProfileData {
   displayName: string;
   bio: string | null;
+  aboutMe: string | null;
   skills: string[];
   genre: string | null;
   locationCity: string | null;
@@ -23,6 +24,11 @@ interface ProfileData {
   imdbUrl: string | null;
   instagramUrl: string | null;
   isAvailable: boolean;
+  panNumber: string | null;
+  bankAccountName: string | null;
+  bankAccountNumber: string | null;
+  ifscCode: string | null;
+  bankName: string | null;
 }
 
 interface MeResponse {
@@ -44,6 +50,7 @@ export default function IndividualProfile() {
   // Form state — synced from API once loaded
   const [displayName,    setDisplayName]    = useState('');
   const [bio,            setBio]            = useState('');
+  const [aboutMe,        setAboutMe]        = useState('');
   const [skills,         setSkills]         = useState('');
   const [genre,          setGenre]          = useState('');
   const [locationCity,   setLocationCity]   = useState('');
@@ -52,6 +59,11 @@ export default function IndividualProfile() {
   const [dailyRateMax,   setDailyRateMax]   = useState('');
   const [imdbUrl,        setImdbUrl]        = useState('');
   const [instagramUrl,   setInstagramUrl]   = useState('');
+  const [panNumber,      setPanNumber]      = useState('');
+  const [bankAccountName, setBankAccountName] = useState('');
+  const [bankAccountNumber, setBankAccountNumber] = useState('');
+  const [ifscCode,       setIfscCode]       = useState('');
+  const [bankName,       setBankName]       = useState('');
 
   const [editing, setEditing] = useState(false);
   const [saving,  setSaving]  = useState(false);
@@ -64,6 +76,7 @@ export default function IndividualProfile() {
     const p = me.profile;
     setDisplayName(p.displayName ?? '');
     setBio(p.bio ?? '');
+    setAboutMe(p.aboutMe ?? '');
     setSkills(p.skills?.join(', ') ?? '');
     setGenre(p.genre ?? '');
     setLocationCity(p.locationCity ?? '');
@@ -72,6 +85,11 @@ export default function IndividualProfile() {
     setDailyRateMax(p.dailyRateMax ? String(paiseToRupees(p.dailyRateMax)) : '');
     setImdbUrl(p.imdbUrl ?? '');
     setInstagramUrl(p.instagramUrl ?? '');
+    setPanNumber((p as ProfileData).panNumber ?? '');
+    setBankAccountName((p as ProfileData).bankAccountName ?? '');
+    setBankAccountNumber((p as ProfileData).bankAccountNumber ?? '');
+    setIfscCode((p as ProfileData).ifscCode ?? '');
+    setBankName((p as ProfileData).bankName ?? '');
   }, [me]);
 
   const handleSave = async () => {
@@ -82,6 +100,7 @@ export default function IndividualProfile() {
       await api.patch('/profile/individual', {
         displayName: displayName.trim() || undefined,
         bio: bio.trim() || undefined,
+        aboutMe: aboutMe.trim() || undefined,
         skills: skills.split(',').map((s) => s.trim()).filter(Boolean),
         genre: genre || undefined,
         locationCity:  locationCity.trim()  || undefined,
@@ -90,6 +109,11 @@ export default function IndividualProfile() {
         dailyRateMax: dailyRateMax ? rupeesToPaise(dailyRateMax) : undefined,
         imdbUrl:      imdbUrl.trim()      || undefined,
         instagramUrl: instagramUrl.trim() || undefined,
+        panNumber:    panNumber.trim()    || undefined,
+        bankAccountName: bankAccountName.trim() || undefined,
+        bankAccountNumber: bankAccountNumber.trim() || undefined,
+        ifscCode:     ifscCode.trim()     || undefined,
+        bankName:     bankName.trim()     || undefined,
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
@@ -153,9 +177,21 @@ export default function IndividualProfile() {
                         <div><dt className="text-xs text-neutral-500 mb-0.5">Skills</dt><dd className="text-sm text-neutral-700">{skills || '—'}</dd></div>
                         <div><dt className="text-xs text-neutral-500 mb-0.5">Genre</dt><dd className="text-sm text-neutral-700">{genre || '—'}</dd></div>
                         <div><dt className="text-xs text-neutral-500 mb-0.5">Bio</dt><dd className="text-sm text-neutral-700 whitespace-pre-wrap">{bio || '—'}</dd></div>
+                        <div><dt className="text-xs text-neutral-500 mb-0.5">About Me</dt><dd className="text-sm text-neutral-700 whitespace-pre-wrap">{aboutMe || '—'}</dd></div>
                         <div><dt className="text-xs text-neutral-500 mb-0.5">Budget (min–max per day)</dt><dd className="text-sm text-neutral-700">{(dailyRateMin || dailyRateMax) ? `₹${dailyRateMin || '—'} – ₹${dailyRateMax || '—'}` : '—'}</dd></div>
                         <div><dt className="text-xs text-neutral-500 mb-0.5">Work Portfolio Link</dt><dd className="text-sm text-neutral-700">{imdbUrl ? <a href={imdbUrl} target="_blank" rel="noreferrer" className="text-[#3678F1] hover:underline">{imdbUrl}</a> : '—'}</dd></div>
                         <div><dt className="text-xs text-neutral-500 mb-0.5">Instagram</dt><dd className="text-sm text-neutral-700">{instagramUrl ? <a href={instagramUrl} target="_blank" rel="noreferrer" className="text-[#3678F1] hover:underline">{instagramUrl}</a> : '—'}</dd></div>
+                      </dl>
+                    </div>
+                    <div className="rounded-2xl bg-white border border-neutral-200 p-5">
+                      <h3 className="text-sm font-bold text-neutral-900 mb-4">Invoice details</h3>
+                      <p className="text-xs text-neutral-500 mb-3">PAN and bank details appear on invoices when you are issuer or recipient.</p>
+                      <dl className="space-y-3">
+                        <div><dt className="text-xs text-neutral-500 mb-0.5">PAN Number</dt><dd className="text-sm font-medium text-neutral-900">{panNumber || '—'}</dd></div>
+                        <div><dt className="text-xs text-neutral-500 mb-0.5">Bank name</dt><dd className="text-sm text-neutral-700">{bankName || '—'}</dd></div>
+                        <div><dt className="text-xs text-neutral-500 mb-0.5">Account name</dt><dd className="text-sm text-neutral-700">{bankAccountName || '—'}</dd></div>
+                        <div><dt className="text-xs text-neutral-500 mb-0.5">Account number</dt><dd className="text-sm text-neutral-700">{bankAccountNumber || '—'}</dd></div>
+                        <div><dt className="text-xs text-neutral-500 mb-0.5">IFSC</dt><dd className="text-sm text-neutral-700">{ifscCode || '—'}</dd></div>
                       </dl>
                     </div>
                   ) : (
@@ -195,12 +231,24 @@ export default function IndividualProfile() {
                           <div><label className="block text-xs font-medium text-neutral-600 mb-1">Skills (comma-separated)</label><input type="text" value={skills} onChange={(e) => setSkills(e.target.value)} disabled={saving} className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm disabled:bg-neutral-50" /></div>
                           <div><label className="block text-xs font-medium text-neutral-600 mb-1">Genre</label><select value={genre} onChange={(e) => setGenre(e.target.value)} disabled={saving} className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm disabled:bg-neutral-50 bg-white"><option value="">Select…</option>{GENRES.map(g => <option key={g} value={g}>{g}</option>)}</select></div>
                           <div><label className="block text-xs font-medium text-neutral-600 mb-1">Bio</label><textarea value={bio} onChange={(e) => setBio(e.target.value)} rows={3} disabled={saving} className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm resize-none disabled:bg-neutral-50" /></div>
+                          <div><label className="block text-xs font-medium text-neutral-600 mb-1">About Me</label><textarea value={aboutMe} onChange={(e) => setAboutMe(e.target.value)} rows={4} placeholder="Longer description, experience, approach" disabled={saving} className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm resize-none disabled:bg-neutral-50" /></div>
                           <div className="grid grid-cols-2 gap-3">
                             <div><label className="block text-xs font-medium text-neutral-600 mb-1">Budget min (₹/day)</label><input type="number" value={dailyRateMin} onChange={(e) => setDailyRateMin(e.target.value)} disabled={saving} className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm disabled:bg-neutral-50" /></div>
                             <div><label className="block text-xs font-medium text-neutral-600 mb-1">Budget max (₹/day)</label><input type="number" value={dailyRateMax} onChange={(e) => setDailyRateMax(e.target.value)} disabled={saving} className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm disabled:bg-neutral-50" /></div>
                           </div>
                           <div><label className="block text-xs font-medium text-neutral-600 mb-1">Work Portfolio Link (IMDb / Behance / etc.)</label><input type="url" value={imdbUrl} onChange={(e) => setImdbUrl(e.target.value)} disabled={saving} className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm disabled:bg-neutral-50" /></div>
                           <div><label className="block text-xs font-medium text-neutral-600 mb-1">Instagram URL</label><input type="url" value={instagramUrl} onChange={(e) => setInstagramUrl(e.target.value)} disabled={saving} className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm disabled:bg-neutral-50" /></div>
+                        </div>
+                      </div>
+                      <div className="rounded-2xl bg-white border border-neutral-200 p-5">
+                        <h3 className="text-sm font-bold text-neutral-900 mb-4">Invoice details</h3>
+                        <p className="text-xs text-neutral-500 mb-3">PAN and bank details appear on invoices when you are issuer or recipient.</p>
+                        <div className="space-y-3">
+                          <div><label className="block text-xs font-medium text-neutral-600 mb-1">PAN Number</label><input type="text" value={panNumber} onChange={(e) => setPanNumber(e.target.value)} placeholder="e.g. ABCDE1234F" disabled={saving} className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm disabled:bg-neutral-50" /></div>
+                          <div><label className="block text-xs font-medium text-neutral-600 mb-1">Bank name</label><input type="text" value={bankName} onChange={(e) => setBankName(e.target.value)} placeholder="e.g. HDFC Bank" disabled={saving} className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm disabled:bg-neutral-50" /></div>
+                          <div><label className="block text-xs font-medium text-neutral-600 mb-1">Account name</label><input type="text" value={bankAccountName} onChange={(e) => setBankAccountName(e.target.value)} placeholder="Account holder name" disabled={saving} className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm disabled:bg-neutral-50" /></div>
+                          <div><label className="block text-xs font-medium text-neutral-600 mb-1">Account number</label><input type="text" value={bankAccountNumber} onChange={(e) => setBankAccountNumber(e.target.value)} placeholder="Bank account number" disabled={saving} className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm disabled:bg-neutral-50" /></div>
+                          <div><label className="block text-xs font-medium text-neutral-600 mb-1">IFSC code</label><input type="text" value={ifscCode} onChange={(e) => setIfscCode(e.target.value)} placeholder="e.g. HDFC0001234" disabled={saving} className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm disabled:bg-neutral-50" /></div>
                         </div>
                         <div className="mt-4 flex justify-end gap-2">
                           <button type="button" onClick={() => setEditing(false)} className="px-5 py-2.5 border border-neutral-300 text-neutral-700 rounded-xl text-sm font-medium hover:bg-neutral-50">Cancel</button>

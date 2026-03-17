@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { FaPlus, FaXmark, FaTriangleExclamation, FaCircleCheck, FaTrash, FaEye, FaEyeSlash, FaPeopleGroup } from 'react-icons/fa6';
+import { FaPlus, FaXmark, FaTriangleExclamation, FaCircleCheck, FaTrash, FaEye, FaEyeSlash, FaPeopleGroup, FaArrowRightArrowLeft } from 'react-icons/fa6';
 import DashboardHeader from '../../components/DashboardHeader';
 import DashboardSidebar from '../../components/DashboardSidebar';
 import AppFooter from '../../components/AppFooter';
@@ -47,6 +47,13 @@ export default function TeamPage() {
   const [deletingUser, setDeletingUser] = useState<SubUser | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  // Transfer sub-user
+  const [transferringUser, setTransferringUser] = useState<SubUser | null>(null);
+  const [targetMainUserId, setTargetMainUserId] = useState('');
+  const [transferring, setTransferring] = useState(false);
+  const [transferError, setTransferError] = useState<string | null>(null);
+  const [transferSuccess, setTransferSuccess] = useState(false);
 
   const handleCreate = async () => {
     if (!email?.trim() || !phone?.trim() || !password) { setCreateError('All fields are required.'); return; }
@@ -106,6 +113,31 @@ export default function TeamPage() {
     }
   };
 
+  const handleTransfer = async () => {
+    if (!transferringUser || !targetMainUserId?.trim()) {
+      setTransferError('Enter the target main account User ID (UUID).');
+      return;
+    }
+    setTransferring(true); setTransferError(null);
+    try {
+      await api.patch(`/profile/sub-users/${transferringUser.id}/transfer`, { newMainUserId: targetMainUserId.trim() });
+      toast.success('Sub-user transferred to the other account.');
+      setTransferSuccess(true);
+      setTransferringUser(null);
+      setTargetMainUserId('');
+      refetchUsers();
+      setTimeout(() => setTransferSuccess(false), 3000);
+    } catch (err) {
+      const msg = err instanceof ApiException ? err.payload.message : 'Failed to transfer sub-user.';
+      toast.error(msg);
+      setTransferError(msg);
+    } finally {
+      setTransferring(false);
+    }
+  };
+
+  const isMainOnlyRestriction = usersError?.toLowerCase().includes('main') ?? false;
+
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-[#F3F4F6] w-full">
       <DashboardHeader />
@@ -141,6 +173,18 @@ export default function TeamPage() {
                   <FaCircleCheck /> Project assigned successfully!
                 </div>
               )}
+              {transferSuccess && (
+                <div className="flex items-center gap-2 mb-4 p-3 bg-green-50 border border-green-200 rounded-xl text-green-700 text-sm font-medium">
+                  <FaCircleCheck /> Sub-user transferred successfully!
+                </div>
+              )}
+
+              {isMainOnlyRestriction && (
+                <div className="flex items-center gap-3 rounded-xl bg-amber-50 border border-amber-200 p-4 mb-5">
+                  <FaTriangleExclamation className="text-amber-500 shrink-0" />
+                  <p className="text-sm text-amber-800">Only the main account can manage team members. You are logged in as a sub-user.</p>
+                </div>
+              )}
 
               {/* Info card */}
               <div className="rounded-2xl bg-[#EEF4FF] border border-[#BFDBFE] p-4 mb-5">
@@ -168,7 +212,7 @@ export default function TeamPage() {
                   <div className="space-y-3">
                     {[1,2,3].map(i => <div key={i} className="h-16 rounded-xl bg-neutral-100 animate-pulse" />)}
                   </div>
-                ) : subUsers.length === 0 ? (
+                ) : !isMainOnlyRestriction && subUsers.length === 0 ? (
                   <div className="text-center py-10">
                     <div className="w-12 h-12 rounded-full bg-[#F3F4F6] flex items-center justify-center mx-auto mb-3">
                       <FaPeopleGroup className="text-neutral-400 text-lg" />
@@ -183,6 +227,8 @@ export default function TeamPage() {
                       <FaPlus className="w-3 h-3" /> Add First Sub-User
                     </button>
                   </div>
+                ) : isMainOnlyRestriction ? (
+                  <div className="text-center py-10 text-neutral-500 text-sm">You need to log in with the main account to view and manage sub-users.</div>
                 ) : (
                   <div className="space-y-3">
                     {subUsers.map(u => (
@@ -195,10 +241,14 @@ export default function TeamPage() {
                             {u.isActive ? 'Active' : 'Inactive'}
                           </span>
                         </div>
-                        <div className="flex items-center gap-2 shrink-0">
+                        <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
                           <button type="button" onClick={() => { setAssigningUser(u); setAssignProjectId(''); setAssignError(null); }}
                             className="rounded-xl px-3 py-2 border border-[#3678F1] text-[#3678F1] text-xs font-semibold hover:bg-[#EEF4FF] transition-colors">
                             Assign Project
+                          </button>
+                          <button type="button" onClick={() => { setTransferringUser(u); setTargetMainUserId(''); setTransferError(null); }}
+                            className="rounded-xl px-3 py-2 border border-amber-300 text-amber-700 text-xs font-semibold hover:bg-amber-50 transition-colors flex items-center gap-1">
+                            <FaArrowRightArrowLeft className="w-3 h-3" /> Transfer
                           </button>
                           <button type="button" onClick={() => { setDeletingUser(u); setDeleteError(null); }}
                             className="rounded-xl px-3 py-2 border border-red-200 text-red-600 text-xs font-semibold hover:bg-red-50 transition-colors flex items-center gap-1">
@@ -315,6 +365,47 @@ export default function TeamPage() {
                 <button type="button" onClick={handleAssign} disabled={assigning || !assignProjectId}
                   className="flex-1 rounded-xl py-2.5 bg-[#3678F1] text-white text-sm font-semibold hover:bg-[#2563d4] transition-colors disabled:opacity-60 flex items-center justify-center gap-2">
                   {assigning ? <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Assigning…</> : 'Assign'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Transfer Sub-User Modal */}
+      {transferringUser && (
+        <>
+          <div className="fixed inset-0 bg-black/40 z-40" onClick={() => !transferring && setTransferringUser(null)} />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+              <div className="flex items-center justify-between mb-5">
+                <h2 className="text-base font-bold text-neutral-900">Transfer Sub-User</h2>
+                <button type="button" onClick={() => !transferring && setTransferringUser(null)} className="w-8 h-8 rounded-lg bg-neutral-100 flex items-center justify-center hover:bg-neutral-200 transition-colors">
+                  <FaXmark className="text-neutral-500 text-sm" />
+                </button>
+              </div>
+              <p className="text-sm text-neutral-600 mb-4">
+                Transfer <span className="font-semibold">{transferringUser.email}</span> to another main account (same role). The sub-user will then belong to that account.
+              </p>
+              {transferError && (
+                <div className="flex items-center gap-2 mb-4 p-3 bg-red-50 border border-red-200 rounded-xl">
+                  <FaTriangleExclamation className="text-red-500 text-xs shrink-0" />
+                  <p className="text-xs text-red-700">{transferError}</p>
+                </div>
+              )}
+              <div>
+                <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Target main account User ID (UUID)</label>
+                <input type="text" value={targetMainUserId} onChange={(e) => setTargetMainUserId(e.target.value)} placeholder="e.g. 550e8400-e29b-41d4-a716-446655440000" disabled={transferring}
+                  className="w-full px-4 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3678F1] bg-[#F3F4F6] focus:bg-white disabled:opacity-50 transition-all font-mono" />
+              </div>
+              <div className="flex gap-3 mt-5">
+                <button type="button" onClick={() => !transferring && setTransferringUser(null)} disabled={transferring}
+                  className="flex-1 rounded-xl py-2.5 border border-neutral-300 text-neutral-700 text-sm font-medium hover:bg-neutral-50 transition-colors disabled:opacity-50">
+                  Cancel
+                </button>
+                <button type="button" onClick={handleTransfer} disabled={transferring || !targetMainUserId.trim()}
+                  className="flex-1 rounded-xl py-2.5 bg-amber-500 text-white text-sm font-semibold hover:bg-amber-600 transition-colors disabled:opacity-60 flex items-center justify-center gap-2">
+                  {transferring ? <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Transferring…</> : <><FaArrowRightArrowLeft className="w-3 h-3" /> Transfer</>}
                 </button>
               </div>
             </div>

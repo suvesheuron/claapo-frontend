@@ -15,6 +15,7 @@ const VendorRegistration = lazy(() => import('./pages/VendorRegistration'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const CreateProject = lazy(() => import('./pages/CreateProject'));
 const SearchFilter = lazy(() => import('./pages/SearchFilter'));
+const OtherUserProfile = lazy(() => import('./pages/OtherUserProfile'));
 
 // Individual routes
 const IndividualAvailability = lazy(() => import('./pages/individual/Availability'));
@@ -113,6 +114,7 @@ export default function App() {
           <Route path="/dashboard/company-availability" element={<ProtectedRoute allowedRoles={['company', 'admin']}><CompanyAvailability /></ProtectedRoute>} />
           <Route path="/dashboard/projects/new" element={<ProtectedRoute allowedRoles={['company', 'admin']}><CreateProject /></ProtectedRoute>} />
           <Route path="/dashboard/search" element={<ProtectedRoute allowedRoles={['company', 'admin']}><SearchFilter /></ProtectedRoute>} />
+          <Route path="/dashboard/profile/:userId" element={<ProtectedRoute allowedRoles={['company', 'admin']}><OtherUserProfile /></ProtectedRoute>} />
 
           {/* Shared routes */}
           <Route path="/dashboard/chat/:userId" element={<ProtectedRoute><Chat /></ProtectedRoute>} />

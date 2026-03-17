@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { FaArrowLeft, FaPrint, FaTriangleExclamation, FaCheck, FaPaperPlane, FaCreditCard, FaXmark } from 'react-icons/fa6';
+import { FaArrowLeft, FaPrint, FaTriangleExclamation, FaCheck, FaPaperPlane, FaCreditCard, FaXmark, FaPaperclip, FaDownload, FaTrash } from 'react-icons/fa6';
 import DashboardHeader from '../components/DashboardHeader';
 import AppFooter from '../components/AppFooter';
 import toast from 'react-hot-toast';
@@ -13,6 +13,25 @@ interface InvoiceLineItem {
   description: string;
   quantity: number;
   unitAmountPaise: number;
+}
+
+interface IssuerRecipientDetails {
+  name: string;
+  gstNumber: string | null;
+  address: string | null;
+  panNumber: string | null;
+  bankAccountName: string | null;
+  bankAccountNumber: string | null;
+  ifscCode: string | null;
+  bankName: string | null;
+}
+
+interface InvoiceAttachment {
+  id: string;
+  fileName: string;
+  mimeType: string;
+  size: number;
+  downloadUrl: string | null;
 }
 
 interface InvoiceData {
@@ -29,6 +48,8 @@ interface InvoiceData {
   fromCity: string | null;
   toName: string;
   toCity: string | null;
+  issuerDetails?: IssuerRecipientDetails;
+  recipientDetails?: IssuerRecipientDetails;
   lineItems: InvoiceLineItem[];
   subtotalPaise: number;
   taxRatePct: number;
@@ -37,6 +58,7 @@ interface InvoiceData {
   notes: string | null;
   issuerId: string;
   recipientId: string;
+  attachments?: InvoiceAttachment[];
 }
 
 const STATUS_CONFIG = {
@@ -215,6 +237,9 @@ export default function Invoice() {
   const [sending, setSending] = useState(false);
   const [markingPaid, setMarkingPaid] = useState(false);
   const [showPayModal, setShowPayModal] = useState(false);
+  const [uploadingAttachment, setUploadingAttachment] = useState(false);
+  const [deletingAttachmentId, setDeletingAttachmentId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     document.title = invoice ? `Invoice ${invoice.invoiceNumber} – Claapo` : 'Invoice – Claapo';
@@ -254,6 +279,40 @@ export default function Invoice() {
 
   const isIssuer = invoice && user && invoice.issuerId === user.id;
   const isRecipient = invoice && user && invoice.recipientId === user.id;
+  const canEditAttachments = isIssuer && invoice && (invoice.status === 'draft' || invoice.status === 'sent');
+  const attachments = invoice?.attachments ?? [];
+
+  const handleAddAttachment = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !invoiceId || !invoice) return;
+    setUploadingAttachment(true);
+    try {
+      const { uploadUrl, key } = await api.get<{ uploadUrl: string; key: string }>(`/invoices/${invoiceId}/attachments/upload-url?contentType=${encodeURIComponent(file.type || 'application/octet-stream')}`);
+      await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type || 'application/octet-stream' } });
+      await api.post(`/invoices/${invoiceId}/attachments`, { fileKey: key, fileName: file.name, mimeType: file.type || 'application/octet-stream', size: file.size });
+      toast.success('Attachment added.');
+      refetch();
+    } catch (err) {
+      toast.error(err instanceof ApiException ? err.payload.message : 'Failed to add attachment.');
+    } finally {
+      setUploadingAttachment(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleDeleteAttachment = async (attachmentId: string) => {
+    if (!invoiceId) return;
+    setDeletingAttachmentId(attachmentId);
+    try {
+      await api.delete(`/invoices/attachments/${attachmentId}`);
+      toast.success('Attachment removed.');
+      refetch();
+    } catch (err) {
+      toast.error(err instanceof ApiException ? err.payload.message : 'Failed to remove attachment.');
+    } finally {
+      setDeletingAttachmentId(null);
+    }
+  };
 
   return (
     <>
@@ -385,11 +444,31 @@ export default function Invoice() {
                           <p className="text-sm font-semibold text-neutral-900">{invoice.fromName}</p>
                           {invoice.fromRole && <p className="text-sm text-neutral-600">{invoice.fromRole}</p>}
                           {invoice.fromCity && <p className="text-sm text-neutral-500">{invoice.fromCity}</p>}
+                          {invoice.issuerDetails?.gstNumber && <p className="text-xs text-neutral-500 mt-1">GST: {invoice.issuerDetails.gstNumber}</p>}
+                          {invoice.issuerDetails?.address && <p className="text-xs text-neutral-500 mt-0.5">{invoice.issuerDetails.address}</p>}
+                          {invoice.issuerDetails?.panNumber && <p className="text-xs text-neutral-500 mt-1">PAN: {invoice.issuerDetails.panNumber}</p>}
+                          {(invoice.issuerDetails?.bankAccountName || invoice.issuerDetails?.bankAccountNumber) && (
+                            <p className="text-xs text-neutral-500 mt-0.5">
+                              {invoice.issuerDetails.bankName && `${invoice.issuerDetails.bankName} · `}
+                              {invoice.issuerDetails.bankAccountNumber && `A/c ${invoice.issuerDetails.bankAccountNumber}`}
+                              {invoice.issuerDetails.ifscCode && ` · IFSC ${invoice.issuerDetails.ifscCode}`}
+                            </p>
+                          )}
                         </div>
                         <div>
                           <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-2">To</h3>
                           <p className="text-sm font-semibold text-neutral-900">{invoice.toName}</p>
                           {invoice.toCity && <p className="text-sm text-neutral-500">{invoice.toCity}</p>}
+                          {invoice.recipientDetails?.gstNumber && <p className="text-xs text-neutral-500 mt-1">GST: {invoice.recipientDetails.gstNumber}</p>}
+                          {invoice.recipientDetails?.address && <p className="text-xs text-neutral-500 mt-0.5">{invoice.recipientDetails.address}</p>}
+                          {invoice.recipientDetails?.panNumber && <p className="text-xs text-neutral-500 mt-1">PAN: {invoice.recipientDetails.panNumber}</p>}
+                          {(invoice.recipientDetails?.bankAccountName || invoice.recipientDetails?.bankAccountNumber) && (
+                            <p className="text-xs text-neutral-500 mt-0.5">
+                              {invoice.recipientDetails.bankName && `${invoice.recipientDetails.bankName} · `}
+                              {invoice.recipientDetails.bankAccountNumber && `A/c ${invoice.recipientDetails.bankAccountNumber}`}
+                              {invoice.recipientDetails.ifscCode && ` · IFSC ${invoice.recipientDetails.ifscCode}`}
+                            </p>
+                          )}
                         </div>
                       </div>
 
@@ -445,6 +524,53 @@ export default function Invoice() {
                           <p className="text-sm text-neutral-600 leading-relaxed">{invoice.notes}</p>
                         </div>
                       )}
+
+                      {/* Attachments */}
+                      <div className="mt-8 pt-6 border-t border-neutral-200">
+                        <div className="flex items-center justify-between gap-2 mb-2">
+                          <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">Attachments</p>
+                          {canEditAttachments && (
+                            <>
+                              <input ref={fileInputRef} type="file" className="hidden" onChange={handleAddAttachment} />
+                              <button
+                                type="button"
+                                onClick={() => fileInputRef.current?.click()}
+                                disabled={uploadingAttachment}
+                                className="no-print text-xs font-semibold text-[#3678F1] hover:underline disabled:opacity-50 flex items-center gap-1"
+                              >
+                                <FaPaperclip className="w-3 h-3" />
+                                {uploadingAttachment ? 'Uploading…' : 'Add attachment'}
+                              </button>
+                            </>
+                          )}
+                        </div>
+                        {attachments.length === 0 ? (
+                          <p className="text-sm text-neutral-400">No attachments</p>
+                        ) : (
+                          <ul className="space-y-2">
+                            {attachments.map((a) => (
+                              <li key={a.id} className="flex items-center justify-between gap-2 py-1.5 px-2 rounded-lg bg-neutral-50 border border-neutral-100">
+                                <a href={a.downloadUrl ?? '#'} target="_blank" rel="noopener noreferrer" className="text-sm text-[#3678F1] hover:underline truncate flex items-center gap-2 min-w-0">
+                                  <FaDownload className="w-3 h-3 shrink-0" />
+                                  <span className="truncate">{a.fileName}</span>
+                                  <span className="text-xs text-neutral-400 shrink-0">({(a.size / 1024).toFixed(1)} KB)</span>
+                                </a>
+                                {canEditAttachments && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteAttachment(a.id)}
+                                    disabled={deletingAttachmentId === a.id}
+                                    className="no-print text-red-600 hover:text-red-700 p-1 disabled:opacity-50"
+                                    aria-label="Remove attachment"
+                                  >
+                                    <FaTrash className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
 
                       <div className="mt-6 pt-4 border-t border-neutral-100">
                         <p className="text-xs text-neutral-400">

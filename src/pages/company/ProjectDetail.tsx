@@ -20,6 +20,8 @@ interface Project {
   status: string;
   startDate: string;
   endDate: string;
+  shootDates?: string[];
+  shootLocations?: string[];
   budgetMin?: number | null;
   budgetMax?: number | null;
   locationCity?: string | null;
@@ -50,6 +52,8 @@ interface Booking {
   rateOffered?: number | null;
   target: BookingTarget;
   projectRole?: { roleName: string } | null;
+  shootDates?: string[];
+  shootLocations?: string[];
 }
 
 function formatDateRange(start: string, end: string): string {
@@ -133,7 +137,8 @@ export default function ProjectDetail() {
         toast.error('No accepted bookings to lock. Crew/vendors must accept their requests first.');
         return;
       }
-      await Promise.all(accepted.map((b) => api.patch(`/bookings/${b.id}/lock`, {})));
+      const body = project ? { shootDates: (project as Project).shootDates, shootLocations: (project as Project).shootLocations } : {};
+      await Promise.all(accepted.map((b) => api.patch(`/bookings/${b.id}/lock`, body)));
       toast.success('Bookings locked.');
       await loadBookings();
     } catch (err) {
@@ -220,6 +225,13 @@ export default function ProjectDetail() {
                       {getProjectTotalBudget(project) > 0 ? ` · Budget: ${formatBudgetCompact(getProjectTotalBudget(project))}` : ''}
                       {project.locationCity ? ` · ${project.locationCity}` : ''}
                     </p>
+                    {(project.shootDates?.length || project.shootLocations?.length) ? (
+                      <p className="text-xs text-neutral-500 mt-1">
+                        {project.shootDates?.length ? `Shoot dates: ${project.shootDates.map((d) => new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })).join(', ')}` : ''}
+                        {project.shootDates?.length && project.shootLocations?.length ? ' · ' : ''}
+                        {project.shootLocations?.length ? `Locations: ${project.shootLocations.join(', ')}` : ''}
+                      </p>
+                    ) : null}
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     {canDeleteProject && (
@@ -308,6 +320,13 @@ export default function ProjectDetail() {
                                   {booking.projectRole?.roleName ?? 'Crew'}
                                   {booking.rateOffered ? ` · ₹${(booking.rateOffered / 100).toLocaleString('en-IN')}/day` : ''}
                                 </p>
+                                {(booking.shootDates?.length || booking.shootLocations?.length) ? (
+                                  <p className="text-[10px] text-neutral-400 mt-0.5">
+                                    {booking.shootDates?.length ? booking.shootDates.map((d) => new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })).join(', ') : ''}
+                                    {booking.shootDates?.length && booking.shootLocations?.length ? ' · ' : ''}
+                                    {booking.shootLocations?.length ? booking.shootLocations.join(', ') : ''}
+                                  </p>
+                                ) : null}
                               </div>
                               <div className="flex items-center gap-1.5 shrink-0">
                                 {statusBadge(booking.status)}
@@ -392,6 +411,13 @@ export default function ProjectDetail() {
                                   {booking.projectRole?.roleName ?? 'Vendor'}
                                   {booking.rateOffered ? ` · ₹${(booking.rateOffered / 100).toLocaleString('en-IN')}/day` : ''}
                                 </p>
+                                {(booking.shootDates?.length || booking.shootLocations?.length) ? (
+                                  <p className="text-[10px] text-neutral-400 mt-0.5">
+                                    {booking.shootDates?.length ? booking.shootDates.map((d) => new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })).join(', ') : ''}
+                                    {booking.shootDates?.length && booking.shootLocations?.length ? ' · ' : ''}
+                                    {booking.shootLocations?.length ? booking.shootLocations.join(', ') : ''}
+                                  </p>
+                                ) : null}
                               </div>
                               <div className="flex items-center gap-1.5 shrink-0">
                                 {statusBadge(booking.status)}

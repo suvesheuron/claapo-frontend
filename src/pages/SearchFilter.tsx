@@ -78,8 +78,8 @@ export default function SearchFilter() {
 
       if (type === 'crew') {
         if (loc) params.city = loc;
-        const combinedSkill = [q, skill].map((s) => s.trim()).filter(Boolean).join(', ');
-        if (combinedSkill) params.skill = combinedSkill;
+        if (skill.trim()) params.skill = skill.trim();
+        if (q.trim()) params.name = q.trim();
       } else {
         if (loc) params.city = loc;
         if (skill) params.type = skill;
@@ -281,8 +281,8 @@ export default function SearchFilter() {
                           {r.bio && <p className="text-xs text-neutral-500 mt-1.5 line-clamp-1">{r.bio}</p>}
                         </div>
                         <div className="flex flex-col gap-2 shrink-0">
-                          <Link to={`/dashboard/chat/${r.userId}`} className="rounded-xl px-3 py-2 border border-neutral-200 text-neutral-700 text-xs font-medium hover:bg-neutral-50 text-center transition-colors flex items-center gap-1.5">
-                            <FaMessage className="w-3 h-3" /> Message
+                          <Link to={`/dashboard/profile/${r.userId}`} className="rounded-xl px-3 py-2 border border-neutral-200 text-neutral-700 text-xs font-medium hover:bg-neutral-50 text-center transition-colors">
+                            View profile
                           </Link>
                           <button type="button" onClick={() => handleSendRequest({ userId: r.userId, name: r.displayName, role: r.skills?.[0] ?? 'Crew', rate: formatRateRange(r.dailyRateMin, r.dailyRateMax) })}
                             className="rounded-xl px-3 py-2 bg-[#3678F1] text-white text-xs font-bold hover:bg-[#2563d4] text-center transition-colors">

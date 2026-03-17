@@ -27,6 +27,7 @@ export default function CreateProject() {
   const [endDate, setEndDate]                 = useState('');
   const [deliveryDate, setDeliveryDate]       = useState('');
   const [locationCity, setLocationCity]       = useState('');
+  const [shootDates, setShootDates] = useState<string[]>(['']);
   const [shootLocations, setShootLocations]   = useState<string[]>(['']);
 
   const [budgetMin, setBudgetMin] = useState('');
@@ -35,6 +36,9 @@ export default function CreateProject() {
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState<string | null>(null);
 
+  const addShootDate = () => setShootDates(prev => [...prev, '']);
+  const removeShootDate = (i: number) => setShootDates(prev => prev.filter((_, idx) => idx !== i));
+  const updateShootDate = (i: number, val: string) => setShootDates(prev => prev.map((v, idx) => idx === i ? val : v));
   const addLocation = () => setShootLocations(prev => [...prev, '']);
   const removeLocation = (i: number) => setShootLocations(prev => prev.filter((_, idx) => idx !== i));
   const updateLocation = (i: number, val: string) => setShootLocations(prev => prev.map((v, idx) => idx === i ? val : v));
@@ -64,6 +68,7 @@ export default function CreateProject() {
         endDate,
         deliveryDate: deliveryDate || undefined,
         locationCity: locationCity.trim() || undefined,
+        shootDates: shootDates.filter(d => d.trim()).length ? shootDates.filter(d => d.trim()) : undefined,
         shootLocations: shootLocations.filter(s => s.trim()),
         budgetMin: budgetMin ? Math.round(parseFloat(budgetMin)) : undefined,
         budgetMax: budgetMax ? Math.round(parseFloat(budgetMax)) : undefined,
@@ -166,6 +171,29 @@ export default function CreateProject() {
                       </div>
                       <div>
                         <div className="flex items-center justify-between mb-2">
+                          <label className="text-neutral-700 text-xs font-semibold">Shoot Dates <span className="text-neutral-400 font-normal">(optional)</span></label>
+                          <button type="button" onClick={addShootDate} className="text-xs text-[#3678F1] hover:underline flex items-center gap-1">
+                            <FaPlus className="w-2.5 h-2.5" /> Add Date
+                          </button>
+                        </div>
+                        <div className="space-y-2">
+                          {shootDates.map((d, i) => (
+                            <div key={i} className="flex items-center gap-2">
+                              <div className="relative flex-1">
+                                <input type="date" value={d} onChange={(e) => updateShootDate(i, e.target.value)} disabled={loading} min={startDate} max={endDate} className="date-input-no-native-icon rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all disabled:opacity-50" />
+                                <FaCalendar className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 text-xs pointer-events-none" />
+                              </div>
+                              {shootDates.length > 1 && (
+                                <button type="button" onClick={() => removeShootDate(i)} className="w-8 h-8 rounded-lg bg-[#F3F4F6] flex items-center justify-center text-neutral-400 hover:bg-red-50 hover:text-red-500 transition-colors">
+                                  <FaXmark className="text-xs" />
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
                           <label className="text-neutral-700 text-xs font-semibold">Shoot Locations</label>
                           <button type="button" onClick={addLocation} className="text-xs text-[#3678F1] hover:underline flex items-center gap-1">
                             <FaPlus className="w-2.5 h-2.5" /> Add Location
@@ -203,6 +231,7 @@ export default function CreateProject() {
                         { label: 'Production House',  value: productionHouseName.trim() || 'Not set' },
                         { label: 'Duration',          value: duration },
                         { label: 'Budget',            value: budgetMin || budgetMax ? `₹${budgetMin || '—'} – ₹${budgetMax || '—'}` : 'Not set' },
+                        { label: 'Shoot dates',       value: shootDates.filter(d => d.trim()).length ? shootDates.filter(d => d.trim()).map(d => new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })).join(', ') : 'Not set' },
                         { label: 'Locations',         value: shootLocations.filter(s => s.trim()).join(', ') || 'Not set' },
                       ].map(({ label, value }) => (
                         <div key={label} className="flex justify-between gap-2">

@@ -47,9 +47,10 @@ export default function DashboardHeader({ userName: propUserName, userAvatar: pr
   const notifications = notifData?.items ?? [];
   const unreadCount = notifData?.meta?.unreadCount ?? 0;
 
-  interface MeResponse { profile?: { companyName?: string; displayName?: string; avatarUrl?: string | null } | null }
+  interface MeResponse { profile?: { companyName?: string; displayName?: string; avatarUrl?: string | null } | null; isMainUser?: boolean }
   const { data: meData } = useApiQuery<MeResponse>(isAuthenticated ? '/profile/me' : null);
   const profile = meData?.profile;
+  const isMainUser = meData?.isMainUser !== false;
 
   const displayName = propUserName ?? profile?.companyName ?? profile?.displayName ?? user?.email?.split('@')[0] ?? 'Account';
   const userAvatar = propUserAvatar ?? profile?.avatarUrl ?? undefined;
@@ -171,6 +172,9 @@ export default function DashboardHeader({ userName: propUserName, userAvatar: pr
             <span className="text-sm font-medium text-neutral-800 hidden md:inline truncate max-w-[140px] lg:max-w-[180px]">
               {displayName}
             </span>
+            {!isMainUser && (
+              <span className="hidden sm:inline text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 shrink-0">Sub-User</span>
+            )}
             <FaChevronDown className={`w-2.5 h-2.5 text-neutral-400 hidden md:inline shrink-0 transition-transform duration-200 ${userOpen ? 'rotate-180' : ''}`} />
           </button>
 

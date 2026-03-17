@@ -27,6 +27,7 @@ interface VendorProfileData {
   locationCity: string | null;
   locationState: string | null;
   bio: string | null;
+  aboutUs: string | null;
   website: string | null;
   instagramUrl: string | null;
   gstNumber: string | null;
@@ -52,6 +53,7 @@ export default function VendorProfile() {
   const [locationCity,  setLocationCity]  = useState('');
   const [locationState, setLocationState] = useState('');
   const [bio,           setBio]           = useState('');
+  const [aboutUs,       setAboutUs]       = useState('');
   const [website,       setWebsite]       = useState('');
   const [instagramUrl,  setInstagramUrl]  = useState('');
 
@@ -76,6 +78,7 @@ export default function VendorProfile() {
     setLocationCity(p.locationCity ?? '');
     setLocationState(p.locationState ?? '');
     setBio(p.bio ?? '');
+    setAboutUs(p.aboutUs ?? '');
     setWebsite(p.website ?? '');
     setInstagramUrl(p.instagramUrl ?? '');
   }, [me]);
@@ -89,6 +92,7 @@ export default function VendorProfile() {
         locationCity:  locationCity.trim()  || undefined,
         locationState: locationState.trim() || undefined,
         bio:           bio.trim()           || undefined,
+        aboutUs:       aboutUs.trim()       || undefined,
         website:       website.trim()       || undefined,
         instagramUrl:  instagramUrl.trim()  || undefined,
       });
@@ -182,6 +186,12 @@ export default function VendorProfile() {
                           {profile.isGstVerified && <span className="text-[10px] text-[#15803D] font-semibold">✓</span>}
                         </div>
                       )}
+                      {(bio || aboutUs) && (
+                        <div className="text-xs text-neutral-600 mt-1">
+                          <span className="font-semibold text-neutral-800">About us: </span>
+                          <span className="line-clamp-2">{aboutUs || bio}</span>
+                        </div>
+                      )}
                     </div>
                     {!editing && (
                       <button type="button" onClick={() => setEditing(true)} className="mt-4 w-full px-4 py-2.5 bg-[#3678F1] text-white rounded-xl text-sm font-semibold hover:bg-[#2c65d4] transition-colors flex items-center justify-center gap-2">
@@ -203,6 +213,7 @@ export default function VendorProfile() {
                         <div><dt className="text-xs text-neutral-500 mb-0.5">Website</dt><dd className="text-sm text-neutral-700">{website ? <a href={website} target="_blank" rel="noopener noreferrer" className="text-[#3678F1] hover:underline">{website}</a> : '—'}</dd></div>
                         <div><dt className="text-xs text-neutral-500 mb-0.5">Instagram</dt><dd className="text-sm text-neutral-700">{instagramUrl ? <a href={instagramUrl} target="_blank" rel="noopener noreferrer" className="text-[#3678F1] hover:underline">{instagramUrl}</a> : '—'}</dd></div>
                         <div><dt className="text-xs text-neutral-500 mb-0.5">About</dt><dd className="text-sm text-neutral-700 whitespace-pre-wrap">{bio || '—'}</dd></div>
+                        <div><dt className="text-xs text-neutral-500 mb-0.5">About Us</dt><dd className="text-sm text-neutral-700 whitespace-pre-wrap">{aboutUs || '—'}</dd></div>
                       </dl>
                     </div>
                   ) : (
@@ -246,6 +257,10 @@ export default function VendorProfile() {
                         <div>
                           <label className="block text-xs font-medium text-neutral-600 mb-1">About / Description</label>
                           <textarea value={bio} onChange={(e) => setBio(e.target.value)} rows={3} disabled={saving} placeholder="Brief description of your business and specialties…" className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3678F1] transition-all resize-none disabled:bg-neutral-50" />
+                          <div className="mt-3">
+                            <label className="block text-xs font-medium text-neutral-600 mb-1">About Us</label>
+                            <textarea value={aboutUs} onChange={(e) => setAboutUs(e.target.value)} rows={4} disabled={saving} placeholder="Longer company story, services, experience…" className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3678F1] transition-all resize-none disabled:bg-neutral-50" />
+                          </div>
                         </div>
                         <div>
                           <label className="block text-xs font-medium text-neutral-600 mb-1">Website</label>
