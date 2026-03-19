@@ -80,11 +80,11 @@ export default function PastRentals() {
                             <FaMessage className="w-3 h-3" /> Chat
                           </Link>
                           {invoiceId ? (
-                            <Link to={`/dashboard/invoice/${invoiceId}`} className="flex-1 text-xs px-3 py-1.5 bg-[#3678F1] text-white rounded hover:bg-[#2563d4] text-center flex items-center justify-center gap-1">
+                            <Link to={`/dashboard/invoice/${invoiceId}`} className="flex-1 text-xs px-3 py-1.5 bg-[#3B5BDB] text-white rounded hover:bg-[#2f4ac2] text-center flex items-center justify-center gap-1">
                               <FaFileInvoice className="inline" /> Invoice
                             </Link>
                           ) : (
-                            <Link to="/dashboard/invoice/new" className="flex-1 text-xs px-3 py-1.5 bg-[#3678F1] text-white rounded hover:bg-[#2563d4] text-center flex items-center justify-center gap-1">
+                            <Link to="/dashboard/invoice/new" className="flex-1 text-xs px-3 py-1.5 bg-[#3B5BDB] text-white rounded hover:bg-[#2f4ac2] text-center flex items-center justify-center gap-1">
                               <FaFileInvoice className="inline" /> Create Invoice
                             </Link>
                           )}

@@ -1,8 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { FaCalendar, FaTruck, FaBell, FaChevronLeft, FaChevronRight, FaXmark, FaCircle, FaMessage, FaTriangleExclamation, FaFileInvoice, FaPlus, FaUser } from 'react-icons/fa6';
 import { api, ApiException } from '../services/api';
-import toast from 'react-hot-toast';
 import { useApiQuery } from '../hooks/useApiQuery';
 import { formatPaise, formatRateRange } from '../utils/currency';
 import DashboardHeader from '../components/DashboardHeader';
@@ -94,6 +93,7 @@ interface PastBookingItem {
 }
 
 export default function VendorDashboard() {
+  const navigate = useNavigate();
   useEffect(() => { document.title = 'Dashboard – Claapo'; }, []);
 
   const [monthOffset, setMonthOffset] = useState(0);
@@ -220,7 +220,7 @@ export default function VendorDashboard() {
                               : cell.status && cellStyle[cell.status]
                                 ? `${cellStyle[cell.status]} cursor-pointer`
                                 : 'bg-white border-neutral-200 text-neutral-600 hover:bg-[#F3F4F6] cursor-pointer'}
-                            ${panel?.date === cell.d && !cell.muted ? 'ring-2 ring-[#3678F1] ring-offset-1' : ''}
+                            ${panel?.date === cell.d && !cell.muted ? 'ring-2 ring-[#3B5BDB] ring-offset-1' : ''}
                           `}
                         >
                           <span className="text-[11px] sm:text-xs font-semibold leading-none">{cell.d}</span>
@@ -237,7 +237,7 @@ export default function VendorDashboard() {
                       {[
                         { color: 'bg-[#22C55E]', label: 'Available' },
                         { color: 'bg-[#F40F02]', label: 'Booked' },
-                        { color: 'bg-[#3678F1]', label: 'Completed' },
+                        { color: 'bg-[#3B5BDB]', label: 'Completed' },
                       ].map(({ color, label }) => (
                         <div key={label} className="flex items-center gap-2">
                           <div className={`w-2.5 h-2.5 rounded-full ${color}`} />
@@ -246,7 +246,7 @@ export default function VendorDashboard() {
                       ))}
                     </div>
                     <p className="mt-3 text-[11px] text-neutral-400">
-                      Go to <Link to="/dashboard/vendor-availability" className="text-[#3678F1] hover:underline">Availability</Link> to manage your schedule.
+                      Go to <Link to="/dashboard/vendor-availability" className="text-[#3B5BDB] hover:underline">Availability</Link> to manage your schedule.
                     </p>
                   </div>
                 </div>
@@ -288,21 +288,21 @@ export default function VendorDashboard() {
                         ))}
                       </div>
                     )}
-                    <Link to="/dashboard/bookings" className="mt-3 rounded-xl block w-full py-2 text-xs text-[#3678F1] bg-[#EEF4FF] hover:bg-[#DBEAFE] text-center font-semibold transition-colors">View All Bookings</Link>
+                    <Link to="/dashboard/bookings" className="mt-3 rounded-xl block w-full py-2 text-xs text-[#3B5BDB] bg-[#EEF4FF] hover:bg-[#DBEAFE] text-center font-semibold transition-colors">View All Bookings</Link>
                   </div>
 
                   {/* Recent Rentals */}
                   <div className="rounded-2xl bg-white border border-neutral-200 p-4">
                     <div className="flex items-center justify-between mb-3">
                       <h3 className="text-sm font-bold text-neutral-900">Recent Rentals</h3>
-                      <Link to="/dashboard/past-rentals" className="text-xs text-[#3678F1] hover:underline font-medium">View all</Link>
+                      <Link to="/dashboard/past-rentals" className="text-xs text-[#3B5BDB] hover:underline font-medium">View all</Link>
                     </div>
                     {pastItems.length === 0 ? (
                       <p className="text-xs text-neutral-400 text-center py-4">No past rentals yet</p>
                     ) : (
                       <div className="space-y-2">
                         {pastItems.slice(0, 4).map((b) => (
-                          <Link key={b.id} to={`/dashboard/projects/${b.project.id}`} className="block rounded-xl border border-neutral-200 p-3 bg-[#FAFAFA] hover:border-[#3678F1]/50 transition-colors">
+                          <Link key={b.id} to={`/dashboard/projects/${b.project.id}`} className="block rounded-xl border border-neutral-200 p-3 bg-[#FAFAFA] hover:border-[#3B5BDB]/50 transition-colors">
                             <p className="text-xs font-semibold text-neutral-900 truncate">{b.project.title}</p>
                             <p className="text-[11px] text-neutral-500 truncate">{b.requester.companyProfile?.companyName ?? '—'}</p>
                           </Link>
@@ -315,11 +315,11 @@ export default function VendorDashboard() {
                   <div className="grid grid-cols-2 gap-2">
                     <div className="rounded-2xl bg-white border border-neutral-200 p-3">
                       <p className="text-[11px] text-neutral-500">Active Bookings</p>
-                      <p className="text-lg font-bold text-[#3678F1]">{activeCount}</p>
+                      <p className="text-lg font-bold text-[#3B5BDB]">{activeCount}</p>
                     </div>
                     <div className="rounded-2xl bg-white border border-neutral-200 p-3">
                       <p className="text-[11px] text-neutral-500">Past Rentals</p>
-                      <p className="text-lg font-bold text-[#3678F1]">{pastCount}</p>
+                      <p className="text-lg font-bold text-[#3B5BDB]">{pastCount}</p>
                     </div>
                   </div>
 
@@ -328,11 +328,11 @@ export default function VendorDashboard() {
                     <div className="rounded-2xl bg-white border border-neutral-200 p-4">
                       <div className="flex items-center justify-between mb-2">
                         <h3 className="text-sm font-bold text-neutral-900">Equipment</h3>
-                        <Link to="/dashboard/equipment" className="text-xs text-[#3678F1] hover:underline font-medium">View all</Link>
+                        <Link to="/dashboard/equipment" className="text-xs text-[#3B5BDB] hover:underline font-medium">View all</Link>
                       </div>
                       <div className="space-y-2">
                         {equipmentArray.slice(0, 3).map((item) => (
-                          <Link key={item.id} to="/dashboard/equipment" className="block rounded-xl border border-neutral-200 p-2.5 bg-[#FAFAFA] hover:border-[#3678F1]/50 transition-colors">
+                          <Link key={item.id} to="/dashboard/equipment" className="block rounded-xl border border-neutral-200 p-2.5 bg-[#FAFAFA] hover:border-[#3B5BDB]/50 transition-colors">
                             <p className="text-xs font-semibold text-neutral-900 truncate">{item.name}</p>
                             <p className="text-[10px] text-neutral-500">{item.dailyRateMin != null || item.dailyRateMax != null ? formatRateRange(item.dailyRateMin, item.dailyRateMax) : '—'}</p>
                           </Link>
@@ -346,16 +346,16 @@ export default function VendorDashboard() {
                   <div className="rounded-2xl bg-white border border-neutral-200 p-4">
                     <h3 className="text-sm font-bold text-neutral-900 mb-3">Quick Actions</h3>
                     <div className="space-y-1.5">
-                      <Link to="/dashboard/vendor-availability" className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#F3F4F6] text-neutral-700 text-xs font-semibold hover:bg-[#EEF4FF] hover:text-[#3678F1] transition-colors">
+                      <Link to="/dashboard/vendor-availability" className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#F3F4F6] text-neutral-700 text-xs font-semibold hover:bg-[#EEF4FF] hover:text-[#3B5BDB] transition-colors">
                         <FaCalendar className="w-3 h-3" /> Manage Availability
                       </Link>
-                      <Link to="/dashboard/conversations" className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#F3F4F6] text-neutral-700 text-xs font-semibold hover:bg-[#EEF4FF] hover:text-[#3678F1] transition-colors">
+                      <Link to="/dashboard/conversations" className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#F3F4F6] text-neutral-700 text-xs font-semibold hover:bg-[#EEF4FF] hover:text-[#3B5BDB] transition-colors">
                         <FaMessage className="w-3 h-3" /> Open Chat
                       </Link>
-                      <Link to="/dashboard/equipment" className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#F3F4F6] text-neutral-700 text-xs font-semibold hover:bg-[#EEF4FF] hover:text-[#3678F1] transition-colors">
+                      <Link to="/dashboard/equipment" className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#F3F4F6] text-neutral-700 text-xs font-semibold hover:bg-[#EEF4FF] hover:text-[#3B5BDB] transition-colors">
                         <FaTruck className="w-3 h-3" /> Equipment
                       </Link>
-                      <Link to="/dashboard/vendor-profile" className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#F3F4F6] text-neutral-700 text-xs font-semibold hover:bg-[#EEF4FF] hover:text-[#3678F1] transition-colors">
+                      <Link to="/dashboard/vendor-profile" className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#F3F4F6] text-neutral-700 text-xs font-semibold hover:bg-[#EEF4FF] hover:text-[#3B5BDB] transition-colors">
                         <FaUser className="w-3 h-3" /> Edit Profile
                       </Link>
                     </div>
@@ -402,7 +402,7 @@ export default function VendorDashboard() {
               )}
               {panel.status === 'completed' && (
                 <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#1D4ED8] bg-[#DBEAFE] px-3 py-1.5 rounded-full">
-                  <FaCircle className="text-[8px] text-[#3678F1]" /> Past Rental
+                  <FaCircle className="text-[8px] text-[#3B5BDB]" /> Past Rental
                 </span>
               )}
             </div>
@@ -418,7 +418,7 @@ export default function VendorDashboard() {
                   <button
                     type="button"
                     className="rounded-xl w-full py-2.5 bg-[#F3F4F6] text-neutral-700 text-sm font-medium hover:bg-neutral-200 transition-colors"
-                    onClick={() => toast('Go to Availability to block this date.')}
+                    onClick={() => navigate('/dashboard/vendor-availability')}
                   >
                     Block this date
                   </button>
@@ -445,7 +445,7 @@ export default function VendorDashboard() {
                     {panel.status === 'booked' && (
                       <button
                         type="button"
-                        className="flex items-center justify-center gap-2 w-full rounded-xl py-2.5 bg-[#3678F1] text-white text-sm font-semibold hover:bg-[#2563d4] transition-colors"
+                        className="flex items-center justify-center gap-2 w-full rounded-xl py-2.5 bg-[#3B5BDB] text-white text-sm font-semibold hover:bg-[#2f4ac2] transition-colors"
                       >
                         <FaMessage className="w-3.5 h-3.5" /> Contact Company
                       </button>
@@ -468,7 +468,7 @@ export default function VendorDashboard() {
                 <button
                   type="button"
                   className="flex items-center justify-center gap-2 w-full rounded-xl py-2.5 bg-[#F4C430] text-neutral-900 text-sm font-bold hover:bg-[#e6b820] transition-colors"
-                  onClick={() => toast('Go to Availability to manage your schedule.')}
+                  onClick={() => navigate('/dashboard/vendor-availability')}
                 >
                   <FaPlus className="w-3 h-3" /> Manage Availability
                 </button>

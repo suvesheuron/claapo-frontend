@@ -94,12 +94,12 @@ export default function CreateProject() {
           <div className="flex-1 min-h-0 overflow-auto">
             <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-5">
 
-              <Link to="/dashboard/projects" className="inline-flex items-center gap-2 text-neutral-500 hover:text-[#3678F1] mb-5 text-sm transition-colors">
+              <Link to="/dashboard/projects" className="inline-flex items-center gap-2 text-neutral-500 hover:text-[#3B5BDB] mb-5 text-sm transition-colors">
                 <FaArrowLeft className="w-3.5 h-3.5" /> Back to Projects
               </Link>
 
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-11 h-11 rounded-2xl bg-[#3678F1] flex items-center justify-center shrink-0">
+                <div className="w-11 h-11 rounded-2xl bg-[#3B5BDB] flex items-center justify-center shrink-0">
                   <FaFolderPlus className="text-white text-lg" />
                 </div>
                 <div>
@@ -114,33 +114,33 @@ export default function CreateProject() {
                   {/* Project Info */}
                   <div className="rounded-2xl bg-white border border-neutral-200 p-5">
                     <h2 className="text-sm font-bold text-neutral-900 mb-4 flex items-center gap-2">
-                      <FaCircleInfo className="text-[#3678F1]" /> Project Information
+                      <FaCircleInfo className="text-[#3B5BDB]" /> Project Information
                     </h2>
                     <div className="space-y-4">
                       <div>
                         <label className="block text-neutral-700 text-xs mb-1.5 font-semibold">Project Name <span className="text-[#F40F02]">*</span></label>
-                        <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., Summer Commercial Campaign 2025" disabled={loading} className="rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all disabled:opacity-50" />
+                        <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., Summer Commercial Campaign 2025" disabled={loading} className="rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3B5BDB] focus:bg-white text-sm transition-all disabled:opacity-50" />
                       </div>
                       <div>
                         <label className="block text-neutral-700 text-xs mb-1.5 font-semibold">Production House Name</label>
-                        <input type="text" value={productionHouseName} onChange={(e) => setProductionHouseName(e.target.value)} placeholder="e.g., Yash Raj Films" disabled={loading} className="rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all disabled:opacity-50" />
+                        <input type="text" value={productionHouseName} onChange={(e) => setProductionHouseName(e.target.value)} placeholder="e.g., Yash Raj Films" disabled={loading} className="rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3B5BDB] focus:bg-white text-sm transition-all disabled:opacity-50" />
                       </div>
                       <div>
                         <label className="block text-neutral-700 text-xs mb-1.5 font-semibold">Project Description</label>
-                        <textarea rows={3} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Brief description of the project, genre, and requirements..." disabled={loading} className="rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all resize-none disabled:opacity-50" />
+                        <textarea rows={3} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Brief description of the project, genre, and requirements..." disabled={loading} className="rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3B5BDB] focus:bg-white text-sm transition-all resize-none disabled:opacity-50" />
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <label className="block text-neutral-700 text-xs mb-1.5 font-semibold">Start Date <span className="text-[#F40F02]">*</span></label>
                           <div className="relative">
-                            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} disabled={loading} className="date-input-no-native-icon rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all disabled:opacity-50" />
+                            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} disabled={loading} className="date-input-no-native-icon rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 focus:outline-none focus:border-[#3B5BDB] focus:bg-white text-sm transition-all disabled:opacity-50" />
                             <FaCalendar className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 text-xs pointer-events-none" />
                           </div>
                         </div>
                         <div>
                           <label className="block text-neutral-700 text-xs mb-1.5 font-semibold">End Date <span className="text-[#F40F02]">*</span></label>
                           <div className="relative">
-                            <input type="date" value={endDate} min={startDate} onChange={(e) => setEndDate(e.target.value)} disabled={loading} className="date-input-no-native-icon rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all disabled:opacity-50" />
+                            <input type="date" value={endDate} min={startDate} onChange={(e) => setEndDate(e.target.value)} disabled={loading} className="date-input-no-native-icon rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 focus:outline-none focus:border-[#3B5BDB] focus:bg-white text-sm transition-all disabled:opacity-50" />
                             <FaCalendar className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 text-xs pointer-events-none" />
                           </div>
                         </div>
@@ -148,31 +148,31 @@ export default function CreateProject() {
                       <div>
                         <label className="block text-neutral-700 text-xs mb-1.5 font-semibold">Delivery Date <span className="text-neutral-400 font-normal">(optional)</span></label>
                         <div className="relative">
-                          <input type="date" value={deliveryDate} min={endDate} onChange={(e) => setDeliveryDate(e.target.value)} disabled={loading} className="date-input-no-native-icon rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all disabled:opacity-50" />
+                          <input type="date" value={deliveryDate} min={endDate} onChange={(e) => setDeliveryDate(e.target.value)} disabled={loading} className="date-input-no-native-icon rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 focus:outline-none focus:border-[#3B5BDB] focus:bg-white text-sm transition-all disabled:opacity-50" />
                           <FaCalendar className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 text-xs pointer-events-none" />
                         </div>
                       </div>
                       <div>
                         <label className="block text-neutral-700 text-xs mb-1.5 font-semibold">Primary Location (City)</label>
-                        <input type="text" value={locationCity} onChange={(e) => setLocationCity(e.target.value)} placeholder="e.g., Mumbai" disabled={loading} className="rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all disabled:opacity-50" />
+                        <input type="text" value={locationCity} onChange={(e) => setLocationCity(e.target.value)} placeholder="e.g., Mumbai" disabled={loading} className="rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3B5BDB] focus:bg-white text-sm transition-all disabled:opacity-50" />
                       </div>
                       <div>
                         <label className="block text-neutral-700 text-xs mb-1.5 font-semibold">Budget (₹) <span className="text-neutral-400 font-normal">(optional)</span></label>
                         <div className="grid grid-cols-2 gap-3">
                           <div>
                             <label className="block text-neutral-400 text-[11px] mb-1">Minimum</label>
-                            <input type="number" min="0" value={budgetMin} onChange={(e) => setBudgetMin(e.target.value)} placeholder="e.g., 500000" disabled={loading} className="rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all disabled:opacity-50" />
+                            <input type="number" min="0" value={budgetMin} onChange={(e) => setBudgetMin(e.target.value)} placeholder="e.g., 500000" disabled={loading} className="rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3B5BDB] focus:bg-white text-sm transition-all disabled:opacity-50" />
                           </div>
                           <div>
                             <label className="block text-neutral-400 text-[11px] mb-1">Maximum</label>
-                            <input type="number" min="0" value={budgetMax} onChange={(e) => setBudgetMax(e.target.value)} placeholder="e.g., 1000000" disabled={loading} className="rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all disabled:opacity-50" />
+                            <input type="number" min="0" value={budgetMax} onChange={(e) => setBudgetMax(e.target.value)} placeholder="e.g., 1000000" disabled={loading} className="rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3B5BDB] focus:bg-white text-sm transition-all disabled:opacity-50" />
                           </div>
                         </div>
                       </div>
                       <div>
                         <div className="flex items-center justify-between mb-2">
                           <label className="text-neutral-700 text-xs font-semibold">Shoot Dates <span className="text-neutral-400 font-normal">(optional)</span></label>
-                          <button type="button" onClick={addShootDate} className="text-xs text-[#3678F1] hover:underline flex items-center gap-1">
+                          <button type="button" onClick={addShootDate} className="text-xs text-[#3B5BDB] hover:underline flex items-center gap-1">
                             <FaPlus className="w-2.5 h-2.5" /> Add Date
                           </button>
                         </div>
@@ -180,7 +180,7 @@ export default function CreateProject() {
                           {shootDates.map((d, i) => (
                             <div key={i} className="flex items-center gap-2">
                               <div className="relative flex-1">
-                                <input type="date" value={d} onChange={(e) => updateShootDate(i, e.target.value)} disabled={loading} min={startDate} max={endDate} className="date-input-no-native-icon rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all disabled:opacity-50" />
+                                <input type="date" value={d} onChange={(e) => updateShootDate(i, e.target.value)} disabled={loading} min={startDate} max={endDate} className="date-input-no-native-icon rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 focus:outline-none focus:border-[#3B5BDB] focus:bg-white text-sm transition-all disabled:opacity-50" />
                                 <FaCalendar className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 text-xs pointer-events-none" />
                               </div>
                               {shootDates.length > 1 && (
@@ -195,7 +195,7 @@ export default function CreateProject() {
                       <div>
                         <div className="flex items-center justify-between mb-2">
                           <label className="text-neutral-700 text-xs font-semibold">Shoot Locations</label>
-                          <button type="button" onClick={addLocation} className="text-xs text-[#3678F1] hover:underline flex items-center gap-1">
+                          <button type="button" onClick={addLocation} className="text-xs text-[#3B5BDB] hover:underline flex items-center gap-1">
                             <FaPlus className="w-2.5 h-2.5" /> Add Location
                           </button>
                         </div>
@@ -204,7 +204,7 @@ export default function CreateProject() {
                             <div key={i} className="flex items-center gap-2">
                               <div className="relative flex-1">
                                 <FaLocationDot className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-xs pointer-events-none" />
-                                <input type="text" value={loc} onChange={(e) => updateLocation(i, e.target.value)} placeholder={`Location ${i + 1} e.g., Ladakh`} disabled={loading} className="rounded-xl w-full pl-9 pr-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all disabled:opacity-50" />
+                                <input type="text" value={loc} onChange={(e) => updateLocation(i, e.target.value)} placeholder={`Location ${i + 1} e.g., Ladakh`} disabled={loading} className="rounded-xl w-full pl-9 pr-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3B5BDB] focus:bg-white text-sm transition-all disabled:opacity-50" />
                               </div>
                               {shootLocations.length > 1 && (
                                 <button type="button" onClick={() => removeLocation(i)} className="w-8 h-8 rounded-lg bg-[#F3F4F6] flex items-center justify-center text-neutral-400 hover:bg-red-50 hover:text-red-500 transition-colors">
@@ -223,7 +223,7 @@ export default function CreateProject() {
                 <div>
                   <div className="rounded-2xl bg-white border border-neutral-200 p-5 lg:sticky lg:top-5">
                     <h3 className="text-sm font-bold text-neutral-900 mb-4 flex items-center gap-2">
-                      <FaClipboardCheck className="text-[#3678F1]" /> Project Summary
+                      <FaClipboardCheck className="text-[#3B5BDB]" /> Project Summary
                     </h3>
                     <div className="space-y-3 mb-5">
                       {[
@@ -246,7 +246,7 @@ export default function CreateProject() {
                       <ul className="space-y-2">
                         {['Search & filter crew members', 'Send booking requests', 'Lock confirmed team'].map((step) => (
                           <li key={step} className="flex items-center gap-2">
-                            <div className="w-1.5 h-1.5 rounded-full bg-[#3678F1] shrink-0" />
+                            <div className="w-1.5 h-1.5 rounded-full bg-[#3B5BDB] shrink-0" />
                             <span className="text-xs text-neutral-500">{step}</span>
                           </li>
                         ))}
@@ -263,7 +263,7 @@ export default function CreateProject() {
                       type="button"
                       onClick={() => handleCreate()}
                       disabled={loading}
-                      className="rounded-xl w-full py-3 bg-[#3678F1] text-white font-semibold text-sm hover:bg-[#2563d4] mb-2 flex items-center justify-center gap-2 transition-colors shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                      className="rounded-xl w-full py-3 bg-[#3B5BDB] text-white font-semibold text-sm hover:bg-[#2f4ac2] mb-2 flex items-center justify-center gap-2 transition-colors shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
                     >
                       {loading ? <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Creating…</> : <><FaClipboardCheck /> Create Project</>}
                     </button>

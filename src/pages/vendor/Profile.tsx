@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import {
   FaEye, FaEyeSlash, FaPen,
   FaBuilding, FaIdCard, FaLocationDot, FaTriangleExclamation, FaCircleCheck,
-  FaGlobe, FaInstagram,
+  FaGlobe, FaInstagram, FaCamera,
 } from 'react-icons/fa6';
 import DashboardHeader from '../../components/DashboardHeader';
 import DashboardSidebar from '../../components/DashboardSidebar';
@@ -11,6 +11,7 @@ import Avatar from '../../components/Avatar';
 import { api, ApiException } from '../../services/api';
 import { useApiQuery } from '../../hooks/useApiQuery';
 import { vendorNavLinks } from '../../navigation/dashboardNav';
+import LocationAutocomplete from '../../components/LocationAutocomplete';
 
 /** Matches search filter options so vendor type filter works correctly */
 const VENDOR_TYPE_OPTIONS: { value: string; label: string }[] = [
@@ -62,6 +63,10 @@ export default function VendorProfile() {
   const [saved,  setSaved]  = useState(false);
   const [error,  setError]  = useState<string | null>(null);
 
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [curPass,  setCurPass]  = useState('');
   const [newPass,  setNewPass]  = useState('');
   const [confPass, setConfPass] = useState('');
@@ -70,9 +75,27 @@ export default function VendorProfile() {
   const [pwError,  setPwError]  = useState<string | null>(null);
   const [pwSaved,  setPwSaved]  = useState(false);
 
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAvatarUploading(true);
+    try {
+      const { uploadUrl, key } = await api.post<{ uploadUrl: string; key: string }>('/profile/avatar', {});
+      await fetch(uploadUrl, { method: 'PUT', headers: { 'Content-Type': file.type || 'image/jpeg' }, body: file });
+      await api.post('/profile/avatar/confirm', { key });
+      setAvatarUrl(URL.createObjectURL(file));
+    } catch {
+      setError('Failed to upload logo.');
+    } finally {
+      setAvatarUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   useEffect(() => {
     if (!me?.profile) return;
-    const p = me.profile;
+    const p = me.profile as VendorProfileData & { avatarUrl?: string; logoUrl?: string };
+    if (p.logoUrl || p.avatarUrl) setAvatarUrl(p.logoUrl ?? p.avatarUrl ?? null);
     setCompanyName(p.companyName ?? '');
     setVendorType(p.vendorType ?? '');
     setLocationCity(p.locationCity ?? '');
@@ -149,7 +172,15 @@ export default function VendorProfile() {
                   {/* Profile card (top) */}
                   <div className="rounded-2xl bg-white border border-neutral-200 p-5 text-center">
                     <div className="flex justify-center mb-3">
-                      <Avatar name={companyName || 'Vendor'} size="lg" />
+                      <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+                        <Avatar src={avatarUrl ?? undefined} name={companyName || 'Vendor'} size="lg" />
+                        <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                          {avatarUploading
+                            ? <span className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                            : <FaCamera className="text-white text-sm" />}
+                        </div>
+                        <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+                      </div>
                     </div>
                     <h2 className="text-base font-bold text-neutral-900 mb-0.5">{companyName || '—'}</h2>
                     <p className="text-xs text-neutral-500 mb-1">
@@ -170,13 +201,13 @@ export default function VendorProfile() {
                       {website && (
                         <div className="flex items-center gap-2 text-xs text-neutral-500">
                           <FaGlobe className="w-3 h-3 text-neutral-400 shrink-0" />
-                          <a href={website} target="_blank" rel="noopener noreferrer" className="text-[#3678F1] hover:underline truncate">{website.replace(/^https?:\/\//, '')}</a>
+                          <a href={website} target="_blank" rel="noopener noreferrer" className="text-[#3B5BDB] hover:underline truncate">{website.replace(/^https?:\/\//, '')}</a>
                         </div>
                       )}
                       {instagramUrl && (
                         <div className="flex items-center gap-2 text-xs text-neutral-500">
                           <FaInstagram className="w-3 h-3 text-neutral-400 shrink-0" />
-                          <a href={instagramUrl} target="_blank" rel="noopener noreferrer" className="text-[#3678F1] hover:underline truncate">{instagramUrl.replace(/^https?:\/\//, '')}</a>
+                          <a href={instagramUrl} target="_blank" rel="noopener noreferrer" className="text-[#3B5BDB] hover:underline truncate">{instagramUrl.replace(/^https?:\/\//, '')}</a>
                         </div>
                       )}
                       {profile?.gstNumber && (
@@ -194,7 +225,7 @@ export default function VendorProfile() {
                       )}
                     </div>
                     {!editing && (
-                      <button type="button" onClick={() => setEditing(true)} className="mt-4 w-full px-4 py-2.5 bg-[#3678F1] text-white rounded-xl text-sm font-semibold hover:bg-[#2c65d4] transition-colors flex items-center justify-center gap-2">
+                      <button type="button" onClick={() => setEditing(true)} className="mt-4 w-full px-4 py-2.5 bg-[#3B5BDB] text-white rounded-xl text-sm font-semibold hover:bg-[#2f4ac2] transition-colors flex items-center justify-center gap-2">
                         <FaPen className="w-3.5 h-3.5" /> Edit Profile
                       </button>
                     )}
@@ -210,8 +241,8 @@ export default function VendorProfile() {
                         <div><dt className="text-xs text-neutral-500 mb-0.5">Phone</dt><dd className="text-sm text-neutral-700">{me?.phone ?? '—'}</dd></div>
                         <div><dt className="text-xs text-neutral-500 mb-0.5">City</dt><dd className="text-sm text-neutral-700">{locationCity || '—'}</dd></div>
                         <div><dt className="text-xs text-neutral-500 mb-0.5">State</dt><dd className="text-sm text-neutral-700">{locationState || '—'}</dd></div>
-                        <div><dt className="text-xs text-neutral-500 mb-0.5">Website</dt><dd className="text-sm text-neutral-700">{website ? <a href={website} target="_blank" rel="noopener noreferrer" className="text-[#3678F1] hover:underline">{website}</a> : '—'}</dd></div>
-                        <div><dt className="text-xs text-neutral-500 mb-0.5">Instagram</dt><dd className="text-sm text-neutral-700">{instagramUrl ? <a href={instagramUrl} target="_blank" rel="noopener noreferrer" className="text-[#3678F1] hover:underline">{instagramUrl}</a> : '—'}</dd></div>
+                        <div><dt className="text-xs text-neutral-500 mb-0.5">Website</dt><dd className="text-sm text-neutral-700">{website ? <a href={website} target="_blank" rel="noopener noreferrer" className="text-[#3B5BDB] hover:underline">{website}</a> : '—'}</dd></div>
+                        <div><dt className="text-xs text-neutral-500 mb-0.5">Instagram</dt><dd className="text-sm text-neutral-700">{instagramUrl ? <a href={instagramUrl} target="_blank" rel="noopener noreferrer" className="text-[#3B5BDB] hover:underline">{instagramUrl}</a> : '—'}</dd></div>
                         <div><dt className="text-xs text-neutral-500 mb-0.5">About</dt><dd className="text-sm text-neutral-700 whitespace-pre-wrap">{bio || '—'}</dd></div>
                         <div><dt className="text-xs text-neutral-500 mb-0.5">About Us</dt><dd className="text-sm text-neutral-700 whitespace-pre-wrap">{aboutUs || '—'}</dd></div>
                       </dl>
@@ -228,12 +259,12 @@ export default function VendorProfile() {
                           <label className="block text-xs font-medium text-neutral-600 mb-1">Business Name</label>
                           <div className="relative">
                             <FaBuilding className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 w-3.5 h-3.5" />
-                            <input type="text" value={companyName} onChange={(e) => setCompanyName(e.target.value)} disabled={saving} placeholder="Your business name" className="w-full pl-9 pr-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3678F1] transition-all disabled:bg-neutral-50" />
+                            <input type="text" value={companyName} onChange={(e) => setCompanyName(e.target.value)} disabled={saving} placeholder="Your business name" className="w-full pl-9 pr-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3B5BDB] transition-all disabled:bg-neutral-50" />
                           </div>
                         </div>
                         <div>
                           <label className="block text-xs font-medium text-neutral-600 mb-1">Equipment type</label>
-                          <select value={vendorType || 'all'} onChange={(e) => setVendorType(e.target.value)} disabled={saving} className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3678F1] transition-all bg-white disabled:bg-neutral-50">
+                          <select value={vendorType || 'all'} onChange={(e) => setVendorType(e.target.value)} disabled={saving} className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3B5BDB] transition-all bg-white disabled:bg-neutral-50">
                             {VENDOR_TYPE_OPTIONS.map(({ value, label }) => (
                               <option key={value} value={value}>{label}</option>
                             ))}
@@ -244,36 +275,34 @@ export default function VendorProfile() {
                           <label className="block text-xs font-medium text-neutral-600 mb-1">Email (read-only)</label>
                           <input type="email" value={me?.email ?? ''} readOnly className="w-full px-3 py-2.5 border border-neutral-200 rounded-xl text-sm bg-neutral-50 text-neutral-500 cursor-not-allowed" />
                         </div>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <label className="block text-xs font-medium text-neutral-600 mb-1">City</label>
-                            <input type="text" value={locationCity} onChange={(e) => setLocationCity(e.target.value)} disabled={saving} placeholder="e.g., Mumbai" className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3678F1] transition-all disabled:bg-neutral-50" />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-medium text-neutral-600 mb-1">State</label>
-                            <input type="text" value={locationState} onChange={(e) => setLocationState(e.target.value)} disabled={saving} placeholder="e.g., Maharashtra" className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3678F1] transition-all disabled:bg-neutral-50" />
-                          </div>
-                        </div>
+                        <LocationAutocomplete
+                          label="Location"
+                          city={locationCity}
+                          state={locationState}
+                          disabled={saving}
+                          onSelect={(loc) => { setLocationCity(loc.city); setLocationState(loc.state); }}
+                          placeholder="Search city or pin code..."
+                        />
                         <div>
                           <label className="block text-xs font-medium text-neutral-600 mb-1">About / Description</label>
-                          <textarea value={bio} onChange={(e) => setBio(e.target.value)} rows={3} disabled={saving} placeholder="Brief description of your business and specialties…" className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3678F1] transition-all resize-none disabled:bg-neutral-50" />
+                          <textarea value={bio} onChange={(e) => setBio(e.target.value)} rows={3} disabled={saving} placeholder="Brief description of your business and specialties…" className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3B5BDB] transition-all resize-none disabled:bg-neutral-50" />
                           <div className="mt-3">
                             <label className="block text-xs font-medium text-neutral-600 mb-1">About Us</label>
-                            <textarea value={aboutUs} onChange={(e) => setAboutUs(e.target.value)} rows={4} disabled={saving} placeholder="Longer company story, services, experience…" className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3678F1] transition-all resize-none disabled:bg-neutral-50" />
+                            <textarea value={aboutUs} onChange={(e) => setAboutUs(e.target.value)} rows={4} disabled={saving} placeholder="Longer company story, services, experience…" className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3B5BDB] transition-all resize-none disabled:bg-neutral-50" />
                           </div>
                         </div>
                         <div>
                           <label className="block text-xs font-medium text-neutral-600 mb-1">Website</label>
                           <div className="relative">
                             <FaGlobe className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 w-3.5 h-3.5" />
-                            <input type="url" value={website} onChange={(e) => setWebsite(e.target.value)} disabled={saving} placeholder="https://yourcompany.com" className="w-full pl-9 pr-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3678F1] transition-all disabled:bg-neutral-50" />
+                            <input type="url" value={website} onChange={(e) => setWebsite(e.target.value)} disabled={saving} placeholder="https://yourcompany.com" className="w-full pl-9 pr-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3B5BDB] transition-all disabled:bg-neutral-50" />
                           </div>
                         </div>
                         <div>
                           <label className="block text-xs font-medium text-neutral-600 mb-1">Instagram URL</label>
                           <div className="relative">
                             <FaInstagram className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 w-3.5 h-3.5" />
-                            <input type="url" value={instagramUrl} onChange={(e) => setInstagramUrl(e.target.value)} disabled={saving} placeholder="https://instagram.com/yourcompany" className="w-full pl-9 pr-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3678F1] transition-all disabled:bg-neutral-50" />
+                            <input type="url" value={instagramUrl} onChange={(e) => setInstagramUrl(e.target.value)} disabled={saving} placeholder="https://instagram.com/yourcompany" className="w-full pl-9 pr-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3B5BDB] transition-all disabled:bg-neutral-50" />
                           </div>
                         </div>
                         {profile?.gstNumber && (
@@ -304,7 +333,7 @@ export default function VendorProfile() {
 
                       <div className="mt-4 flex justify-end gap-2">
                         <button type="button" onClick={() => setEditing(false)} className="px-5 py-2.5 border border-neutral-300 text-neutral-700 rounded-xl text-sm font-medium hover:bg-neutral-50">Cancel</button>
-                        <button type="button" onClick={() => { handleSave(); setEditing(false); }} disabled={saving} className="px-5 py-2.5 bg-[#3678F1] text-white rounded-xl text-sm font-semibold hover:bg-[#2c65d4] disabled:opacity-60 flex items-center gap-2">
+                        <button type="button" onClick={() => { handleSave(); setEditing(false); }} disabled={saving} className="px-5 py-2.5 bg-[#3B5BDB] text-white rounded-xl text-sm font-semibold hover:bg-[#2f4ac2] disabled:opacity-60 flex items-center gap-2">
                           {saving ? <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Saving…</> : 'Save Changes'}
                         </button>
                       </div>
@@ -322,7 +351,7 @@ export default function VendorProfile() {
                           <div key={label}>
                             <label className="block text-xs font-medium text-neutral-600 mb-1">{label}</label>
                             <div className="relative">
-                              <input type={showPw[key] ? 'text' : 'password'} value={val} onChange={(e) => set(e.target.value)} placeholder="••••••••" disabled={pwSaving} className="w-full px-3 py-2.5 pr-11 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3678F1] transition-all disabled:bg-neutral-50" />
+                              <input type={showPw[key] ? 'text' : 'password'} value={val} onChange={(e) => set(e.target.value)} placeholder="••••••••" disabled={pwSaving} className="w-full px-3 py-2.5 pr-11 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3B5BDB] transition-all disabled:bg-neutral-50" />
                               <button type="button" onClick={() => setShowPw((p) => ({ ...p, [key]: !p[key] }))} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 p-1" aria-label={showPw[key] ? 'Hide password' : 'Show password'}>
                                 {showPw[key] ? <FaEyeSlash className="w-4 h-4" /> : <FaEye className="w-4 h-4" />}
                               </button>
@@ -342,7 +371,7 @@ export default function VendorProfile() {
                         </div>
                       )}
                       <div className="mt-4 flex justify-end">
-                        <button type="button" onClick={handlePasswordChange} disabled={pwSaving} className="px-5 py-2.5 bg-[#3678F1] text-white rounded-xl text-sm font-semibold hover:bg-[#2c65d4] transition-colors disabled:opacity-60 flex items-center gap-2">
+                        <button type="button" onClick={handlePasswordChange} disabled={pwSaving} className="px-5 py-2.5 bg-[#3B5BDB] text-white rounded-xl text-sm font-semibold hover:bg-[#2f4ac2] transition-colors disabled:opacity-60 flex items-center gap-2">
                           {pwSaving ? <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Saving…</> : 'Update Password'}
                         </button>
                       </div>

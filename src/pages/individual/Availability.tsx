@@ -267,7 +267,7 @@ export default function IndividualAvailability() {
                     <button
                       type="button"
                       onClick={() => setMonthOffset(0)}
-                      className="text-xs text-[#3678F1] hover:underline font-medium"
+                      className="text-xs text-[#3B5BDB] hover:underline font-medium"
                     >
                       Today
                     </button>
@@ -277,8 +277,8 @@ export default function IndividualAvailability() {
                 {/* Past month hint */}
                 {monthOffset < 0 && (
                   <div className="flex items-center gap-2 mb-4 px-3 py-2 bg-[#EEF4FF] rounded-xl">
-                    <FaCircleInfo className="text-[#3678F1] text-xs shrink-0" />
-                    <p className="text-xs text-[#3678F1]">Viewing history — click completed dates to see project details</p>
+                    <FaCircleInfo className="text-[#3B5BDB] text-xs shrink-0" />
+                    <p className="text-xs text-[#3B5BDB]">Viewing history — click completed dates to see project details</p>
                   </div>
                 )}
 
@@ -306,7 +306,7 @@ export default function IndividualAvailability() {
                             ? 'bg-white border-neutral-100 text-neutral-300 cursor-default'
                             : `${cellStyle[cell.status ?? 'available'] ?? cellStyle.available} cal-cell cursor-pointer`
                           }
-                          ${isSelected ? 'ring-2 ring-[#3678F1] ring-offset-1' : ''}
+                          ${isSelected ? 'ring-2 ring-[#3B5BDB] ring-offset-1' : ''}
                         `}
                       >
                         <span className="text-xs font-bold leading-none">{cell.d}</span>
@@ -328,7 +328,7 @@ export default function IndividualAvailability() {
                   {[
                     { color: 'bg-[#22C55E]', label: 'Available' },
                     { color: 'bg-[#F40F02]', label: 'Booked' },
-                    { color: 'bg-[#3678F1]', label: 'Completed' },
+                    { color: 'bg-[#3B5BDB]', label: 'Completed' },
                     { color: 'bg-neutral-300', label: 'Blocked' },
                   ].map(({ color, label }) => (
                     <div key={label} className="flex items-center gap-2">
@@ -341,7 +341,7 @@ export default function IndividualAvailability() {
 
               {/* Tips */}
               <div className="mt-4 rounded-2xl bg-[#EEF4FF] border border-[#BFDBFE] p-4 flex items-start gap-3">
-                <FaCircleInfo className="text-[#3678F1] mt-0.5 shrink-0" />
+                <FaCircleInfo className="text-[#3B5BDB] mt-0.5 shrink-0" />
                 <div className="text-xs text-[#1D4ED8] space-y-1">
                   <p className="font-semibold">How to use your calendar</p>
                   <p>Click any <strong>available</strong> date to block it with a reason.</p>
@@ -375,7 +375,7 @@ export default function IndividualAvailability() {
             <div className="px-5 py-3 border-b border-neutral-100">
               {panel.status === 'available' && <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#15803D] bg-[#DCFCE7] px-3 py-1.5 rounded-full"><FaCircle className="text-[8px] text-[#22C55E]" /> Available</span>}
               {panel.status === 'booked' && <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#B91C1C] bg-[#FEE2E2] px-3 py-1.5 rounded-full"><FaCircle className="text-[8px] text-[#F40F02]" /> Booked</span>}
-              {panel.status === 'completed' && <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#1D4ED8] bg-[#DBEAFE] px-3 py-1.5 rounded-full"><FaCircle className="text-[8px] text-[#3678F1]" /> Completed</span>}
+              {panel.status === 'completed' && <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#1D4ED8] bg-[#DBEAFE] px-3 py-1.5 rounded-full"><FaCircle className="text-[8px] text-[#3B5BDB]" /> Completed</span>}
               {panel.status === 'blocked' && <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-neutral-600 bg-[#F3F4F6] px-3 py-1.5 rounded-full"><FaLock className="text-[8px]" /> Blocked</span>}
             </div>
 
@@ -400,18 +400,18 @@ export default function IndividualAvailability() {
                     <p className="text-xs text-neutral-400 mb-4">Companies won't be able to send requests for this date.</p>
                     <div className="space-y-2">
                       {BLOCK_REASONS.map((r) => (
-                        <label key={r} className="flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors hover:bg-[#F3F4F6]" style={{ borderColor: blockReason === r ? '#3678F1' : '#E5E7EB', background: blockReason === r ? '#EEF4FF' : 'white' }}>
-                          <input type="radio" name="blockReason" value={r} checked={blockReason === r} onChange={() => setBlockReason(r)} className="accent-[#3678F1]" />
-                          <span className={`text-sm font-medium ${blockReason === r ? 'text-[#3678F1]' : 'text-neutral-700'}`}>{r}</span>
+                        <label key={r} className="flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors hover:bg-[#F3F4F6]" style={{ borderColor: blockReason === r ? '#3B5BDB' : '#E5E7EB', background: blockReason === r ? '#EEF4FF' : 'white' }}>
+                          <input type="radio" name="blockReason" value={r} checked={blockReason === r} onChange={() => setBlockReason(r)} className="accent-[#3B5BDB]" />
+                          <span className={`text-sm font-medium ${blockReason === r ? 'text-[#3B5BDB]' : 'text-neutral-700'}`}>{r}</span>
                         </label>
                       ))}
                     </div>
                     {blockReason === 'Other' && (
-                      <input type="text" placeholder="Describe your reason..." value={blockOther} onChange={(e) => setBlockOther(e.target.value)} className="mt-3 rounded-xl w-full px-4 py-3 border border-neutral-300 bg-white text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] text-sm" />
+                      <input type="text" placeholder="Describe your reason..." value={blockOther} onChange={(e) => setBlockOther(e.target.value)} className="mt-3 rounded-xl w-full px-4 py-3 border border-neutral-300 bg-white text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3B5BDB] text-sm" />
                     )}
                   </div>
                   <div className="flex gap-2">
-                    <button type="button" onClick={handleConfirmBlock} disabled={saving} className="flex-1 rounded-xl py-2.5 bg-[#3678F1] text-white text-sm font-semibold hover:bg-[#2563d4] transition-colors disabled:opacity-50">{saving ? 'Saving…' : 'Confirm Block'}</button>
+                    <button type="button" onClick={handleConfirmBlock} disabled={saving} className="flex-1 rounded-xl py-2.5 bg-[#3B5BDB] text-white text-sm font-semibold hover:bg-[#2f4ac2] transition-colors disabled:opacity-50">{saving ? 'Saving…' : 'Confirm Block'}</button>
                     <button type="button" onClick={() => setBlockForm(false)} disabled={saving} className="flex-1 rounded-xl py-2.5 bg-[#F3F4F6] text-neutral-700 text-sm font-semibold hover:bg-neutral-200 transition-colors">Cancel</button>
                   </div>
                 </div>
@@ -446,7 +446,7 @@ export default function IndividualAvailability() {
                     ))}
                   </div>
                   <div className="space-y-2">
-                    <button type="button" className="flex items-center justify-center gap-2 w-full rounded-xl py-2.5 bg-[#3678F1] text-white text-sm font-semibold hover:bg-[#2563d4] transition-colors">
+                    <button type="button" className="flex items-center justify-center gap-2 w-full rounded-xl py-2.5 bg-[#3B5BDB] text-white text-sm font-semibold hover:bg-[#2f4ac2] transition-colors">
                       <FaMessage className="w-3.5 h-3.5" /> View Chat
                     </button>
                     {panel.invoice && (

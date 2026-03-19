@@ -92,7 +92,7 @@ export default function PastProjects() {
               </div>
 
               <div className="rounded-2xl bg-[#EEF4FF] border border-[#BFDBFE] p-3 mb-5 flex items-start gap-2">
-                <FaCircleInfo className="text-[#3678F1] mt-0.5 shrink-0 text-xs" />
+                <FaCircleInfo className="text-[#3B5BDB] mt-0.5 shrink-0 text-xs" />
                 <p className="text-xs text-[#1D4ED8]">
                   You can also browse past months on your <Link to="/dashboard/availability" className="font-semibold underline">Availability Calendar</Link>.{' '}
                   <Link to="/dashboard/invoice/new" className="font-semibold underline">Create an invoice</Link> for any project.
@@ -112,13 +112,13 @@ export default function PastProjects() {
                   <div className="flex items-center gap-1 flex-wrap">
                     <button
                       onClick={() => setFilterMonth(null)}
-                      className={`text-xs px-3 py-1 rounded-full font-semibold transition-colors ${filterMonth === null ? 'bg-[#3678F1] text-white' : 'bg-white border border-neutral-200 text-neutral-600 hover:bg-neutral-50'}`}
+                      className={`text-xs px-3 py-1 rounded-full font-semibold transition-colors ${filterMonth === null ? 'bg-[#3B5BDB] text-white' : 'bg-white border border-neutral-200 text-neutral-600 hover:bg-neutral-50'}`}
                     >All</button>
                     {MONTHS.map((m, i) => (
                       <button
                         key={m}
                         onClick={() => setFilterMonth(i)}
-                        className={`text-xs px-3 py-1 rounded-full font-semibold transition-colors ${filterMonth === i ? 'bg-[#3678F1] text-white' : 'bg-white border border-neutral-200 text-neutral-600 hover:bg-neutral-50'}`}
+                        className={`text-xs px-3 py-1 rounded-full font-semibold transition-colors ${filterMonth === i ? 'bg-[#3B5BDB] text-white' : 'bg-white border border-neutral-200 text-neutral-600 hover:bg-neutral-50'}`}
                       >{m}</button>
                     ))}
                   </div>
@@ -155,7 +155,7 @@ export default function PastProjects() {
                         <div key={b.id} className="rounded-2xl bg-white border border-neutral-200 p-4 hover:shadow-md hover:border-neutral-300 transition-all">
                           <div className="flex items-start justify-between gap-2 mb-3">
                             <div className="w-9 h-9 rounded-xl bg-[#DBEAFE] flex items-center justify-center shrink-0">
-                              <FaVideo className="text-[#3678F1] text-sm" />
+                              <FaVideo className="text-[#3B5BDB] text-sm" />
                             </div>
                             <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#DBEAFE] text-[#1D4ED8]">Completed</span>
                           </div>
@@ -174,14 +174,14 @@ export default function PastProjects() {
                             {invoiceId ? (
                               <Link
                                 to={`/dashboard/invoice/${invoiceId}`}
-                                className="flex-1 text-[11px] py-1.5 bg-[#3678F1] text-white rounded-xl hover:bg-[#2563d4] text-center flex items-center justify-center gap-1 font-semibold transition-colors"
+                                className="flex-1 text-[11px] py-1.5 bg-[#3B5BDB] text-white rounded-xl hover:bg-[#2f4ac2] text-center flex items-center justify-center gap-1 font-semibold transition-colors"
                               >
                                 <FaFileInvoice className="w-2.5 h-2.5" /> Invoice
                               </Link>
                             ) : (
                               <Link
                                 to="/dashboard/invoice/new"
-                                className="flex-1 text-[11px] py-1.5 bg-[#3678F1] text-white rounded-xl hover:bg-[#2563d4] text-center flex items-center justify-center gap-1 font-semibold transition-colors"
+                                className="flex-1 text-[11px] py-1.5 bg-[#3B5BDB] text-white rounded-xl hover:bg-[#2f4ac2] text-center flex items-center justify-center gap-1 font-semibold transition-colors"
                               >
                                 <FaFileInvoice className="w-2.5 h-2.5" /> Create Invoice
                               </Link>

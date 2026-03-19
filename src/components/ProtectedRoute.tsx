@@ -24,7 +24,7 @@ interface ProtectedRouteProps {
 function LoadingScreen() {
   return (
     <div className="min-h-screen bg-neutral-50 flex flex-col items-center justify-center gap-4">
-      <div className="w-12 h-12 rounded-xl bg-[#3678F1] flex items-center justify-center shadow-lg shadow-[#3678F1]/25 animate-pulse">
+      <div className="w-12 h-12 rounded-xl bg-[#3B5BDB] flex items-center justify-center shadow-lg shadow-[#3B5BDB]/25 animate-pulse">
         <FaVideo className="text-white text-lg" />
       </div>
       <p className="text-sm text-neutral-500">Loading…</p>

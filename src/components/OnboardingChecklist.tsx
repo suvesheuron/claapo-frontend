@@ -86,45 +86,88 @@ export default function OnboardingChecklist() {
 
   const pct = Math.round((completedCount / steps.length) * 100);
 
+  // Progress ring calculations
+  const ringSize = 36;
+  const strokeWidth = 3;
+  const radius = (ringSize - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference - (pct / 100) * circumference;
+
   return (
-    <div className="fixed bottom-4 right-4 z-40 w-72 bg-white rounded-2xl shadow-2xl border border-neutral-200 overflow-hidden">
+    <div className="fixed bottom-4 right-4 z-40 w-80 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl shadow-black/10 border border-neutral-200/60 overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-[#3678F1] to-[#5B9DF9]">
-        <div className="flex-1 min-w-0">
-          <p className="text-white font-bold text-sm">Get started</p>
-          <p className="text-white/70 text-xs">{completedCount} of {steps.length} steps complete</p>
+      <div className="flex items-center justify-between px-5 py-4 bg-gradient-to-r from-[#3B5BDB] via-[#4E6AE0] to-[#5B9DF9] relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-24 h-24 bg-white/[0.06] rounded-full -translate-y-1/2 translate-x-1/3" />
+        <div className="absolute bottom-0 left-8 w-16 h-16 bg-white/[0.04] rounded-full translate-y-1/2" />
+        <div className="flex items-center gap-3 relative">
+          {/* Progress ring */}
+          <div className="relative shrink-0">
+            <svg width={ringSize} height={ringSize} className="-rotate-90">
+              <circle
+                cx={ringSize / 2}
+                cy={ringSize / 2}
+                r={radius}
+                fill="none"
+                stroke="rgba(255,255,255,0.2)"
+                strokeWidth={strokeWidth}
+              />
+              <circle
+                cx={ringSize / 2}
+                cy={ringSize / 2}
+                r={radius}
+                fill="none"
+                stroke="white"
+                strokeWidth={strokeWidth}
+                strokeLinecap="round"
+                strokeDasharray={circumference}
+                strokeDashoffset={strokeDashoffset}
+                className="transition-all duration-700 ease-out"
+              />
+            </svg>
+            <span className="absolute inset-0 flex items-center justify-center text-white text-[10px] font-bold">
+              {completedCount}/{steps.length}
+            </span>
+          </div>
+          <div className="min-w-0">
+            <p className="text-white font-bold text-sm">Get started</p>
+            <p className="text-white/60 text-[11px] font-medium">{pct}% complete</p>
+          </div>
         </div>
-        <div className="flex items-center gap-1">
-          <button onClick={() => setCollapsed((c) => !c)} className="text-white/70 hover:text-white p-1 transition-colors">
+        <div className="flex items-center gap-0.5 relative">
+          <button onClick={() => setCollapsed((c) => !c)} className="text-white/60 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition-all">
             {collapsed ? <FaChevronUp className="w-3 h-3" /> : <FaChevronDown className="w-3 h-3" />}
           </button>
-          <button onClick={handleDismiss} className="text-white/70 hover:text-white p-1 transition-colors">
+          <button onClick={handleDismiss} className="text-white/60 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition-all">
             <FaXmark className="w-3 h-3" />
           </button>
         </div>
       </div>
 
       {/* Progress bar */}
-      <div className="h-1 bg-neutral-100">
+      <div className="h-0.5 bg-neutral-100">
         <div
-          className="h-1 bg-[#3678F1] transition-all duration-500"
+          className="h-0.5 bg-gradient-to-r from-[#3B5BDB] to-[#5B9DF9] transition-all duration-700 ease-out"
           style={{ width: `${pct}%` }}
         />
       </div>
 
       {/* Steps */}
       {!collapsed && (
-        <div className="p-3 space-y-1.5">
+        <div className="p-4 space-y-1">
           {steps.map((step, i) => (
             <Link
               key={i}
               to={step.to}
-              className={`flex items-center gap-3 p-2 rounded-xl transition-colors group ${step.done ? 'opacity-60' : 'hover:bg-[#EEF4FF]'}`}
+              className={`flex items-center gap-3 p-2.5 rounded-xl transition-all duration-150 group ${step.done ? 'opacity-50' : 'hover:bg-[#EEF4FF]/60'}`}
             >
-              <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 border-2 transition-colors ${step.done ? 'bg-[#3678F1] border-[#3678F1]' : 'border-neutral-300 group-hover:border-[#3678F1]'}`}>
-                {step.done && <FaCheck className="text-white text-[8px]" />}
+              <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-[10px] font-bold transition-all duration-200 ${
+                step.done
+                  ? 'bg-gradient-to-br from-[#3B5BDB] to-[#5B9DF9] text-white shadow-sm shadow-[#3B5BDB]/20'
+                  : 'bg-neutral-100 text-neutral-400 border border-neutral-200/60 group-hover:border-[#3B5BDB]/30 group-hover:bg-[#EEF4FF] group-hover:text-[#3B5BDB]'
+              }`}>
+                {step.done ? <FaCheck className="text-[9px]" /> : <span>{i + 1}</span>}
               </div>
-              <span className={`text-xs font-medium ${step.done ? 'text-neutral-400 line-through' : 'text-neutral-700 group-hover:text-[#3678F1]'}`}>
+              <span className={`text-xs font-medium leading-tight ${step.done ? 'text-neutral-400 line-through' : 'text-neutral-700 group-hover:text-[#3B5BDB]'}`}>
                 {step.label}
               </span>
             </Link>
@@ -132,9 +175,9 @@ export default function OnboardingChecklist() {
 
           <button
             onClick={handleDismiss}
-            className="w-full text-center text-xs text-neutral-400 hover:text-neutral-600 py-1 mt-1 transition-colors"
+            className="w-full text-center text-[11px] text-neutral-400 hover:text-neutral-600 py-2 mt-2 rounded-lg hover:bg-neutral-50 transition-all font-medium"
           >
-            Dismiss
+            Dismiss checklist
           </button>
         </div>
       )}

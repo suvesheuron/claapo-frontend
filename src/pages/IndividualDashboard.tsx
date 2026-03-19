@@ -117,8 +117,8 @@ export default function IndividualDashboard() {
 
                     {monthOffset < 0 && (
                       <div className="flex items-center gap-2 mb-3 px-3 py-2 bg-[#EEF4FF] rounded-xl">
-                        <FaCircleInfo className="text-[#3678F1] text-xs shrink-0" />
-                        <p className="text-xs text-[#3678F1]">Viewing history — go to <Link to="/dashboard/availability" className="underline">Availability</Link> to manage dates</p>
+                        <FaCircleInfo className="text-[#3B5BDB] text-xs shrink-0" />
+                        <p className="text-xs text-[#3B5BDB]">Viewing history — go to <Link to="/dashboard/availability" className="underline">Availability</Link> to manage dates</p>
                       </div>
                     )}
 
@@ -132,7 +132,7 @@ export default function IndividualDashboard() {
                           className={`rounded-xl border text-center p-1 sm:p-1.5 min-h-[44px] sm:min-h-[52px] select-none flex flex-col items-center justify-center gap-0.5 ${
                             cell.muted ? 'bg-white border-neutral-100 text-neutral-300 cursor-default' :
                             `${cellStyle[cell.status ?? 'available'] ?? cellStyle.available} cal-cell cursor-pointer`
-                          } ${panel?.d === cell.d && !cell.muted ? 'ring-2 ring-[#3678F1] ring-offset-1' : ''}`}>
+                          } ${panel?.d === cell.d && !cell.muted ? 'ring-2 ring-[#3B5BDB] ring-offset-1' : ''}`}>
                           <span className="text-[11px] sm:text-xs font-semibold leading-none">{cell.d}</span>
                         </div>
                       ))}
@@ -141,7 +141,7 @@ export default function IndividualDashboard() {
                       {[
                         { color: 'bg-[#22C55E]', label: 'Available' },
                         { color: 'bg-[#F40F02]', label: 'Booked' },
-                        { color: 'bg-[#3678F1]', label: 'Completed' },
+                        { color: 'bg-[#3B5BDB]', label: 'Completed' },
                         { color: 'bg-neutral-300', label: 'Blocked' },
                       ].map(({ color, label }) => (
                         <div key={label} className="flex items-center gap-2">
@@ -151,7 +151,7 @@ export default function IndividualDashboard() {
                       ))}
                     </div>
                     <p className="mt-3 text-[11px] text-neutral-400">
-                      Go to <Link to="/dashboard/availability" className="text-[#3678F1] hover:underline">Availability</Link> to manage your schedule.
+                      Go to <Link to="/dashboard/availability" className="text-[#3B5BDB] hover:underline">Availability</Link> to manage your schedule.
                     </p>
                   </div>
                 </div>
@@ -203,7 +203,7 @@ export default function IndividualDashboard() {
                       </div>
                     )}
 
-                    <Link to="/dashboard/bookings" className="mt-3 rounded-xl block w-full py-2 text-xs text-[#3678F1] bg-[#EEF4FF] hover:bg-[#DBEAFE] text-center font-semibold transition-colors">
+                    <Link to="/dashboard/bookings" className="mt-3 rounded-xl block w-full py-2 text-xs text-[#3B5BDB] bg-[#EEF4FF] hover:bg-[#DBEAFE] text-center font-semibold transition-colors">
                       View All Bookings
                     </Link>
                   </div>
@@ -211,13 +211,13 @@ export default function IndividualDashboard() {
                   <div className="rounded-2xl bg-white border border-neutral-200 p-4">
                     <h3 className="text-sm font-bold text-neutral-900 mb-3">Quick Actions</h3>
                     <div className="space-y-1.5">
-                      <Link to="/dashboard/availability" className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#F3F4F6] text-neutral-700 text-xs font-semibold hover:bg-[#EEF4FF] hover:text-[#3678F1] transition-colors">
+                      <Link to="/dashboard/availability" className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#F3F4F6] text-neutral-700 text-xs font-semibold hover:bg-[#EEF4FF] hover:text-[#3B5BDB] transition-colors">
                         <FaCalendar className="w-3 h-3" /> Manage Availability
                       </Link>
-                      <Link to="/dashboard/conversations" className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#F3F4F6] text-neutral-700 text-xs font-semibold hover:bg-[#EEF4FF] hover:text-[#3678F1] transition-colors">
+                      <Link to="/dashboard/conversations" className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#F3F4F6] text-neutral-700 text-xs font-semibold hover:bg-[#EEF4FF] hover:text-[#3B5BDB] transition-colors">
                         <FaMessage className="w-3 h-3" /> Open Chat
                       </Link>
-                      <Link to="/dashboard/profile" className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#F3F4F6] text-neutral-700 text-xs font-semibold hover:bg-[#EEF4FF] hover:text-[#3678F1] transition-colors">
+                      <Link to="/dashboard/profile" className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#F3F4F6] text-neutral-700 text-xs font-semibold hover:bg-[#EEF4FF] hover:text-[#3B5BDB] transition-colors">
                         <FaUser className="w-3 h-3" /> Edit Profile
                       </Link>
                     </div>
@@ -248,7 +248,7 @@ export default function IndividualDashboard() {
                 {panel.status === 'blocked' && <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-neutral-600 bg-[#F3F4F6] px-3 py-1.5 rounded-full"><FaLock className="text-[8px]" /> Blocked</span>}
               </div>
               <p className="text-xs text-neutral-500 text-center">
-                Go to <Link to="/dashboard/availability" className="text-[#3678F1] hover:underline" onClick={() => setPanel(null)}>Availability</Link> to manage this date.
+                Go to <Link to="/dashboard/availability" className="text-[#3B5BDB] hover:underline" onClick={() => setPanel(null)}>Availability</Link> to manage this date.
               </p>
               {panel.project && (
                 <div className="mt-4 rounded-xl bg-[#F3F4F6] p-4 space-y-2">
@@ -257,7 +257,7 @@ export default function IndividualDashboard() {
               )}
             </div>
             <div className="px-5 py-4 border-t border-neutral-100">
-              <Link to="/dashboard/availability" onClick={() => setPanel(null)} className="flex items-center justify-center gap-2 w-full rounded-xl py-2.5 bg-[#3678F1] text-white text-sm font-semibold hover:bg-[#2563d4] transition-colors">
+              <Link to="/dashboard/availability" onClick={() => setPanel(null)} className="flex items-center justify-center gap-2 w-full rounded-xl py-2.5 bg-[#3B5BDB] text-white text-sm font-semibold hover:bg-[#2f4ac2] transition-colors">
                 <FaCalendar className="w-3 h-3" /> Manage Availability
               </Link>
             </div>

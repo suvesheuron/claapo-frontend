@@ -7,6 +7,7 @@ import { useApiQuery } from '../../hooks/useApiQuery';
 import { api, ApiException } from '../../services/api';
 import { formatPaise } from '../../utils/currency';
 import { vendorNavLinks } from '../../navigation/dashboardNav';
+import LocationAutocomplete from '../../components/LocationAutocomplete';
 
 interface EquipmentAvailability {
   id: string;
@@ -25,6 +26,7 @@ interface EquipmentItem {
   id: string;
   name: string;
   description?: string | null;
+  imageUrl?: string | null;
   currentCity?: string | null;
   dailyRateMin?: number | null;
   dailyRateMax?: number | null;
@@ -208,7 +210,7 @@ export default function Equipment() {
                 </div>
                 <button
                   onClick={openAdd}
-                  className="rounded-xl px-4 py-2.5 bg-[#3678F1] text-white text-sm font-semibold hover:bg-[#2563d4] flex items-center gap-2 transition-colors"
+                  className="rounded-xl px-4 py-2.5 bg-[#3B5BDB] text-white text-sm font-semibold hover:bg-[#2f4ac2] flex items-center gap-2 transition-colors"
                 >
                   <FaPlus className="w-3 h-3" /> Add Equipment
                 </button>
@@ -241,21 +243,32 @@ export default function Equipment() {
               ) : equipment.length === 0 ? (
                 <div className="rounded-2xl bg-white border border-neutral-200 p-10 text-center">
                   <div className="w-14 h-14 rounded-full bg-[#EEF4FF] flex items-center justify-center mx-auto mb-4">
-                    <FaTruck className="text-[#3678F1] text-2xl" />
+                    <FaTruck className="text-[#3B5BDB] text-2xl" />
                   </div>
                   <p className="text-base font-semibold text-neutral-900 mb-1">No equipment yet</p>
                   <p className="text-sm text-neutral-500 mb-5">Add your first item so companies can find and book you.</p>
-                  <button onClick={openAdd} className="rounded-xl px-5 py-2.5 bg-[#3678F1] text-white text-sm font-semibold hover:bg-[#2563d4] inline-flex items-center gap-2">
+                  <button onClick={openAdd} className="rounded-xl px-5 py-2.5 bg-[#3B5BDB] text-white text-sm font-semibold hover:bg-[#2f4ac2] inline-flex items-center gap-2">
                     <FaPlus className="w-3 h-3" /> Add Equipment
                   </button>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {equipment.map((item) => (
-                    <div key={item.id} className="rounded-2xl bg-white border border-neutral-200 p-4 hover:shadow-sm hover:border-neutral-300 transition-all">
+                    <div key={item.id} className="rounded-2xl bg-white border border-neutral-200 overflow-hidden hover:shadow-sm hover:border-neutral-300 transition-all">
+                      {/* Equipment image */}
+                      {item.imageUrl ? (
+                        <div className="w-full h-40 bg-neutral-100">
+                          <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
+                        </div>
+                      ) : (
+                        <div className="w-full h-40 bg-gradient-to-br from-[#EEF4FF] to-[#DBEAFE] flex items-center justify-center">
+                          <FaTruck className="text-4xl text-[#3B5BDB]/30" />
+                        </div>
+                      )}
+                      <div className="p-4">
                       <div className="flex items-start justify-between gap-2 mb-3">
                         <div className="w-10 h-10 rounded-xl bg-[#EEF4FF] flex items-center justify-center shrink-0">
-                          <FaTruck className="text-sm text-[#3678F1]" />
+                          <FaTruck className="text-sm text-[#3B5BDB]" />
                         </div>
                         <div className="flex items-center gap-1.5 shrink-0">
                           {(item.bookingRequests?.length ?? 0) > 0 && (
@@ -270,7 +283,7 @@ export default function Equipment() {
                       </div>
                       <h3 className="text-sm font-bold text-neutral-900 mb-1 truncate">{item.name}</h3>
                       {item.currentCity && <p className="text-[10px] text-neutral-400 mb-1">{item.currentCity}</p>}
-                      <p className="text-sm font-semibold text-[#3678F1] mb-2">{formatRate(item)}</p>
+                      <p className="text-sm font-semibold text-[#3B5BDB] mb-2">{formatRate(item)}</p>
                       {(item.bookingRequests?.length ?? 0) > 0 && (
                         <p className="text-[10px] text-[#1D4ED8] font-medium mb-2">
                           Given to: {(item.bookingRequests ?? []).map((br) => `${br.project.title} (${formatBookingDate(br.project.startDate, br.project.endDate)})`).join(' · ')}
@@ -291,13 +304,13 @@ export default function Equipment() {
                         </button>
                         <button
                           onClick={() => openEdit(item)}
-                          className="text-[11px] py-1.5 rounded-xl font-semibold bg-[#EEF4FF] text-[#3678F1] hover:bg-[#DBEAFE] transition-colors"
+                          className="text-[11px] py-1.5 rounded-xl font-semibold bg-[#EEF4FF] text-[#3B5BDB] hover:bg-[#DBEAFE] transition-colors"
                         >
                           Edit
                         </button>
                         <button
                           onClick={() => openEdit(item)}
-                          className="w-8 h-8 rounded-xl bg-[#F3F4F6] flex items-center justify-center text-neutral-500 hover:bg-[#EEF4FF] hover:text-[#3678F1] transition-colors shrink-0"
+                          className="w-8 h-8 rounded-xl bg-[#F3F4F6] flex items-center justify-center text-neutral-500 hover:bg-[#EEF4FF] hover:text-[#3B5BDB] transition-colors shrink-0"
                         >
                           <FaPencil className="text-xs" />
                         </button>
@@ -308,6 +321,7 @@ export default function Equipment() {
                           <FaTrash className="text-xs" />
                         </button>
                       </div>
+                      </div>{/* close p-4 wrapper */}
                     </div>
                   ))}
                 </div>
@@ -333,30 +347,33 @@ export default function Equipment() {
             <div className="space-y-3">
               <div>
                 <label className="block text-xs font-medium text-neutral-600 mb-1">Name *</label>
-                <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. RED Camera Package" className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3678F1]" />
+                <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. RED Camera Package" className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3B5BDB]" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-neutral-600 mb-1">Description</label>
-                <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} placeholder="Brief description" className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3678F1] resize-none" />
+                <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} placeholder="Brief description" className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3B5BDB] resize-none" />
               </div>
-              <div>
-                <label className="block text-xs font-medium text-neutral-600 mb-1">Current city</label>
-                <input type="text" value={currentCity} onChange={(e) => setCurrentCity(e.target.value)} placeholder="e.g. Mumbai" className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3678F1]" />
-              </div>
+              <LocationAutocomplete
+                label="Current city"
+                city={currentCity}
+                compact
+                onSelect={(loc) => setCurrentCity(loc.city)}
+                placeholder="e.g. Mumbai"
+              />
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-neutral-600 mb-1">Daily rate min (₹)</label>
-                  <input type="number" min={0} step={100} value={dailyRateMin} onChange={(e) => setDailyRateMin(e.target.value)} placeholder="0" className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3678F1]" />
+                  <input type="number" min={0} step={100} value={dailyRateMin} onChange={(e) => setDailyRateMin(e.target.value)} placeholder="0" className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3B5BDB]" />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-neutral-600 mb-1">Daily rate max (₹)</label>
-                  <input type="number" min={0} step={100} value={dailyRateMax} onChange={(e) => setDailyRateMax(e.target.value)} placeholder="0" className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3678F1]" />
+                  <input type="number" min={0} step={100} value={dailyRateMax} onChange={(e) => setDailyRateMax(e.target.value)} placeholder="0" className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3B5BDB]" />
                 </div>
               </div>
             </div>
             <div className="flex gap-2 mt-5">
               <button type="button" onClick={closeModal} className="flex-1 py-2.5 border border-neutral-300 rounded-xl text-sm font-medium text-neutral-700 hover:bg-neutral-50">Cancel</button>
-              <button type="button" onClick={handleSave} disabled={saving} className="flex-1 py-2.5 bg-[#3678F1] text-white rounded-xl text-sm font-semibold hover:bg-[#2563d4] disabled:opacity-60">
+              <button type="button" onClick={handleSave} disabled={saving} className="flex-1 py-2.5 bg-[#3B5BDB] text-white rounded-xl text-sm font-semibold hover:bg-[#2f4ac2] disabled:opacity-60">
                 {saving ? 'Saving…' : (modal === 'add' ? 'Add' : 'Save')}
               </button>
             </div>
@@ -379,22 +396,22 @@ export default function Equipment() {
             <div className="space-y-3">
               <div>
                 <label className="block text-xs font-medium text-neutral-600 mb-1">Location (city) *</label>
-                <input type="text" value={availLocation} onChange={(e) => setAvailLocation(e.target.value)} placeholder="e.g. Mumbai" className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3678F1]" />
+                <input type="text" value={availLocation} onChange={(e) => setAvailLocation(e.target.value)} placeholder="e.g. Mumbai" className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3B5BDB]" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-neutral-600 mb-1">From (date) *</label>
-                  <input type="date" value={availFrom} onChange={(e) => setAvailFrom(e.target.value)} className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3678F1]" />
+                  <input type="date" value={availFrom} onChange={(e) => setAvailFrom(e.target.value)} className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3B5BDB]" />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-neutral-600 mb-1">To (date) *</label>
-                  <input type="date" value={availTo} onChange={(e) => setAvailTo(e.target.value)} className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3678F1]" />
+                  <input type="date" value={availTo} onChange={(e) => setAvailTo(e.target.value)} className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3B5BDB]" />
                 </div>
               </div>
             </div>
             <div className="flex gap-2 mt-5">
               <button type="button" onClick={() => setAvailabilityFor(null)} className="flex-1 py-2.5 border border-neutral-300 rounded-xl text-sm font-medium text-neutral-700 hover:bg-neutral-50">Cancel</button>
-              <button type="button" onClick={handleAddAvailability} disabled={saving} className="flex-1 py-2.5 bg-[#3678F1] text-white rounded-xl text-sm font-semibold hover:bg-[#2563d4] disabled:opacity-60">
+              <button type="button" onClick={handleAddAvailability} disabled={saving} className="flex-1 py-2.5 bg-[#3B5BDB] text-white rounded-xl text-sm font-semibold hover:bg-[#2f4ac2] disabled:opacity-60">
                 {saving ? 'Saving…' : 'Add dates'}
               </button>
             </div>

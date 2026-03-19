@@ -217,7 +217,7 @@ export default function OtpVerify() {
         <div className="flex-1 flex items-center justify-center px-4 py-10">
           <div className="text-center">
             <p className="text-neutral-600 mb-4">No phone number found. Please register again.</p>
-            <Link to="/register" className="text-[#3678F1] font-semibold hover:underline text-sm">
+            <Link to="/register" className="text-[#3B5BDB] font-semibold hover:underline text-sm">
               Go to Registration
             </Link>
           </div>
@@ -232,8 +232,8 @@ export default function OtpVerify() {
         <div className="w-full max-w-[420px]">
           {/* Icon + heading */}
           <div className="flex flex-col items-center mb-8">
-            <div className="w-14 h-14 rounded-2xl bg-[#3678F1]/10 border-2 border-[#3678F1]/20 flex items-center justify-center mb-4">
-              <FaMobileScreenButton className="text-[#3678F1] text-2xl" />
+            <div className="w-14 h-14 rounded-2xl bg-[#3B5BDB]/10 border-2 border-[#3B5BDB]/20 flex items-center justify-center mb-4">
+              <FaMobileScreenButton className="text-[#3B5BDB] text-2xl" />
             </div>
             <h1 className="text-2xl font-bold text-neutral-900">Verify your phone</h1>
             <p className="text-sm text-neutral-500 mt-2 text-center leading-relaxed">
@@ -270,7 +270,7 @@ export default function OtpVerify() {
                       onKeyDown={(e) => handleKeyDown(i, e)}
                       disabled={verifying}
                       className={`w-11 h-13 text-center text-xl font-bold rounded-xl border-2 bg-[#F3F4F6] focus:outline-none focus:bg-white transition-all disabled:opacity-50
-                        ${d ? 'border-[#3678F1] bg-[#EFF4FF]' : 'border-neutral-300'}
+                        ${d ? 'border-[#3B5BDB] bg-[#EFF4FF]' : 'border-neutral-300'}
                         ${error ? 'border-red-300' : ''}`}
                     />
                   ))}
@@ -289,7 +289,7 @@ export default function OtpVerify() {
               <button
                 type="submit"
                 disabled={verifying || digits.join('').length < OTP_LENGTH}
-                className="rounded-xl w-full py-3 bg-[#3678F1] text-white text-sm font-semibold hover:bg-[#2563d4] transition-colors shadow-sm disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="rounded-xl w-full py-3 bg-[#3B5BDB] text-white text-sm font-semibold hover:bg-[#2f4ac2] transition-colors shadow-sm disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {verifying ? (
                   <>
@@ -311,7 +311,7 @@ export default function OtpVerify() {
                     type="button"
                     onClick={handleResend}
                     disabled={resending}
-                    className="text-[#3678F1] font-semibold hover:underline disabled:opacity-50"
+                    className="text-[#3B5BDB] font-semibold hover:underline disabled:opacity-50"
                   >
                     {resending ? 'Sending…' : 'Resend OTP'}
                   </button>
@@ -321,10 +321,10 @@ export default function OtpVerify() {
           </div>
 
           <div className="mt-5 flex items-center gap-2 justify-center">
-            <FaVideo className="text-[#3678F1] text-xs" />
+            <FaVideo className="text-[#3B5BDB] text-xs" />
             <span className="text-xs text-neutral-400">
               Need help?{' '}
-              <Link to="#" className="text-[#3678F1] hover:underline">Contact support</Link>
+              <Link to="/contact" className="text-[#3B5BDB] hover:underline">Contact support</Link>
             </span>
           </div>
         </div>

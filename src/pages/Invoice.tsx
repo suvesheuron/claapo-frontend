@@ -391,7 +391,7 @@ export default function Invoice() {
                             <button
                               onClick={handleSend}
                               disabled={sending}
-                              className="no-print px-3 py-2 bg-[#3678F1] text-white rounded-xl text-sm font-semibold flex items-center gap-1.5 hover:bg-[#2c65d4] disabled:opacity-50 transition-colors"
+                              className="no-print px-3 py-2 bg-[#3B5BDB] text-white rounded-xl text-sm font-semibold flex items-center gap-1.5 hover:bg-[#2f4ac2] disabled:opacity-50 transition-colors"
                             >
                               <FaPaperPlane className="w-3.5 h-3.5" />
                               {sending ? 'Sending…' : 'Send Invoice'}
@@ -437,6 +437,17 @@ export default function Invoice() {
 
                     {/* Printable invoice area */}
                     <div id="invoice-print-area" ref={printRef} className="bg-white rounded-2xl border border-neutral-200 p-6 sm:p-8">
+                      {/* Claapo Logo + Invoice Header */}
+                      <div className="flex items-center justify-between mb-6 pb-6 border-b border-neutral-200">
+                        <div className="flex items-center gap-3">
+                          <img src="/claapo-logo.svg" alt="Claapo" className="h-12 w-auto" />
+                        </div>
+                        <div className="text-right">
+                          <h2 className="text-2xl font-bold text-neutral-900 tracking-tight">INVOICE</h2>
+                          <p className="text-sm text-neutral-500 mt-0.5">{invoice.invoiceNumber}</p>
+                        </div>
+                      </div>
+
                       {/* From / To */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                         <div>
@@ -536,7 +547,7 @@ export default function Invoice() {
                                 type="button"
                                 onClick={() => fileInputRef.current?.click()}
                                 disabled={uploadingAttachment}
-                                className="no-print text-xs font-semibold text-[#3678F1] hover:underline disabled:opacity-50 flex items-center gap-1"
+                                className="no-print text-xs font-semibold text-[#3B5BDB] hover:underline disabled:opacity-50 flex items-center gap-1"
                               >
                                 <FaPaperclip className="w-3 h-3" />
                                 {uploadingAttachment ? 'Uploading…' : 'Add attachment'}
@@ -550,7 +561,7 @@ export default function Invoice() {
                           <ul className="space-y-2">
                             {attachments.map((a) => (
                               <li key={a.id} className="flex items-center justify-between gap-2 py-1.5 px-2 rounded-lg bg-neutral-50 border border-neutral-100">
-                                <a href={a.downloadUrl ?? '#'} target="_blank" rel="noopener noreferrer" className="text-sm text-[#3678F1] hover:underline truncate flex items-center gap-2 min-w-0">
+                                <a href={a.downloadUrl ?? '#'} target="_blank" rel="noopener noreferrer" className="text-sm text-[#3B5BDB] hover:underline truncate flex items-center gap-2 min-w-0">
                                   <FaDownload className="w-3 h-3 shrink-0" />
                                   <span className="truncate">{a.fileName}</span>
                                   <span className="text-xs text-neutral-400 shrink-0">({(a.size / 1024).toFixed(1)} KB)</span>

@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { FaTriangleExclamation, FaCircleCheck, FaPen } from 'react-icons/fa6';
+import { useEffect, useState, useRef } from 'react';
+import { FaTriangleExclamation, FaCircleCheck, FaPen, FaCamera } from 'react-icons/fa6';
 import DashboardHeader from '../../components/DashboardHeader';
 import DashboardSidebar from '../../components/DashboardSidebar';
 import AppFooter from '../../components/AppFooter';
@@ -8,6 +8,7 @@ import { api, ApiException } from '../../services/api';
 import { useApiQuery } from '../../hooks/useApiQuery';
 import { paiseToRupees, rupeesToPaise } from '../../utils/currency';
 import { individualNavLinks } from '../../navigation/dashboardNav';
+import LocationAutocomplete from '../../components/LocationAutocomplete';
 
 const GENRES = ['Action', 'Comedy', 'Drama', 'Romance', 'Science Fiction', 'Fantasy', 'Horror', 'Beauty', 'Noir', 'Fashion', 'Documentary', 'Thriller'];
 
@@ -70,10 +71,32 @@ export default function IndividualProfile() {
   const [saved,   setSaved]   = useState(false);
   const [error,   setError]   = useState<string | null>(null);
 
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAvatarUploading(true);
+    try {
+      const { uploadUrl, key } = await api.post<{ uploadUrl: string; key: string }>('/profile/avatar', {});
+      await fetch(uploadUrl, { method: 'PUT', headers: { 'Content-Type': file.type || 'image/jpeg' }, body: file });
+      await api.post('/profile/avatar/confirm', { key });
+      setAvatarUrl(URL.createObjectURL(file));
+    } catch {
+      setError('Failed to upload avatar.');
+    } finally {
+      setAvatarUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   // Hydrate form when API data arrives
   useEffect(() => {
     if (!me?.profile) return;
-    const p = me.profile;
+    const p = me.profile as ProfileData & { avatarUrl?: string };
+    if (p.avatarUrl) setAvatarUrl(p.avatarUrl);
     setDisplayName(p.displayName ?? '');
     setBio(p.bio ?? '');
     setAboutMe(p.aboutMe ?? '');
@@ -152,13 +175,21 @@ export default function IndividualProfile() {
                   {/* Profile card (top) */}
                   <div className="rounded-2xl bg-white border border-neutral-200 p-6 text-center">
                     <div className="flex justify-center mb-4">
-                      <Avatar name={nameForAvatar} size="lg" />
+                      <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+                        <Avatar src={avatarUrl ?? undefined} name={nameForAvatar} size="lg" />
+                        <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                          {avatarUploading
+                            ? <span className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                            : <FaCamera className="text-white text-sm" />}
+                        </div>
+                        <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+                      </div>
                     </div>
                     <h2 className="text-xl font-bold text-neutral-900 mb-1">{displayName || '—'}</h2>
                     <p className="text-sm text-neutral-600 mb-1">{skills || 'No skills added'}</p>
                     {me?.email && <p className="text-xs text-neutral-400 mb-4">{me.email}</p>}
                     {!editing && (
-                      <button type="button" onClick={() => setEditing(true)} className="w-full px-4 py-2.5 bg-[#3678F1] text-white rounded-xl text-sm font-semibold hover:bg-[#2c65d4] transition-colors flex items-center justify-center gap-2">
+                      <button type="button" onClick={() => setEditing(true)} className="w-full px-4 py-2.5 bg-[#3B5BDB] text-white rounded-xl text-sm font-semibold hover:bg-[#2f4ac2] transition-colors flex items-center justify-center gap-2">
                         <FaPen className="w-3.5 h-3.5" /> Edit Profile
                       </button>
                     )}
@@ -166,6 +197,7 @@ export default function IndividualProfile() {
 
                   {/* Profile Details (below card) — read-only, no Edit button */}
                   {!editing ? (
+                    <>
                     <div className="rounded-2xl bg-white border border-neutral-200 p-5">
                       <h3 className="text-sm font-bold text-neutral-900 mb-4">Profile Details</h3>
                       <dl className="space-y-3">
@@ -179,8 +211,8 @@ export default function IndividualProfile() {
                         <div><dt className="text-xs text-neutral-500 mb-0.5">Bio</dt><dd className="text-sm text-neutral-700 whitespace-pre-wrap">{bio || '—'}</dd></div>
                         <div><dt className="text-xs text-neutral-500 mb-0.5">About Me</dt><dd className="text-sm text-neutral-700 whitespace-pre-wrap">{aboutMe || '—'}</dd></div>
                         <div><dt className="text-xs text-neutral-500 mb-0.5">Budget (min–max per day)</dt><dd className="text-sm text-neutral-700">{(dailyRateMin || dailyRateMax) ? `₹${dailyRateMin || '—'} – ₹${dailyRateMax || '—'}` : '—'}</dd></div>
-                        <div><dt className="text-xs text-neutral-500 mb-0.5">Work Portfolio Link</dt><dd className="text-sm text-neutral-700">{imdbUrl ? <a href={imdbUrl} target="_blank" rel="noreferrer" className="text-[#3678F1] hover:underline">{imdbUrl}</a> : '—'}</dd></div>
-                        <div><dt className="text-xs text-neutral-500 mb-0.5">Instagram</dt><dd className="text-sm text-neutral-700">{instagramUrl ? <a href={instagramUrl} target="_blank" rel="noreferrer" className="text-[#3678F1] hover:underline">{instagramUrl}</a> : '—'}</dd></div>
+                        <div><dt className="text-xs text-neutral-500 mb-0.5">Work Portfolio Link</dt><dd className="text-sm text-neutral-700">{imdbUrl ? <a href={imdbUrl} target="_blank" rel="noreferrer" className="text-[#3B5BDB] hover:underline">{imdbUrl}</a> : '—'}</dd></div>
+                        <div><dt className="text-xs text-neutral-500 mb-0.5">Instagram</dt><dd className="text-sm text-neutral-700">{instagramUrl ? <a href={instagramUrl} target="_blank" rel="noreferrer" className="text-[#3B5BDB] hover:underline">{instagramUrl}</a> : '—'}</dd></div>
                       </dl>
                     </div>
                     <div className="rounded-2xl bg-white border border-neutral-200 p-5">
@@ -194,6 +226,7 @@ export default function IndividualProfile() {
                         <div><dt className="text-xs text-neutral-500 mb-0.5">IFSC</dt><dd className="text-sm text-neutral-700">{ifscCode || '—'}</dd></div>
                       </dl>
                     </div>
+                    </>
                   ) : (
                     <>
                       {error && (
@@ -215,14 +248,18 @@ export default function IndividualProfile() {
                         <div className="space-y-3">
                           <div>
                             <label className="block text-xs font-medium text-neutral-600 mb-1">Display Name</label>
-                            <input type="text" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Your full name" disabled={saving} className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3678F1] disabled:bg-neutral-50" />
+                            <input type="text" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Your full name" disabled={saving} className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3B5BDB] disabled:bg-neutral-50" />
                           </div>
                           <div><label className="block text-xs font-medium text-neutral-600 mb-1">Email (read-only)</label><input type="email" value={me?.email ?? ''} readOnly className="w-full px-3 py-2.5 border border-neutral-200 rounded-xl bg-neutral-50 text-neutral-500 text-sm cursor-not-allowed" /></div>
                           <div><label className="block text-xs font-medium text-neutral-600 mb-1">Phone (read-only)</label><input type="tel" value={me?.phone ?? ''} readOnly className="w-full px-3 py-2.5 border border-neutral-200 rounded-xl bg-neutral-50 text-neutral-500 text-sm cursor-not-allowed" /></div>
-                          <div className="grid grid-cols-2 gap-3">
-                            <div><label className="block text-xs font-medium text-neutral-600 mb-1">City</label><input type="text" value={locationCity} onChange={(e) => setLocationCity(e.target.value)} disabled={saving} className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm disabled:bg-neutral-50" /></div>
-                            <div><label className="block text-xs font-medium text-neutral-600 mb-1">State</label><input type="text" value={locationState} onChange={(e) => setLocationState(e.target.value)} disabled={saving} className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm disabled:bg-neutral-50" /></div>
-                          </div>
+                          <LocationAutocomplete
+                            label="Location"
+                            city={locationCity}
+                            state={locationState}
+                            disabled={saving}
+                            onSelect={(loc) => { setLocationCity(loc.city); setLocationState(loc.state); }}
+                            placeholder="Search city or pin code..."
+                          />
                         </div>
                       </div>
                       <div className="rounded-2xl bg-white border border-neutral-200 p-5">
@@ -252,7 +289,7 @@ export default function IndividualProfile() {
                         </div>
                         <div className="mt-4 flex justify-end gap-2">
                           <button type="button" onClick={() => setEditing(false)} className="px-5 py-2.5 border border-neutral-300 text-neutral-700 rounded-xl text-sm font-medium hover:bg-neutral-50">Cancel</button>
-                          <button type="button" onClick={() => { handleSave(); setEditing(false); }} disabled={saving} className="px-5 py-2.5 bg-[#3678F1] text-white rounded-xl text-sm font-semibold hover:bg-[#2c65d4] disabled:opacity-60 flex items-center gap-2">{saving ? <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Saving…</> : 'Save Changes'}</button>
+                          <button type="button" onClick={() => { handleSave(); setEditing(false); }} disabled={saving} className="px-5 py-2.5 bg-[#3B5BDB] text-white rounded-xl text-sm font-semibold hover:bg-[#2f4ac2] disabled:opacity-60 flex items-center gap-2">{saving ? <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Saving…</> : 'Save Changes'}</button>
                         </div>
                       </div>
                     </>

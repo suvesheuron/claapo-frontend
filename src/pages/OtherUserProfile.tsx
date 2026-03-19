@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { FaArrowLeft, FaLocationDot, FaExternalLinkAlt, FaCalendarDays, FaTriangleExclamation } from 'react-icons/fa6';
+import { FaArrowLeft, FaLocationDot, FaUpRightFromSquare, FaCalendarDays, FaTriangleExclamation } from 'react-icons/fa6';
 import DashboardHeader from '../components/DashboardHeader';
 import DashboardSidebar from '../components/DashboardSidebar';
 import AppFooter from '../components/AppFooter';
 import Avatar from '../components/Avatar';
+import ReviewsList from '../components/ReviewsList';
 import { api, ApiException } from '../services/api';
 import { companyNavLinks } from '../navigation/dashboardNav';
 
@@ -213,10 +214,10 @@ export default function OtherUserProfile() {
                             href={worklink}
                             target="_blank"
                             rel="noreferrer"
-                            className="inline-flex items-center gap-1 text-[#3678F1] hover:underline"
+                            className="inline-flex items-center gap-1 text-[#3B5BDB] hover:underline"
                           >
                             {worklink}
-                            <FaExternalLinkAlt className="w-3 h-3" />
+                            <FaUpRightFromSquare className="w-3 h-3" />
                           </a>
                         </p>
                       )}
@@ -252,7 +253,7 @@ export default function OtherUserProfile() {
                                 href={p.website}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="text-[#3678F1] hover:underline"
+                                className="text-[#3B5BDB] hover:underline"
                               >
                                 {p.website}
                               </a>
@@ -269,7 +270,7 @@ export default function OtherUserProfile() {
                                 href={p.instagramUrl}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="text-[#3678F1] hover:underline"
+                                className="text-[#3B5BDB] hover:underline"
                               >
                                 {p.instagramUrl}
                               </a>
@@ -313,7 +314,7 @@ export default function OtherUserProfile() {
                     </p>
                     {calLoading ? (
                       <div className="py-8 flex items-center justify-center">
-                        <span className="w-6 h-6 border-2 border-[#3678F1]/30 border-t-[#3678F1] rounded-full animate-spin" />
+                        <span className="w-6 h-6 border-2 border-[#3B5BDB]/30 border-t-[#3B5BDB] rounded-full animate-spin" />
                       </div>
                     ) : calError ? (
                       <div className="flex items-center gap-2 rounded-xl bg-red-50 border border-red-200 px-3 py-2">
@@ -356,7 +357,7 @@ export default function OtherUserProfile() {
                                         : type === 'unavail'
                                           ? 'bg-rose-100 text-rose-800'
                                           : 'bg-neutral-50 text-neutral-700';
-                                  const ring = canViewNote ? 'ring-1 ring-[#3678F1]/50 cursor-pointer' : '';
+                                  const ring = canViewNote ? 'ring-1 ring-[#3B5BDB]/50 cursor-pointer' : '';
                                   return (
                                     <button
                                       key={key}
@@ -426,6 +427,13 @@ export default function OtherUserProfile() {
                   )}
                 </div>
               ) : null}
+
+              {/* Reviews section */}
+              {profile && (
+                <div className="mt-6">
+                  <ReviewsList userId={profile.id} />
+                </div>
+              )}
             </div>
           </div>
           <AppFooter />

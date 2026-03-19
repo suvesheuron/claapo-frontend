@@ -2,7 +2,7 @@
 
 /*
   Claapo Design System
-  Primary:    #3678F1  – header, nav, primary actions
+  Primary:    #3B5BDB  – header, nav, primary actions
   Accent:     #F4C430  – CTA, highlights
   Success:    #22C55E  – available state
   Error:      #F40F02  – booked state
@@ -14,7 +14,7 @@
   --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
   /* Brand colors */
-  --color-brand-primary:    #3678F1;
+  --color-brand-primary:    #3B5BDB;
   --color-brand-accent:     #F4C430;
   --color-brand-success:    #22C55E;
   --color-brand-error:      #F40F02;

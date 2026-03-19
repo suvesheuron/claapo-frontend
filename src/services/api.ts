@@ -1,5 +1,5 @@
 /**
- * Central HTTP client for the CrewCall backend (NestJS, /v1 prefix).
+ * Central HTTP client for the Claapo backend (NestJS, /v1 prefix).
  *
  * Design decisions:
  * - Uses native fetch — no extra dependency required.
