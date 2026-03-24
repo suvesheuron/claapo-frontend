@@ -6,6 +6,7 @@ export interface NavItem {
   icon: ComponentType<SVGProps<SVGSVGElement> & { className?: string }>;
   label: string;
   to: string;
+  section?: string;
 }
 
 interface Props {
@@ -23,40 +24,71 @@ export default function DashboardSidebar({ links }: Props) {
     return pathname === to || pathname.startsWith(to + '/');
   };
 
+  // Group links by section, preserving order
+  const sections: { label: string | null; items: NavItem[] }[] = [];
+  let currentSection: string | null | undefined = undefined;
+
+  for (const item of links) {
+    const sec = item.section ?? null;
+    if (sec !== currentSection) {
+      sections.push({ label: sec, items: [item] });
+      currentSection = sec;
+    } else {
+      sections[sections.length - 1].items.push(item);
+    }
+  }
+
   return (
-    <aside className="hidden lg:flex lg:flex-col w-56 xl:w-60 shrink-0 bg-white border-r border-neutral-200 overflow-hidden">
-      <nav className="flex-1 overflow-y-auto p-3 pt-4 space-y-0.5">
-        {links.map((item) => {
-          const active = isActive(item.to);
-          const showChatBadge = item.to === CHAT_PATH && totalUnread > 0;
-          return (
-            <Link
-              key={item.to}
-              to={item.to}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                active
-                  ? 'bg-[#EEF4FF] text-[#3678F1]'
-                  : 'text-neutral-600 hover:bg-[#F3F4F6] hover:text-neutral-900'
-              }`}
-            >
-              <item.icon
-                className={`w-4 h-4 shrink-0 transition-colors ${
-                  active ? 'text-[#3678F1]' : 'text-neutral-400'
-                }`}
-              />
-              <span className="flex-1">{item.label}</span>
-              {showChatBadge && (
-                <span className="min-w-[18px] h-[18px] rounded-full bg-[#F40F02] text-white text-[10px] font-bold flex items-center justify-center px-1.5">
-                  {totalUnread > 99 ? '99+' : totalUnread}
-                </span>
-              )}
-              {active && !showChatBadge && (
-                <span className="w-1.5 h-1.5 rounded-full bg-[#3678F1] shrink-0" />
-              )}
-            </Link>
-          );
-        })}
+    <aside className="hidden lg:flex lg:flex-col w-56 xl:w-60 shrink-0 bg-[#FAFBFC] border-r border-neutral-200/70 overflow-hidden">
+      <nav className="flex-1 overflow-y-auto px-3 pt-5 pb-4">
+        {sections.map((section, sIdx) => (
+          <div key={sIdx} className={sIdx > 0 ? 'mt-5' : ''}>
+            {section.label && (
+              <div className="px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-neutral-400 select-none">
+                {section.label}
+              </div>
+            )}
+            <div className="space-y-0.5">
+              {section.items.map((item) => {
+                const active = isActive(item.to);
+                const showChatBadge = item.to === CHAT_PATH && totalUnread > 0;
+                return (
+                  <Link
+                    key={item.to}
+                    to={item.to}
+                    className={`group relative flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-150 ${
+                      active
+                        ? 'bg-[#EEF2FF] text-[#3B5BDB]'
+                        : 'text-neutral-500 hover:bg-white hover:text-neutral-900 hover:shadow-[0_1px_2px_rgba(0,0,0,0.04)]'
+                    }`}
+                  >
+                    {/* Left accent bar for active state */}
+                    {active && (
+                      <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-[#3B5BDB]" />
+                    )}
+                    <item.icon
+                      className={`w-[15px] h-[15px] shrink-0 transition-colors duration-150 ${
+                        active ? 'text-[#3B5BDB]' : 'text-neutral-400 group-hover:text-neutral-500'
+                      }`}
+                    />
+                    <span className="flex-1 truncate">{item.label}</span>
+                    {showChatBadge && (
+                      <span className="min-w-[18px] h-[18px] rounded-full bg-[#F40F02] text-white text-[10px] font-bold flex items-center justify-center px-1.5">
+                        {totalUnread > 99 ? '99+' : totalUnread}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </nav>
+
+      {/* Bottom subtle area */}
+      <div className="px-4 py-3 border-t border-neutral-200/50">
+        <p className="text-[10px] text-neutral-400 tracking-wide">v1.0 &middot; Claapo</p>
+      </div>
     </aside>
   );
 }

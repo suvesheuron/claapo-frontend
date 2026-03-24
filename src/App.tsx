@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
 import { useAuth, type BackendRole } from './contexts/AuthContext';
 import { useRole, type UserRole } from './contexts/RoleContext';
@@ -15,6 +15,7 @@ const VendorRegistration = lazy(() => import('./pages/VendorRegistration'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const CreateProject = lazy(() => import('./pages/CreateProject'));
 const SearchFilter = lazy(() => import('./pages/SearchFilter'));
+const OtherUserProfile = lazy(() => import('./pages/OtherUserProfile'));
 
 // Individual routes
 const IndividualAvailability = lazy(() => import('./pages/individual/Availability'));
@@ -57,6 +58,22 @@ const OngoingProjects = lazy(() => import('./pages/OngoingProjects'));
 // Company cancel requests
 const CancelRequests = lazy(() => import('./pages/company/CancelRequests'));
 
+// Admin pages
+const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
+const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'));
+const AdminProjects = lazy(() => import('./pages/admin/AdminProjects'));
+const AdminInvoices = lazy(() => import('./pages/admin/AdminInvoices'));
+
+// Reports pages
+const EarningsDashboard = lazy(() => import('./pages/reports/EarningsDashboard'));
+const SpendingDashboard = lazy(() => import('./pages/reports/SpendingDashboard'));
+
+// Public pages
+const About = lazy(() => import('./pages/About'));
+const Contact = lazy(() => import('./pages/Contact'));
+const Privacy = lazy(() => import('./pages/Privacy'));
+const Terms = lazy(() => import('./pages/Terms'));
+
 /**
  * Syncs the authenticated user's backend role ('individual' | 'company' | 'vendor')
  * into the existing RoleContext ('Individual' | 'Company' | 'Vendor').
@@ -82,6 +99,15 @@ function AuthRoleSyncBridge() {
   return null;
 }
 
+/** Scrolls to top on every route change — fixes footer link navigation issue */
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
+}
+
 function PageFallback() {
   return (
     <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
@@ -94,12 +120,16 @@ export default function App() {
   return (
     <BrowserRouter>
       <ChatUnreadProvider>
+        <ScrollToTop />
         <Toaster position="top-center" toastOptions={{ duration: 4000 }} />
-        {/* Syncs auth role into RoleContext — must be inside BrowserRouter + both providers */}
         <AuthRoleSyncBridge />
         <Suspense fallback={<PageFallback />}>
           <Routes>
           <Route path="/" element={<LandingPage />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/terms" element={<Terms />} />
           <Route path="/login" element={<Login />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/otp-verify" element={<OtpVerify />} />
@@ -113,6 +143,7 @@ export default function App() {
           <Route path="/dashboard/company-availability" element={<ProtectedRoute allowedRoles={['company', 'admin']}><CompanyAvailability /></ProtectedRoute>} />
           <Route path="/dashboard/projects/new" element={<ProtectedRoute allowedRoles={['company', 'admin']}><CreateProject /></ProtectedRoute>} />
           <Route path="/dashboard/search" element={<ProtectedRoute allowedRoles={['company', 'admin']}><SearchFilter /></ProtectedRoute>} />
+          <Route path="/dashboard/profile/:userId" element={<ProtectedRoute allowedRoles={['company', 'admin']}><OtherUserProfile /></ProtectedRoute>} />
 
           {/* Shared routes */}
           <Route path="/dashboard/chat/:userId" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
@@ -123,6 +154,10 @@ export default function App() {
           <Route path="/dashboard/bookings" element={<ProtectedRoute allowedRoles={['individual', 'vendor']}><Bookings /></ProtectedRoute>} />
           <Route path="/dashboard/ongoing-projects" element={<ProtectedRoute allowedRoles={['individual', 'vendor']}><OngoingProjects /></ProtectedRoute>} />
           <Route path="/dashboard/team" element={<ProtectedRoute allowedRoles={['company', 'admin']}><TeamPage /></ProtectedRoute>} />
+
+          {/* Reports */}
+          <Route path="/dashboard/earnings" element={<ProtectedRoute allowedRoles={['individual', 'vendor']}><EarningsDashboard /></ProtectedRoute>} />
+          <Route path="/dashboard/spending" element={<ProtectedRoute allowedRoles={['company', 'admin']}><SpendingDashboard /></ProtectedRoute>} />
 
           {/* Individual routes */}
           <Route path="/dashboard/availability" element={<ProtectedRoute allowedRoles={['individual']}><IndividualAvailability /></ProtectedRoute>} />
@@ -139,6 +174,12 @@ export default function App() {
           <Route path="/dashboard/company-past-projects" element={<ProtectedRoute allowedRoles={['company', 'admin']}><CompanyPastProjects /></ProtectedRoute>} />
           <Route path="/dashboard/company-profile" element={<ProtectedRoute allowedRoles={['company', 'admin']}><CompanyProfile /></ProtectedRoute>} />
           <Route path="/dashboard/cancel-requests" element={<ProtectedRoute allowedRoles={['company', 'admin']}><CancelRequests /></ProtectedRoute>} />
+
+          {/* Admin routes */}
+          <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>} />
+          <Route path="/admin/users" element={<ProtectedRoute allowedRoles={['admin']}><AdminUsers /></ProtectedRoute>} />
+          <Route path="/admin/projects" element={<ProtectedRoute allowedRoles={['admin']}><AdminProjects /></ProtectedRoute>} />
+          <Route path="/admin/invoices" element={<ProtectedRoute allowedRoles={['admin']}><AdminInvoices /></ProtectedRoute>} />
           </Routes>
         </Suspense>
       </ChatUnreadProvider>

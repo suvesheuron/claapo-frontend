@@ -20,6 +20,8 @@ interface Project {
   status: string;
   startDate: string;
   endDate: string;
+  shootDates?: string[];
+  shootLocations?: string[];
   budgetMin?: number | null;
   budgetMax?: number | null;
   /** Snake_case from API */
@@ -53,6 +55,8 @@ interface Booking {
   rateOffered?: number | null;
   target: BookingTarget;
   projectRole?: { roleName: string } | null;
+  shootDates?: string[];
+  shootLocations?: string[];
 }
 
 function formatDateRange(start: string, end: string): string {
@@ -112,7 +116,7 @@ export default function ProjectDetail() {
   }, [projectId]);
 
   useEffect(() => {
-    document.title = 'Project Details – CrewCall';
+    document.title = 'Project Details – Claapo';
     loadProject();
     loadBookings();
   }, [loadProject, loadBookings]);
@@ -136,7 +140,8 @@ export default function ProjectDetail() {
         toast.error('No accepted bookings to lock. Crew/vendors must accept their requests first.');
         return;
       }
-      await Promise.all(accepted.map((b) => api.patch(`/bookings/${b.id}/lock`, {})));
+      const body = project ? { shootDates: (project as Project).shootDates, shootLocations: (project as Project).shootLocations } : {};
+      await Promise.all(accepted.map((b) => api.patch(`/bookings/${b.id}/lock`, body)));
       toast.success('Bookings locked.');
       await loadBookings();
     } catch (err) {
@@ -197,7 +202,7 @@ export default function ProjectDetail() {
           <div className="flex-1 min-h-0 overflow-auto">
             <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-6 xl:px-8 py-5">
 
-              <Link to="/dashboard/projects" className="inline-flex items-center gap-2 text-neutral-500 hover:text-[#3678F1] mb-5 text-sm transition-colors">
+              <Link to="/dashboard/projects" className="inline-flex items-center gap-2 text-neutral-500 hover:text-[#3B5BDB] mb-5 text-sm transition-colors">
                 <FaArrowLeft className="w-3.5 h-3.5" />
                 Back to Projects
               </Link>
@@ -223,6 +228,13 @@ export default function ProjectDetail() {
                       {getProjectTotalBudget(project) > 0 ? ` · Budget: ${formatBudgetCompact(getProjectTotalBudget(project))}` : ''}
                       {project.locationCity ? ` · ${project.locationCity}` : ''}
                     </p>
+                    {(project.shootDates?.length || project.shootLocations?.length) ? (
+                      <p className="text-xs text-neutral-500 mt-1">
+                        {project.shootDates?.length ? `Shoot dates: ${project.shootDates.map((d) => new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })).join(', ')}` : ''}
+                        {project.shootDates?.length && project.shootLocations?.length ? ' · ' : ''}
+                        {project.shootLocations?.length ? `Locations: ${project.shootLocations.join(', ')}` : ''}
+                      </p>
+                    ) : null}
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     {canDeleteProject && (
@@ -233,7 +245,7 @@ export default function ProjectDetail() {
                     )}
                     {!allLocked ? (
                       <button onClick={handleLockAll} disabled={lockingAll}
-                        className="rounded-xl px-4 py-2 bg-[#3678F1] text-white text-sm font-semibold hover:bg-[#2563d4] flex items-center gap-2 transition-colors disabled:opacity-50">
+                        className="rounded-xl px-4 py-2 bg-[#3B5BDB] text-white text-sm font-semibold hover:bg-[#2f4ac2] flex items-center gap-2 transition-colors disabled:opacity-50">
                         <FaLock className="w-3.5 h-3.5" />
                         {lockingAll ? 'Locking…' : 'Lock Project'}
                       </button>
@@ -262,13 +274,13 @@ export default function ProjectDetail() {
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-8 rounded-lg bg-[#EEF4FF] flex items-center justify-center">
-                        <FaUsers className="text-[#3678F1] text-sm" />
+                        <FaUsers className="text-[#3B5BDB] text-sm" />
                       </div>
                       <h2 className="text-sm font-bold text-neutral-900">
                         Crew ({crewBookings.length})
                       </h2>
                     </div>
-                    <Link to="/dashboard/search" className="text-xs text-[#3678F1] hover:underline font-medium">+ Add Crew</Link>
+                    <Link to="/dashboard/search" className="text-xs text-[#3B5BDB] hover:underline font-medium">+ Add Crew</Link>
                   </div>
 
                   {loadingBookings ? (
@@ -279,7 +291,7 @@ export default function ProjectDetail() {
                     <div className="text-center py-8">
                       <FaUsers className="text-neutral-300 text-2xl mx-auto mb-2" />
                       <p className="text-sm text-neutral-500">No crew members assigned</p>
-                      <Link to="/dashboard/search" className="text-xs text-[#3678F1] hover:underline mt-1 inline-block">Search for crew</Link>
+                      <Link to="/dashboard/search" className="text-xs text-[#3B5BDB] hover:underline mt-1 inline-block">Search for crew</Link>
                     </div>
                   ) : (
                     <div className="space-y-2">
@@ -311,16 +323,23 @@ export default function ProjectDetail() {
                                   {booking.projectRole?.roleName ?? 'Crew'}
                                   {booking.rateOffered ? ` · ₹${(booking.rateOffered / 100).toLocaleString('en-IN')}/day` : ''}
                                 </p>
+                                {(booking.shootDates?.length || booking.shootLocations?.length) ? (
+                                  <p className="text-[10px] text-neutral-400 mt-0.5">
+                                    {booking.shootDates?.length ? booking.shootDates.map((d) => new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })).join(', ') : ''}
+                                    {booking.shootDates?.length && booking.shootLocations?.length ? ' · ' : ''}
+                                    {booking.shootLocations?.length ? booking.shootLocations.join(', ') : ''}
+                                  </p>
+                                ) : null}
                               </div>
                               <div className="flex items-center gap-1.5 shrink-0">
                                 {statusBadge(booking.status)}
                                 <Link to={`/dashboard/chat/${booking.target.id}`} title="Chat"
-                                  className="w-7 h-7 rounded-lg bg-[#F3F4F6] flex items-center justify-center text-neutral-500 hover:bg-[#EEF4FF] hover:text-[#3678F1] transition-colors">
+                                  className="w-7 h-7 rounded-lg bg-[#F3F4F6] flex items-center justify-center text-neutral-500 hover:bg-[#EEF4FF] hover:text-[#3B5BDB] transition-colors">
                                   <FaMessage className="text-xs" />
                                 </Link>
                                 {booking.status === 'locked' && (
                                   <Link to="/dashboard/invoices" title="View Invoices"
-                                    className="w-7 h-7 rounded-lg bg-[#F3F4F6] flex items-center justify-center text-neutral-500 hover:bg-[#EEF4FF] hover:text-[#3678F1] transition-colors">
+                                    className="w-7 h-7 rounded-lg bg-[#F3F4F6] flex items-center justify-center text-neutral-500 hover:bg-[#EEF4FF] hover:text-[#3B5BDB] transition-colors">
                                     <FaFileInvoice className="text-xs" />
                                   </Link>
                                 )}
@@ -350,7 +369,7 @@ export default function ProjectDetail() {
                         Vendors ({vendorBookings.length})
                       </h2>
                     </div>
-                    <Link to="/dashboard/search?type=vendors" className="text-xs text-[#3678F1] hover:underline font-medium">+ Add Vendor</Link>
+                    <Link to="/dashboard/search?type=vendors" className="text-xs text-[#3B5BDB] hover:underline font-medium">+ Add Vendor</Link>
                   </div>
 
                   {loadingBookings ? (
@@ -361,7 +380,7 @@ export default function ProjectDetail() {
                     <div className="text-center py-8">
                       <FaTruck className="text-neutral-300 text-2xl mx-auto mb-2" />
                       <p className="text-sm text-neutral-500">No vendors assigned</p>
-                      <Link to="/dashboard/search?type=vendors" className="text-xs text-[#3678F1] hover:underline mt-1 inline-block">Search for vendors</Link>
+                      <Link to="/dashboard/search?type=vendors" className="text-xs text-[#3B5BDB] hover:underline mt-1 inline-block">Search for vendors</Link>
                     </div>
                   ) : (
                     <div className="space-y-2">
@@ -387,7 +406,7 @@ export default function ProjectDetail() {
                           ) : (
                             <div className="flex items-center gap-3">
                               <div className="w-9 h-9 rounded-xl bg-[#EEF4FF] flex items-center justify-center shrink-0">
-                                <FaTruck className="text-[#3678F1] text-xs" />
+                                <FaTruck className="text-[#3B5BDB] text-xs" />
                               </div>
                               <div className="flex-1 min-w-0">
                                 <p className="text-xs font-bold text-neutral-900 truncate">{getMemberName(booking)}</p>
@@ -395,15 +414,22 @@ export default function ProjectDetail() {
                                   {booking.projectRole?.roleName ?? 'Vendor'}
                                   {booking.rateOffered ? ` · ₹${(booking.rateOffered / 100).toLocaleString('en-IN')}/day` : ''}
                                 </p>
+                                {(booking.shootDates?.length || booking.shootLocations?.length) ? (
+                                  <p className="text-[10px] text-neutral-400 mt-0.5">
+                                    {booking.shootDates?.length ? booking.shootDates.map((d) => new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })).join(', ') : ''}
+                                    {booking.shootDates?.length && booking.shootLocations?.length ? ' · ' : ''}
+                                    {booking.shootLocations?.length ? booking.shootLocations.join(', ') : ''}
+                                  </p>
+                                ) : null}
                               </div>
                               <div className="flex items-center gap-1.5 shrink-0">
                                 {statusBadge(booking.status)}
                                 <Link to={`/dashboard/chat/${booking.target.id}`} title="Chat"
-                                  className="w-7 h-7 rounded-lg bg-[#F3F4F6] flex items-center justify-center text-neutral-500 hover:bg-[#EEF4FF] hover:text-[#3678F1] transition-colors">
+                                  className="w-7 h-7 rounded-lg bg-[#F3F4F6] flex items-center justify-center text-neutral-500 hover:bg-[#EEF4FF] hover:text-[#3B5BDB] transition-colors">
                                   <FaMessage className="text-xs" />
                                 </Link>
                                 <Link to="/dashboard/invoices" title="View Invoices"
-                                  className="w-7 h-7 rounded-lg bg-[#F3F4F6] flex items-center justify-center text-neutral-500 hover:bg-[#EEF4FF] hover:text-[#3678F1] transition-colors">
+                                  className="w-7 h-7 rounded-lg bg-[#F3F4F6] flex items-center justify-center text-neutral-500 hover:bg-[#EEF4FF] hover:text-[#3B5BDB] transition-colors">
                                   <FaFileInvoice className="text-xs" />
                                 </Link>
                                 {booking.status !== 'locked' && (
@@ -428,7 +454,7 @@ export default function ProjectDetail() {
                 <div className="rounded-2xl bg-white border border-neutral-200 p-5 mt-5">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-sm font-bold text-neutral-900">Budget Summary</h3>
-                    <Link to="/dashboard/invoices" className="flex items-center gap-1.5 text-xs text-[#3678F1] font-semibold hover:underline">
+                    <Link to="/dashboard/invoices" className="flex items-center gap-1.5 text-xs text-[#3B5BDB] font-semibold hover:underline">
                       <FaFileInvoice className="w-3 h-3" /> View Invoices
                     </Link>
                   </div>
@@ -440,7 +466,7 @@ export default function ProjectDetail() {
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                       {[
                         { label: 'Total Budget', value: formatBudgetCompact(totalBudget), color: 'text-neutral-900' },
-                        { label: 'Crew Cost',    value: formatBudgetCompact(crewCost),    color: 'text-[#3678F1]' },
+                        { label: 'Crew Cost',    value: formatBudgetCompact(crewCost),    color: 'text-[#3B5BDB]' },
                         { label: 'Vendor Cost',  value: formatBudgetCompact(vendorCost),  color: 'text-[#F4C430]' },
                         { label: 'Remaining',    value: formatBudgetCompact(remaining),   color: remaining >= 0 ? 'text-[#22C55E]' : 'text-red-500' },
                       ].map(({ label, value, color }) => (

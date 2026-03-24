@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { FaPlus, FaXmark, FaTriangleExclamation, FaCircleCheck, FaTrash, FaEye, FaEyeSlash, FaPeopleGroup } from 'react-icons/fa6';
+import { FaPlus, FaXmark, FaTriangleExclamation, FaCircleCheck, FaTrash, FaEye, FaEyeSlash, FaPeopleGroup, FaArrowRightArrowLeft } from 'react-icons/fa6';
 import DashboardHeader from '../../components/DashboardHeader';
 import DashboardSidebar from '../../components/DashboardSidebar';
 import AppFooter from '../../components/AppFooter';
@@ -47,6 +47,13 @@ export default function TeamPage() {
   const [deletingUser, setDeletingUser] = useState<SubUser | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  // Transfer sub-user
+  const [transferringUser, setTransferringUser] = useState<SubUser | null>(null);
+  const [targetMainUserId, setTargetMainUserId] = useState('');
+  const [transferring, setTransferring] = useState(false);
+  const [transferError, setTransferError] = useState<string | null>(null);
+  const [transferSuccess, setTransferSuccess] = useState(false);
 
   const handleCreate = async () => {
     if (!email?.trim() || !phone?.trim() || !password) { setCreateError('All fields are required.'); return; }
@@ -106,109 +113,184 @@ export default function TeamPage() {
     }
   };
 
+  const handleTransfer = async () => {
+    if (!transferringUser || !targetMainUserId?.trim()) {
+      setTransferError('Enter the target main account User ID (UUID).');
+      return;
+    }
+    setTransferring(true); setTransferError(null);
+    try {
+      await api.patch(`/profile/sub-users/${transferringUser.id}/transfer`, { newMainUserId: targetMainUserId.trim() });
+      toast.success('Sub-user transferred to the other account.');
+      setTransferSuccess(true);
+      setTransferringUser(null);
+      setTargetMainUserId('');
+      refetchUsers();
+      setTimeout(() => setTransferSuccess(false), 3000);
+    } catch (err) {
+      const msg = err instanceof ApiException ? err.payload.message : 'Failed to transfer sub-user.';
+      toast.error(msg);
+      setTransferError(msg);
+    } finally {
+      setTransferring(false);
+    }
+  };
+
+  const isMainOnlyRestriction = usersError?.toLowerCase().includes('main') ?? false;
+
+  const modalInputClass = 'w-full px-4 py-2.5 border border-neutral-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#3B5BDB]/20 focus:border-[#3B5BDB] disabled:opacity-50 transition-all placeholder:text-neutral-400';
+
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-[#F3F4F6] w-full">
+    <div className="h-screen flex flex-col overflow-hidden bg-[#F8F9FB] w-full">
       <DashboardHeader />
       <div className="flex-1 flex min-h-0 overflow-hidden">
         <DashboardSidebar links={companyNavLinks} />
         <main className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
           <div className="flex-1 min-h-0 overflow-auto">
-            <div className="max-w-[900px] mx-auto px-4 sm:px-6 lg:px-8 py-5">
+            <div className="max-w-[900px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
+              {/* Page Header */}
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h1 className="text-xl font-bold text-neutral-900 flex items-center gap-2">
-                    <FaPeopleGroup className="text-[#3678F1]" /> Team Management
+                  <h1 className="text-xl font-bold text-neutral-900 tracking-tight flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-[#3B5BDB]/10 flex items-center justify-center">
+                      <FaPeopleGroup className="text-[#3B5BDB] text-sm" />
+                    </div>
+                    Team Management
                   </h1>
-                  <p className="text-sm text-neutral-500 mt-0.5">Create sub-user accounts and assign them to projects</p>
+                  <p className="text-sm text-neutral-500 mt-1 ml-[42px]">Create sub-user accounts and assign them to projects</p>
                 </div>
                 <button
                   type="button"
                   onClick={() => { setShowCreate(true); setCreateError(null); }}
-                  className="rounded-xl px-4 py-2.5 bg-[#3678F1] text-white text-sm font-semibold hover:bg-[#2563d4] inline-flex items-center gap-2 transition-colors"
+                  className="rounded-xl px-4 py-2.5 bg-[#3B5BDB] text-white text-sm font-semibold hover:bg-[#2f4ac2] active:scale-[0.98] inline-flex items-center gap-2 transition-all shadow-sm shadow-[#3B5BDB]/20"
                 >
-                  <FaPlus className="w-3 h-3" /> Add Sub-User
+                  <FaPlus className="w-3 h-3" /> <span className="hidden sm:inline">Add Sub-User</span><span className="sm:hidden">Add</span>
                 </button>
               </div>
 
+              {/* Success Alerts */}
               {createSuccess && (
-                <div className="flex items-center gap-2 mb-4 p-3 bg-green-50 border border-green-200 rounded-xl text-green-700 text-sm font-medium">
-                  <FaCircleCheck /> Sub-user created successfully!
+                <div className="flex items-center gap-2.5 mb-4 px-4 py-3 bg-emerald-50 border border-emerald-200/60 rounded-xl text-emerald-700 text-sm font-medium shadow-sm">
+                  <FaCircleCheck className="shrink-0" /> Sub-user created successfully!
                 </div>
               )}
               {assignSuccess && (
-                <div className="flex items-center gap-2 mb-4 p-3 bg-green-50 border border-green-200 rounded-xl text-green-700 text-sm font-medium">
-                  <FaCircleCheck /> Project assigned successfully!
+                <div className="flex items-center gap-2.5 mb-4 px-4 py-3 bg-emerald-50 border border-emerald-200/60 rounded-xl text-emerald-700 text-sm font-medium shadow-sm">
+                  <FaCircleCheck className="shrink-0" /> Project assigned successfully!
+                </div>
+              )}
+              {transferSuccess && (
+                <div className="flex items-center gap-2.5 mb-4 px-4 py-3 bg-emerald-50 border border-emerald-200/60 rounded-xl text-emerald-700 text-sm font-medium shadow-sm">
+                  <FaCircleCheck className="shrink-0" /> Sub-user transferred successfully!
+                </div>
+              )}
+
+              {isMainOnlyRestriction && (
+                <div className="flex items-center gap-3 rounded-2xl bg-amber-50 border border-amber-200/60 p-4 mb-5 shadow-sm">
+                  <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center shrink-0">
+                    <FaTriangleExclamation className="text-amber-600 text-sm" />
+                  </div>
+                  <p className="text-sm text-amber-800">Only the main account can manage team members. You are logged in as a sub-user.</p>
                 </div>
               )}
 
               {/* Info card */}
-              <div className="rounded-2xl bg-[#EEF4FF] border border-[#BFDBFE] p-4 mb-5">
-                <h3 className="text-sm font-bold text-[#1D4ED8] mb-1">How Sub-User IDs work</h3>
-                <ul className="text-xs text-[#3678F1] space-y-1">
-                  <li>• Sub-users can log in with their own email and password</li>
-                  <li>• They can only access projects you assign to them</li>
-                  <li>• They cannot see other projects or manage the team</li>
-                  <li>• Sub-users inherit your account role (Company/Vendor)</li>
+              <div className="rounded-2xl bg-gradient-to-br from-[#EEF2FF] to-[#E8EDFF] border border-[#C7D2FE]/60 p-5 mb-5 shadow-sm">
+                <h3 className="text-sm font-bold text-[#3730A3] mb-2 flex items-center gap-2">
+                  <div className="w-5 h-5 rounded-md bg-[#3B5BDB]/10 flex items-center justify-center">
+                    <span className="text-[10px]">i</span>
+                  </div>
+                  How Sub-User IDs work
+                </h3>
+                <ul className="text-[13px] text-[#4338CA] space-y-1.5 ml-7">
+                  <li className="flex items-start gap-2"><span className="w-1 h-1 rounded-full bg-[#6366F1] mt-1.5 shrink-0" />Sub-users can log in with their own email and password</li>
+                  <li className="flex items-start gap-2"><span className="w-1 h-1 rounded-full bg-[#6366F1] mt-1.5 shrink-0" />They can only access projects you assign to them</li>
+                  <li className="flex items-start gap-2"><span className="w-1 h-1 rounded-full bg-[#6366F1] mt-1.5 shrink-0" />They cannot see other projects or manage the team</li>
+                  <li className="flex items-start gap-2"><span className="w-1 h-1 rounded-full bg-[#6366F1] mt-1.5 shrink-0" />Sub-users inherit your account role (Company/Vendor)</li>
                 </ul>
               </div>
 
               {/* Sub-users list */}
-              <div className="rounded-2xl bg-white border border-neutral-200 p-5">
-                <h2 className="text-sm font-bold text-neutral-900 mb-4">Sub-Users ({subUsers.length})</h2>
-
-                {usersError && (
-                  <div className="flex items-center gap-3 rounded-xl bg-red-50 border border-red-200 p-3 mb-4">
-                    <FaTriangleExclamation className="text-red-500 shrink-0" />
-                    <p className="text-sm text-red-700">{usersError}</p>
+              <div className="rounded-2xl bg-white border border-neutral-200/80 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+                <div className="px-6 py-4 border-b border-neutral-100 flex items-center justify-between">
+                  <div>
+                    <h2 className="text-sm font-bold text-neutral-900">Sub-Users</h2>
+                    <p className="text-xs text-neutral-400 mt-0.5">{subUsers.length} team member{subUsers.length !== 1 ? 's' : ''}</p>
                   </div>
-                )}
+                </div>
 
-                {loadingUsers ? (
-                  <div className="space-y-3">
-                    {[1,2,3].map(i => <div key={i} className="h-16 rounded-xl bg-neutral-100 animate-pulse" />)}
-                  </div>
-                ) : subUsers.length === 0 ? (
-                  <div className="text-center py-10">
-                    <div className="w-12 h-12 rounded-full bg-[#F3F4F6] flex items-center justify-center mx-auto mb-3">
-                      <FaPeopleGroup className="text-neutral-400 text-lg" />
+                <div className="p-5">
+                  {usersError && (
+                    <div className="flex items-center gap-3 rounded-xl bg-red-50 border border-red-200/80 p-3 mb-4">
+                      <FaTriangleExclamation className="text-red-500 shrink-0 text-sm" />
+                      <p className="text-sm text-red-700">{usersError}</p>
                     </div>
-                    <p className="text-sm font-semibold text-neutral-700 mb-1">No sub-users yet</p>
-                    <p className="text-xs text-neutral-400 mb-4">Add team members to collaborate on projects</p>
-                    <button
-                      type="button"
-                      onClick={() => setShowCreate(true)}
-                      className="rounded-xl px-4 py-2.5 bg-[#3678F1] text-white text-sm font-semibold hover:bg-[#2563d4] inline-flex items-center gap-2 transition-colors"
-                    >
-                      <FaPlus className="w-3 h-3" /> Add First Sub-User
-                    </button>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {subUsers.map(u => (
-                      <div key={u.id} className="flex items-center gap-4 p-4 rounded-xl border border-neutral-200 bg-[#FAFAFA] hover:border-neutral-300 transition-colors">
-                        <Avatar name={u.email} size="md" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-neutral-900 truncate">{u.email}</p>
-                          <p className="text-xs text-neutral-500 truncate">{u.phone}</p>
-                          <span className={`inline-block mt-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${u.isActive ? 'bg-[#DCFCE7] text-[#15803D]' : 'bg-[#F3F4F6] text-neutral-500'}`}>
-                            {u.isActive ? 'Active' : 'Inactive'}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <button type="button" onClick={() => { setAssigningUser(u); setAssignProjectId(''); setAssignError(null); }}
-                            className="rounded-xl px-3 py-2 border border-[#3678F1] text-[#3678F1] text-xs font-semibold hover:bg-[#EEF4FF] transition-colors">
-                            Assign Project
-                          </button>
-                          <button type="button" onClick={() => { setDeletingUser(u); setDeleteError(null); }}
-                            className="rounded-xl px-3 py-2 border border-red-200 text-red-600 text-xs font-semibold hover:bg-red-50 transition-colors flex items-center gap-1">
-                            <FaTrash className="w-3 h-3" /> Remove
-                          </button>
-                        </div>
+                  )}
+
+                  {loadingUsers ? (
+                    <div className="space-y-3">
+                      {[1,2,3].map(i => <div key={i} className="h-[72px] rounded-xl bg-neutral-100/60 animate-pulse" />)}
+                    </div>
+                  ) : !isMainOnlyRestriction && subUsers.length === 0 ? (
+                    <div className="text-center py-14">
+                      <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-neutral-100 to-neutral-50 border border-neutral-200/60 flex items-center justify-center mx-auto mb-4 shadow-sm">
+                        <FaPeopleGroup className="text-neutral-400 text-xl" />
                       </div>
-                    ))}
-                  </div>
-                )}
+                      <p className="text-sm font-semibold text-neutral-800 mb-1">No sub-users yet</p>
+                      <p className="text-sm text-neutral-500 mb-5 max-w-xs mx-auto">Add team members to collaborate on your projects together</p>
+                      <button
+                        type="button"
+                        onClick={() => setShowCreate(true)}
+                        className="rounded-xl px-5 py-2.5 bg-[#3B5BDB] text-white text-sm font-semibold hover:bg-[#2f4ac2] active:scale-[0.98] inline-flex items-center gap-2 transition-all shadow-sm shadow-[#3B5BDB]/20"
+                      >
+                        <FaPlus className="w-3 h-3" /> Add First Sub-User
+                      </button>
+                    </div>
+                  ) : isMainOnlyRestriction ? (
+                    <div className="text-center py-14">
+                      <div className="w-16 h-16 rounded-2xl bg-neutral-100 border border-neutral-200/60 flex items-center justify-center mx-auto mb-4">
+                        <FaPeopleGroup className="text-neutral-400 text-xl" />
+                      </div>
+                      <p className="text-sm text-neutral-500">You need to log in with the main account to view and manage sub-users.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {subUsers.map(u => (
+                        <div key={u.id} className="flex items-center gap-4 p-4 rounded-xl border border-neutral-200/80 bg-white hover:border-neutral-300 hover:shadow-sm transition-all group relative overflow-hidden">
+                          {/* Left accent border */}
+                          <div className={`absolute left-0 top-0 bottom-0 w-[3px] rounded-l-xl ${u.isActive ? 'bg-emerald-400' : 'bg-neutral-300'}`} />
+                          <div className="pl-1">
+                            <Avatar name={u.email} size="md" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-semibold text-neutral-900 truncate">{u.email}</p>
+                              {/* Status dot */}
+                              <span className={`w-2 h-2 rounded-full shrink-0 ${u.isActive ? 'bg-emerald-500' : 'bg-neutral-300'}`} title={u.isActive ? 'Active' : 'Inactive'} />
+                            </div>
+                            <p className="text-xs text-neutral-500 truncate mt-0.5">{u.phone}</p>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+                            <button type="button" onClick={() => { setAssigningUser(u); setAssignProjectId(''); setAssignError(null); }}
+                              className="rounded-lg px-3 py-2 border border-[#3B5BDB]/20 text-[#3B5BDB] text-xs font-semibold hover:bg-[#3B5BDB]/5 transition-colors" title="Assign Project">
+                              <span className="hidden sm:inline">Assign Project</span>
+                              <span className="sm:hidden text-sm">Assign</span>
+                            </button>
+                            <button type="button" onClick={() => { setTransferringUser(u); setTargetMainUserId(''); setTransferError(null); }}
+                              className="rounded-lg px-3 py-2 border border-amber-200 text-amber-700 text-xs font-semibold hover:bg-amber-50 transition-colors flex items-center gap-1.5" title="Transfer">
+                              <FaArrowRightArrowLeft className="w-3 h-3" /> <span className="hidden sm:inline">Transfer</span>
+                            </button>
+                            <button type="button" onClick={() => { setDeletingUser(u); setDeleteError(null); }}
+                              className="rounded-lg px-3 py-2 border border-red-200/80 text-red-500 text-xs font-semibold hover:bg-red-50 transition-colors flex items-center gap-1.5" title="Remove">
+                              <FaTrash className="w-3 h-3" /> <span className="hidden sm:inline">Remove</span>
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -219,54 +301,59 @@ export default function TeamPage() {
       {/* Create Sub-User Modal */}
       {showCreate && (
         <>
-          <div className="fixed inset-0 bg-black/40 z-40" onClick={() => setShowCreate(false)} />
+          <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40" onClick={() => setShowCreate(false)} />
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
-              <div className="flex items-center justify-between mb-5">
-                <h2 className="text-base font-bold text-neutral-900">Add Sub-User</h2>
+            <div className="bg-white rounded-2xl shadow-xl border border-neutral-200/60 w-full max-w-md overflow-hidden">
+              <div className="px-6 py-4 border-b border-neutral-100 flex items-center justify-between">
+                <div>
+                  <h2 className="text-base font-bold text-neutral-900">Add Sub-User</h2>
+                  <p className="text-xs text-neutral-400 mt-0.5">Create a new team member account</p>
+                </div>
                 <button type="button" onClick={() => setShowCreate(false)} className="w-8 h-8 rounded-lg bg-neutral-100 flex items-center justify-center hover:bg-neutral-200 transition-colors">
                   <FaXmark className="text-neutral-500 text-sm" />
                 </button>
               </div>
 
-              {createError && (
-                <div className="flex items-center gap-2 mb-4 p-3 bg-red-50 border border-red-200 rounded-xl">
-                  <FaTriangleExclamation className="text-red-500 text-xs shrink-0" />
-                  <p className="text-xs text-red-700">{createError}</p>
-                </div>
-              )}
+              <div className="p-6">
+                {createError && (
+                  <div className="flex items-center gap-2.5 mb-4 p-3 bg-red-50 border border-red-200/80 rounded-xl">
+                    <FaTriangleExclamation className="text-red-500 text-xs shrink-0" />
+                    <p className="text-sm text-red-700">{createError}</p>
+                  </div>
+                )}
 
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Email <span className="text-[#F40F02]">*</span></label>
-                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="subuser@example.com" disabled={creating}
-                    className="w-full px-4 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3678F1] focus:bg-white bg-[#F3F4F6] disabled:opacity-50 transition-all" />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Phone <span className="text-[#F40F02]">*</span></label>
-                  <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+919900112233" disabled={creating}
-                    className="w-full px-4 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3678F1] focus:bg-white bg-[#F3F4F6] disabled:opacity-50 transition-all" />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Password <span className="text-[#F40F02]">*</span></label>
-                  <div className="relative">
-                    <input type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Min 8 characters" disabled={creating}
-                      className="w-full px-4 py-2.5 pr-11 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3678F1] focus:bg-white bg-[#F3F4F6] disabled:opacity-50 transition-all" />
-                    <button type="button" onClick={() => setShowPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 p-1" aria-label={showPassword ? 'Hide password' : 'Show password'}>
-                      {showPassword ? <FaEyeSlash className="w-4 h-4" /> : <FaEye className="w-4 h-4" />}
-                    </button>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Email <span className="text-red-500">*</span></label>
+                    <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="subuser@example.com" disabled={creating}
+                      className={modalInputClass} />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Phone <span className="text-red-500">*</span></label>
+                    <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+919900112233" disabled={creating}
+                      className={modalInputClass} />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Password <span className="text-red-500">*</span></label>
+                    <div className="relative">
+                      <input type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Min 8 characters" disabled={creating}
+                        className={`${modalInputClass} pr-11`} />
+                      <button type="button" onClick={() => setShowPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 p-1 rounded-md hover:bg-neutral-100 transition-colors" aria-label={showPassword ? 'Hide password' : 'Show password'}>
+                        {showPassword ? <FaEyeSlash className="w-4 h-4" /> : <FaEye className="w-4 h-4" />}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div className="flex gap-3 mt-5">
+              <div className="px-6 py-4 border-t border-neutral-100 bg-neutral-50/50 flex gap-3">
                 <button type="button" onClick={() => setShowCreate(false)} disabled={creating}
-                  className="flex-1 rounded-xl py-2.5 border border-neutral-300 text-neutral-700 text-sm font-medium hover:bg-neutral-50 transition-colors disabled:opacity-50">
+                  className="flex-1 rounded-xl py-2.5 border border-neutral-200 text-neutral-700 text-sm font-medium hover:bg-neutral-100 transition-colors disabled:opacity-50">
                   Cancel
                 </button>
                 <button type="button" onClick={handleCreate} disabled={creating}
-                  className="flex-1 rounded-xl py-2.5 bg-[#3678F1] text-white text-sm font-semibold hover:bg-[#2563d4] transition-colors disabled:opacity-60 flex items-center justify-center gap-2">
-                  {creating ? <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Creating…</> : 'Create Sub-User'}
+                  className="flex-1 rounded-xl py-2.5 bg-[#3B5BDB] text-white text-sm font-semibold hover:bg-[#2f4ac2] active:scale-[0.98] transition-all disabled:opacity-60 flex items-center justify-center gap-2 shadow-sm shadow-[#3B5BDB]/20">
+                  {creating ? <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Creating...</> : 'Create Sub-User'}
                 </button>
               </div>
             </div>
@@ -277,44 +364,102 @@ export default function TeamPage() {
       {/* Assign Project Modal */}
       {assigningUser && (
         <>
-          <div className="fixed inset-0 bg-black/40 z-40" onClick={() => setAssigningUser(null)} />
+          <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40" onClick={() => setAssigningUser(null)} />
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
-              <div className="flex items-center justify-between mb-5">
-                <h2 className="text-base font-bold text-neutral-900">Assign Project</h2>
+            <div className="bg-white rounded-2xl shadow-xl border border-neutral-200/60 w-full max-w-md overflow-hidden">
+              <div className="px-6 py-4 border-b border-neutral-100 flex items-center justify-between">
+                <div>
+                  <h2 className="text-base font-bold text-neutral-900">Assign Project</h2>
+                  <p className="text-xs text-neutral-400 mt-0.5">Select a project for this team member</p>
+                </div>
                 <button type="button" onClick={() => setAssigningUser(null)} className="w-8 h-8 rounded-lg bg-neutral-100 flex items-center justify-center hover:bg-neutral-200 transition-colors">
                   <FaXmark className="text-neutral-500 text-sm" />
                 </button>
               </div>
 
-              <p className="text-sm text-neutral-600 mb-4">
-                Assigning a project to <span className="font-semibold">{assigningUser.email}</span>
-              </p>
-
-              {assignError && (
-                <div className="flex items-center gap-2 mb-4 p-3 bg-red-50 border border-red-200 rounded-xl">
-                  <FaTriangleExclamation className="text-red-500 text-xs shrink-0" />
-                  <p className="text-xs text-red-700">{assignError}</p>
+              <div className="p-6">
+                <div className="flex items-center gap-3 mb-5 p-3 rounded-xl bg-neutral-50 border border-neutral-100">
+                  <Avatar name={assigningUser.email} size="sm" />
+                  <span className="text-sm font-semibold text-neutral-800 truncate">{assigningUser.email}</span>
                 </div>
-              )}
 
-              <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Select Project</label>
-                <select value={assignProjectId} onChange={(e) => setAssignProjectId(e.target.value)} disabled={assigning}
-                  className="w-full px-4 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3678F1] bg-[#F3F4F6] focus:bg-white disabled:opacity-50 transition-all">
-                  <option value="">Choose a project…</option>
-                  {projects.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
-                </select>
+                {assignError && (
+                  <div className="flex items-center gap-2.5 mb-4 p-3 bg-red-50 border border-red-200/80 rounded-xl">
+                    <FaTriangleExclamation className="text-red-500 text-xs shrink-0" />
+                    <p className="text-sm text-red-700">{assignError}</p>
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Select Project</label>
+                  <select value={assignProjectId} onChange={(e) => setAssignProjectId(e.target.value)} disabled={assigning}
+                    className={modalInputClass}>
+                    <option value="">Choose a project...</option>
+                    {projects.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
+                  </select>
+                </div>
               </div>
 
-              <div className="flex gap-3 mt-5">
+              <div className="px-6 py-4 border-t border-neutral-100 bg-neutral-50/50 flex gap-3">
                 <button type="button" onClick={() => setAssigningUser(null)} disabled={assigning}
-                  className="flex-1 rounded-xl py-2.5 border border-neutral-300 text-neutral-700 text-sm font-medium hover:bg-neutral-50 transition-colors disabled:opacity-50">
+                  className="flex-1 rounded-xl py-2.5 border border-neutral-200 text-neutral-700 text-sm font-medium hover:bg-neutral-100 transition-colors disabled:opacity-50">
                   Cancel
                 </button>
                 <button type="button" onClick={handleAssign} disabled={assigning || !assignProjectId}
-                  className="flex-1 rounded-xl py-2.5 bg-[#3678F1] text-white text-sm font-semibold hover:bg-[#2563d4] transition-colors disabled:opacity-60 flex items-center justify-center gap-2">
-                  {assigning ? <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Assigning…</> : 'Assign'}
+                  className="flex-1 rounded-xl py-2.5 bg-[#3B5BDB] text-white text-sm font-semibold hover:bg-[#2f4ac2] active:scale-[0.98] transition-all disabled:opacity-60 flex items-center justify-center gap-2 shadow-sm shadow-[#3B5BDB]/20">
+                  {assigning ? <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Assigning...</> : 'Assign'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Transfer Sub-User Modal */}
+      {transferringUser && (
+        <>
+          <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40" onClick={() => !transferring && setTransferringUser(null)} />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-xl border border-neutral-200/60 w-full max-w-md overflow-hidden">
+              <div className="px-6 py-4 border-b border-neutral-100 flex items-center justify-between">
+                <div>
+                  <h2 className="text-base font-bold text-neutral-900">Transfer Sub-User</h2>
+                  <p className="text-xs text-neutral-400 mt-0.5">Move this member to another account</p>
+                </div>
+                <button type="button" onClick={() => !transferring && setTransferringUser(null)} className="w-8 h-8 rounded-lg bg-neutral-100 flex items-center justify-center hover:bg-neutral-200 transition-colors">
+                  <FaXmark className="text-neutral-500 text-sm" />
+                </button>
+              </div>
+
+              <div className="p-6">
+                <div className="flex items-center gap-3 mb-4 p-3 rounded-xl bg-neutral-50 border border-neutral-100">
+                  <Avatar name={transferringUser.email} size="sm" />
+                  <span className="text-sm font-semibold text-neutral-800 truncate">{transferringUser.email}</span>
+                </div>
+                <p className="text-sm text-neutral-600 mb-5 leading-relaxed">
+                  Transfer to another main account (same role). The sub-user will then belong to that account.
+                </p>
+                {transferError && (
+                  <div className="flex items-center gap-2.5 mb-4 p-3 bg-red-50 border border-red-200/80 rounded-xl">
+                    <FaTriangleExclamation className="text-red-500 text-xs shrink-0" />
+                    <p className="text-sm text-red-700">{transferError}</p>
+                  </div>
+                )}
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Target main account User ID (UUID)</label>
+                  <input type="text" value={targetMainUserId} onChange={(e) => setTargetMainUserId(e.target.value)} placeholder="e.g. 550e8400-e29b-41d4-a716-446655440000" disabled={transferring}
+                    className={`${modalInputClass} font-mono text-xs`} />
+                </div>
+              </div>
+
+              <div className="px-6 py-4 border-t border-neutral-100 bg-neutral-50/50 flex gap-3">
+                <button type="button" onClick={() => !transferring && setTransferringUser(null)} disabled={transferring}
+                  className="flex-1 rounded-xl py-2.5 border border-neutral-200 text-neutral-700 text-sm font-medium hover:bg-neutral-100 transition-colors disabled:opacity-50">
+                  Cancel
+                </button>
+                <button type="button" onClick={handleTransfer} disabled={transferring || !targetMainUserId.trim()}
+                  className="flex-1 rounded-xl py-2.5 bg-amber-500 text-white text-sm font-semibold hover:bg-amber-600 active:scale-[0.98] transition-all disabled:opacity-60 flex items-center justify-center gap-2 shadow-sm">
+                  {transferring ? <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Transferring...</> : <><FaArrowRightArrowLeft className="w-3 h-3" /> Transfer</>}
                 </button>
               </div>
             </div>
@@ -325,27 +470,32 @@ export default function TeamPage() {
       {/* Delete Sub-User Modal */}
       {deletingUser && (
         <>
-          <div className="fixed inset-0 bg-black/40 z-40" onClick={() => !deleting && setDeletingUser(null)} />
+          <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40" onClick={() => !deleting && setDeletingUser(null)} />
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
-              <h2 className="text-base font-bold text-neutral-900 mb-2">Remove Sub-User?</h2>
-              <p className="text-sm text-neutral-600 mb-4">
-                <span className="font-semibold">{deletingUser.email}</span> will no longer be able to log in or access assigned projects. This cannot be undone.
-              </p>
+            <div className="bg-white rounded-2xl shadow-xl border border-neutral-200/60 w-full max-w-sm overflow-hidden">
+              <div className="p-6">
+                <div className="w-12 h-12 rounded-2xl bg-red-50 border border-red-100 flex items-center justify-center mx-auto mb-4">
+                  <FaTrash className="text-red-500" />
+                </div>
+                <h2 className="text-base font-bold text-neutral-900 mb-2 text-center">Remove Sub-User?</h2>
+                <p className="text-sm text-neutral-600 text-center leading-relaxed">
+                  <span className="font-semibold">{deletingUser.email}</span> will no longer be able to log in or access assigned projects. This cannot be undone.
+                </p>
+              </div>
               {deleteError && (
-                <div className="flex items-center gap-2 mb-4 p-3 bg-red-50 border border-red-200 rounded-xl">
+                <div className="mx-6 mb-4 flex items-center gap-2.5 p-3 bg-red-50 border border-red-200/80 rounded-xl">
                   <FaTriangleExclamation className="text-red-500 text-xs shrink-0" />
-                  <p className="text-xs text-red-700">{deleteError}</p>
+                  <p className="text-sm text-red-700">{deleteError}</p>
                 </div>
               )}
-              <div className="flex gap-3">
+              <div className="px-6 py-4 border-t border-neutral-100 bg-neutral-50/50 flex gap-3">
                 <button type="button" onClick={() => setDeletingUser(null)} disabled={deleting}
-                  className="flex-1 rounded-xl py-2.5 border border-neutral-300 text-neutral-700 text-sm font-medium hover:bg-neutral-50 transition-colors disabled:opacity-50">
+                  className="flex-1 rounded-xl py-2.5 border border-neutral-200 text-neutral-700 text-sm font-medium hover:bg-neutral-100 transition-colors disabled:opacity-50">
                   Cancel
                 </button>
                 <button type="button" onClick={handleDelete} disabled={deleting}
-                  className="flex-1 rounded-xl py-2.5 bg-red-500 text-white text-sm font-semibold hover:bg-red-600 transition-colors disabled:opacity-60 flex items-center justify-center gap-2">
-                  {deleting ? <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Removing…</> : <><FaTrash className="w-3 h-3" /> Remove</>}
+                  className="flex-1 rounded-xl py-2.5 bg-red-500 text-white text-sm font-semibold hover:bg-red-600 active:scale-[0.98] transition-all disabled:opacity-60 flex items-center justify-center gap-2 shadow-sm">
+                  {deleting ? <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Removing...</> : <><FaTrash className="w-3 h-3" /> Remove</>}
                 </button>
               </div>
             </div>

@@ -41,12 +41,12 @@ const statusMap: Record<Project['status'], DisplayStatus> = {
   cancelled: 'cancelled',
 };
 
-const statusConfig: Record<DisplayStatus, { bg: string; text: string; label: string }> = {
-  active:    { bg: 'bg-[#DBEAFE]', text: 'text-[#1D4ED8]', label: 'Active' },
-  planning:  { bg: 'bg-[#F3F4F6]', text: 'text-neutral-600', label: 'Planning' },
-  'in-progress': { bg: 'bg-[#FEF9E6]', text: 'text-[#92400E]', label: 'In Progress' },
-  completed: { bg: 'bg-[#DCFCE7]', text: 'text-[#15803D]', label: 'Completed' },
-  cancelled: { bg: 'bg-[#FEE2E2]', text: 'text-[#B91C1C]', label: 'Cancelled' },
+const statusConfig: Record<DisplayStatus, { bg: string; text: string; label: string; accent: string }> = {
+  active:    { bg: 'bg-blue-50', text: 'text-blue-700', label: 'Active', accent: 'border-l-blue-500' },
+  planning:  { bg: 'bg-neutral-100', text: 'text-neutral-600', label: 'Planning', accent: 'border-l-neutral-400' },
+  'in-progress': { bg: 'bg-amber-50', text: 'text-amber-700', label: 'In Progress', accent: 'border-l-amber-500' },
+  completed: { bg: 'bg-emerald-50', text: 'text-emerald-700', label: 'Completed', accent: 'border-l-emerald-500' },
+  cancelled: { bg: 'bg-red-50', text: 'text-red-700', label: 'Cancelled', accent: 'border-l-red-400' },
 };
 
 function formatDateRange(start: string, end: string): string {
@@ -93,7 +93,7 @@ export default function Projects() {
   const projects = data?.items ?? [];
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-[#F3F4F6] w-full">
+    <div className="h-screen flex flex-col overflow-hidden bg-[#F8F9FB] w-full">
       <DashboardHeader />
 
       <div className="flex-1 flex min-h-0 overflow-hidden">
@@ -101,16 +101,19 @@ export default function Projects() {
 
         <main className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
           <div className="flex-1 min-h-0 overflow-auto">
-            <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-6 xl:px-8 py-5">
+            <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-6 xl:px-8 py-6">
 
-              <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h1 className="text-xl font-bold text-neutral-900">Projects</h1>
-                  <p className="text-sm text-neutral-500 mt-0.5">Manage your production projects and team</p>
+                  <div className="flex items-center gap-2.5 mb-1">
+                    <div className="w-1 h-6 rounded-full bg-[#3B5BDB]" />
+                    <h1 className="text-xl font-bold text-neutral-900 tracking-tight">Projects</h1>
+                  </div>
+                  <p className="text-sm text-neutral-500 ml-3.5">Manage your production projects and team</p>
                 </div>
                 <Link
                   to="/dashboard/projects/new"
-                  className="rounded-xl px-4 py-2.5 bg-[#3678F1] text-white text-sm font-semibold hover:bg-[#2563d4] flex items-center gap-2 transition-colors"
+                  className="rounded-xl px-5 py-2.5 bg-[#3B5BDB] text-white text-sm font-semibold hover:bg-[#2f4ac2] flex items-center gap-2 transition-all shadow-sm shadow-blue-500/20 hover:shadow-md hover:shadow-blue-500/25"
                 >
                   <FaPlus className="w-3 h-3" />
                   <span className="hidden sm:inline">New Project</span>
@@ -119,8 +122,10 @@ export default function Projects() {
 
               {/* Error state */}
               {error && (
-                <div className="flex items-center gap-3 rounded-2xl bg-red-50 border border-red-200 p-4 mb-5">
-                  <FaTriangleExclamation className="text-red-500 shrink-0" />
+                <div className="flex items-center gap-3 rounded-2xl bg-red-50 border border-red-200/80 p-4 mb-5">
+                  <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center shrink-0">
+                    <FaTriangleExclamation className="text-red-500 text-xs" />
+                  </div>
                   <p className="text-sm text-red-700">{error}</p>
                   <button onClick={refetch} className="ml-auto text-xs text-red-600 font-semibold hover:underline">Retry</button>
                 </div>
@@ -130,12 +135,18 @@ export default function Projects() {
               {loading && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {[1, 2, 3].map((i) => (
-                    <div key={i} className="rounded-2xl bg-white border border-neutral-200 p-5 animate-pulse">
-                      <div className="h-4 bg-neutral-200 rounded w-3/4 mb-3" />
-                      <div className="h-3 bg-neutral-100 rounded w-1/2 mb-4" />
-                      <div className="grid grid-cols-2 gap-2">
-                        {[1, 2].map((j) => <div key={j} className="h-12 bg-neutral-100 rounded-xl" />)}
+                    <div key={i} className="rounded-2xl bg-white border border-neutral-200/80 p-5 animate-pulse shadow-sm">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-9 h-9 bg-neutral-100 rounded-xl" />
+                        <div className="flex-1">
+                          <div className="h-4 bg-neutral-200 rounded-lg w-3/4 mb-2" />
+                          <div className="h-3 bg-neutral-100 rounded-lg w-1/2" />
+                        </div>
                       </div>
+                      <div className="grid grid-cols-2 gap-2 mb-4">
+                        {[1, 2].map((j) => <div key={j} className="h-14 bg-neutral-50 rounded-xl border border-neutral-100" />)}
+                      </div>
+                      <div className="h-9 bg-neutral-100 rounded-xl" />
                     </div>
                   ))}
                 </div>
@@ -143,15 +154,15 @@ export default function Projects() {
 
               {/* Empty state */}
               {!loading && !error && projects.length === 0 && (
-                <div className="rounded-2xl bg-white border border-neutral-200 p-12 text-center">
-                  <div className="w-14 h-14 rounded-2xl bg-[#EEF4FF] flex items-center justify-center mx-auto mb-4">
-                    <FaFolder className="text-[#3678F1] text-2xl" />
+                <div className="rounded-2xl bg-white border border-neutral-200/80 p-16 text-center shadow-sm">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center mx-auto mb-5 border border-blue-100/60">
+                    <FaFolder className="text-[#3B5BDB] text-2xl" />
                   </div>
-                  <h3 className="text-base font-bold text-neutral-900 mb-2">No projects yet</h3>
-                  <p className="text-sm text-neutral-500 mb-5">Create your first project to get started</p>
+                  <h3 className="text-lg font-bold text-neutral-900 mb-2">No projects yet</h3>
+                  <p className="text-sm text-neutral-500 mb-6 max-w-xs mx-auto leading-relaxed">Create your first project to start managing productions and booking crew</p>
                   <Link
                     to="/dashboard/projects/new"
-                    className="inline-flex items-center gap-2 rounded-xl px-5 py-2.5 bg-[#F4C430] text-neutral-900 text-sm font-bold hover:bg-[#e6b820] transition-colors"
+                    className="inline-flex items-center gap-2 rounded-xl px-6 py-3 bg-[#3B5BDB] text-white text-sm font-bold hover:bg-[#2f4ac2] transition-all shadow-sm shadow-blue-500/20 hover:shadow-md"
                   >
                     <FaPlus className="w-3 h-3" /> Create Project
                   </Link>
@@ -171,19 +182,19 @@ export default function Projects() {
                     return (
                       <div
                         key={project.id}
-                        className="rounded-2xl bg-white border border-neutral-200 p-5 hover:shadow-md hover:border-neutral-300 transition-all flex flex-col"
+                        className={`rounded-2xl bg-white border border-neutral-200/80 border-l-[3px] ${cfg.accent} p-5 hover:shadow-md hover:border-neutral-300/80 transition-all duration-200 flex flex-col shadow-sm group`}
                       >
                         <div className="flex items-start justify-between gap-2 mb-4">
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <div className="w-8 h-8 rounded-lg bg-[#EEF4FF] flex items-center justify-center shrink-0">
-                                <FaCalendar className="text-[#3678F1] text-xs" />
+                            <div className="flex items-center gap-2.5 mb-1.5">
+                              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center shrink-0 border border-blue-100/40">
+                                <FaCalendar className="text-[#3B5BDB] text-xs" />
                               </div>
-                              <h3 className="text-sm font-bold text-neutral-900 truncate">{project.title}</h3>
+                              <h3 className="text-sm font-bold text-neutral-900 truncate group-hover:text-[#3B5BDB] transition-colors">{project.title}</h3>
                             </div>
-                            <p className="text-xs text-neutral-400 pl-10">{formatDateRange(project.startDate, project.endDate)}</p>
+                            <p className="text-xs text-neutral-400 pl-[42px]">{formatDateRange(project.startDate, project.endDate)}</p>
                             {project.locationCity && (
-                              <p className="text-xs text-neutral-400 pl-10 mt-0.5">{project.locationCity}</p>
+                              <p className="text-xs text-neutral-400 pl-[42px] mt-0.5">{project.locationCity}</p>
                             )}
                           </div>
                           <span className={`text-[11px] px-2.5 py-1 rounded-full font-semibold shrink-0 ${cfg.bg} ${cfg.text}`}>
@@ -192,23 +203,23 @@ export default function Projects() {
                         </div>
 
                         <div className="grid grid-cols-2 gap-2 mb-4">
-                          <div className="rounded-xl bg-[#F3F4F6] p-2.5 text-center">
-                            <p className="text-xs font-bold text-neutral-900">{peopleCount}</p>
-                            <p className="text-[10px] text-neutral-500 mt-0.5">People</p>
+                          <div className="rounded-xl bg-neutral-50/80 border border-neutral-100 p-3 text-center">
+                            <p className="text-sm font-bold text-neutral-900 tabular-nums">{peopleCount}</p>
+                            <p className="text-[10px] text-neutral-400 font-medium mt-0.5 uppercase tracking-wide">People</p>
                           </div>
-                          <div className="rounded-xl bg-[#F3F4F6] p-2.5 text-center">
-                            <p className="text-xs font-bold text-neutral-900 truncate">{budget}</p>
-                            <p className="text-[10px] text-neutral-500 mt-0.5">Budget</p>
+                          <div className="rounded-xl bg-neutral-50/80 border border-neutral-100 p-3 text-center">
+                            <p className="text-sm font-bold text-neutral-900 truncate tabular-nums">{budget}</p>
+                            <p className="text-[10px] text-neutral-400 font-medium mt-0.5 uppercase tracking-wide">Budget</p>
                           </div>
                         </div>
 
                         <div className="flex items-center gap-2 mt-auto">
-                          <Link to={`/dashboard/projects/${project.id}`} className="flex-1 rounded-xl py-2 border border-neutral-200 text-neutral-700 text-xs font-semibold text-center hover:bg-neutral-50 flex items-center justify-center gap-1.5 transition-colors">
+                          <Link to={`/dashboard/projects/${project.id}`} className="flex-1 rounded-xl py-2.5 border border-neutral-200 text-neutral-600 text-xs font-semibold text-center hover:bg-neutral-50 hover:border-neutral-300 flex items-center justify-center gap-1.5 transition-all">
                             <FaEye className="w-3 h-3" /> View
                           </Link>
                           {project.status !== 'completed' && project.status !== 'cancelled' && (
                             <button onClick={() => { setCancellingId(project.id); setCancelActionError(null); }}
-                              className="rounded-xl px-3.5 py-2 bg-[#FEE2E2] text-[#B91C1C] text-xs font-semibold hover:bg-[#FECACA] flex items-center gap-1.5 transition-colors">
+                              className="rounded-xl px-3.5 py-2.5 bg-red-50 text-red-500 border border-red-200/60 text-xs font-semibold hover:bg-red-100 hover:text-red-600 flex items-center gap-1.5 transition-all">
                               <FaBan className="w-3 h-3" />
                             </button>
                           )}
@@ -229,23 +240,26 @@ export default function Projects() {
       {/* Cancel Project Modal */}
       {cancellingId && (
         <>
-          <div className="fixed inset-0 bg-black/40 z-40" onClick={() => setCancellingId(null)} />
+          <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40" onClick={() => setCancellingId(null)} />
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+            <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl w-full max-w-sm p-6 border border-neutral-200/60">
+              <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center mb-4 border border-red-100">
+                <FaBan className="text-red-500 text-sm" />
+              </div>
               <h2 className="text-base font-bold text-neutral-900 mb-2">Cancel Project?</h2>
-              <p className="text-sm text-neutral-600 mb-4">
+              <p className="text-sm text-neutral-500 mb-5 leading-relaxed">
                 This will cancel the project and notify all booked crew and vendors. This action cannot be undone.
               </p>
               {cancelActionError && (
-                <div className="flex items-center gap-2 mb-4 p-3 bg-red-50 border border-red-200 rounded-xl">
+                <div className="flex items-center gap-2 mb-4 p-3 bg-red-50 border border-red-200/80 rounded-xl">
                   <FaTriangleExclamation className="text-red-500 text-xs shrink-0" />
                   <p className="text-xs text-red-700">{cancelActionError}</p>
                 </div>
               )}
               <div className="flex gap-3">
-                <button type="button" onClick={() => setCancellingId(null)} className="flex-1 rounded-xl py-2.5 border border-neutral-300 text-neutral-700 text-sm font-medium hover:bg-neutral-50 transition-colors">Keep Project</button>
-                <button type="button" onClick={() => handleCancel(cancellingId)} className="flex-1 rounded-xl py-2.5 bg-red-500 text-white text-sm font-semibold hover:bg-red-600 transition-colors flex items-center justify-center gap-1.5">
-                  <FaBan className="w-3 h-3" /> Cancel Project
+                <button type="button" onClick={() => setCancellingId(null)} className="flex-1 rounded-xl py-2.5 border border-neutral-200 text-neutral-600 text-sm font-medium hover:bg-neutral-50 hover:border-neutral-300 transition-all">Keep Project</button>
+                <button type="button" onClick={() => handleCancel(cancellingId)} className="flex-1 rounded-xl py-2.5 bg-red-500 text-white text-sm font-semibold hover:bg-red-600 transition-all shadow-sm shadow-red-500/20 flex items-center justify-center gap-1.5">
+                  <FaBan className="w-3 h-3" /> Cancel
                 </button>
               </div>
             </div>

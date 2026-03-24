@@ -126,7 +126,7 @@ export default function OngoingProjects() {
               {!loading && !error && ongoingBookings.length === 0 && (
                 <div className="rounded-2xl bg-white border border-neutral-200 p-12 text-center">
                   <div className="w-14 h-14 rounded-2xl bg-[#EEF4FF] flex items-center justify-center mx-auto mb-4">
-                    <FaClipboardList className="text-[#3678F1] text-2xl" />
+                    <FaClipboardList className="text-[#3B5BDB] text-2xl" />
                   </div>
                   <h3 className="text-base font-bold text-neutral-900 mb-2">No ongoing projects</h3>
                   <p className="text-sm text-neutral-500">Once you accept a booking, it will appear here.</p>
@@ -233,7 +233,7 @@ export default function OngoingProjects() {
                   onChange={(e) => setCancelReason(e.target.value)}
                   rows={3}
                   placeholder="e.g., Already booked for another project during these dates…"
-                  className="w-full px-4 py-2.5 border border-neutral-300 rounded-xl text-sm bg-[#F3F4F6] focus:bg-white focus:outline-none focus:border-[#3678F1] resize-none transition-all"
+                  className="w-full px-4 py-2.5 border border-neutral-300 rounded-xl text-sm bg-[#F3F4F6] focus:bg-white focus:outline-none focus:border-[#3B5BDB] resize-none transition-all"
                 />
               </div>
               {actionError && (

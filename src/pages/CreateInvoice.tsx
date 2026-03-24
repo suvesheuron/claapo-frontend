@@ -102,7 +102,7 @@ export default function CreateInvoice() {
 
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 rounded-xl bg-[#EEF4FF] flex items-center justify-center">
-              <FaFileInvoice className="text-[#3678F1]" />
+              <FaFileInvoice className="text-[#3B5BDB]" />
             </div>
             <div>
               <h1 className="text-xl font-bold text-neutral-900">Create Invoice</h1>
@@ -124,7 +124,7 @@ export default function CreateInvoice() {
                 <select
                   value={selectedBookingId}
                   onChange={(e) => setSelectedBookingId(e.target.value)}
-                  className="w-full border border-neutral-200 rounded-xl px-3 py-2.5 text-sm text-neutral-700 focus:outline-none focus:ring-2 focus:ring-[#3678F1] focus:border-transparent"
+                  className="w-full border border-neutral-200 rounded-xl px-3 py-2.5 text-sm text-neutral-700 focus:outline-none focus:ring-2 focus:ring-[#3B5BDB] focus:border-transparent"
                   required
                 >
                   <option value="">— Select a booking —</option>
@@ -146,7 +146,7 @@ export default function CreateInvoice() {
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
                 min={new Date().toISOString().split('T')[0]}
-                className="border border-neutral-200 rounded-xl px-3 py-2.5 text-sm text-neutral-700 focus:outline-none focus:ring-2 focus:ring-[#3678F1] focus:border-transparent"
+                className="border border-neutral-200 rounded-xl px-3 py-2.5 text-sm text-neutral-700 focus:outline-none focus:ring-2 focus:ring-[#3B5BDB] focus:border-transparent"
               />
             </div>
 
@@ -154,7 +154,7 @@ export default function CreateInvoice() {
             <div className="bg-white rounded-2xl border border-neutral-200 p-5">
               <div className="flex items-center justify-between mb-3">
                 <h2 className="text-sm font-bold text-neutral-700">Line Items</h2>
-                <button type="button" onClick={addLine} className="flex items-center gap-1.5 text-[#3678F1] text-xs font-semibold hover:text-[#2c65d4] transition-colors">
+                <button type="button" onClick={addLine} className="flex items-center gap-1.5 text-[#3B5BDB] text-xs font-semibold hover:text-[#2f4ac2] transition-colors">
                   <FaPlus className="w-3 h-3" /> Add Item
                 </button>
               </div>
@@ -168,7 +168,7 @@ export default function CreateInvoice() {
                         placeholder="Description (e.g. Direction services)"
                         value={line.description}
                         onChange={(e) => updateLine(i, 'description', e.target.value)}
-                        className="w-full border border-neutral-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#3678F1] focus:border-transparent mb-1.5"
+                        className="w-full border border-neutral-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#3B5BDB] focus:border-transparent mb-1.5"
                         required
                       />
                       <div className="flex items-center gap-2">
@@ -180,7 +180,7 @@ export default function CreateInvoice() {
                             step="1"
                             value={line.quantity}
                             onChange={(e) => updateLine(i, 'quantity', e.target.value)}
-                            className="w-full border border-neutral-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-[#3678F1]"
+                            className="w-full border border-neutral-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-[#3B5BDB]"
                           />
                         </div>
                         <div className="flex items-center gap-1 flex-1">
@@ -192,7 +192,7 @@ export default function CreateInvoice() {
                             placeholder="0"
                             value={line.unitPrice}
                             onChange={(e) => updateLine(i, 'unitPrice', e.target.value)}
-                            className="w-full border border-neutral-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-[#3678F1]"
+                            className="w-full border border-neutral-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-[#3B5BDB]"
                             required
                           />
                         </div>
@@ -222,7 +222,7 @@ export default function CreateInvoice() {
                 </div>
                 <div className="flex justify-between text-base pt-2 border-t border-neutral-200">
                   <span className="font-bold text-neutral-900">Total</span>
-                  <span className="font-bold text-[#3678F1]">{formatPaise(totalPaise)}</span>
+                  <span className="font-bold text-[#3B5BDB]">{formatPaise(totalPaise)}</span>
                 </div>
               </div>
             </div>
@@ -237,7 +237,7 @@ export default function CreateInvoice() {
               <button
                 type="submit"
                 disabled={submitting || bookings.length === 0}
-                className="flex-1 py-3 bg-[#3678F1] text-white rounded-xl font-semibold text-sm hover:bg-[#2c65d4] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="flex-1 py-3 bg-[#3B5BDB] text-white rounded-xl font-semibold text-sm hover:bg-[#2f4ac2] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {submitting ? 'Creating…' : 'Create Invoice (Draft)'}
               </button>

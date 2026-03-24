@@ -2,12 +2,13 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   FaCircleCheck, FaXmark,
-  FaMessage, FaTriangleExclamation, FaClock,
+  FaMessage, FaTriangleExclamation, FaClock, FaStar, FaArrowRightArrowLeft,
 } from 'react-icons/fa6';
 import DashboardHeader from '../components/DashboardHeader';
 import DashboardSidebar from '../components/DashboardSidebar';
 import AppFooter from '../components/AppFooter';
 import Avatar from '../components/Avatar';
+import ReviewForm from '../components/ReviewForm';
 import { api, ApiException } from '../services/api';
 import toast from 'react-hot-toast';
 import { useApiQuery } from '../hooks/useApiQuery';
@@ -65,6 +66,28 @@ export default function Bookings() {
   const [tab, setTab]       = useState<TabFilter>('all');
   const [actioning, setActioning] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [reviewBookingId, setReviewBookingId] = useState<string | null>(null);
+  const [counterBookingId, setCounterBookingId] = useState<string | null>(null);
+  const [counterRate, setCounterRate] = useState('');
+  const [counterMessage, setCounterMessage] = useState('');
+
+  const doCounterOffer = async (bookingId: string) => {
+    const rate = parseInt(counterRate) * 100; // Convert to paise
+    if (!rate || rate <= 0) { toast.error('Enter a valid rate'); return; }
+    setActioning(bookingId + 'counter');
+    try {
+      await api.patch(`/bookings/${bookingId}/counter`, { counterRate: rate, counterMessage });
+      toast.success('Counter offer sent!');
+      setCounterBookingId(null);
+      setCounterRate('');
+      setCounterMessage('');
+      refetch();
+    } catch (err) {
+      toast.error(err instanceof ApiException ? err.payload.message : 'Failed to send counter offer');
+    } finally {
+      setActioning(null);
+    }
+  };
 
   const { data, loading, error, refetch } = useApiQuery<BookingsResponse>('/bookings/incoming');
 
@@ -112,7 +135,7 @@ export default function Bookings() {
                     type="button"
                     onClick={() => setTab(t)}
                     className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors capitalize ${
-                      tab === t ? 'bg-[#3678F1] text-white shadow-sm' : 'text-neutral-600 hover:bg-[#F3F4F6]'
+                      tab === t ? 'bg-[#3B5BDB] text-white shadow-sm' : 'text-neutral-600 hover:bg-[#F3F4F6]'
                     }`}
                   >
                     {t}
@@ -145,7 +168,7 @@ export default function Bookings() {
               {!loading && !error && bookings.length === 0 && (
                 <div className="rounded-2xl bg-white border border-neutral-200 p-12 text-center">
                   <div className="w-14 h-14 rounded-2xl bg-[#EEF4FF] flex items-center justify-center mx-auto mb-4">
-                    <FaClock className="text-[#3678F1] text-2xl" />
+                    <FaClock className="text-[#3B5BDB] text-2xl" />
                   </div>
                   <h3 className="text-base font-bold text-neutral-900 mb-2">No booking requests</h3>
                   <p className="text-sm text-neutral-500">
@@ -218,7 +241,7 @@ export default function Bookings() {
                           {booking.status === 'pending' && (
                             <>
                               <button type="button" onClick={() => doAction(booking.id, 'accept')} disabled={!!isActioning}
-                                className="rounded-xl px-4 py-2 bg-[#3678F1] text-white text-xs font-semibold hover:bg-[#2563d4] flex items-center gap-1.5 transition-colors disabled:opacity-50">
+                                className="rounded-xl px-4 py-2 bg-[#3B5BDB] text-white text-xs font-semibold hover:bg-[#2f4ac2] flex items-center gap-1.5 transition-colors disabled:opacity-50">
                                 <FaCircleCheck className="w-3 h-3" />
                                 {actioning === booking.id + 'accept' ? 'Accepting…' : 'Accept'}
                               </button>
@@ -227,10 +250,50 @@ export default function Bookings() {
                                 <FaXmark className="w-3 h-3" />
                                 {actioning === booking.id + 'decline' ? 'Declining…' : 'Decline'}
                               </button>
+                              <button type="button" onClick={() => setCounterBookingId(counterBookingId === booking.id ? null : booking.id)}
+                                className="rounded-xl px-4 py-2 border border-[#3B5BDB] text-[#3B5BDB] text-xs font-semibold hover:bg-[#EEF2FF] flex items-center gap-1.5 transition-colors">
+                                <FaArrowRightArrowLeft className="w-3 h-3" /> Counter Offer
+                              </button>
                             </>
                           )}
 
+                          {(booking.status === 'accepted' || booking.status === 'locked') && (
+                            <button type="button" onClick={() => setReviewBookingId(reviewBookingId === booking.id ? null : booking.id)}
+                              className="rounded-xl px-4 py-2 border border-amber-300 text-amber-700 text-xs font-semibold hover:bg-amber-50 flex items-center gap-1.5 transition-colors">
+                              <FaStar className="w-3 h-3" /> Leave Review
+                            </button>
+                          )}
                         </div>
+
+                        {/* Counter offer form */}
+                        {counterBookingId === booking.id && (
+                          <div className="mt-3 p-4 bg-[#EEF2FF] rounded-xl border border-[#3B5BDB]/20">
+                            <p className="text-xs font-semibold text-[#3B5BDB] mb-2">Counter Offer</p>
+                            <div className="flex gap-2 items-end">
+                              <div className="flex-1">
+                                <label className="text-[10px] text-neutral-600 block mb-1">Your rate (₹/day)</label>
+                                <input type="number" value={counterRate} onChange={(e) => setCounterRate(e.target.value)} placeholder="e.g. 5000"
+                                  className="w-full px-3 py-2 text-sm border border-neutral-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#3B5BDB]" />
+                              </div>
+                              <div className="flex-1">
+                                <label className="text-[10px] text-neutral-600 block mb-1">Message (optional)</label>
+                                <input type="text" value={counterMessage} onChange={(e) => setCounterMessage(e.target.value)} placeholder="Optional note"
+                                  className="w-full px-3 py-2 text-sm border border-neutral-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#3B5BDB]" />
+                              </div>
+                              <button type="button" onClick={() => doCounterOffer(booking.id)} disabled={actioning === booking.id + 'counter'}
+                                className="px-4 py-2 bg-[#3B5BDB] text-white text-xs font-semibold rounded-lg hover:bg-[#2f4ac2] disabled:opacity-50 whitespace-nowrap">
+                                {actioning === booking.id + 'counter' ? 'Sending…' : 'Send'}
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Review form */}
+                        {reviewBookingId === booking.id && (
+                          <div className="mt-3">
+                            <ReviewForm bookingId={booking.id} onSubmitted={() => { setReviewBookingId(null); toast.success('Review submitted!'); }} />
+                          </div>
+                        )}
                       </div>
                     );
                   })}

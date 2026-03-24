@@ -185,7 +185,7 @@ export default function BookingRequestModal({
             </p>
             <button
               onClick={onClose}
-              className="rounded-xl w-full py-2.5 bg-[#3678F1] text-white text-sm font-semibold hover:bg-[#2563d4] transition-colors"
+              className="rounded-xl w-full py-2.5 bg-[#3B5BDB] text-white text-sm font-semibold hover:bg-[#2f4ac2] transition-colors"
             >
               Done
             </button>
@@ -213,7 +213,7 @@ export default function BookingRequestModal({
                         return (
                           <li key={(eq.id as string) || idx} className="text-xs text-neutral-800 flex justify-between items-center gap-3">
                             <span className="truncate font-medium">{String(eq.name ?? '')}</span>
-                            <span className="shrink-0 font-semibold text-[#3678F1]">{rateStr}</span>
+                            <span className="shrink-0 font-semibold text-[#3B5BDB]">{rateStr}</span>
                           </li>
                         );
                       })}
@@ -235,7 +235,7 @@ export default function BookingRequestModal({
                   value={selectedEquipmentId}
                   onChange={(e) => setSelectedEquipmentId(e.target.value)}
                   disabled={loading || equipmentLoading}
-                  className="rounded-xl w-full px-3 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 text-sm focus:outline-none focus:border-[#3678F1] focus:bg-white transition-all disabled:opacity-50"
+                  className="rounded-xl w-full px-3 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 text-sm focus:outline-none focus:border-[#3B5BDB] focus:bg-white transition-all disabled:opacity-50"
                 >
                   <option value="">— Any equipment —</option>
                   {equipmentList.map((eq, idx) => (
@@ -255,7 +255,7 @@ export default function BookingRequestModal({
                 onChange={(e) => setProjectId(e.target.value)}
                 required
                 disabled={loading || projectsLoading}
-                className="rounded-xl w-full px-3 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 text-sm focus:outline-none focus:border-[#3678F1] focus:bg-white transition-all disabled:opacity-50"
+                className="rounded-xl w-full px-3 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 text-sm focus:outline-none focus:border-[#3B5BDB] focus:bg-white transition-all disabled:opacity-50"
               >
                 <option value="">
                   {projectsLoading ? 'Loading projects…' : '— Select a project —'}
@@ -270,7 +270,7 @@ export default function BookingRequestModal({
               {!projectsLoading && !projectsError && activeProjects.length === 0 && (projectsData !== undefined || rawItems !== undefined) && (
                 <p className="text-xs text-neutral-400 mt-1">
                   No active projects found.{' '}
-                  <Link to="/dashboard/projects/new" className="text-[#3678F1] hover:underline">Create one first.</Link>
+                  <Link to="/dashboard/projects/new" className="text-[#3B5BDB] hover:underline">Create one first.</Link>
                 </p>
               )}
             </div>
@@ -289,7 +289,7 @@ export default function BookingRequestModal({
                   onChange={(e) => setRateOffered(e.target.value)}
                   placeholder="e.g., 25000"
                   disabled={loading}
-                  className="rounded-xl w-full pl-7 pr-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all disabled:opacity-50"
+                  className="rounded-xl w-full pl-7 pr-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3B5BDB] focus:bg-white text-sm transition-all disabled:opacity-50"
                 />
               </div>
             </div>
@@ -306,7 +306,7 @@ export default function BookingRequestModal({
                 rows={3}
                 placeholder="Add any specific requirements or notes..."
                 disabled={loading}
-                className="rounded-xl w-full px-3 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all resize-none disabled:opacity-50"
+                className="rounded-xl w-full px-3 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3B5BDB] focus:bg-white text-sm transition-all resize-none disabled:opacity-50"
               />
             </div>
 

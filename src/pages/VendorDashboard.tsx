@@ -1,8 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Link } from 'react-router-dom';
-import { FaCalendar, FaTruck, FaBell, FaChevronLeft, FaChevronRight, FaXmark, FaCircle, FaMessage, FaTriangleExclamation, FaPlus, FaUser } from 'react-icons/fa6';
+import { Link, useNavigate } from 'react-router-dom';
+import { FaCalendar, FaTruck, FaBell, FaChevronLeft, FaChevronRight, FaXmark, FaCircle, FaMessage, FaTriangleExclamation, FaFileInvoice, FaPlus, FaUser } from 'react-icons/fa6';
 import { api, ApiException } from '../services/api';
-import toast from 'react-hot-toast';
 import { useApiQuery } from '../hooks/useApiQuery';
 import { formatPaise, formatRateRange } from '../utils/currency';
 import DashboardHeader from '../components/DashboardHeader';
@@ -15,19 +14,14 @@ const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 type CellStatus = 'available' | 'booked' | 'completed' | null;
 
-interface DayBooking {
-  status: CellStatus;
-  equipment?: string;
-  location?: string;
-  project?: string;
-  company?: string;
-}
-
 interface CalendarCell {
   d: number;
   muted: boolean;
   status: CellStatus;
-  bookings: DayBooking[];
+  equipment?: string;
+  company?: string;
+  project?: string;
+  invoice?: string;
 }
 
 interface PanelData {
@@ -35,7 +29,10 @@ interface PanelData {
   month: string;
   year: number;
   status: CellStatus;
-  bookings: DayBooking[];
+  equipment?: string;
+  company?: string;
+  project?: string;
+  invoice?: string;
 }
 
 const _today = new Date();
@@ -52,7 +49,7 @@ function datesBetween(start: string, end: string): string[] {
   return out;
 }
 
-function buildCalendar(monthOffset: number, bookingsByDay?: Record<string, DayBooking[]>): CalendarCell[] {
+function buildCalendar(monthOffset: number, bookingsByDay?: Record<string, { status: CellStatus; equipment?: string; company?: string; project?: string; invoice?: string }>): CalendarCell[] {
   const d = new Date(BASE_YEAR, BASE_MONTH + monthOffset, 1);
   const year = d.getFullYear();
   const month = d.getMonth();
@@ -60,16 +57,15 @@ function buildCalendar(monthOffset: number, bookingsByDay?: Record<string, DayBo
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const prevDays = new Date(year, month, 0).getDate();
   const cells: CalendarCell[] = [];
-  for (let i = firstDay - 1; i >= 0; i--) cells.push({ d: prevDays - i, muted: true, status: null, bookings: [] });
+  for (let i = firstDay - 1; i >= 0; i--) cells.push({ d: prevDays - i, muted: true, status: null });
   const monthData = bookingsByDay ?? {};
   for (let day = 1; day <= daysInMonth; day++) {
     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    const list = monthData[dateStr] ?? [];
-    const status: CellStatus = list.length === 0 ? 'available' : (list[0].status ?? 'available');
-    cells.push({ d: day, muted: false, status, bookings: list });
+    const override = monthData[dateStr];
+    cells.push({ d: day, muted: false, ...(override ?? { status: 'available' as CellStatus }) });
   }
   const rem = 7 - (cells.length % 7);
-  if (rem < 7) for (let d2 = 1; d2 <= rem; d2++) cells.push({ d: d2, muted: true, status: null, bookings: [] });
+  if (rem < 7) for (let d2 = 1; d2 <= rem; d2++) cells.push({ d: d2, muted: true, status: null });
   return cells;
 }
 
@@ -88,17 +84,16 @@ interface EquipmentItem {
 
 interface IncomingBooking {
   id: string; status: string; rateOffered?: number | null; message?: string | null;
-  project: { id: string; title: string; startDate?: string; endDate?: string; locationCity?: string | null; shootLocations?: string[] };
+  project: { id: string; title: string; startDate?: string; endDate?: string };
   requester: { id: string; email: string; companyProfile?: { companyName?: string } | null };
-  vendorEquipment?: { id: string; name: string } | null;
 }
 interface PastBookingItem {
-  id: string; project: { id: string; title: string; startDate: string; endDate: string; locationCity?: string | null; shootLocations?: string[] };
+  id: string; project: { id: string; title: string; startDate: string; endDate: string };
   requester: { companyProfile?: { companyName?: string } | null };
-  vendorEquipment?: { id: string; name: string } | null;
 }
 
 export default function VendorDashboard() {
+  const navigate = useNavigate();
   useEffect(() => { document.title = 'Dashboard – Claapo'; }, []);
 
   const [monthOffset, setMonthOffset] = useState(0);
@@ -123,34 +118,17 @@ export default function VendorDashboard() {
   const equipmentArray = Array.isArray(equipmentList) ? equipmentList : (equipmentList as { items?: EquipmentItem[] })?.items ?? [];
 
   const bookingsByDay = (() => {
-    const map: Record<string, DayBooking[]> = {};
-    const add = (start: string, end: string, status: CellStatus, opts: { project?: string; company?: string; equipment?: string; location?: string }) => {
-      const entry: DayBooking = { status, project: opts.project, company: opts.company, equipment: opts.equipment, location: opts.location };
+    const map: Record<string, { status: CellStatus; project?: string; company?: string }> = {};
+    const add = (start: string, end: string, status: CellStatus, project?: string, company?: string) => {
       datesBetween(start, end).forEach((dateStr) => {
-        if (!map[dateStr]) map[dateStr] = [];
-        map[dateStr].push(entry);
+        map[dateStr] = { status, project, company };
       });
-    };
-    const locationText = (p: { locationCity?: string | null; shootLocations?: string[] }) => {
-      if (p.locationCity) return p.locationCity;
-      if (p.shootLocations?.length) return p.shootLocations.join(', ');
-      return undefined;
     };
     incomingItems.filter(b => (b.status === 'accepted' || b.status === 'locked') && b.project?.startDate && b.project?.endDate).forEach((b) => {
-      add(b.project.startDate!, b.project.endDate!, 'booked', {
-        project: b.project.title,
-        company: b.requester.companyProfile?.companyName ?? undefined,
-        equipment: b.vendorEquipment?.name,
-        location: locationText(b.project),
-      });
+      add(b.project.startDate!, b.project.endDate!, 'booked', b.project.title, b.requester.companyProfile?.companyName ?? undefined);
     });
     pastItems.forEach((b) => {
-      add(b.project.startDate, b.project.endDate, 'completed', {
-        project: b.project.title,
-        company: b.requester.companyProfile?.companyName ?? undefined,
-        equipment: b.vendorEquipment?.name,
-        location: locationText(b.project),
-      });
+      add(b.project.startDate, b.project.endDate, 'completed', b.project.title, b.requester.companyProfile?.companyName ?? undefined);
     });
     return map;
   })();
@@ -172,7 +150,7 @@ export default function VendorDashboard() {
 
   const openPanel = (cell: CalendarCell) => {
     if (cell.muted) return;
-    setPanel({ date: cell.d, month: monthLabel, year: yearLabel, status: cell.status, bookings: cell.bookings });
+    setPanel({ date: cell.d, month: monthLabel, year: yearLabel, status: cell.status, equipment: cell.equipment, company: cell.company, project: cell.project, invoice: cell.invoice });
   };
 
   return (
@@ -242,17 +220,14 @@ export default function VendorDashboard() {
                               : cell.status && cellStyle[cell.status]
                                 ? `${cellStyle[cell.status]} cursor-pointer`
                                 : 'bg-white border-neutral-200 text-neutral-600 hover:bg-[#F3F4F6] cursor-pointer'}
-                            ${panel?.date === cell.d && !cell.muted ? 'ring-2 ring-[#3678F1] ring-offset-1' : ''}
+                            ${panel?.date === cell.d && !cell.muted ? 'ring-2 ring-[#3B5BDB] ring-offset-1' : ''}
                           `}
                         >
                           <span className="text-[11px] sm:text-xs font-semibold leading-none">{cell.d}</span>
                           {cell.status && !cell.muted && cell.status !== 'available' && (
                             <span className="text-[8px] sm:text-[9px] font-medium leading-tight truncate w-full opacity-80">
-                              {cell.status === 'booked' ? (cell.bookings[0]?.equipment ?? 'Booked') : (cell.bookings[0]?.equipment ?? 'Done')}
+                              {cell.status === 'booked' ? (cell.equipment ?? 'Booked') : (cell.equipment ?? 'Done')}
                             </span>
-                          )}
-                          {cell.bookings.length > 1 && !cell.muted && (
-                            <span className="absolute top-0.5 right-0.5 w-3.5 h-3.5 rounded-full bg-[#3678F1] text-white text-[7px] font-bold flex items-center justify-center leading-none">{cell.bookings.length}</span>
                           )}
                         </button>
                       ))}
@@ -262,7 +237,7 @@ export default function VendorDashboard() {
                       {[
                         { color: 'bg-[#22C55E]', label: 'Available' },
                         { color: 'bg-[#F40F02]', label: 'Booked' },
-                        { color: 'bg-[#3678F1]', label: 'Completed' },
+                        { color: 'bg-[#3B5BDB]', label: 'Completed' },
                       ].map(({ color, label }) => (
                         <div key={label} className="flex items-center gap-2">
                           <div className={`w-2.5 h-2.5 rounded-full ${color}`} />
@@ -271,7 +246,7 @@ export default function VendorDashboard() {
                       ))}
                     </div>
                     <p className="mt-3 text-[11px] text-neutral-400">
-                      Go to <Link to="/dashboard/vendor-availability" className="text-[#3678F1] hover:underline">Availability</Link> to manage your schedule.
+                      Go to <Link to="/dashboard/vendor-availability" className="text-[#3B5BDB] hover:underline">Availability</Link> to manage your schedule.
                     </p>
                   </div>
                 </div>
@@ -313,21 +288,21 @@ export default function VendorDashboard() {
                         ))}
                       </div>
                     )}
-                    <Link to="/dashboard/bookings" className="mt-3 rounded-xl block w-full py-2 text-xs text-[#3678F1] bg-[#EEF4FF] hover:bg-[#DBEAFE] text-center font-semibold transition-colors">View All Bookings</Link>
+                    <Link to="/dashboard/bookings" className="mt-3 rounded-xl block w-full py-2 text-xs text-[#3B5BDB] bg-[#EEF4FF] hover:bg-[#DBEAFE] text-center font-semibold transition-colors">View All Bookings</Link>
                   </div>
 
                   {/* Recent Rentals */}
                   <div className="rounded-2xl bg-white border border-neutral-200 p-4">
                     <div className="flex items-center justify-between mb-3">
                       <h3 className="text-sm font-bold text-neutral-900">Recent Rentals</h3>
-                      <Link to="/dashboard/past-rentals" className="text-xs text-[#3678F1] hover:underline font-medium">View all</Link>
+                      <Link to="/dashboard/past-rentals" className="text-xs text-[#3B5BDB] hover:underline font-medium">View all</Link>
                     </div>
                     {pastItems.length === 0 ? (
                       <p className="text-xs text-neutral-400 text-center py-4">No past rentals yet</p>
                     ) : (
                       <div className="space-y-2">
                         {pastItems.slice(0, 4).map((b) => (
-                          <Link key={b.id} to={`/dashboard/projects/${b.project.id}`} className="block rounded-xl border border-neutral-200 p-3 bg-[#FAFAFA] hover:border-[#3678F1]/50 transition-colors">
+                          <Link key={b.id} to={`/dashboard/projects/${b.project.id}`} className="block rounded-xl border border-neutral-200 p-3 bg-[#FAFAFA] hover:border-[#3B5BDB]/50 transition-colors">
                             <p className="text-xs font-semibold text-neutral-900 truncate">{b.project.title}</p>
                             <p className="text-[11px] text-neutral-500 truncate">{b.requester.companyProfile?.companyName ?? '—'}</p>
                           </Link>
@@ -340,11 +315,11 @@ export default function VendorDashboard() {
                   <div className="grid grid-cols-2 gap-2">
                     <div className="rounded-2xl bg-white border border-neutral-200 p-3">
                       <p className="text-[11px] text-neutral-500">Active Bookings</p>
-                      <p className="text-lg font-bold text-[#3678F1]">{activeCount}</p>
+                      <p className="text-lg font-bold text-[#3B5BDB]">{activeCount}</p>
                     </div>
                     <div className="rounded-2xl bg-white border border-neutral-200 p-3">
                       <p className="text-[11px] text-neutral-500">Past Rentals</p>
-                      <p className="text-lg font-bold text-[#3678F1]">{pastCount}</p>
+                      <p className="text-lg font-bold text-[#3B5BDB]">{pastCount}</p>
                     </div>
                   </div>
 
@@ -353,11 +328,11 @@ export default function VendorDashboard() {
                     <div className="rounded-2xl bg-white border border-neutral-200 p-4">
                       <div className="flex items-center justify-between mb-2">
                         <h3 className="text-sm font-bold text-neutral-900">Equipment</h3>
-                        <Link to="/dashboard/equipment" className="text-xs text-[#3678F1] hover:underline font-medium">View all</Link>
+                        <Link to="/dashboard/equipment" className="text-xs text-[#3B5BDB] hover:underline font-medium">View all</Link>
                       </div>
                       <div className="space-y-2">
                         {equipmentArray.slice(0, 3).map((item) => (
-                          <Link key={item.id} to="/dashboard/equipment" className="block rounded-xl border border-neutral-200 p-2.5 bg-[#FAFAFA] hover:border-[#3678F1]/50 transition-colors">
+                          <Link key={item.id} to="/dashboard/equipment" className="block rounded-xl border border-neutral-200 p-2.5 bg-[#FAFAFA] hover:border-[#3B5BDB]/50 transition-colors">
                             <p className="text-xs font-semibold text-neutral-900 truncate">{item.name}</p>
                             <p className="text-[10px] text-neutral-500">{item.dailyRateMin != null || item.dailyRateMax != null ? formatRateRange(item.dailyRateMin, item.dailyRateMax) : '—'}</p>
                           </Link>
@@ -371,16 +346,16 @@ export default function VendorDashboard() {
                   <div className="rounded-2xl bg-white border border-neutral-200 p-4">
                     <h3 className="text-sm font-bold text-neutral-900 mb-3">Quick Actions</h3>
                     <div className="space-y-1.5">
-                      <Link to="/dashboard/vendor-availability" className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#F3F4F6] text-neutral-700 text-xs font-semibold hover:bg-[#EEF4FF] hover:text-[#3678F1] transition-colors">
+                      <Link to="/dashboard/vendor-availability" className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#F3F4F6] text-neutral-700 text-xs font-semibold hover:bg-[#EEF4FF] hover:text-[#3B5BDB] transition-colors">
                         <FaCalendar className="w-3 h-3" /> Manage Availability
                       </Link>
-                      <Link to="/dashboard/conversations" className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#F3F4F6] text-neutral-700 text-xs font-semibold hover:bg-[#EEF4FF] hover:text-[#3678F1] transition-colors">
+                      <Link to="/dashboard/conversations" className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#F3F4F6] text-neutral-700 text-xs font-semibold hover:bg-[#EEF4FF] hover:text-[#3B5BDB] transition-colors">
                         <FaMessage className="w-3 h-3" /> Open Chat
                       </Link>
-                      <Link to="/dashboard/equipment" className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#F3F4F6] text-neutral-700 text-xs font-semibold hover:bg-[#EEF4FF] hover:text-[#3678F1] transition-colors">
+                      <Link to="/dashboard/equipment" className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#F3F4F6] text-neutral-700 text-xs font-semibold hover:bg-[#EEF4FF] hover:text-[#3B5BDB] transition-colors">
                         <FaTruck className="w-3 h-3" /> Equipment
                       </Link>
-                      <Link to="/dashboard/vendor-profile" className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#F3F4F6] text-neutral-700 text-xs font-semibold hover:bg-[#EEF4FF] hover:text-[#3678F1] transition-colors">
+                      <Link to="/dashboard/vendor-profile" className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#F3F4F6] text-neutral-700 text-xs font-semibold hover:bg-[#EEF4FF] hover:text-[#3B5BDB] transition-colors">
                         <FaUser className="w-3 h-3" /> Edit Profile
                       </Link>
                     </div>
@@ -427,7 +402,7 @@ export default function VendorDashboard() {
               )}
               {panel.status === 'completed' && (
                 <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#1D4ED8] bg-[#DBEAFE] px-3 py-1.5 rounded-full">
-                  <FaCircle className="text-[8px] text-[#3678F1]" /> Past Rental
+                  <FaCircle className="text-[8px] text-[#3B5BDB]" /> Past Rental
                 </span>
               )}
             </div>
@@ -443,52 +418,44 @@ export default function VendorDashboard() {
                   <button
                     type="button"
                     className="rounded-xl w-full py-2.5 bg-[#F3F4F6] text-neutral-700 text-sm font-medium hover:bg-neutral-200 transition-colors"
-                    onClick={() => toast('Go to Availability to block this date.')}
+                    onClick={() => navigate('/dashboard/vendor-availability')}
                   >
                     Block this date
                   </button>
                 </div>
               )}
 
-              {(panel.status === 'booked' || panel.status === 'completed') && panel.bookings.length > 0 && (
+              {(panel.status === 'booked' || panel.status === 'completed') && panel.equipment && (
                 <div className="space-y-4">
-                  <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">Equipment &amp; location</p>
-                  {panel.bookings.map((b, idx) => (
-                    <div key={idx} className="rounded-xl bg-[#F3F4F6] p-4 space-y-2">
-                      {b.equipment && (
-                        <div className="flex justify-between gap-2">
-                          <span className="text-xs text-neutral-500 shrink-0">Equipment</span>
-                          <span className="text-xs font-semibold text-neutral-900 text-right">{b.equipment}</span>
-                        </div>
-                      )}
-                      {b.location && (
-                        <div className="flex justify-between gap-2">
-                          <span className="text-xs text-neutral-500 shrink-0">Where</span>
-                          <span className="text-xs font-semibold text-neutral-900 text-right">{b.location}</span>
-                        </div>
-                      )}
-                      {b.project && (
-                        <div className="flex justify-between gap-2">
-                          <span className="text-xs text-neutral-500 shrink-0">Project</span>
-                          <span className="text-xs font-semibold text-neutral-900 text-right">{b.project}</span>
-                        </div>
-                      )}
-                      {b.company && (
-                        <div className="flex justify-between gap-2">
-                          <span className="text-xs text-neutral-500 shrink-0">Company</span>
-                          <span className="text-xs font-semibold text-neutral-900 text-right">{b.company}</span>
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                  <div className="rounded-xl bg-[#F3F4F6] p-4 space-y-3">
+                    {[
+                      { label: 'Equipment', value: panel.equipment },
+                      { label: 'Project', value: panel.project },
+                      { label: 'Company', value: panel.company },
+                      { label: 'Status', value: panel.status === 'booked' ? 'Active Rental' : 'Completed Rental' },
+                    ].map(({ label, value }) => (
+                      <div key={label} className="flex justify-between gap-2">
+                        <span className="text-xs text-neutral-500 shrink-0">{label}</span>
+                        <span className="text-xs font-semibold text-neutral-900 text-right">{value}</span>
+                      </div>
+                    ))}
+                  </div>
 
                   <div className="space-y-2">
                     {panel.status === 'booked' && (
-                      <Link
-                        to="/dashboard/conversations"
-                        className="flex items-center justify-center gap-2 w-full rounded-xl py-2.5 bg-[#3678F1] text-white text-sm font-semibold hover:bg-[#2563d4] transition-colors"
+                      <button
+                        type="button"
+                        className="flex items-center justify-center gap-2 w-full rounded-xl py-2.5 bg-[#3B5BDB] text-white text-sm font-semibold hover:bg-[#2f4ac2] transition-colors"
                       >
                         <FaMessage className="w-3.5 h-3.5" /> Contact Company
+                      </button>
+                    )}
+                    {panel.invoice && (
+                      <Link
+                        to={`/dashboard/invoice/${panel.invoice}`}
+                        className="flex items-center justify-center gap-2 w-full rounded-xl py-2.5 bg-[#F3F4F6] text-neutral-700 text-sm font-semibold hover:bg-neutral-200 transition-colors"
+                      >
+                        <FaFileInvoice className="w-3.5 h-3.5" /> View Invoice
                       </Link>
                     )}
                   </div>
@@ -501,7 +468,7 @@ export default function VendorDashboard() {
                 <button
                   type="button"
                   className="flex items-center justify-center gap-2 w-full rounded-xl py-2.5 bg-[#F4C430] text-neutral-900 text-sm font-bold hover:bg-[#e6b820] transition-colors"
-                  onClick={() => toast('Go to Availability to manage your schedule.')}
+                  onClick={() => navigate('/dashboard/vendor-availability')}
                 >
                   <FaPlus className="w-3 h-3" /> Manage Availability
                 </button>

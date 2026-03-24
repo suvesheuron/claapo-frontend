@@ -8,7 +8,7 @@ import { ApiException } from '../services/api';
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, isAuthenticated, clearError } = useAuth();
+  const { login, isAuthenticated, clearError, user } = useAuth();
 
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
@@ -18,11 +18,12 @@ export default function Login() {
 
   // If already authenticated, redirect away from login page
   useEffect(() => {
-    if (isAuthenticated) {
-      const from = (location.state as { from?: Location })?.from?.pathname ?? '/dashboard';
-      navigate(from, { replace: true });
+    if (isAuthenticated && user) {
+      const stateFrom = (location.state as { from?: Location })?.from?.pathname;
+      const defaultPath = user.role === 'admin' ? '/admin' : '/dashboard';
+      navigate(stateFrom ?? defaultPath, { replace: true });
     }
-  }, [isAuthenticated, navigate, location.state]);
+  }, [isAuthenticated, user, navigate, location.state]);
 
   useEffect(() => {
     document.title = 'Welcome Back – Claapo Login';
@@ -60,7 +61,7 @@ export default function Login() {
         <div className="w-full max-w-[420px]">
           {/* Brand mark */}
           <div className="flex flex-col items-center mb-8">
-            <div className="w-12 h-12 rounded-xl bg-[#3678F1] flex items-center justify-center mb-4 shadow-lg shadow-[#3678F1]/25">
+            <div className="w-12 h-12 rounded-xl bg-[#3B5BDB] flex items-center justify-center mb-4 shadow-lg shadow-[#3B5BDB]/25">
               <FaVideo className="text-white text-lg" />
             </div>
             <h1 className="text-2xl font-bold text-neutral-900">Welcome back</h1>
@@ -81,14 +82,14 @@ export default function Login() {
                   autoComplete="email"
                   required
                   disabled={loading}
-                  className="rounded-xl w-full px-4 py-3 border border-neutral-300 bg-white text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:ring-3 focus:ring-[#3678F1]/10 text-sm transition-all disabled:opacity-50"
+                  className="rounded-xl w-full px-4 py-3 border border-neutral-300 bg-white text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3B5BDB] focus:ring-3 focus:ring-[#3B5BDB]/10 text-sm transition-all disabled:opacity-50"
                 />
               </div>
 
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="block text-neutral-700 text-sm font-medium">Password</label>
-                  <Link to="/forgot-password" className="text-xs text-[#3678F1] hover:underline">
+                  <Link to="/forgot-password" className="text-xs text-[#3B5BDB] hover:underline">
                     Forgot password?
                   </Link>
                 </div>
@@ -101,7 +102,7 @@ export default function Login() {
                     autoComplete="current-password"
                     required
                     disabled={loading}
-                    className="rounded-xl w-full px-4 py-3 pr-11 border border-neutral-300 bg-white text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:ring-3 focus:ring-[#3678F1]/10 text-sm transition-all disabled:opacity-50"
+                    className="rounded-xl w-full px-4 py-3 pr-11 border border-neutral-300 bg-white text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3B5BDB] focus:ring-3 focus:ring-[#3B5BDB]/10 text-sm transition-all disabled:opacity-50"
                   />
                   <button type="button" onClick={() => setShowPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 p-1" aria-label={showPassword ? 'Hide password' : 'Show password'}>
                     {showPassword ? <FaEyeSlash className="w-4 h-4" /> : <FaEye className="w-4 h-4" />}
@@ -120,7 +121,7 @@ export default function Login() {
               <button
                 type="submit"
                 disabled={loading}
-                className="rounded-xl w-full py-3 bg-[#3678F1] text-white text-sm font-semibold hover:bg-[#2563d4] transition-colors shadow-sm mt-2 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="rounded-xl w-full py-3 bg-[#3B5BDB] text-white text-sm font-semibold hover:bg-[#2f4ac2] transition-colors shadow-sm mt-2 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {loading ? (
                   <>
@@ -144,7 +145,7 @@ export default function Login() {
 
             <p className="text-center text-sm text-neutral-600">
               Don't have an account?{' '}
-              <Link to="/register" className="text-[#3678F1] font-semibold hover:underline">
+              <Link to="/register" className="text-[#3B5BDB] font-semibold hover:underline">
                 Create one free
               </Link>
             </p>
