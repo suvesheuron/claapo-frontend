@@ -13,7 +13,25 @@
  *   ApiException surfaces this so callers can display a meaningful message.
  */
 
-const BASE_URL: string = import.meta.env.VITE_API_URL ?? '/v1';
+/**
+ * Production must use an absolute URL (https://…/v1). If VITE_API_URL is set to
+ * `/something.up.railway.app/v1` or `something.up.railway.app/v1` (missing scheme),
+ * the browser treats it as same-origin and requests hit Vercel → 405.
+ */
+function normalizeApiBase(raw: string | undefined): string {
+  let v = (raw ?? '/v1').trim();
+  if (!v) v = '/v1';
+  if (v.startsWith('http://') || v.startsWith('https://')) {
+    return v.replace(/\/$/, '');
+  }
+  if (v.includes('.up.railway.app')) {
+    v = v.replace(/^\//, '');
+    return `https://${v.replace(/\/$/, '')}`;
+  }
+  return v.replace(/\/$/, '');
+}
+
+const BASE_URL: string = normalizeApiBase(import.meta.env.VITE_API_URL as string | undefined);
 
 // ─── Error types ────────────────────────────────────────────────────────────
 
