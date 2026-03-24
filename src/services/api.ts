@@ -119,3 +119,4 @@ export const api = {
   put: <T>(path: string, body?: unknown): Promise<T> => request<T>('PUT', path, body),
   delete: <T>(path: string): Promise<T> => request<T>('DELETE', path),
 };
+
