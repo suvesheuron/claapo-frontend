@@ -1,12 +1,14 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Link } from 'react-router-dom';
-import { FaCalendar, FaChevronLeft, FaChevronRight, FaXmark, FaCircle, FaMessage, FaFileInvoice, FaPlus, FaLock, FaCircleInfo } from 'react-icons/fa6';
+import { FaChevronLeft, FaChevronRight, FaCircleInfo } from 'react-icons/fa6';
 import DashboardHeader from '../../components/DashboardHeader';
 import DashboardSidebar from '../../components/DashboardSidebar';
 import AppFooter from '../../components/AppFooter';
+import AvailabilityDateDetailModal from '../../components/AvailabilityDateDetailModal';
 import { api, ApiException } from '../../services/api';
 import toast from 'react-hot-toast';
 import { individualNavLinks } from '../../navigation/dashboardNav';
+import type { BookingWithDetails } from '../../types/availability';
+import { parseAvailabilityMonthResponse } from '../../utils/parseAvailabilityResponse';
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -34,11 +36,6 @@ interface CalendarCell {
   payment?: string;
   invoice?: string;
   notes?: string;
-}
-
-interface PanelData extends Omit<CalendarCell, 'muted'> {
-  month: string;
-  year: number;
 }
 
 function toFrontendStatus(status: string): CellStatus {
@@ -87,12 +84,10 @@ function buildCalendar(
 
 const cellStyle: Record<string, string> = {
   available: 'bg-[#DCFCE7] border-[#86EFAC] text-[#15803D]',
-  booked:    'bg-[#FEE2E2] border-[#FCA5A5] text-[#B91C1C]',
+  booked:    'bg-[#DBEAFE] border-[#93C5FD] text-[#1D4ED8]',
   completed: 'bg-[#DBEAFE] border-[#93C5FD] text-[#1D4ED8]',
-  blocked:   'bg-[#F3F4F6] border-neutral-300 text-neutral-400',
+  blocked:   'bg-[#FEE2E2] border-[#FECACA] text-[#B91C1C]',
 };
-
-const BLOCK_REASONS = ['Personal', 'Already booked externally', 'Not available', 'Traveling', 'Other'];
 
 export default function IndividualAvailability() {
   useEffect(() => { document.title = 'Availability – Claapo'; }, []);
@@ -102,12 +97,10 @@ export default function IndividualAvailability() {
   const BASE_MONTH = today.getMonth();
 
   const [monthOffset, setMonthOffset] = useState(0);
-  const [panel, setPanel] = useState<PanelData | null>(null);
+  const [detailDate, setDetailDate] = useState<string | null>(null);
   const [apiSlots, setApiSlots] = useState<Record<string, AvailabilitySlot>>({});
+  const [bookingDetails, setBookingDetails] = useState<Record<string, BookingWithDetails>>({});
   const [slotsLoading, setSlotsLoading] = useState(false);
-  const [blockForm, setBlockForm] = useState(false);
-  const [blockReason, setBlockReason] = useState(BLOCK_REASONS[0]);
-  const [blockOther, setBlockOther] = useState('');
   const [saving, setSaving] = useState(false);
 
   const displayDate = new Date(BASE_YEAR, BASE_MONTH + monthOffset, 1);
@@ -120,23 +113,26 @@ export default function IndividualAvailability() {
   const loadSlots = useCallback(async () => {
     setSlotsLoading(true);
     try {
-      const res = await api.get<{ year: number; month: number; slots?: Record<string, string>; slotNotes?: Record<string, string | null> }>(
-        `/availability/me?year=${displayYear}&month=${displayMonth + 1}`,
-      );
+      const res = await api.get<unknown>(`/availability/me?year=${displayYear}&month=${displayMonth + 1}`);
+      const parsed = parseAvailabilityMonthResponse(res);
+      setBookingDetails(parsed.bookingDetails);
       const map: Record<string, AvailabilitySlot> = {};
-      if (res?.slots && typeof res.slots === 'object') {
-        for (const [dateStr, status] of Object.entries(res.slots)) {
-          const key = dateStr.slice(0, 10);
-          map[key] = {
-            date: key,
-            status: status as AvailabilitySlot['status'],
-            notes: res.slotNotes?.[key] ?? undefined,
-          };
-        }
+      for (const [key, s] of Object.entries(parsed.slots)) {
+        const b = parsed.bookingDetails[key];
+        map[key] = {
+          date: key,
+          status: s.status as AvailabilitySlot['status'],
+          notes: s.notes ?? undefined,
+          projectTitle: b?.projectTitle,
+          companyName: b?.companyName,
+          roleName: b?.roleName ?? undefined,
+          rateOffered: b?.rateOffered ?? undefined,
+          invoiceId: b?.invoiceId ?? undefined,
+        };
       }
       setApiSlots(map);
     } catch {
-      // Silently fall through — calendar shows all available on API error
+      setBookingDetails({});
     } finally {
       setSlotsLoading(false);
     }
@@ -151,86 +147,38 @@ export default function IndividualAvailability() {
     return `${yearLabel}-${m}-${String(d).padStart(2, '0')}`;
   };
 
-  const openPanel = (cell: CalendarCell) => {
+  const openDay = (cell: CalendarCell) => {
     if (cell.muted) return;
-    setBlockForm(false);
-    setBlockReason(BLOCK_REASONS[0]);
-    setBlockOther('');
-    setPanel({
-      d: cell.d,
-      status: cell.status,
-      project: cell.project,
-      company: cell.company,
-      role:    cell.role,
-      payment: cell.payment,
-      invoice: cell.invoice,
-      notes:   cell.notes,
-      month:   monthLabel,
-      year:    yearLabel,
-    });
+    setDetailDate(getDateStr(cell.d));
   };
 
-  const handleConfirmBlock = async () => {
-    if (!panel) return;
-    const reason = blockReason === 'Other' ? blockOther : blockReason;
-    if (!reason.trim()) return;
+  const handleBlock = async (reason: string) => {
+    if (!detailDate) return;
     setSaving(true);
     try {
       await api.put('/availability/bulk', {
-        slots: [{ date: getDateStr(panel.d), status: 'blocked', notes: reason }],
+        slots: [{ date: detailDate, status: 'blocked', notes: reason }],
       });
-      // Update local cache
-      setApiSlots((prev) => ({
-        ...prev,
-        [getDateStr(panel.d)]: { date: getDateStr(panel.d), status: 'blocked', notes: reason },
-      }));
       await loadSlots();
-      setPanel(null);
-      setBlockForm(false);
+      setDetailDate(null);
     } catch (err) {
-      const msg = err instanceof ApiException ? err.payload.message : 'Failed to block date.';
-      toast.error(msg);
+      toast.error(err instanceof ApiException ? err.payload.message : 'Failed to block date.');
     } finally {
       setSaving(false);
     }
   };
 
   const handleUnblock = async () => {
-    if (!panel) return;
+    if (!detailDate) return;
     setSaving(true);
     try {
       await api.put('/availability/bulk', {
-        slots: [{ date: getDateStr(panel.d), status: 'available' }],
+        slots: [{ date: detailDate, status: 'available' }],
       });
-      setApiSlots((prev) => ({
-        ...prev,
-        [getDateStr(panel.d)]: { date: getDateStr(panel.d), status: 'available' },
-      }));
       await loadSlots();
-      setPanel(null);
+      setDetailDate(null);
     } catch (err) {
-      const msg = err instanceof ApiException ? err.payload.message : 'Failed to unblock date.';
-      alert(msg);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleMarkAvailable = async () => {
-    if (!panel) return;
-    setSaving(true);
-    try {
-      await api.put('/availability/bulk', {
-        slots: [{ date: getDateStr(panel.d), status: 'available' }],
-      });
-      setApiSlots((prev) => ({
-        ...prev,
-        [getDateStr(panel.d)]: { date: getDateStr(panel.d), status: 'available' },
-      }));
-      setPanel(null);
-    } catch (err) {
-      const msg = err instanceof ApiException ? err.payload.message : 'Failed to update availability.';
-      toast.error(msg);
+      toast.error(err instanceof ApiException ? err.payload.message : 'Failed to unblock date.');
     } finally {
       setSaving(false);
     }
@@ -294,13 +242,14 @@ export default function IndividualAvailability() {
                 {/* Calendar grid — larger cells */}
                 <div className="grid grid-cols-7 gap-1">
                   {calendarDays.map((cell, i) => {
-                    const isSelected = panel?.d === cell.d && !cell.muted;
+                    const dateStr = !cell.muted ? getDateStr(cell.d) : '';
+                    const isSelected = !!dateStr && detailDate === dateStr;
                     return (
                       <div
                         key={i}
                         role={cell.muted ? undefined : 'button'}
                         tabIndex={cell.muted ? undefined : 0}
-                        onClick={() => openPanel(cell)}
+                        onClick={() => openDay(cell)}
                         title={cell.notes ? `Blocked: ${cell.notes}` : cell.project ?? undefined}
                         className={`
                           rounded-xl border text-center p-1.5 min-h-[56px] sm:min-h-[64px] select-none flex flex-col items-center justify-center gap-0.5
@@ -329,9 +278,9 @@ export default function IndividualAvailability() {
                 <div className="flex flex-wrap gap-5 mt-5 pt-4 border-t border-neutral-100">
                   {[
                     { color: 'bg-[#22C55E]', label: 'Available' },
-                    { color: 'bg-[#F40F02]', label: 'Booked' },
-                    { color: 'bg-[#3B5BDB]', label: 'Completed' },
-                    { color: 'bg-neutral-300', label: 'Blocked' },
+                    { color: 'bg-[#3B82F6]', label: 'Booked' },
+                    { color: 'bg-[#3B82F6]', label: 'Completed' },
+                    { color: 'bg-[#EF4444]', label: 'Blocked' },
                   ].map(({ color, label }) => (
                     <div key={label} className="flex items-center gap-2">
                       <div className={`w-3 h-3 rounded-full ${color}`} />
@@ -359,118 +308,25 @@ export default function IndividualAvailability() {
         </main>
       </div>
 
-      {/* Sliding panel */}
-      {panel && (
-        <>
-          <div className="fixed inset-0 bg-black/20 z-40 lg:bg-transparent" onClick={() => { setPanel(null); setBlockForm(false); }} />
-          <aside className="fixed right-0 top-0 h-full w-80 bg-white border-l border-neutral-200 shadow-2xl z-50 side-panel flex flex-col panel-enter">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100">
-              <div>
-                <p className="text-xs text-neutral-400">{panel.month} {panel.year}</p>
-                <h3 className="text-lg font-bold text-neutral-900">{panel.d} {panel.month}</h3>
-              </div>
-              <button type="button" onClick={() => { setPanel(null); setBlockForm(false); }} className="w-8 h-8 rounded-lg bg-neutral-100 flex items-center justify-center text-neutral-500 hover:bg-neutral-200 transition-colors">
-                <FaXmark className="text-sm" />
-              </button>
-            </div>
-
-            <div className="px-5 py-3 border-b border-neutral-100">
-              {panel.status === 'available' && <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#15803D] bg-[#DCFCE7] px-3 py-1.5 rounded-full"><FaCircle className="text-[8px] text-[#22C55E]" /> Available</span>}
-              {panel.status === 'booked' && <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#B91C1C] bg-[#FEE2E2] px-3 py-1.5 rounded-full"><FaCircle className="text-[8px] text-[#F40F02]" /> Booked</span>}
-              {panel.status === 'completed' && <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#1D4ED8] bg-[#DBEAFE] px-3 py-1.5 rounded-full"><FaCircle className="text-[8px] text-[#3B5BDB]" /> Completed</span>}
-              {panel.status === 'blocked' && <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-neutral-600 bg-[#F3F4F6] px-3 py-1.5 rounded-full"><FaLock className="text-[8px]" /> Blocked</span>}
-            </div>
-
-            <div className="flex-1 overflow-y-auto px-5 py-4">
-              {panel.status === 'available' && !blockForm && (
-                <div className="text-center py-8">
-                  <div className="w-12 h-12 rounded-full bg-[#DCFCE7] flex items-center justify-center mx-auto mb-3">
-                    <FaCalendar className="text-[#22C55E] text-lg" />
-                  </div>
-                  <p className="text-sm font-semibold text-neutral-900 mb-1">You're available!</p>
-                  <p className="text-xs text-neutral-500 mb-5">Open for booking requests</p>
-                  <button type="button" onClick={() => setBlockForm(true)} className="rounded-xl w-full py-2.5 bg-[#F3F4F6] text-neutral-700 text-sm font-semibold hover:bg-neutral-200 transition-colors flex items-center justify-center gap-2">
-                    <FaLock className="w-3 h-3" /> Block this date
-                  </button>
-                </div>
-              )}
-
-              {panel.status === 'available' && blockForm && (
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-sm font-bold text-neutral-900 mb-1">Why are you blocking?</p>
-                    <p className="text-xs text-neutral-400 mb-4">Companies won't be able to send requests for this date.</p>
-                    <div className="space-y-2">
-                      {BLOCK_REASONS.map((r) => (
-                        <label key={r} className="flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors hover:bg-[#F3F4F6]" style={{ borderColor: blockReason === r ? '#3B5BDB' : '#E5E7EB', background: blockReason === r ? '#EEF4FF' : 'white' }}>
-                          <input type="radio" name="blockReason" value={r} checked={blockReason === r} onChange={() => setBlockReason(r)} className="accent-[#3B5BDB]" />
-                          <span className={`text-sm font-medium ${blockReason === r ? 'text-[#3B5BDB]' : 'text-neutral-700'}`}>{r}</span>
-                        </label>
-                      ))}
-                    </div>
-                    {blockReason === 'Other' && (
-                      <input type="text" placeholder="Describe your reason..." value={blockOther} onChange={(e) => setBlockOther(e.target.value)} className="mt-3 rounded-xl w-full px-4 py-3 border border-neutral-300 bg-white text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3B5BDB] text-sm" />
-                    )}
-                  </div>
-                  <div className="flex gap-2">
-                    <button type="button" onClick={handleConfirmBlock} disabled={saving} className="flex-1 rounded-xl py-2.5 bg-[#3B5BDB] text-white text-sm font-semibold hover:bg-[#2f4ac2] transition-colors disabled:opacity-50">{saving ? 'Saving…' : 'Confirm Block'}</button>
-                    <button type="button" onClick={() => setBlockForm(false)} disabled={saving} className="flex-1 rounded-xl py-2.5 bg-[#F3F4F6] text-neutral-700 text-sm font-semibold hover:bg-neutral-200 transition-colors">Cancel</button>
-                  </div>
-                </div>
-              )}
-
-              {panel.status === 'blocked' && (
-                <div className="space-y-4">
-                  <div className="rounded-xl bg-[#F3F4F6] p-4">
-                    <p className="text-xs text-neutral-500 mb-1">Reason</p>
-                    <p className="text-sm font-semibold text-neutral-900">{panel.notes ?? '—'}</p>
-                  </div>
-                  <button type="button" onClick={handleUnblock} disabled={saving} className="rounded-xl w-full py-2.5 bg-[#F4C430] text-neutral-900 text-sm font-bold hover:bg-[#e6b820] transition-colors disabled:opacity-50">
-                    {saving ? 'Saving…' : 'Unblock this date'}
-                  </button>
-                </div>
-              )}
-
-              {(panel.status === 'booked' || panel.status === 'completed') && panel.project && (
-                <div className="space-y-4">
-                  <div className="rounded-xl bg-[#F3F4F6] p-4 space-y-3">
-                    {[
-                      { label: 'Project', value: panel.project },
-                      { label: 'Company', value: panel.company },
-                      { label: 'Your Role', value: panel.role },
-                      { label: 'Payment', value: panel.payment },
-                      { label: 'Status', value: panel.status === 'booked' ? 'Confirmed' : 'Completed' },
-                    ].map(({ label, value }) => (
-                      <div key={label} className="flex justify-between gap-2">
-                        <span className="text-xs text-neutral-500 shrink-0">{label}</span>
-                        <span className="text-xs font-semibold text-neutral-900 text-right">{value}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="space-y-2">
-                    <button type="button" className="flex items-center justify-center gap-2 w-full rounded-xl py-2.5 bg-[#3B5BDB] text-white text-sm font-semibold hover:bg-[#2f4ac2] transition-colors">
-                      <FaMessage className="w-3.5 h-3.5" /> View Chat
-                    </button>
-                    {panel.invoice && (
-                      <Link to={`/dashboard/invoice/${panel.invoice}`} className="flex items-center justify-center gap-2 w-full rounded-xl py-2.5 bg-[#F3F4F6] text-neutral-700 text-sm font-semibold hover:bg-neutral-200 transition-colors">
-                        <FaFileInvoice className="w-3.5 h-3.5" /> View Invoice
-                      </Link>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {panel.status === 'available' && !blockForm && (
-              <div className="px-5 py-4 border-t border-neutral-100">
-                <button type="button" className="flex items-center justify-center gap-2 w-full rounded-xl py-2.5 bg-[#F4C430] text-neutral-900 text-sm font-bold hover:bg-[#e6b820] transition-colors disabled:opacity-50" onClick={handleMarkAvailable} disabled={saving}>
-                  <FaPlus className="w-3 h-3" /> {saving ? 'Saving…' : 'Mark as Available'}
-                </button>
-              </div>
-            )}
-          </aside>
-        </>
-      )}
+      <AvailabilityDateDetailModal
+        open={!!detailDate}
+        onClose={() => setDetailDate(null)}
+        selectedDate={detailDate}
+        slot={
+          detailDate && apiSlots[detailDate]
+            ? {
+                date: detailDate,
+                status: apiSlots[detailDate].status,
+                notes: apiSlots[detailDate].notes,
+              }
+            : undefined
+        }
+        booking={detailDate ? bookingDetails[detailDate] : undefined}
+        mode="self_manage"
+        blocking={saving}
+        onBlock={handleBlock}
+        onUnblock={handleUnblock}
+      />
     </div>
   );
 }

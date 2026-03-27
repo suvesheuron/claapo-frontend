@@ -1,15 +1,18 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { FaCalendar, FaBell, FaChevronLeft, FaChevronRight, FaXmark, FaCircle, FaMessage, FaLock, FaCircleInfo, FaTriangleExclamation, FaUser, FaBan } from 'react-icons/fa6';
+import { FaCalendar, FaBell, FaChevronLeft, FaChevronRight, FaCircleInfo, FaTriangleExclamation, FaUser, FaMessage } from 'react-icons/fa6';
 import DashboardHeader from '../components/DashboardHeader';
 import DashboardSidebar from '../components/DashboardSidebar';
 import AppFooter from '../components/AppFooter';
 import RoleIndicator from '../components/RoleIndicator';
+import AvailabilityDateDetailModal from '../components/AvailabilityDateDetailModal';
 import { api, ApiException } from '../services/api';
 import { useApiQuery } from '../hooks/useApiQuery';
 import { formatPaise } from '../utils/currency';
 import { individualNavLinks } from '../navigation/dashboardNav';
 import toast from 'react-hot-toast';
+import type { BookingWithDetails, SlotStatus } from '../types/availability';
+import { parseAvailabilityMonthResponse } from '../utils/parseAvailabilityResponse';
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -21,7 +24,6 @@ const BASE_MONTH = today.getMonth();
 type CellStatus = 'available' | 'booked' | 'completed' | 'blocked' | null;
 
 interface CalendarCell { d: number; muted: boolean; status: CellStatus; project?: string; bookingId?: string; bookingStatus?: string; }
-interface PanelData { d: number; status: CellStatus; project?: string; month: string; year: number; bookingId?: string; bookingStatus?: string; }
 
 interface IncomingBooking {
   id: string;
@@ -35,9 +37,9 @@ interface IncomingBookingsResponse { items: IncomingBooking[] }
 
 const cellStyle: Record<string, string> = {
   available: 'bg-[#DCFCE7] border-[#86EFAC] text-[#15803D]',
-  booked:    'bg-[#FEE2E2] border-[#FCA5A5] text-[#B91C1C]',
+  booked:    'bg-[#DBEAFE] border-[#93C5FD] text-[#1D4ED8]',
   completed: 'bg-[#DBEAFE] border-[#93C5FD] text-[#1D4ED8]',
-  blocked:   'bg-[#F3F4F6] border-neutral-300 text-neutral-400',
+  blocked:   'bg-[#FEE2E2] border-[#FECACA] text-[#B91C1C]',
 };
 
 function toStatus(s: string): CellStatus {
@@ -75,7 +77,9 @@ function buildCalendar(
         project = b.project.title;
         bookingId = b.id;
         bookingStatus = b.status;
-        if (bookedStatuses.includes(b.status) && status !== 'completed') status = 'booked';
+        if (status !== 'blocked' && status !== 'completed' && bookedStatuses.includes(b.status)) {
+          status = 'booked';
+        }
         break;
       }
     }
@@ -90,11 +94,16 @@ export default function IndividualDashboard() {
   useEffect(() => { document.title = 'Dashboard – Claapo'; }, []);
 
   const [monthOffset, setMonthOffset] = useState(0);
-  const [panel, setPanel] = useState<PanelData | null>(null);
+  const [detailDate, setDetailDate] = useState<string | null>(null);
   const [actioning, setActioning] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [availabilitySlots, setAvailabilitySlots] = useState<Record<string, string>>({});
+  const [monthSlotDetails, setMonthSlotDetails] = useState<
+    Record<string, { date: string; status: SlotStatus; notes?: string | null }>
+  >({});
+  const [bookingDetails, setBookingDetails] = useState<Record<string, BookingWithDetails>>({});
   const [availabilityLoading, setAvailabilityLoading] = useState(false);
+  const [detailSaving, setDetailSaving] = useState(false);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [cancelReason, setCancelReason] = useState('');
 
@@ -112,12 +121,19 @@ export default function IndividualDashboard() {
   const loadAvailability = useCallback(async () => {
     setAvailabilityLoading(true);
     try {
-      const res = await api.get<{ slots?: Record<string, string> }>(
-        `/availability/me?year=${displayYear}&month=${displayMonth + 1}`,
-      );
-      setAvailabilitySlots(res?.slots && typeof res.slots === 'object' ? res.slots : {});
+      const res = await api.get<unknown>(`/availability/me?year=${displayYear}&month=${displayMonth + 1}`);
+      const parsed = parseAvailabilityMonthResponse(res);
+      const map: Record<string, string> = {};
+      for (const [k, s] of Object.entries(parsed.slots)) {
+        map[k] = s.status;
+      }
+      setAvailabilitySlots(map);
+      setMonthSlotDetails(parsed.slots);
+      setBookingDetails(parsed.bookingDetails);
     } catch {
       setAvailabilitySlots({});
+      setMonthSlotDetails({});
+      setBookingDetails({});
     } finally {
       setAvailabilityLoading(false);
     }
@@ -139,6 +155,39 @@ export default function IndividualDashboard() {
       setActioning(null);
     }
   }, [refetchBookings]);
+
+  const getDateStr = (d: number) => {
+    const m = String(displayMonth + 1).padStart(2, '0');
+    return `${displayYear}-${m}-${String(d).padStart(2, '0')}`;
+  };
+
+  const handleDetailBlock = async (reason: string) => {
+    if (!detailDate) return;
+    setDetailSaving(true);
+    try {
+      await api.put('/availability/bulk', { slots: [{ date: detailDate, status: 'blocked', notes: reason }] });
+      await loadAvailability();
+      setDetailDate(null);
+    } catch (err) {
+      toast.error(err instanceof ApiException ? err.payload.message : 'Failed to block date.');
+    } finally {
+      setDetailSaving(false);
+    }
+  };
+
+  const handleDetailUnblock = async () => {
+    if (!detailDate) return;
+    setDetailSaving(true);
+    try {
+      await api.put('/availability/bulk', { slots: [{ date: detailDate, status: 'available' }] });
+      await loadAvailability();
+      setDetailDate(null);
+    } catch (err) {
+      toast.error(err instanceof ApiException ? err.payload.message : 'Failed to unblock date.');
+    } finally {
+      setDetailSaving(false);
+    }
+  };
 
   const doRequestCancel = useCallback(async (bookingId: string) => {
     setActioning(bookingId + 'req-cancel');
@@ -211,11 +260,11 @@ export default function IndividualDashboard() {
                     <div className="grid grid-cols-7 gap-1">
                       {calendarDays.map((cell, i) => (
                         <div key={i} role={cell.muted ? undefined : 'button'} tabIndex={cell.muted ? undefined : 0}
-                          onClick={() => !cell.muted && setPanel({ d: cell.d, status: cell.status, project: cell.project, month: monthLabel, year: yearLabel, bookingId: cell.bookingId, bookingStatus: cell.bookingStatus })}
+                          onClick={() => !cell.muted && setDetailDate(getDateStr(cell.d))}
                           className={`rounded-xl border text-center p-1 sm:p-1.5 min-h-[44px] sm:min-h-[52px] select-none flex flex-col items-center justify-center gap-0.5 ${
                             cell.muted ? 'bg-white border-neutral-100 text-neutral-300 cursor-default' :
                             `${cellStyle[cell.status ?? 'available'] ?? cellStyle.available} cal-cell cursor-pointer`
-                          } ${panel?.d === cell.d && !cell.muted ? 'ring-2 ring-[#3B5BDB] ring-offset-1' : ''}`}>
+                          } ${!cell.muted && detailDate === getDateStr(cell.d) ? 'ring-2 ring-[#3B5BDB] ring-offset-1' : ''}`}>
                           <span className="text-[11px] sm:text-xs font-semibold leading-none">{cell.d}</span>
                         </div>
                       ))}
@@ -223,9 +272,9 @@ export default function IndividualDashboard() {
                     <div className="flex flex-wrap gap-4 mt-4 pt-4 border-t border-neutral-100">
                       {[
                         { color: 'bg-[#22C55E]', label: 'Available' },
-                        { color: 'bg-[#F40F02]', label: 'Booked' },
-                        { color: 'bg-[#3B5BDB]', label: 'Completed' },
-                        { color: 'bg-neutral-300', label: 'Blocked' },
+                        { color: 'bg-[#3B82F6]', label: 'Booked' },
+                        { color: 'bg-[#3B82F6]', label: 'Completed' },
+                        { color: 'bg-[#EF4444]', label: 'Blocked' },
                       ].map(({ color, label }) => (
                         <div key={label} className="flex items-center gap-2">
                           <div className={`w-2.5 h-2.5 rounded-full ${color}`} />
@@ -314,51 +363,18 @@ export default function IndividualDashboard() {
         </main>
       </div>
 
-      {panel && (
-        <>
-          <div className="fixed inset-0 bg-black/20 z-40 lg:bg-transparent" onClick={() => setPanel(null)} />
-          <aside className="fixed right-0 top-0 h-full w-72 bg-white border-l border-neutral-200 shadow-2xl z-50 flex flex-col panel-enter">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100">
-              <h3 className="text-base font-bold text-neutral-900">{panel.d} {panel.month} {panel.year}</h3>
-              <button type="button" onClick={() => setPanel(null)} className="w-8 h-8 rounded-lg bg-neutral-100 flex items-center justify-center text-neutral-500 hover:bg-neutral-200">
-                <FaXmark className="text-sm" />
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto px-5 py-4">
-              <div className="px-5 py-3 mb-4">
-                {panel.status === 'available' && <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#15803D] bg-[#DCFCE7] px-3 py-1.5 rounded-full"><FaCircle className="text-[8px]" /> Available</span>}
-                {panel.status === 'booked' && <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#B91C1C] bg-[#FEE2E2] px-3 py-1.5 rounded-full"><FaCircle className="text-[8px]" /> Booked</span>}
-                {panel.status === 'blocked' && <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-neutral-600 bg-[#F3F4F6] px-3 py-1.5 rounded-full"><FaLock className="text-[8px]" /> Blocked</span>}
-              </div>
-              <p className="text-xs text-neutral-500 text-center">
-                Go to <Link to="/dashboard/availability" className="text-[#3B5BDB] hover:underline" onClick={() => setPanel(null)}>Availability</Link> to manage this date.
-              </p>
-              {panel.project && (
-                <div className="mt-4 rounded-xl bg-[#F3F4F6] p-4 space-y-2">
-                  <p className="text-xs font-bold text-neutral-900">{panel.project}</p>
-                </div>
-              )}
-              {(panel.bookingId && (panel.bookingStatus === 'accepted' || panel.bookingStatus === 'locked')) && (
-                <div className="mt-4">
-                  <button
-                    type="button"
-                    onClick={() => setCancellingId(panel.bookingId!)}
-                    disabled={!!actioning}
-                    className="flex items-center justify-center gap-2 w-full rounded-xl py-2.5 border border-amber-300 bg-[#FEF3C7] text-[#92400E] text-sm font-semibold hover:bg-[#FDE68A] transition-colors disabled:opacity-60"
-                  >
-                    <FaBan className="w-3.5 h-3.5" /> Request Cancellation
-                  </button>
-                </div>
-              )}
-            </div>
-            <div className="px-5 py-4 border-t border-neutral-100">
-              <Link to="/dashboard/availability" onClick={() => setPanel(null)} className="flex items-center justify-center gap-2 w-full rounded-xl py-2.5 bg-[#3B5BDB] text-white text-sm font-semibold hover:bg-[#2f4ac2] transition-colors">
-                <FaCalendar className="w-3 h-3" /> Manage Availability
-              </Link>
-            </div>
-          </aside>
-        </>
-      )}
+      <AvailabilityDateDetailModal
+        open={!!detailDate}
+        onClose={() => setDetailDate(null)}
+        selectedDate={detailDate}
+        slot={detailDate ? monthSlotDetails[detailDate] : undefined}
+        booking={detailDate ? bookingDetails[detailDate] : undefined}
+        mode="self_manage"
+        blocking={detailSaving}
+        onBlock={handleDetailBlock}
+        onUnblock={handleDetailUnblock}
+        onRequestCancelBooking={(b) => setCancellingId(b.id)}
+      />
 
       {/* Request Cancellation Modal */}
       {cancellingId && (

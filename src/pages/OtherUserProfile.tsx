@@ -1,15 +1,25 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { FaArrowLeft, FaLocationDot, FaUpRightFromSquare, FaCalendarDays, FaTriangleExclamation } from 'react-icons/fa6';
+import { FaArrowLeft, FaLocationDot, FaUpRightFromSquare, FaCalendarDays, FaTriangleExclamation, FaVideo } from 'react-icons/fa6';
 import DashboardHeader from '../components/DashboardHeader';
 import DashboardSidebar from '../components/DashboardSidebar';
 import AppFooter from '../components/AppFooter';
 import Avatar from '../components/Avatar';
 import ReviewsList from '../components/ReviewsList';
+import AvailabilityDateDetailModal from '../components/AvailabilityDateDetailModal';
 import { api, ApiException } from '../services/api';
 import { companyNavLinks } from '../navigation/dashboardNav';
+import type { BookingWithDetails, SlotStatus } from '../types/availability';
+import { parseAvailabilityMonthResponse } from '../utils/parseAvailabilityResponse';
 
 type UserRole = 'individual' | 'company' | 'vendor' | 'admin';
+
+interface VendorEquipment {
+  id: string;
+  name: string;
+  currentCity?: string | null;
+  availabilities?: Array<{ locationCity?: string | null }>;
+}
 
 interface PublicProfileResponse {
   id: string;
@@ -32,20 +42,8 @@ interface PublicProfileResponse {
     imdbUrl?: string;
     instagramUrl?: string;
     isAvailable?: boolean;
+    equipment?: VendorEquipment[];
   } | null;
-}
-
-type SlotStatus = 'available' | 'booked' | 'blocked' | 'past_work';
-
-interface CalendarMonth {
-  year: number;
-  month: number;
-  slots: Record<string, SlotStatus>;
-  slotNotes?: Record<string, string | null>;
-}
-
-interface OtherUserCalendarResponse extends CalendarMonth {
-  userId: string;
 }
 
 function formatRate(min?: number | null, max?: number | null): string {
@@ -57,24 +55,27 @@ function formatRate(min?: number | null, max?: number | null): string {
 const MONTHS = 'January February March April May June July August September October November December'.split(' ');
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-function buildCalendarCells(year: number, month: number, slots: Record<string, SlotStatus>) {
+function buildCalendarCells(
+  year: number,
+  month: number,
+  slotMap: Record<string, { status: SlotStatus }>,
+  bookingDetails: Record<string, BookingWithDetails>,
+) {
   const first = new Date(year, month, 1);
   const last = new Date(year, month + 1, 0);
   const startBlank = first.getDay();
   const days = last.getDate();
-  const cells: (null | { day: number; type: 'default' | 'today' | 'booked' | 'unavail' })[] = [];
+  const cells: (null | { day: number; dateKey: string; status: SlotStatus | null; hasBooking: boolean; isToday: boolean })[] = [];
   for (let i = 0; i < startBlank; i++) cells.push(null);
   const today = new Date();
   const monthStr = String(month + 1).padStart(2, '0');
   for (let d = 1; d <= days; d++) {
     const dayStr = String(d).padStart(2, '0');
-    const key = `${year}-${monthStr}-${dayStr}`;
-    const status = slots[key];
-    let type: 'default' | 'today' | 'booked' | 'unavail' = 'default';
-    if (today.getFullYear() === year && today.getMonth() === month && today.getDate() === d) type = 'today';
-    else if (status === 'booked') type = 'booked';
-    else if (status === 'blocked' || status === 'past_work') type = 'unavail';
-    cells.push({ day: d, type });
+    const dateKey = `${year}-${monthStr}-${dayStr}`;
+    const st = slotMap[dateKey]?.status ?? null;
+    const isToday = today.getFullYear() === year && today.getMonth() === month && today.getDate() === d;
+    const hasBooking = !!bookingDetails[dateKey];
+    cells.push({ day: d, dateKey, status: st, hasBooking, isToday });
   }
   const rows: typeof cells[] = [];
   for (let i = 0; i < cells.length; i += 7) {
@@ -93,10 +94,11 @@ export default function OtherUserProfile() {
 
   const [calYear, setCalYear] = useState(new Date().getFullYear());
   const [calMonth, setCalMonth] = useState(new Date().getMonth());
-  const [calData, setCalData] = useState<OtherUserCalendarResponse | null>(null);
   const [calLoading, setCalLoading] = useState(false);
   const [calError, setCalError] = useState<string | null>(null);
-  const [viewNoteDate, setViewNoteDate] = useState<string | null>(null);
+  const [profileSlotMap, setProfileSlotMap] = useState<Record<string, { date: string; status: SlotStatus; notes?: string | null }>>({});
+  const [profileBookingDetails, setProfileBookingDetails] = useState<Record<string, BookingWithDetails>>({});
+  const [detailDate, setDetailDate] = useState<string | null>(null);
 
   useEffect(() => {
     if (!userId) return;
@@ -113,18 +115,30 @@ export default function OtherUserProfile() {
   }, [userId]);
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId || !profile) return;
+    const role = profile.role;
+    if (role !== 'individual' && role !== 'vendor') {
+      setProfileSlotMap({});
+      setProfileBookingDetails({});
+      return;
+    }
     setCalLoading(true);
     setCalError(null);
     api
-      .get<OtherUserCalendarResponse>(`/availability/${userId}?year=${calYear}&month=${calMonth + 1}`)
-      .then((res) => setCalData(res))
+      .get<unknown>(`/availability/${userId}?year=${calYear}&month=${calMonth + 1}`)
+      .then((res) => {
+        const parsed = parseAvailabilityMonthResponse(res);
+        setProfileSlotMap(parsed.slots);
+        setProfileBookingDetails(parsed.bookingDetails);
+      })
       .catch((e) => {
         const msg = e instanceof ApiException ? e.payload.message : 'Failed to load calendar.';
         setCalError(msg);
+        setProfileSlotMap({});
+        setProfileBookingDetails({});
       })
       .finally(() => setCalLoading(false));
-  }, [userId, calYear, calMonth]);
+  }, [userId, calYear, calMonth, profile?.role, profile?.id]);
 
   useEffect(() => {
     document.title = 'Profile – Claapo';
@@ -149,8 +163,7 @@ export default function OtherUserProfile() {
     } else setCalMonth((m) => m + 1);
   };
 
-  const rows = buildCalendarCells(calYear, calMonth, calData?.slots ?? {});
-  const notes = calData?.slotNotes ?? {};
+  const rows = buildCalendarCells(calYear, calMonth, profileSlotMap, profileBookingDetails);
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-neutral-50 min-w-0 w-full">
@@ -279,10 +292,38 @@ export default function OtherUserProfile() {
                             )}
                           </dd>
                         </div>
+                        {p.equipment && p.equipment.length > 0 && (
+                          <div className="pt-2 border-t border-neutral-200 mt-2">
+                            <dt className="text-xs text-neutral-500 mb-1.5 flex items-center gap-1">
+                              <FaVideo className="w-3 h-3" />
+                              Equipment ({p.equipment.length})
+                            </dt>
+                            <div className="space-y-2">
+                              {p.equipment.slice(0, 5).map((eq) => (
+                                <div key={eq.id} className="text-sm">
+                                  <div className="font-medium text-neutral-800">{eq.name}</div>
+                                  {(eq.currentCity || (eq.availabilities && eq.availabilities.length > 0)) && (
+                                    <div className="text-xs text-neutral-500 flex items-center gap-1 mt-0.5">
+                                      <FaLocationDot className="w-3 h-3" />
+                                      {eq.currentCity || eq.availabilities?.[0]?.locationCity || '—'}
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                              {p.equipment.length > 5 && (
+                                <div className="text-xs text-neutral-500 mt-1">
+                                  +{p.equipment.length - 5} more equipment
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </dl>
                     </div>
                   )}
 
+                  {(isIndividual || isVendor) && (
+                  <>
                   <div className="rounded-2xl bg-white border border-neutral-200 p-5">
                     <div className="flex items-center justify-between mb-3">
                       <h2 className="text-sm font-bold text-neutral-900 flex items-center gap-2">
@@ -310,7 +351,7 @@ export default function OtherUserProfile() {
                       </div>
                     </div>
                     <p className="text-xs text-neutral-500 mb-3">
-                      Booked (green) and unavailable (red) dates are based on their calendar and bookings.
+                      Green: available · Blue: booked or completed work · Red: blocked. Tap any day for details (including your active bookings with this person).
                     </p>
                     {calLoading ? (
                       <div className="py-8 flex items-center justify-center">
@@ -340,34 +381,29 @@ export default function OtherUserProfile() {
                                 {row.map((cell, colIndex) => {
                                   const key = `${rowIndex}-${colIndex}`;
                                   if (!cell) {
-                                    return <div key={key} className="h-8" />;
+                                    return <div key={key} className="h-9" />;
                                   }
-                                  const { day, type } = cell;
-                                  const monthStr = String(calMonth + 1).padStart(2, '0');
-                                  const dayStr = String(day).padStart(2, '0');
-                                  const dateKey = `${calYear}-${monthStr}-${dayStr}`;
-                                  const canViewNote = type === 'booked' || type === 'unavail';
+                                  const { day, dateKey, status, hasBooking, isToday } = cell;
                                   const base =
-                                    'h-8 rounded-md text-[11px] flex items-center justify-center cursor-default';
-                                  const bg =
-                                    type === 'today'
-                                      ? 'bg-blue-100 text-blue-800'
-                                      : type === 'booked'
-                                        ? 'bg-emerald-100 text-emerald-800'
-                                        : type === 'unavail'
-                                          ? 'bg-rose-100 text-rose-800'
-                                          : 'bg-neutral-50 text-neutral-700';
-                                  const ring = canViewNote ? 'ring-1 ring-[#3B5BDB]/50 cursor-pointer' : '';
+                                    'h-9 rounded-md text-[11px] font-medium flex items-center justify-center cursor-pointer border border-transparent hover:ring-2 hover:ring-[#3B5BDB]/25 transition-shadow';
+                                  let bg = 'bg-neutral-50 text-neutral-700 border-neutral-100';
+                                  if (status === 'available') bg = 'bg-[#DCFCE7] text-[#15803D] border-[#86EFAC]';
+                                  else if (status === 'booked' || status === 'past_work') bg = 'bg-[#DBEAFE] text-[#1D4ED8] border-[#93C5FD]';
+                                  else if (status === 'blocked') bg = 'bg-[#FEE2E2] text-[#B91C1C] border-[#FECACA]';
+                                  const todayRing = isToday ? 'ring-2 ring-[#3B5BDB]/50 ring-offset-1' : '';
                                   return (
                                     <button
                                       key={key}
                                       type="button"
-                                      className={`${base} ${bg} ${ring}`}
-                                      onClick={
-                                        canViewNote ? () => setViewNoteDate(dateKey) : undefined
-                                      }
+                                      className={`${base} ${bg} ${todayRing}`}
+                                      onClick={() => setDetailDate(dateKey)}
                                     >
-                                      {day}
+                                      <span className="relative flex flex-col items-center gap-0.5">
+                                        {day}
+                                        {hasBooking ? (
+                                          <span className="w-1 h-1 rounded-full bg-[#3B5BDB]" />
+                                        ) : null}
+                                      </span>
                                     </button>
                                   );
                                 })}
@@ -377,53 +413,31 @@ export default function OtherUserProfile() {
                         </div>
                         <div className="flex flex-wrap items-center gap-3 mt-3 text-[11px] text-neutral-600">
                           <div className="flex items-center gap-1">
-                            <span className="w-3 h-3 rounded-full bg-blue-100 border border-blue-300" />
-                            Today
+                            <span className="w-3 h-3 rounded-sm bg-[#DCFCE7] border border-[#86EFAC]" />
+                            Available
                           </div>
                           <div className="flex items-center gap-1">
-                            <span className="w-3 h-3 rounded-full bg-emerald-100 border border-emerald-300" />
-                            Booked
+                            <span className="w-3 h-3 rounded-sm bg-[#DBEAFE] border border-[#93C5FD]" />
+                            Booked / completed
                           </div>
                           <div className="flex items-center gap-1">
-                            <span className="w-3 h-3 rounded-full bg-rose-100 border border-rose-300" />
-                            Unavailable / past work
+                            <span className="w-3 h-3 rounded-sm bg-[#FEE2E2] border border-[#FECACA]" />
+                            Blocked
                           </div>
                         </div>
                       </>
                     )}
                   </div>
 
-                  {viewNoteDate && (
-                    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-40">
-                      <div className="bg-white rounded-2xl shadow-xl max-w-md w-full mx-4 p-5">
-                        <h3 className="text-sm font-bold text-neutral-900 mb-1">
-                          Work notes —{' '}
-                          {(() => {
-                            const [y, m, d] = viewNoteDate.split('-').map((n) => parseInt(n, 10));
-                            return new Date(y, m - 1, d).toLocaleDateString('en-IN', {
-                              day: 'numeric',
-                              month: 'short',
-                              year: 'numeric',
-                            });
-                          })()}
-                        </h3>
-                        <p className="text-xs text-neutral-500 mb-3">
-                          Added by the individual/vendor for this date.
-                        </p>
-                        <p className="text-sm text-neutral-800 whitespace-pre-wrap border border-neutral-200 rounded-xl p-3 min-h-[80px]">
-                          {notes[viewNoteDate]?.trim() || 'No notes for this day.'}
-                        </p>
-                        <div className="mt-4 flex justify-end">
-                          <button
-                            type="button"
-                            onClick={() => setViewNoteDate(null)}
-                            className="px-4 py-2.5 rounded-xl border border-neutral-300 text-xs font-medium text-neutral-700 hover:bg-neutral-100"
-                          >
-                            Close
-                          </button>
-                        </div>
-                      </div>
-                    </div>
+                  <AvailabilityDateDetailModal
+                    open={!!detailDate}
+                    onClose={() => setDetailDate(null)}
+                    selectedDate={detailDate}
+                    slot={detailDate ? profileSlotMap[detailDate] : undefined}
+                    booking={detailDate ? profileBookingDetails[detailDate] : undefined}
+                    mode="company_readonly"
+                  />
+                  </>
                   )}
                 </div>
               ) : null}
