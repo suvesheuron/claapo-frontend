@@ -206,7 +206,7 @@ export default function AvailabilityDateDetailModal({
               <div className="flex flex-wrap gap-2 pt-2">
                 {chatUserId && (
                   <Link
-                    to={`/dashboard/chat/${chatUserId}`}
+                    to={`/dashboard/chat/${chatUserId}?projectId=${encodeURIComponent(booking.projectId)}`}
                     onClick={onClose}
                     className="inline-flex flex-1 min-w-[120px] items-center justify-center gap-2 rounded-xl py-2.5 px-3 bg-[#EEF4FF] text-[#3B5BDB] text-sm font-semibold hover:bg-[#DBEAFE] border border-[#3B5BDB]/20"
                   >
@@ -379,7 +379,9 @@ export default function AvailabilityDateDetailModal({
     return (
       <>
         <div className="fixed inset-0 bg-black/25 backdrop-blur-[2px] z-40 lg:bg-black/10 lg:backdrop-blur-[1px]" aria-hidden onClick={onClose} />
-        <aside className="fixed right-0 top-0 h-full z-50 w-[min(100vw,420px)] flex flex-col min-h-0">{panel}</aside>
+        <aside className="fixed right-0 top-0 h-full z-50 w-full max-w-[380px] sm:max-w-[400px] flex flex-col min-h-0 shadow-2xl rounded-l-3xl overflow-hidden">
+          {panel}
+        </aside>
       </>
     );
   }

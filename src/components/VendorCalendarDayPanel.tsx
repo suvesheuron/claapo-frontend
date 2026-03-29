@@ -9,6 +9,8 @@ export interface VendorFallbackBookingRow {
   projectId: string;
   projectTitle: string;
   companyLabel: string;
+  /** Company main user id — for project-scoped chat */
+  companyUserId: string;
   status: string;
   rateOffered?: number | null;
   equipmentLabel?: string | null;
@@ -85,8 +87,6 @@ export default function VendorCalendarDayPanel({
   const rows: { full?: BookingWithDetails; fallback?: VendorFallbackBookingRow }[] =
     booking ? [{ full: booking }] : fallbackBookings.map((f) => ({ fallback: f }));
 
-  const chatUserId = booking ? booking.companyUserId : null;
-
   const runBlock = async () => {
     const reason = blockPick === 'Other' ? blockOther.trim() : blockPick;
     if (!reason) return;
@@ -143,6 +143,7 @@ export default function VendorCalendarDayPanel({
           const canReqCancel =
             !!onRequestCancel && !!id && (st === 'accepted' || st === 'locked');
           const projectId = b?.projectId ?? f?.projectId;
+          const companyChatId = b?.companyUserId ?? f?.companyUserId;
 
           return (
             <div key={id ?? idx} className="rounded-xl border border-neutral-200 bg-neutral-50/80 p-3 space-y-2">
@@ -166,37 +167,26 @@ export default function VendorCalendarDayPanel({
               ) : null}
 
               <div className="flex flex-wrap gap-2 pt-1">
-                {b && chatUserId && (
+                {companyChatId && projectId && (
                   <Link
-                    to={`/dashboard/chat/${chatUserId}`}
+                    to={`/dashboard/chat/${companyChatId}?projectId=${encodeURIComponent(projectId)}`}
                     className="inline-flex flex-1 min-w-[100px] items-center justify-center gap-1.5 rounded-lg py-2 px-2 bg-[#EEF4FF] text-[#3B5BDB] text-xs font-semibold border border-[#3B5BDB]/20"
                   >
                     <FaMessage className="text-xs" /> Chat
                   </Link>
                 )}
-                {b?.invoiceId ? (
+                {(b?.invoiceId || selectedDate) && (
                   <Link
-                    to={`/dashboard/invoice/${b.invoiceId}`}
+                    to={
+                      b?.invoiceId
+                        ? `/dashboard/invoice/${b.invoiceId}`
+                        : `/dashboard/invoices?issuedOn=${encodeURIComponent(selectedDate)}`
+                    }
                     className="inline-flex flex-1 min-w-[100px] items-center justify-center gap-1.5 rounded-lg py-2 px-2 bg-emerald-50 text-emerald-800 text-xs font-semibold border border-emerald-200/60"
                   >
-                    <FaFileInvoice className="text-xs" /> Invoice
+                    <FaFileInvoice className="text-xs" /> View invoice
                   </Link>
-                ) : b?.id ? (
-                  <Link
-                    to={`/dashboard/invoice/new?bookingId=${encodeURIComponent(b.id)}`}
-                    className="inline-flex flex-1 min-w-[100px] items-center justify-center gap-1.5 rounded-lg py-2 px-2 bg-emerald-50 text-emerald-800 text-xs font-semibold border border-emerald-200/60"
-                  >
-                    <FaFileInvoice className="text-xs" /> Invoice
-                  </Link>
-                ) : null}
-                {projectId ? (
-                  <Link
-                    to={`/dashboard/projects/${projectId}`}
-                    className="inline-flex flex-1 min-w-[100px] items-center justify-center gap-1.5 rounded-lg py-2 px-2 bg-white text-neutral-800 text-xs font-semibold border border-neutral-200"
-                  >
-                    Project
-                  </Link>
-                ) : null}
+                )}
               </div>
 
               {canReqCancel && id && (

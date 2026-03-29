@@ -18,7 +18,7 @@
  */
 
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import {
   FaArrowLeft, FaPaperPlane, FaTriangleExclamation, FaPaperclip,
   FaImage, FaFile, FaXmark, FaMagnifyingGlass, FaEllipsisVertical,
@@ -105,12 +105,17 @@ const BRAND = {
 
 export default function Chat() {
   const { userId: targetUserId } = useParams<{ userId: string }>();
+  const [searchParams] = useSearchParams();
+  const projectIdFromUrl = searchParams.get('projectId');
   const { user } = useAuth();
   const { currentRole } = useRole();
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [otherUser, setOtherUser] = useState<OtherUser | null>(null);
   const [noConversation, setNoConversation] = useState(false);
+  const [scopedConversationId, setScopedConversationId] = useState<string | null>(null);
+  const [scopedProjectTitle, setScopedProjectTitle] = useState<string | null>(null);
+  const [scopedConversationLoading, setScopedConversationLoading] = useState(() => !!projectIdFromUrl);
   const [input, setInput] = useState('');
   const [loadingInit, setLoadingInit] = useState(true);
   const [sending, setSending] = useState(false);
@@ -150,31 +155,160 @@ export default function Chat() {
     document.title = 'Chat – Claapo';
   }, []);
 
-  const fetchMessages = useCallback(async (isPolling = false) => {
-    if (!targetUserId) return;
-    try {
-      const res = await api.get<{ conversationId: string | null; items: ChatMessage[] }>(
-        `/conversations/with/${targetUserId}?limit=50`
-      );
-      const data = res?.items ?? [];
-      if (!isPolling) {
-        setNoConversation(res?.conversationId === null);
-        setMessages(data);
-      }
-      if (!data.length) return;
-      const newest = data[data.length - 1]?.createdAt;
-      if (isPolling && newest !== lastMsgTime.current) {
-        setMessages(data);
-      }
-      lastMsgTime.current = newest ?? null;
-    } catch (err) {
-      if (!isPolling) {
-        setLoadError(err instanceof ApiException ? err.payload.message : 'Failed to load messages.');
-      }
-    } finally {
-      if (!isPolling) setLoadingInit(false);
+  useEffect(() => {
+    if (!projectIdFromUrl || !targetUserId) {
+      setScopedConversationId(null);
+      setScopedProjectTitle(null);
+      setScopedConversationLoading(false);
+      return;
     }
-  }, [targetUserId]);
+    let alive = true;
+    setScopedConversationLoading(true);
+    setScopedConversationId(null);
+    setScopedProjectTitle(null);
+    void (async () => {
+      try {
+        const res = await api.post<{ id: string; project?: { title: string } | null }>('/conversations', {
+          projectId: projectIdFromUrl,
+          otherUserId: targetUserId,
+        });
+        if (!alive) return;
+        setScopedConversationId(res.id);
+        setScopedProjectTitle(res.project?.title ?? null);
+        setNoConversation(false);
+      } catch {
+        if (!alive) return;
+        setScopedConversationId(null);
+        setNoConversation(true);
+        toast.error('Could not open chat for this project.');
+      } finally {
+        if (alive) setScopedConversationLoading(false);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [projectIdFromUrl, targetUserId]);
+
+  const mapApiMessageToChat = useCallback(
+    (m: {
+      id: string;
+      senderId: string;
+      content: string | null;
+      type?: string;
+      mediaKey?: string | null;
+      createdAt: string;
+      readAt?: string | null;
+      isRead?: boolean;
+      isPinned?: boolean;
+      deletedAt?: string | null;
+      forwardedFromId?: string | null;
+      replyToId?: string | null;
+      replyTo?: ChatMessage['replyTo'];
+      sender?: { id: string; displayName?: string };
+    }): ChatMessage => ({
+      id: m.id,
+      senderId: m.senderId,
+      content: m.content,
+      type: (m.type as ChatMessage['type']) ?? 'text',
+      mediaKey: m.mediaKey,
+      createdAt: m.createdAt,
+      readAt: m.readAt,
+      isRead: m.isRead,
+      isPinned: m.isPinned,
+      deletedAt: m.deletedAt,
+      forwardedFromId: m.forwardedFromId,
+      replyToId: m.replyToId,
+      replyTo: m.replyTo,
+    }),
+    [],
+  );
+
+  const fetchMessages = useCallback(
+    async (isPolling = false) => {
+      if (!targetUserId) return;
+      if (projectIdFromUrl) {
+        if (scopedConversationLoading) return;
+        if (!scopedConversationId) {
+          if (!scopedConversationLoading && !isPolling) {
+            setMessages([]);
+            setLoadingInit(false);
+          }
+          return;
+        }
+        try {
+          if (!isPolling) setLoadError(null);
+          const res = await api.get<{
+            items: Array<{
+              id: string;
+              senderId: string;
+              content: string | null;
+              type?: string;
+              mediaKey?: string | null;
+              createdAt: string;
+              readAt?: string | null;
+              isRead?: boolean;
+              isPinned?: boolean;
+              deletedAt?: string | null;
+              forwardedFromId?: string | null;
+              replyToId?: string | null;
+              replyTo?: ChatMessage['replyTo'];
+              sender?: { id: string; displayName?: string };
+            }>;
+          }>(`/conversations/${scopedConversationId}/messages?limit=50`);
+          const raw = res?.items ?? [];
+          const data = [...raw].reverse().map(mapApiMessageToChat);
+          if (!isPolling) {
+            setMessages(data);
+            setNoConversation(false);
+          } else if (data.length) {
+            const newest = data[data.length - 1]?.createdAt;
+            if (newest !== lastMsgTime.current) setMessages(data);
+            lastMsgTime.current = newest ?? null;
+          }
+          if (!isPolling && data.length) lastMsgTime.current = data[data.length - 1]?.createdAt ?? null;
+          else if (!isPolling && !data.length) lastMsgTime.current = null;
+        } catch (err) {
+          if (!isPolling) {
+            setLoadError(err instanceof ApiException ? err.payload.message : 'Failed to load messages.');
+          }
+        } finally {
+          if (!isPolling) setLoadingInit(false);
+        }
+        return;
+      }
+
+      try {
+        const res = await api.get<{ conversationId: string | null; items: ChatMessage[] }>(
+          `/conversations/with/${targetUserId}?limit=50`,
+        );
+        const data = res?.items ?? [];
+        if (!isPolling) {
+          setNoConversation(res?.conversationId === null);
+          setMessages(data);
+        }
+        if (!data.length) return;
+        const newest = data[data.length - 1]?.createdAt;
+        if (isPolling && newest !== lastMsgTime.current) {
+          setMessages(data);
+        }
+        lastMsgTime.current = newest ?? null;
+      } catch (err) {
+        if (!isPolling) {
+          setLoadError(err instanceof ApiException ? err.payload.message : 'Failed to load messages.');
+        }
+      } finally {
+        if (!isPolling) setLoadingInit(false);
+      }
+    },
+    [
+      targetUserId,
+      projectIdFromUrl,
+      scopedConversationId,
+      scopedConversationLoading,
+      mapApiMessageToChat,
+    ],
+  );
 
   const fetchOtherUser = useCallback(async () => {
     if (!targetUserId) return;
@@ -187,9 +321,13 @@ export default function Chat() {
   }, [targetUserId]);
 
   useEffect(() => {
-    fetchMessages(false);
-    fetchOtherUser();
-  }, [fetchMessages, fetchOtherUser]);
+    if (projectIdFromUrl && scopedConversationLoading) {
+      setLoadingInit(true);
+      return;
+    }
+    void fetchMessages(false);
+    void fetchOtherUser();
+  }, [fetchMessages, fetchOtherUser, projectIdFromUrl, scopedConversationLoading, scopedConversationId]);
 
   useEffect(() => {
     pollRef.current = setInterval(() => fetchMessages(true), POLL_INTERVAL_MS);
@@ -226,11 +364,19 @@ export default function Chat() {
     e.preventDefault();
     const content = input.trim();
     if (!content || sending) return;
+    if (projectIdFromUrl && !scopedConversationId) {
+      toast.error('Chat is still opening — try again.');
+      return;
+    }
     setSending(true);
     try {
       const body: Record<string, unknown> = { content };
       if (replyTo) body.replyToId = replyTo.id;
-      await api.post(`/conversations/with/${targetUserId}/messages`, body);
+      if (scopedConversationId) {
+        await api.post(`/conversations/${scopedConversationId}/messages`, body);
+      } else {
+        await api.post(`/conversations/with/${targetUserId}/messages`, body);
+      }
       setInput('');
       setReplyTo(null);
       setShowEmojiPicker(false);
@@ -245,13 +391,22 @@ export default function Chat() {
   // File/Image upload
   const handleFileUpload = async (file: File, type: 'image' | 'file') => {
     if (!targetUserId) return;
+    if (projectIdFromUrl && !scopedConversationId) {
+      toast.error('Chat is still opening — try again.');
+      return;
+    }
     setShowAttachMenu(false);
     const toastId = toast.loading(`Sending ${type}...`);
     try {
-      await api.post(`/conversations/with/${targetUserId}/messages`, {
+      const payload = {
         content: `📎 ${file.name} (${(file.size / 1024).toFixed(1)} KB)`,
         type,
-      });
+      };
+      if (scopedConversationId) {
+        await api.post(`/conversations/${scopedConversationId}/messages`, payload);
+      } else {
+        await api.post(`/conversations/with/${targetUserId}/messages`, payload);
+      }
       await fetchMessages(false);
       toast.success(`${type === 'image' ? 'Image' : 'File'} sent!`, { id: toastId });
     } catch (err) {
@@ -400,8 +555,14 @@ export default function Chat() {
               </div>
               <div className="flex-1 min-w-0">
                 <h2 className="text-sm font-semibold text-white truncate">{otherName}</h2>
-                <p className="text-[11px] text-white/70">
-                  {otherUser?.isOnline ? 'online' : otherRole ? otherRole.replace(/_/g, ' ') : 'tap here for info'}
+                <p className="text-[11px] text-white/70 truncate">
+                  {scopedProjectTitle
+                    ? scopedProjectTitle
+                    : otherUser?.isOnline
+                      ? 'online'
+                      : otherRole
+                        ? otherRole.replace(/_/g, ' ')
+                        : 'tap here for info'}
                 </p>
               </div>
               <div className="flex items-center gap-1">

@@ -94,8 +94,9 @@ interface IncomingBooking {
   requester: { id: string; email: string; companyProfile?: { companyName?: string } | null };
 }
 interface PastBookingItem {
-  id: string; project: { id: string; title: string; startDate: string; endDate: string };
-  requester: { companyProfile?: { companyName?: string } | null };
+  id: string;
+  project: { id: string; title: string; startDate: string; endDate: string };
+  requester: { id: string; companyProfile?: { companyName?: string } | null };
 }
 
 export default function VendorDashboard() {
@@ -180,6 +181,7 @@ export default function VendorDashboard() {
       projectId: string;
       projectTitle: string;
       companyLabel: string;
+      companyUserId: string;
       status: string;
       rateOffered?: number | null;
       equipmentLabel?: string | null;
@@ -194,6 +196,7 @@ export default function VendorDashboard() {
           projectId: b.project.id,
           projectTitle: b.project.title,
           companyLabel: b.requester.companyProfile?.companyName ?? b.requester.email,
+          companyUserId: b.requester.id,
           status: b.status,
           rateOffered: b.rateOffered ?? null,
           equipmentLabel: null,
@@ -207,6 +210,7 @@ export default function VendorDashboard() {
           projectId: b.project.id,
           projectTitle: b.project.title,
           companyLabel: b.requester.companyProfile?.companyName ?? '—',
+          companyUserId: b.requester.id,
           status: 'past_work',
           rateOffered: null,
           equipmentLabel: null,

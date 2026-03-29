@@ -1,11 +1,11 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { FaCalendar, FaBell, FaChevronLeft, FaChevronRight, FaCircleInfo, FaTriangleExclamation, FaUser, FaMessage } from 'react-icons/fa6';
 import DashboardHeader from '../components/DashboardHeader';
 import DashboardSidebar from '../components/DashboardSidebar';
 import AppFooter from '../components/AppFooter';
 import RoleIndicator from '../components/RoleIndicator';
-import AvailabilityDateDetailModal from '../components/AvailabilityDateDetailModal';
+import VendorCalendarDayPanel from '../components/VendorCalendarDayPanel';
 import { api, ApiException } from '../services/api';
 import { useApiQuery } from '../hooks/useApiQuery';
 import { formatPaise } from '../utils/currency';
@@ -23,7 +23,7 @@ const BASE_MONTH = today.getMonth();
 
 type CellStatus = 'available' | 'booked' | 'completed' | 'blocked' | null;
 
-interface CalendarCell { d: number; muted: boolean; status: CellStatus; project?: string; bookingId?: string; bookingStatus?: string; }
+interface CalendarCell { d: number; muted: boolean; status: CellStatus; project?: string; company?: string; }
 
 interface IncomingBooking {
   id: string;
@@ -35,6 +35,48 @@ interface IncomingBooking {
 }
 interface IncomingBookingsResponse { items: IncomingBooking[] }
 
+interface PastBookingItem {
+  id: string;
+  project: { id: string; title: string; startDate: string; endDate: string };
+  requester: { id: string; companyProfile?: { companyName?: string } | null };
+}
+
+function isoInRange(d: string, start?: string | null, end?: string | null): boolean {
+  if (!start || !end) return false;
+  const a = d.slice(0, 10);
+  return a >= start.slice(0, 10) && a <= end.slice(0, 10);
+}
+
+function datesBetween(start: string, end: string): string[] {
+  const out: string[] = [];
+  const s = new Date(start);
+  const e = new Date(end);
+  for (let d = new Date(s); d <= e; d.setDate(d.getDate() + 1)) {
+    out.push(d.toISOString().slice(0, 10));
+  }
+  return out;
+}
+
+function buildCalendar(monthOffset: number, bookingsByDay?: Record<string, { status: CellStatus; company?: string; project?: string }>): CalendarCell[] {
+  const d = new Date(BASE_YEAR, BASE_MONTH + monthOffset, 1);
+  const year = d.getFullYear();
+  const month = d.getMonth();
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const prevDays = new Date(year, month, 0).getDate();
+  const cells: CalendarCell[] = [];
+  for (let i = firstDay - 1; i >= 0; i--) cells.push({ d: prevDays - i, muted: true, status: null });
+  const monthData = bookingsByDay ?? {};
+  for (let day = 1; day <= daysInMonth; day++) {
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const override = monthData[dateStr];
+    cells.push({ d: day, muted: false, ...(override ?? { status: 'available' as CellStatus }) });
+  }
+  const rem = 7 - (cells.length % 7);
+  if (rem < 7) for (let d2 = 1; d2 <= rem; d2++) cells.push({ d: d2, muted: true, status: null });
+  return cells;
+}
+
 const cellStyle: Record<string, string> = {
   available: 'bg-[#DCFCE7] border-[#86EFAC] text-[#15803D]',
   booked:    'bg-[#DBEAFE] border-[#93C5FD] text-[#1D4ED8]',
@@ -42,52 +84,10 @@ const cellStyle: Record<string, string> = {
   blocked:   'bg-[#FEE2E2] border-[#FECACA] text-[#B91C1C]',
 };
 
-function toStatus(s: string): CellStatus {
-  if (s === 'past_work') return 'completed';
-  if (s === 'blocked') return 'blocked';
-  if (s === 'booked') return 'booked';
-  return 'available';
-}
-
-function buildCalendar(
-  year: number,
-  month: number,
-  apiSlots: Record<string, string>,
-  bookings: IncomingBooking[],
-): CalendarCell[] {
-  const firstDay = new Date(year, month, 1).getDay();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const prevDays = new Date(year, month, 0).getDate();
-  const cells: CalendarCell[] = [];
-  for (let i = firstDay - 1; i >= 0; i--) cells.push({ d: prevDays - i, muted: true, status: null });
-  const bookedStatuses = ['pending', 'accepted', 'locked', 'cancel_requested'];
-  for (let day = 1; day <= daysInMonth; day++) {
-    const m = String(month + 1).padStart(2, '0');
-    const dateStr = `${year}-${m}-${String(day).padStart(2, '0')}`;
-    const slotStatus = apiSlots[dateStr];
-    let status: CellStatus = slotStatus ? toStatus(slotStatus) : 'available';
-    let project: string | undefined;
-    let bookingId: string | undefined;
-    let bookingStatus: string | undefined;
-    for (const b of bookings) {
-      if (b.project.status === 'cancelled') continue;
-      const start = b.project.startDate.slice(0, 10);
-      const end = b.project.endDate.slice(0, 10);
-      if (dateStr >= start && dateStr <= end) {
-        project = b.project.title;
-        bookingId = b.id;
-        bookingStatus = b.status;
-        if (status !== 'blocked' && status !== 'completed' && bookedStatuses.includes(b.status)) {
-          status = 'booked';
-        }
-        break;
-      }
-    }
-    cells.push({ d: day, muted: false, status, project, bookingId, bookingStatus });
-  }
-  const rem = 7 - (cells.length % 7);
-  if (rem < 7) for (let d2 = 1; d2 <= rem; d2++) cells.push({ d: d2, muted: true, status: null });
-  return cells;
+function cellStatusToSlotStatus(s: CellStatus | null | undefined): SlotStatus {
+  if (!s) return 'available';
+  if (s === 'completed') return 'past_work';
+  return s as SlotStatus;
 }
 
 export default function IndividualDashboard() {
@@ -97,12 +97,11 @@ export default function IndividualDashboard() {
   const [detailDate, setDetailDate] = useState<string | null>(null);
   const [actioning, setActioning] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
-  const [availabilitySlots, setAvailabilitySlots] = useState<Record<string, string>>({});
   const [monthSlotDetails, setMonthSlotDetails] = useState<
     Record<string, { date: string; status: SlotStatus; notes?: string | null }>
   >({});
   const [bookingDetails, setBookingDetails] = useState<Record<string, BookingWithDetails>>({});
-  const [availabilityLoading, setAvailabilityLoading] = useState(false);
+  const [availLoading, setAvailLoading] = useState(false);
   const [detailSaving, setDetailSaving] = useState(false);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [cancelReason, setCancelReason] = useState('');
@@ -115,33 +114,126 @@ export default function IndividualDashboard() {
 
   const { data: bookingsData, loading: bookingsLoading, refetch: refetchBookings } =
     useApiQuery<IncomingBookingsResponse>('/bookings/incoming');
+  const { data: pastData } = useApiQuery<{ items: PastBookingItem[] }>('/bookings/past');
   const allBookings = bookingsData?.items ?? [];
   const pendingBookings = allBookings.filter(b => b.status === 'pending').slice(0, 5);
+  const pastItems = pastData?.items ?? [];
+  const activeCount = allBookings.filter(b => b.status === 'accepted' || b.status === 'locked').length;
+  const pastCount = pastItems.length;
+
+  const bookingRangesByDay = useMemo(() => {
+    const map: Record<string, { status: CellStatus; project?: string; company?: string }> = {};
+    const add = (start: string, end: string, status: CellStatus, project?: string, company?: string) => {
+      datesBetween(start, end).forEach((dateStr) => {
+        map[dateStr] = { status, project, company };
+      });
+    };
+    allBookings
+      .filter(b => (b.status === 'accepted' || b.status === 'locked' || b.status === 'cancel_requested') && b.project?.startDate && b.project?.endDate)
+      .forEach((b) => {
+        if (b.project.status === 'cancelled') return;
+        add(b.project.startDate, b.project.endDate, 'booked', b.project.title, b.requester.companyProfile?.companyName ?? undefined);
+      });
+    pastItems.forEach((b) => {
+      add(b.project.startDate, b.project.endDate, 'completed', b.project.title, b.requester.companyProfile?.companyName ?? undefined);
+    });
+    return map;
+  }, [allBookings, pastItems]);
+
+  const mergedBookingsByDay = useMemo(() => {
+    const map: Record<string, { status: CellStatus; project?: string; company?: string }> = { ...bookingRangesByDay };
+    for (const [d, s] of Object.entries(monthSlotDetails)) {
+      if (s.status === 'blocked') {
+        const prev = map[d];
+        map[d] = {
+          status: 'blocked',
+          project: prev?.project,
+          company: prev?.company,
+        };
+      }
+    }
+    return map;
+  }, [bookingRangesByDay, monthSlotDetails]);
+
+  const calendarDays = buildCalendar(monthOffset, mergedBookingsByDay);
+
+  const slotForDetailPanel = detailDate
+    ? monthSlotDetails[detailDate] ?? {
+        date: detailDate,
+        status: cellStatusToSlotStatus(mergedBookingsByDay[detailDate]?.status ?? null),
+        notes: null as string | null,
+      }
+    : undefined;
+
+  const individualBlockReasons = useMemo(
+    () => ['Personal', 'Already booked externally', 'Not available', 'Traveling', 'Other'],
+    [],
+  );
+
+  const fallbackBookingsForDay = useMemo(() => {
+    if (!detailDate || bookingDetails[detailDate]) return [];
+    const out: {
+      id: string;
+      projectId: string;
+      projectTitle: string;
+      companyLabel: string;
+      companyUserId: string;
+      status: string;
+      rateOffered?: number | null;
+      equipmentLabel?: string | null;
+    }[] = [];
+    for (const b of allBookings) {
+      if (
+        (b.status === 'accepted' || b.status === 'locked' || b.status === 'cancel_requested') &&
+        b.project.status !== 'cancelled' &&
+        isoInRange(detailDate, b.project.startDate, b.project.endDate)
+      ) {
+        out.push({
+          id: b.id,
+          projectId: b.project.id,
+          projectTitle: b.project.title,
+          companyLabel: b.requester.companyProfile?.companyName ?? b.requester.email,
+          companyUserId: b.requester.id,
+          status: b.status,
+          rateOffered: b.rateOffered ?? null,
+          equipmentLabel: null,
+        });
+      }
+    }
+    for (const b of pastItems) {
+      if (isoInRange(detailDate, b.project.startDate, b.project.endDate)) {
+        out.push({
+          id: b.id,
+          projectId: b.project.id,
+          projectTitle: b.project.title,
+          companyLabel: b.requester.companyProfile?.companyName ?? '—',
+          companyUserId: b.requester.id,
+          status: 'past_work',
+          rateOffered: null,
+          equipmentLabel: null,
+        });
+      }
+    }
+    return out;
+  }, [detailDate, allBookings, pastItems, bookingDetails]);
 
   const loadAvailability = useCallback(async () => {
-    setAvailabilityLoading(true);
+    setAvailLoading(true);
     try {
-      const res = await api.get<unknown>(`/availability/me?year=${displayYear}&month=${displayMonth + 1}`);
+      const d = new Date(BASE_YEAR, BASE_MONTH + monthOffset, 1);
+      const res = await api.get<unknown>(`/availability/me?year=${d.getFullYear()}&month=${d.getMonth() + 1}`);
       const parsed = parseAvailabilityMonthResponse(res);
-      const map: Record<string, string> = {};
-      for (const [k, s] of Object.entries(parsed.slots)) {
-        map[k] = s.status;
-      }
-      setAvailabilitySlots(map);
       setMonthSlotDetails(parsed.slots);
       setBookingDetails(parsed.bookingDetails);
     } catch {
-      setAvailabilitySlots({});
       setMonthSlotDetails({});
       setBookingDetails({});
     } finally {
-      setAvailabilityLoading(false);
+      setAvailLoading(false);
     }
-  }, [displayYear, displayMonth]);
+  }, [monthOffset]);
 
   useEffect(() => { loadAvailability(); }, [loadAvailability]);
-
-  const calendarDays = buildCalendar(displayYear, displayMonth, availabilitySlots, allBookings);
 
   const doAction = useCallback(async (id: string, action: 'accept' | 'decline') => {
     setActioning(id);
@@ -167,7 +259,7 @@ export default function IndividualDashboard() {
     try {
       await api.put('/availability/bulk', { slots: [{ date: detailDate, status: 'blocked', notes: reason }] });
       await loadAvailability();
-      toast.success('Date blocked.');
+      setDetailDate(null);
     } catch (err) {
       toast.error(err instanceof ApiException ? err.payload.message : 'Failed to block date.');
     } finally {
@@ -181,7 +273,7 @@ export default function IndividualDashboard() {
     try {
       await api.put('/availability/bulk', { slots: [{ date: detailDate, status: 'available' }] });
       await loadAvailability();
-      toast.success('Date is available again.');
+      setDetailDate(null);
     } catch (err) {
       toast.error(err instanceof ApiException ? err.payload.message : 'Failed to unblock date.');
     } finally {
@@ -189,16 +281,17 @@ export default function IndividualDashboard() {
     }
   };
 
-  const doRequestCancel = useCallback(async (bookingId: string) => {
-    setActioning(bookingId + 'req-cancel');
+  const doRequestCancel = useCallback(async () => {
+    if (!cancellingId) return;
+    setActioning(cancellingId + 'req-cancel');
     setActionError(null);
     try {
-      await api.patch(`/bookings/${bookingId}/request-cancel`, { reason: cancelReason || undefined });
+      await api.patch(`/bookings/${cancellingId}/request-cancel`, { reason: cancelReason || undefined });
       toast.success('Cancellation request sent. Awaiting company approval.');
       setCancellingId(null);
       setCancelReason('');
       refetchBookings();
-      loadAvailability();
+      await loadAvailability();
     } catch (err) {
       const msg = err instanceof ApiException ? err.payload.message : 'Failed to request cancellation.';
       toast.error(msg);
@@ -206,7 +299,7 @@ export default function IndividualDashboard() {
     } finally {
       setActioning(null);
     }
-  }, [cancelReason, refetchBookings, loadAvailability]);
+  }, [cancellingId, cancelReason, refetchBookings, loadAvailability]);
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-[#F3F4F6] w-full">
@@ -225,10 +318,10 @@ export default function IndividualDashboard() {
                 <RoleIndicator />
               </div>
 
-              <div className="space-y-4">
-                {/* Calendar — full width; day details open in right drawer (company dashboard pattern) */}
-                <div className="rounded-2xl bg-white border border-neutral-200 p-4 sm:p-5 relative">
-                    <div className="flex items-center justify-between mb-2">
+              <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+                <div className="lg:col-span-3 order-2 lg:order-1">
+                  <div className="rounded-2xl bg-white border border-neutral-200 p-4 sm:p-5 min-w-0 relative">
+                    <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
                       <h2 className="text-base font-bold text-neutral-900">Availability Calendar</h2>
                       <div className="flex items-center gap-2">
                         <button type="button" onClick={() => setMonthOffset((o) => o - 1)} className="w-8 h-8 rounded-lg border border-neutral-200 flex items-center justify-center text-neutral-600 hover:bg-neutral-100 transition-colors">
@@ -251,24 +344,41 @@ export default function IndividualDashboard() {
                     <div className="grid grid-cols-7 gap-1 mb-1">
                       {DAYS.map((day) => <div key={day} className="text-center text-[11px] font-semibold text-neutral-400 py-1">{day}</div>)}
                     </div>
-                    {(availabilityLoading || bookingsLoading) && (
-                      <div className="absolute inset-0 rounded-2xl bg-white/80 flex items-center justify-center">
-                        <span className="text-xs text-neutral-500">Loading calendar…</span>
-                      </div>
-                    )}
                     <div className="grid grid-cols-7 gap-1">
                       {calendarDays.map((cell, i) => (
-                        <div key={i} role={cell.muted ? undefined : 'button'} tabIndex={cell.muted ? undefined : 0}
+                        <button
+                          key={i}
+                          type="button"
                           onClick={() => !cell.muted && setDetailDate(getDateStr(cell.d))}
-                          className={`rounded-xl border text-center p-1 sm:p-1.5 min-h-[44px] sm:min-h-[52px] select-none flex flex-col items-center justify-center gap-0.5 ${
-                            cell.muted ? 'bg-white border-neutral-100 text-neutral-300 cursor-default' :
-                            `${cellStyle[cell.status ?? 'available'] ?? cellStyle.available} cal-cell cursor-pointer`
-                          } ${!cell.muted && detailDate === getDateStr(cell.d) ? 'ring-2 ring-[#3B5BDB] ring-offset-1' : ''}`}>
+                          disabled={cell.muted}
+                          className={`
+                            cal-cell rounded-xl border text-center p-1 sm:p-1.5
+                            min-h-[44px] sm:min-h-[52px] flex flex-col items-center justify-center gap-0.5
+                            ${cell.muted
+                              ? 'bg-white border-neutral-100 text-neutral-300 cursor-default'
+                              : cell.status && cellStyle[cell.status]
+                                ? `${cellStyle[cell.status]} cursor-pointer`
+                                : 'bg-white border-neutral-200 text-neutral-600 hover:bg-[#F3F4F6] cursor-pointer'}
+                            ${!cell.muted && detailDate === getDateStr(cell.d) ? 'ring-2 ring-[#3B5BDB] ring-offset-1' : ''}
+                          `}
+                        >
                           <span className="text-[11px] sm:text-xs font-semibold leading-none">{cell.d}</span>
-                        </div>
+                          {cell.status && !cell.muted && cell.status !== 'available' && (
+                            <span className="text-[8px] sm:text-[9px] font-medium leading-tight truncate w-full opacity-80 px-0.5">
+                              {cell.status === 'blocked'
+                                ? 'Blocked'
+                                : cell.status === 'booked'
+                                  ? (cell.project?.split(/\s|,/).slice(0, 2).join(' ') || 'Booked')
+                                  : (cell.project?.split(/\s|,/).slice(0, 2).join(' ') || 'Done')}
+                            </span>
+                          )}
+                        </button>
                       ))}
                     </div>
                     <div className="flex flex-wrap gap-4 mt-4 pt-4 border-t border-neutral-100">
+                      {availLoading && (
+                        <span className="text-[10px] text-neutral-400 w-full">Syncing availability…</span>
+                      )}
                       {[
                         { color: 'bg-[#22C55E]', label: 'Available' },
                         { color: 'bg-[#3B82F6]', label: 'Booked' },
@@ -282,13 +392,13 @@ export default function IndividualDashboard() {
                       ))}
                     </div>
                     <p className="mt-3 text-[11px] text-neutral-400">
-                      Tap a date to open details and block or unblock. Full schedule tools:{' '}
+                      Tap a date for details. Full schedule:{' '}
                       <Link to="/dashboard/availability" className="text-[#3B5BDB] hover:underline">Availability</Link>.
                     </p>
                   </div>
+                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Booking Requests */}
+                <div className="space-y-4 order-1 lg:order-2">
                   <div className="rounded-2xl bg-white border border-neutral-200 p-4">
                     <div className="flex items-center gap-2 mb-3">
                       <div className="w-6 h-6 rounded-lg bg-[#FEF9E6] flex items-center justify-center">
@@ -338,7 +448,37 @@ export default function IndividualDashboard() {
                     </Link>
                   </div>
 
-                  <div className="rounded-2xl bg-white border border-neutral-200 p-4 md:order-none">
+                  <div className="rounded-2xl bg-white border border-neutral-200 p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-sm font-bold text-neutral-900">Recent projects</h3>
+                      <Link to="/dashboard/bookings" className="text-xs text-[#3B5BDB] hover:underline font-medium">View all</Link>
+                    </div>
+                    {pastItems.length === 0 ? (
+                      <p className="text-xs text-neutral-400 text-center py-4">No completed projects yet</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {pastItems.slice(0, 4).map((b) => (
+                          <Link key={b.id} to={`/dashboard/projects/${b.project.id}`} className="block rounded-xl border border-neutral-200 p-3 bg-[#FAFAFA] hover:border-[#3B5BDB]/50 transition-colors">
+                            <p className="text-xs font-semibold text-neutral-900 truncate">{b.project.title}</p>
+                            <p className="text-[11px] text-neutral-500 truncate">{b.requester.companyProfile?.companyName ?? '—'}</p>
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="rounded-2xl bg-white border border-neutral-200 p-3">
+                      <p className="text-[11px] text-neutral-500">Active bookings</p>
+                      <p className="text-lg font-bold text-[#3B5BDB]">{activeCount}</p>
+                    </div>
+                    <div className="rounded-2xl bg-white border border-neutral-200 p-3">
+                      <p className="text-[11px] text-neutral-500">Completed</p>
+                      <p className="text-lg font-bold text-[#3B5BDB]">{pastCount}</p>
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl bg-white border border-neutral-200 p-4">
                     <h3 className="text-sm font-bold text-neutral-900 mb-3">Quick Actions</h3>
                     <div className="space-y-1.5">
                       <Link to="/dashboard/availability" className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#F3F4F6] text-neutral-700 text-xs font-semibold hover:bg-[#EEF4FF] hover:text-[#3B5BDB] transition-colors">
@@ -361,40 +501,48 @@ export default function IndividualDashboard() {
         </main>
       </div>
 
-      <AvailabilityDateDetailModal
-        open={!!detailDate}
-        onClose={() => setDetailDate(null)}
-        selectedDate={detailDate}
-        slot={detailDate ? monthSlotDetails[detailDate] : undefined}
-        booking={detailDate ? bookingDetails[detailDate] : undefined}
-        mode="self_manage"
-        blocking={detailSaving}
-        onBlock={handleDetailBlock}
-        onUnblock={handleDetailUnblock}
-        onRequestCancelBooking={(b) => setCancellingId(b.id)}
-        variant="drawer"
-      />
+      {detailDate && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/25 backdrop-blur-[2px] z-40 lg:bg-black/10 lg:backdrop-blur-[1px]"
+            onClick={() => setDetailDate(null)}
+            aria-hidden
+          />
+          <aside className="fixed right-0 top-0 h-full w-full max-w-[380px] sm:max-w-[400px] bg-white/95 backdrop-blur-xl border-l border-neutral-200/60 shadow-2xl z-50 flex flex-col panel-enter rounded-l-3xl">
+            <VendorCalendarDayPanel
+              variant="drawer"
+              selectedDate={detailDate}
+              onDismiss={() => setDetailDate(null)}
+              slot={slotForDetailPanel}
+              booking={bookingDetails[detailDate]}
+              fallbackBookings={fallbackBookingsForDay}
+              blockReasons={individualBlockReasons}
+              saving={detailSaving}
+              onBlock={async (reason) => { await handleDetailBlock(reason); }}
+              onUnblock={async () => { await handleDetailUnblock(); }}
+              onRequestCancel={(bookingId) => { setCancellingId(bookingId); }}
+            />
+          </aside>
+        </>
+      )}
 
-      {/* Request Cancellation Modal */}
       {cancellingId && (
         <>
-          <div className="fixed inset-0 bg-black/40 z-[100]" onClick={() => setCancellingId(null)} />
-          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
-              <h2 className="text-base font-bold text-neutral-900 mb-2">Request Cancellation</h2>
+          <div className="fixed inset-0 bg-black/40 z-[60]" onClick={() => !actioning?.endsWith('req-cancel') && setCancellingId(null)} />
+          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 pointer-events-none">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 pointer-events-auto">
+              <h2 className="text-base font-bold text-neutral-900 mb-2">Request cancellation</h2>
               <p className="text-sm text-neutral-600 mb-4">
-                This will send a cancellation request to the production company. Your booking will remain active until the company approves the cancellation.
+                The production company must approve before your booking is released.
               </p>
               <div className="mb-4">
-                <label className="block text-xs font-semibold text-neutral-700 mb-1.5">
-                  Reason for cancellation <span className="font-normal text-neutral-400">(optional)</span>
-                </label>
+                <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Reason (optional)</label>
                 <textarea
                   value={cancelReason}
                   onChange={(e) => setCancelReason(e.target.value)}
                   rows={3}
-                  placeholder="e.g., Already booked for another project during these dates…"
-                  className="w-full px-4 py-2.5 border border-neutral-300 rounded-xl text-sm bg-[#F3F4F6] focus:bg-white focus:outline-none focus:border-[#3678F1] resize-none transition-all"
+                  placeholder="e.g., Schedule conflict…"
+                  className="w-full px-4 py-2.5 border border-neutral-300 rounded-xl text-sm bg-[#F3F4F6] focus:bg-white focus:outline-none focus:border-[#3B5BDB] resize-none"
                 />
               </div>
               {actionError && (
@@ -406,21 +554,22 @@ export default function IndividualDashboard() {
               <div className="flex gap-3">
                 <button
                   type="button"
-                  onClick={() => { setCancellingId(null); setActionError(null); }}
-                  className="flex-1 rounded-xl py-2.5 border border-neutral-300 text-neutral-700 text-sm font-medium hover:bg-neutral-50 transition-colors"
+                  onClick={() => { setCancellingId(null); setCancelReason(''); setActionError(null); }}
+                  disabled={!!actioning}
+                  className="flex-1 py-2.5 rounded-xl border border-neutral-200 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
                 >
-                  Keep Booking
+                  Back
                 </button>
                 <button
                   type="button"
-                  onClick={() => doRequestCancel(cancellingId)}
+                  onClick={() => void doRequestCancel()}
                   disabled={!!actioning}
-                  className="flex-1 rounded-xl py-2.5 bg-[#F59E0B] text-white text-sm font-semibold hover:bg-[#D97706] transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+                  className="flex-1 py-2.5 rounded-xl bg-amber-600 text-white text-sm font-semibold hover:bg-amber-700 disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  {actioning ? (
-                    <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Sending…</>
+                  {actioning?.endsWith('req-cancel') ? (
+                    <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Sending…</>
                   ) : (
-                    'Send Request'
+                    'Send request'
                   )}
                 </button>
               </div>
