@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaBell, FaChevronDown, FaRightFromBracket, FaCircle } from 'react-icons/fa6';
+import { FaBell, FaChevronDown, FaRightFromBracket, FaCircle, FaUser, FaCalendarDays, FaFileInvoice, FaCircleQuestion } from 'react-icons/fa6';
 import Avatar from './Avatar';
 import { useAuth } from '../contexts/AuthContext';
 import { useApiQuery } from '../hooks/useApiQuery';
@@ -43,6 +43,15 @@ export default function DashboardHeader({ userName: propUserName, userAvatar: pr
   const navigate = useNavigate();
   const { user, logout, isAuthenticated } = useAuth();
 
+  const profilePath =
+    user?.role === 'company' ? '/dashboard/company-profile' : user?.role === 'vendor' ? '/dashboard/vendor-profile' : '/dashboard/profile';
+  const schedulePath =
+    user?.role === 'company'
+      ? '/dashboard/company-availability'
+      : user?.role === 'vendor'
+        ? '/dashboard/vendor-availability'
+        : '/dashboard/availability';
+
   const { data: notifData, refetch: refetchNotifs } = useApiQuery<NotificationsResponse>(isAuthenticated ? '/notifications?limit=20' : null);
   const notifications = notifData?.items ?? [];
   const unreadCount = notifData?.meta?.unreadCount ?? 0;
@@ -80,18 +89,18 @@ export default function DashboardHeader({ userName: propUserName, userAvatar: pr
   };
 
   return (
-    <header className="h-[64px] bg-white shrink-0 flex items-center overflow-visible z-30 relative shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
+    <header className="h-[64px] bg-white shrink-0 flex items-stretch overflow-visible z-30 relative shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
       {/* Desktop logo area aligned with sidebar */}
       <Link
         to="/dashboard"
-        className="hidden lg:flex items-center gap-2.5 w-56 xl:w-60 shrink-0 px-5 h-full border-r border-neutral-100/80 hover:bg-[#F8FAFC] transition-colors duration-150"
+        className="hidden lg:flex items-center justify-center gap-2 w-56 xl:w-60 shrink-0 px-4 border-r border-neutral-100/80 hover:bg-[#F8FAFC] transition-colors duration-150 self-stretch min-h-0"
       >
-        <img src="/claapo-logo.svg" alt="Claapo" className="h-8 w-auto" />
+        <img src="/claapo-logo.svg" alt="Claapo" className="max-h-7 w-auto max-w-[140px] object-contain object-center" />
       </Link>
 
       {/* Mobile logo */}
-      <Link to="/dashboard" className="lg:hidden flex items-center gap-2.5 px-4 shrink-0">
-        <img src="/claapo-logo.svg" alt="Claapo" className="h-7 w-auto" />
+      <Link to="/dashboard" className="lg:hidden flex items-center px-4 shrink-0 self-stretch">
+        <img src="/claapo-logo.svg" alt="Claapo" className="max-h-7 w-auto max-w-[128px] object-contain" />
       </Link>
 
       <div className="flex-1 flex items-center justify-end gap-1.5 sm:gap-2.5 px-4 sm:px-6 lg:px-5 min-w-0">
@@ -185,14 +194,48 @@ export default function DashboardHeader({ userName: propUserName, userAvatar: pr
                 <p className="text-[13px] font-semibold text-neutral-900 truncate">{displayName}</p>
                 <p className="text-[11px] text-neutral-400 truncate mt-0.5">{user?.email ?? ''}</p>
               </div>
-              <div className="p-1.5">
+              <div className="p-1.5 space-y-0.5">
+                <Link
+                  to={profilePath}
+                  onClick={() => setUserOpen(false)}
+                  className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-[13px] text-neutral-700 hover:bg-neutral-100 transition-all duration-150 font-medium"
+                >
+                  <FaUser className="w-3.5 h-3.5 text-neutral-400" />
+                  My profile
+                </Link>
+                <Link
+                  to={schedulePath}
+                  onClick={() => setUserOpen(false)}
+                  className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-[13px] text-neutral-700 hover:bg-neutral-100 transition-all duration-150 font-medium"
+                >
+                  <FaCalendarDays className="w-3.5 h-3.5 text-neutral-400" />
+                  Schedule
+                </Link>
+                {user?.role !== 'admin' && (
+                  <Link
+                    to="/dashboard/invoices"
+                    onClick={() => setUserOpen(false)}
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-[13px] text-neutral-700 hover:bg-neutral-100 transition-all duration-150 font-medium"
+                  >
+                    <FaFileInvoice className="w-3.5 h-3.5 text-neutral-400" />
+                    Invoices
+                  </Link>
+                )}
+                <Link
+                  to="/about"
+                  onClick={() => setUserOpen(false)}
+                  className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-[13px] text-neutral-700 hover:bg-neutral-100 transition-all duration-150 font-medium"
+                >
+                  <FaCircleQuestion className="w-3.5 h-3.5 text-neutral-400" />
+                  Help
+                </Link>
                 <button
                   type="button"
                   onClick={handleLogout}
                   className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-[13px] text-red-600 hover:bg-red-50 transition-all duration-150 font-medium"
                 >
                   <FaRightFromBracket className="w-3.5 h-3.5" />
-                  Log Out
+                  Log out
                 </button>
               </div>
             </div>

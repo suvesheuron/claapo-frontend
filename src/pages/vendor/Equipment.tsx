@@ -19,7 +19,13 @@ interface EquipmentAvailability {
 
 interface ActiveBooking {
   id: string;
-  project: { title: string; startDate: string; endDate: string };
+  project: {
+    title: string;
+    startDate: string;
+    endDate: string;
+    locationCity?: string | null;
+    shootLocations?: string[];
+  };
 }
 
 interface EquipmentItem {
@@ -32,6 +38,9 @@ interface EquipmentItem {
   dailyRateMax?: number | null;
   availabilities?: EquipmentAvailability[];
   bookingRequests?: ActiveBooking[];
+  /** From API: project shoot location while booked + short return buffer */
+  effectiveLocation?: string | null;
+  effectiveLocationUntil?: string | null;
 }
 
 export default function Equipment() {
@@ -282,7 +291,28 @@ export default function Equipment() {
                         </div>
                       </div>
                       <h3 className="text-sm font-bold text-neutral-900 mb-1 truncate">{item.name}</h3>
-                      {item.currentCity && <p className="text-[10px] text-neutral-400 mb-1">{item.currentCity}</p>}
+                      {item.effectiveLocation && (
+                        <p className="text-[10px] font-semibold text-amber-800 bg-amber-50 border border-amber-200/60 rounded-lg px-2 py-1 mb-1 leading-snug">
+                          On location: {item.effectiveLocation}
+                          {item.effectiveLocationUntil && (
+                            <span className="font-normal text-amber-700 block sm:inline sm:ml-1">
+                              (until{' '}
+                              {new Date(item.effectiveLocationUntil).toLocaleDateString('en-IN', {
+                                day: 'numeric',
+                                month: 'short',
+                                year: 'numeric',
+                              })}
+                              , incl. 5-day wrap buffer)
+                            </span>
+                          )}
+                        </p>
+                      )}
+                      {!item.effectiveLocation && item.currentCity && (
+                        <p className="text-[10px] text-neutral-400 mb-1">{item.currentCity}</p>
+                      )}
+                      {item.effectiveLocation && item.currentCity && (
+                        <p className="text-[10px] text-neutral-400 mb-1">Base hub: {item.currentCity}</p>
+                      )}
                       <p className="text-sm font-semibold text-[#3B5BDB] mb-2">{formatRate(item)}</p>
                       {(item.bookingRequests?.length ?? 0) > 0 && (
                         <p className="text-[10px] text-[#1D4ED8] font-medium mb-2">

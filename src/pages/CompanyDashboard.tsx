@@ -1,12 +1,13 @@
 import { Link } from 'react-router-dom';
-import { useEffect, useState, useMemo } from 'react';
-import { FaPlus, FaUsers, FaTruck, FaFolder, FaChevronLeft, FaChevronRight, FaXmark, FaEye, FaMessage, FaPeopleGroup } from 'react-icons/fa6';
+import { useEffect, useState, useMemo, useCallback } from 'react';
+import { FaPlus, FaUsers, FaTruck, FaFolder, FaChevronLeft, FaChevronRight, FaXmark, FaEye, FaMessage, FaPeopleGroup, FaFileInvoice, FaBan } from 'react-icons/fa6';
 import DashboardHeader from '../components/DashboardHeader';
 import DashboardSidebar from '../components/DashboardSidebar';
 import AppFooter from '../components/AppFooter';
 import RoleIndicator from '../components/RoleIndicator';
 import { useApiQuery } from '../hooks/useApiQuery';
 import { companyNavLinks } from '../navigation/dashboardNav';
+import { api, ApiException } from '../services/api';
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -36,8 +37,20 @@ interface ProjectsApiResponse { items: Project[]; meta: { total: number } }
 const STATUS_PRIORITY: Record<string, number> = { active: 0, open: 1, in_progress: 2, draft: 3, completed: 4, cancelled: 5 };
 
 interface CalendarCell { d: number; muted: boolean; projects: Project[] }
-interface PanelData { date: number; month: string; year: number; projects: Project[] }
+interface PanelData { date: number; month: string; year: number; projects: Project[]; dateIso: string }
 
+function localDateKey(iso: string): string {
+  const d = new Date(iso);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+interface DayChatMessage {
+  id: string;
+  content: string | null;
+  createdAt: string;
+  senderLabel: string;
+  conversationId: string;
+}
 
 function buildCalendar(year: number, month: number, projects: Project[]): CalendarCell[] {
   const firstDay = new Date(year, month, 1).getDay();
@@ -77,6 +90,10 @@ export default function CompanyDashboard() {
   const today = new Date();
   const [monthOffset, setMonthOffset] = useState(0);
   const [panel, setPanel] = useState<PanelData | null>(null);
+  const [dayChatsForProject, setDayChatsForProject] = useState<string | null>(null);
+  const [dayChatsLoading, setDayChatsLoading] = useState(false);
+  const [dayChatsItems, setDayChatsItems] = useState<DayChatMessage[]>([]);
+  const [dayChatsError, setDayChatsError] = useState<string | null>(null);
 
   const { data: projectsData, loading } = useApiQuery<ProjectsApiResponse>('/projects?limit=100');
   const projects = projectsData?.items ?? [];
@@ -99,8 +116,83 @@ export default function CompanyDashboard() {
 
   const openPanel = (cell: CalendarCell) => {
     if (cell.muted) return;
-    setPanel({ date: cell.d, month: monthLabel, year: yearLabel, projects: cell.projects });
+    const m = displayDate.getMonth();
+    const y = displayDate.getFullYear();
+    const dateIso = `${y}-${String(m + 1).padStart(2, '0')}-${String(cell.d).padStart(2, '0')}`;
+    setDayChatsForProject(null);
+    setDayChatsItems([]);
+    setDayChatsError(null);
+    setPanel({ date: cell.d, month: monthLabel, year: yearLabel, projects: cell.projects, dateIso });
   };
+
+  const fetchProjectDayChats = useCallback(async (projectId: string, dateIso: string) => {
+    type ConvRow = { id: string; project?: { id: string } | null };
+    type MsgRow = {
+      id: string;
+      content: string | null;
+      createdAt: string;
+      sender?: { displayName?: string };
+    };
+    const convRes = await api.get<{ items: ConvRow[] }>('/conversations?page=1&limit=100');
+    const convs = (convRes.items ?? []).filter((c) => c.project?.id === projectId);
+    const out: DayChatMessage[] = [];
+    for (const c of convs) {
+      let cursor: string | undefined;
+      for (let page = 0; page < 20; page++) {
+        const q = cursor ? `?limit=100&cursor=${encodeURIComponent(cursor)}` : '?limit=100';
+        const msgRes = await api.get<{ items: MsgRow[]; nextCursor: string | null }>(`/conversations/${c.id}/messages${q}`);
+        const batch = msgRes.items ?? [];
+        for (const m of batch) {
+          if (localDateKey(m.createdAt) === dateIso) {
+            out.push({
+              id: m.id,
+              content: m.content,
+              createdAt: m.createdAt,
+              senderLabel: m.sender?.displayName ?? '—',
+              conversationId: c.id,
+            });
+          }
+        }
+        cursor = msgRes.nextCursor ?? undefined;
+        if (!cursor || batch.length === 0) break;
+      }
+    }
+    out.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    return out;
+  }, []);
+
+  const toggleDayChats = useCallback(
+    (projectId: string, dateIso: string) => {
+      if (dayChatsForProject === projectId) {
+        setDayChatsForProject(null);
+        setDayChatsItems([]);
+        setDayChatsError(null);
+        return;
+      }
+      setDayChatsForProject(projectId);
+      setDayChatsLoading(true);
+      setDayChatsError(null);
+      setDayChatsItems([]);
+      void fetchProjectDayChats(projectId, dateIso)
+        .then(setDayChatsItems)
+        .catch((err) => {
+          setDayChatsError(err instanceof ApiException ? err.payload.message : 'Could not load chats.');
+          setDayChatsItems([]);
+        })
+        .finally(() => setDayChatsLoading(false));
+    },
+    [dayChatsForProject, fetchProjectDayChats],
+  );
+
+  const closePanel = () => {
+    setPanel(null);
+    setDayChatsForProject(null);
+    setDayChatsItems([]);
+    setDayChatsError(null);
+  };
+
+  const fmtChatTime = (iso: string) =>
+    new Date(iso).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
 
   const greetingHour = today.getHours();
   const greeting = greetingHour < 12 ? 'Good morning' : greetingHour < 17 ? 'Good afternoon' : 'Good evening';
@@ -340,14 +432,14 @@ export default function CompanyDashboard() {
       {/* Sliding panel */}
       {panel && (
         <>
-          <div className="fixed inset-0 bg-black/25 backdrop-blur-[2px] z-40 lg:bg-black/10 lg:backdrop-blur-[1px]" onClick={() => setPanel(null)} />
+          <div className="fixed inset-0 bg-black/25 backdrop-blur-[2px] z-40 lg:bg-black/10 lg:backdrop-blur-[1px]" onClick={closePanel} />
           <aside className="fixed right-0 top-0 h-full w-80 bg-white/95 backdrop-blur-xl border-l border-neutral-200/60 shadow-2xl z-50 flex flex-col panel-enter rounded-l-3xl">
             <div className="flex items-center justify-between px-5 py-5 border-b border-neutral-100">
               <div>
                 <p className="text-[11px] font-medium text-neutral-400 uppercase tracking-wider">{panel.month} {panel.year}</p>
                 <h3 className="text-xl font-bold text-neutral-900 mt-0.5">{panel.date} {panel.month}</h3>
               </div>
-              <button type="button" onClick={() => setPanel(null)} className="w-9 h-9 rounded-xl bg-neutral-100/80 flex items-center justify-center text-neutral-500 hover:bg-neutral-200 hover:text-neutral-700 transition-all">
+              <button type="button" onClick={closePanel} className="w-9 h-9 rounded-xl bg-neutral-100/80 flex items-center justify-center text-neutral-500 hover:bg-neutral-200 hover:text-neutral-700 transition-all">
                 <FaXmark className="text-sm" />
               </button>
             </div>
@@ -390,6 +482,56 @@ export default function CompanyDashboard() {
                             <FaUsers className="w-3 h-3" /> Crew
                           </Link>
                         </div>
+                        <div className="flex gap-2 mt-2">
+                          <Link
+                            to="/dashboard/cancel-requests"
+                            className="flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2.5 bg-white border border-amber-200/80 text-amber-800 text-xs font-semibold hover:bg-amber-50 hover:border-amber-300 shadow-sm transition-all"
+                          >
+                            <FaBan className="w-3 h-3" /> Request cancellation
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={() => panel && toggleDayChats(p.id, panel.dateIso)}
+                            className={`flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2.5 border text-xs font-semibold shadow-sm transition-all ${
+                              dayChatsForProject === p.id
+                                ? 'bg-[#EEF4FF] border-[#3B5BDB]/40 text-[#3B5BDB]'
+                                : 'bg-white border-neutral-200/80 text-neutral-700 hover:bg-neutral-50 hover:border-neutral-300'
+                            }`}
+                          >
+                            <FaMessage className="w-3 h-3" /> Chats
+                          </button>
+                        </div>
+                        {dayChatsForProject === p.id && (
+                          <div className="mt-3 rounded-xl border border-neutral-200/80 bg-white/90 p-3 max-h-48 overflow-y-auto">
+                            <p className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wider mb-2">
+                              Messages on {panel.dateIso} · {p.title}
+                            </p>
+                            {dayChatsLoading && (
+                              <div className="flex justify-center py-4">
+                                <span className="w-5 h-5 border-2 border-[#3B5BDB]/30 border-t-[#3B5BDB] rounded-full animate-spin" />
+                              </div>
+                            )}
+                            {dayChatsError && <p className="text-xs text-red-600">{dayChatsError}</p>}
+                            {!dayChatsLoading && !dayChatsError && dayChatsItems.length === 0 && (
+                              <p className="text-xs text-neutral-500">No project chats on this date.</p>
+                            )}
+                            {!dayChatsLoading && dayChatsItems.length > 0 && (
+                              <ul className="space-y-2">
+                                {dayChatsItems.map((m) => (
+                                  <li key={m.id} className="text-xs border-b border-neutral-100 last:border-0 pb-2 last:pb-0">
+                                    <div className="flex items-center justify-between gap-2 mb-0.5">
+                                      <span className="font-semibold text-neutral-800 truncate">{m.senderLabel}</span>
+                                      <span className="text-[10px] text-neutral-400 shrink-0 tabular-nums">{fmtChatTime(m.createdAt)}</span>
+                                    </div>
+                                    <p className="text-neutral-600 line-clamp-3 whitespace-pre-wrap break-words">
+                                      {m.content?.trim() || '(attachment or empty)'}
+                                    </p>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                        )}
                       </div>
                     );
                   })}
@@ -412,13 +554,19 @@ export default function CompanyDashboard() {
                 </div>
               )}
             </div>
-            {panel.projects.length > 0 && (
-              <div className="px-5 py-4 border-t border-neutral-100">
+            <div className="px-5 py-4 border-t border-neutral-100 space-y-3">
+              <Link
+                to={`/dashboard/invoices?issuedOn=${panel.dateIso}`}
+                className="flex items-center justify-center gap-2 w-full rounded-xl py-2.5 bg-[#EEF4FF] text-[#3B5BDB] text-sm font-semibold border border-[#3B5BDB]/20 hover:bg-[#DBEAFE] transition-all"
+              >
+                <FaFileInvoice className="w-3.5 h-3.5" /> Invoices issued on this date
+              </Link>
+              {panel.projects.length > 0 && (
                 <Link to="/dashboard/projects/new" className="flex items-center justify-center gap-2 w-full rounded-xl py-2.5 bg-gradient-to-r from-[#F4C430] to-[#E6B820] text-neutral-900 text-sm font-bold hover:shadow-md hover:shadow-amber-500/20 transition-all duration-200">
                   <FaPlus className="w-3 h-3" /> New Project
                 </Link>
-              </div>
-            )}
+              )}
+            </div>
           </aside>
         </>
       )}

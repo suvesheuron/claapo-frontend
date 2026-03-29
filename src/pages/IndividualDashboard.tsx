@@ -167,7 +167,7 @@ export default function IndividualDashboard() {
     try {
       await api.put('/availability/bulk', { slots: [{ date: detailDate, status: 'blocked', notes: reason }] });
       await loadAvailability();
-      setDetailDate(null);
+      toast.success('Date blocked.');
     } catch (err) {
       toast.error(err instanceof ApiException ? err.payload.message : 'Failed to block date.');
     } finally {
@@ -181,7 +181,7 @@ export default function IndividualDashboard() {
     try {
       await api.put('/availability/bulk', { slots: [{ date: detailDate, status: 'available' }] });
       await loadAvailability();
-      setDetailDate(null);
+      toast.success('Date is available again.');
     } catch (err) {
       toast.error(err instanceof ApiException ? err.payload.message : 'Failed to unblock date.');
     } finally {
@@ -225,10 +225,9 @@ export default function IndividualDashboard() {
                 <RoleIndicator />
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-                {/* Calendar */}
-                <div className="lg:col-span-3 order-2 lg:order-1">
-                  <div className="rounded-2xl bg-white border border-neutral-200 p-4 sm:p-5 relative">
+              <div className="space-y-4">
+                {/* Calendar — full width; day details open in right drawer (company dashboard pattern) */}
+                <div className="rounded-2xl bg-white border border-neutral-200 p-4 sm:p-5 relative">
                     <div className="flex items-center justify-between mb-2">
                       <h2 className="text-base font-bold text-neutral-900">Availability Calendar</h2>
                       <div className="flex items-center gap-2">
@@ -283,13 +282,12 @@ export default function IndividualDashboard() {
                       ))}
                     </div>
                     <p className="mt-3 text-[11px] text-neutral-400">
-                      Go to <Link to="/dashboard/availability" className="text-[#3B5BDB] hover:underline">Availability</Link> to manage your schedule.
+                      Tap a date to open details and block or unblock. Full schedule tools:{' '}
+                      <Link to="/dashboard/availability" className="text-[#3B5BDB] hover:underline">Availability</Link>.
                     </p>
                   </div>
-                </div>
 
-                {/* Right column */}
-                <div className="space-y-4 order-1 lg:order-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Booking Requests */}
                   <div className="rounded-2xl bg-white border border-neutral-200 p-4">
                     <div className="flex items-center gap-2 mb-3">
@@ -340,7 +338,7 @@ export default function IndividualDashboard() {
                     </Link>
                   </div>
 
-                  <div className="rounded-2xl bg-white border border-neutral-200 p-4">
+                  <div className="rounded-2xl bg-white border border-neutral-200 p-4 md:order-none">
                     <h3 className="text-sm font-bold text-neutral-900 mb-3">Quick Actions</h3>
                     <div className="space-y-1.5">
                       <Link to="/dashboard/availability" className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#F3F4F6] text-neutral-700 text-xs font-semibold hover:bg-[#EEF4FF] hover:text-[#3B5BDB] transition-colors">
@@ -374,13 +372,14 @@ export default function IndividualDashboard() {
         onBlock={handleDetailBlock}
         onUnblock={handleDetailUnblock}
         onRequestCancelBooking={(b) => setCancellingId(b.id)}
+        variant="drawer"
       />
 
       {/* Request Cancellation Modal */}
       {cancellingId && (
         <>
-          <div className="fixed inset-0 bg-black/40 z-[60]" onClick={() => setCancellingId(null)} />
-          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/40 z-[100]" onClick={() => setCancellingId(null)} />
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
               <h2 className="text-base font-bold text-neutral-900 mb-2">Request Cancellation</h2>
               <p className="text-sm text-neutral-600 mb-4">

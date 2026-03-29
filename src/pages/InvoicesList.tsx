@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { FaFileInvoice, FaPlus, FaTriangleExclamation, FaMagnifyingGlass } from 'react-icons/fa6';
 import DashboardHeader from '../components/DashboardHeader';
 import DashboardSidebar from '../components/DashboardSidebar';
@@ -48,11 +48,22 @@ function getPartyName(u: InvoiceItem['issuer']) {
   return u.individualProfile?.displayName ?? u.vendorProfile?.companyName ?? u.companyProfile?.companyName ?? '—';
 }
 
+const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
+
 export default function InvoicesList() {
   useEffect(() => { document.title = 'Invoices – Claapo'; }, []);
   const { currentRole } = useRole();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const issuedOnRaw = searchParams.get('issuedOn')?.trim() ?? '';
+  const issuedOn = ISO_DAY.test(issuedOnRaw) ? issuedOnRaw : '';
 
-  const { data, loading, error } = useApiQuery<InvoicesResponse>('/invoices?limit=50');
+  const listPath = useMemo(() => {
+    const q = new URLSearchParams({ limit: '50' });
+    if (issuedOn) q.set('issuedOn', issuedOn);
+    return `/invoices?${q.toString()}`;
+  }, [issuedOn]);
+
+  const { data, loading, error } = useApiQuery<InvoicesResponse>(listPath);
   const allInvoices = data?.items ?? [];
   const [projectSearch, setProjectSearch] = useState('');
   const invoices = projectSearch.trim()
@@ -90,6 +101,25 @@ export default function InvoicesList() {
                   <p className="text-sm text-neutral-500 mt-1.5 ml-[46px]">
                     {currentRole === 'Company' ? 'Invoices received from crew and vendors' : 'Invoices you have sent to clients'}
                   </p>
+                  {issuedOn && (
+                    <p className="text-xs text-[#3B5BDB] font-medium mt-2 ml-[46px] flex flex-wrap items-center gap-2">
+                      Showing invoices issued on{' '}
+                      {new Date(issuedOn + 'T12:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSearchParams((prev) => {
+                            const next = new URLSearchParams(prev);
+                            next.delete('issuedOn');
+                            return next;
+                          });
+                        }}
+                        className="text-neutral-500 hover:text-neutral-800 underline underline-offset-2 font-semibold"
+                      >
+                        Clear date filter
+                      </button>
+                    </p>
+                  )}
                 </div>
                 {canCreate && (
                   <Link
@@ -152,6 +182,27 @@ export default function InvoicesList() {
                       <p className="text-base font-semibold text-neutral-700 mb-2">No invoices match your search</p>
                       <p className="text-sm text-neutral-400 mb-5 max-w-xs mx-auto">Try a different project name or clear the search.</p>
                       <button type="button" onClick={() => setProjectSearch('')} className="text-sm text-[#3B5BDB] font-semibold hover:underline underline-offset-2">Clear search</button>
+                    </>
+                  ) : issuedOn ? (
+                    <>
+                      <p className="text-base font-semibold text-neutral-700 mb-2">No invoices on this date</p>
+                      <p className="text-sm text-neutral-400 mb-5 max-w-xs mx-auto">
+                        Nothing was issued on{' '}
+                        {new Date(issuedOn + 'T12:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSearchParams((prev) => {
+                            const next = new URLSearchParams(prev);
+                            next.delete('issuedOn');
+                            return next;
+                          });
+                        }}
+                        className="text-sm text-[#3B5BDB] font-semibold hover:underline underline-offset-2"
+                      >
+                        View all invoices
+                      </button>
                     </>
                   ) : (
                     <>

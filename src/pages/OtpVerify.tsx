@@ -27,7 +27,9 @@ interface PendingProfile {
   locationState?: string;
   dailyRateMin?: number;
   companyName?: string;
+  companyType?: string;
   vendorType?: string;
+  vendorServiceCategory?: string;
 }
 
 interface OtpLocationState {
@@ -186,12 +188,16 @@ export default function OtpVerify() {
             ...(pending.locationState && { locationState: pending.locationState }),
             ...(pending.dailyRateMin  && { dailyRateMin: pending.dailyRateMin }),
           });
-        } else if (userType === 'company' && pending.companyName) {
-          await api.patch('/profile/company', { companyName: pending.companyName });
+        } else if (userType === 'company' && (pending.companyName || pending.companyType)) {
+          await api.patch('/profile/company', {
+            ...(pending.companyName && { companyName: pending.companyName }),
+            ...(pending.companyType && { companyType: pending.companyType }),
+          });
         } else if (userType === 'vendor' && Object.keys(pending).length > 0) {
           await api.patch('/profile/vendor', {
             ...(pending.companyName && { companyName: pending.companyName }),
-            ...(pending.vendorType  && { vendorType:  pending.vendorType }),
+            ...(pending.vendorType && { vendorType: pending.vendorType }),
+            ...(pending.vendorServiceCategory && { vendorServiceCategory: pending.vendorServiceCategory }),
           });
         }
       } catch (profileErr) {

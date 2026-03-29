@@ -1,6 +1,6 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { FaVideo, FaTriangleExclamation, FaEye, FaEyeSlash } from 'react-icons/fa6';
+import { FaTriangleExclamation, FaEye, FaEyeSlash } from 'react-icons/fa6';
 import AppLayout from '../components/AppLayout';
 import { useAuth } from '../contexts/AuthContext';
 import { ApiException } from '../services/api';
@@ -61,9 +61,7 @@ export default function Login() {
         <div className="w-full max-w-[420px]">
           {/* Brand mark */}
           <div className="flex flex-col items-center mb-8">
-            <div className="w-12 h-12 rounded-xl bg-[#3B5BDB] flex items-center justify-center mb-4 shadow-lg shadow-[#3B5BDB]/25">
-              <FaVideo className="text-white text-lg" />
-            </div>
+            <img src="/claapo-logo.svg" alt="Claapo" className="h-11 w-auto max-w-[200px] object-contain mb-4" />
             <h1 className="text-2xl font-bold text-neutral-900">Welcome back</h1>
             <p className="text-sm text-neutral-500 mt-1">Sign in to your Claapo account</p>
           </div>

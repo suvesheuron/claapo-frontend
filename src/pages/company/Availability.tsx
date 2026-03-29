@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  FaChevronLeft, FaChevronRight, FaXmark, FaCircle, FaEye, FaPlus, FaCalendar,
+  FaChevronLeft, FaChevronRight, FaXmark, FaCircle, FaEye, FaPlus, FaCalendar, FaFileInvoice,
 } from 'react-icons/fa6';
 import DashboardHeader from '../../components/DashboardHeader';
 import DashboardSidebar from '../../components/DashboardSidebar';
@@ -35,6 +35,7 @@ interface PanelData {
   month: string;
   year: number;
   project: ProjectItem | null;
+  dateIso: string;
 }
 
 const statusConfig: Record<string, { bg: string; border: string; text: string; dot: string; label: string }> = {
@@ -91,7 +92,10 @@ export default function CompanyAvailability() {
 
   const openPanel = (cell: CalendarCell) => {
     if (cell.muted) return;
-    setPanel({ date: cell.d, month: monthLabel, year: yearLabel, project: cell.project ?? null });
+    const m = displayDate.getMonth();
+    const y = displayDate.getFullYear();
+    const dateIso = `${y}-${String(m + 1).padStart(2, '0')}-${String(cell.d).padStart(2, '0')}`;
+    setPanel({ date: cell.d, month: monthLabel, year: yearLabel, project: cell.project ?? null, dateIso });
   };
 
   return (
@@ -293,6 +297,14 @@ export default function CompanyAvailability() {
                   </Link>
                 </div>
               )}
+            </div>
+            <div className="px-5 py-4 border-t border-neutral-100 shrink-0">
+              <Link
+                to={`/dashboard/invoices?issuedOn=${panel.dateIso}`}
+                className="flex w-full items-center justify-center gap-2 rounded-xl py-2.5 bg-[#EEF4FF] text-[#3B5BDB] text-sm font-semibold border border-[#3B5BDB]/20 hover:bg-[#DBEAFE] transition-all"
+              >
+                <FaFileInvoice className="w-3.5 h-3.5" /> Invoices issued on this date
+              </Link>
             </div>
           </aside>
         </div>

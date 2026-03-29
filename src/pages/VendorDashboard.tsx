@@ -7,7 +7,7 @@ import { formatPaise, formatRateRange } from '../utils/currency';
 import DashboardHeader from '../components/DashboardHeader';
 import DashboardSidebar from '../components/DashboardSidebar';
 import AppFooter from '../components/AppFooter';
-import AvailabilityDateDetailModal from '../components/AvailabilityDateDetailModal';
+import VendorCalendarDayPanel from '../components/VendorCalendarDayPanel';
 import { vendorNavLinks } from '../navigation/dashboardNav';
 import type { BookingWithDetails, SlotStatus } from '../types/availability';
 import { parseAvailabilityMonthResponse } from '../utils/parseAvailabilityResponse';
@@ -32,6 +32,12 @@ const _today = new Date();
 const BASE_YEAR = _today.getFullYear();
 const BASE_MONTH = _today.getMonth();
 
+function isoInRange(d: string, start?: string | null, end?: string | null): boolean {
+  if (!start || !end) return false;
+  const a = d.slice(0, 10);
+  return a >= start.slice(0, 10) && a <= end.slice(0, 10);
+}
+
 function datesBetween(start: string, end: string): string[] {
   const out: string[] = [];
   const s = new Date(start);
@@ -42,7 +48,7 @@ function datesBetween(start: string, end: string): string[] {
   return out;
 }
 
-function buildCalendar(monthOffset: number, bookingsByDay?: Record<string, { status: CellStatus; equipment?: string; company?: string; project?: string; invoice?: string }>): CalendarCell[] {
+function buildCalendar(monthOffset: number, bookingsByDay?: Record<string, { status: CellStatus; company?: string; project?: string; invoice?: string }>): CalendarCell[] {
   const d = new Date(BASE_YEAR, BASE_MONTH + monthOffset, 1);
   const year = d.getFullYear();
   const month = d.getMonth();
@@ -68,6 +74,12 @@ const cellStyle: Record<string, string> = {
   completed:     'bg-[#DBEAFE] border-[#93C5FD] text-[#1D4ED8]',
   blocked:      'bg-[#FEE2E2] border-[#FECACA] text-[#B91C1C]',
 };
+
+function cellStatusToSlotStatus(s: CellStatus | null | undefined): SlotStatus {
+  if (!s) return 'available';
+  if (s === 'completed') return 'past_work';
+  return s as SlotStatus;
+}
 
 interface EquipmentItem {
   id: string;
@@ -99,6 +111,8 @@ export default function VendorDashboard() {
   const [detailSaving, setDetailSaving] = useState(false);
   const [actioning, setActioning] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
 
   const displayDate = new Date(BASE_YEAR, BASE_MONTH + monthOffset, 1);
   const monthLabel = MONTHS[displayDate.getMonth()];
@@ -149,7 +163,58 @@ export default function VendorDashboard() {
 
   const calendarDays = buildCalendar(monthOffset, mergedBookingsByDay);
 
+  const slotForDetailPanel = detailDate
+    ? monthSlotDetails[detailDate] ?? {
+        date: detailDate,
+        status: cellStatusToSlotStatus(mergedBookingsByDay[detailDate]?.status ?? null),
+        notes: null as string | null,
+      }
+    : undefined;
+
   const vendorBlockReasons = useMemo(() => ['Equipment maintenance', 'Unavailable for rental', 'Reserved for other use', 'Other'], []);
+
+  const fallbackBookingsForDay = useMemo(() => {
+    if (!detailDate || bookingDetails[detailDate]) return [];
+    const out: {
+      id: string;
+      projectId: string;
+      projectTitle: string;
+      companyLabel: string;
+      status: string;
+      rateOffered?: number | null;
+      equipmentLabel?: string | null;
+    }[] = [];
+    for (const b of incomingItems) {
+      if (
+        (b.status === 'accepted' || b.status === 'locked') &&
+        isoInRange(detailDate, b.project.startDate, b.project.endDate)
+      ) {
+        out.push({
+          id: b.id,
+          projectId: b.project.id,
+          projectTitle: b.project.title,
+          companyLabel: b.requester.companyProfile?.companyName ?? b.requester.email,
+          status: b.status,
+          rateOffered: b.rateOffered ?? null,
+          equipmentLabel: null,
+        });
+      }
+    }
+    for (const b of pastItems) {
+      if (isoInRange(detailDate, b.project.startDate, b.project.endDate)) {
+        out.push({
+          id: b.id,
+          projectId: b.project.id,
+          projectTitle: b.project.title,
+          companyLabel: b.requester.companyProfile?.companyName ?? '—',
+          status: 'past_work',
+          rateOffered: null,
+          equipmentLabel: null,
+        });
+      }
+    }
+    return out;
+  }, [detailDate, incomingItems, pastItems, bookingDetails]);
 
   const loadVendorAvailability = useCallback(async () => {
     setAvailLoading(true);
@@ -219,6 +284,26 @@ export default function VendorDashboard() {
     }
   }, [refetchBookings]);
 
+  const doRequestCancel = useCallback(async () => {
+    if (!cancellingId) return;
+    setActioning(cancellingId + 'req-cancel');
+    setActionError(null);
+    try {
+      await api.patch(`/bookings/${cancellingId}/request-cancel`, { reason: cancelReason || undefined });
+      toast.success('Cancellation request sent. Awaiting company approval.');
+      setCancellingId(null);
+      setCancelReason('');
+      refetchBookings();
+      await loadVendorAvailability();
+    } catch (err) {
+      const msg = err instanceof ApiException ? err.payload.message : 'Failed to request cancellation.';
+      toast.error(msg);
+      setActionError(msg);
+    } finally {
+      setActioning(null);
+    }
+  }, [cancellingId, cancelReason, refetchBookings, loadVendorAvailability]);
+
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-[#F3F4F6] w-full">
       <DashboardHeader />
@@ -239,90 +324,90 @@ export default function VendorDashboard() {
               <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
                 {/* Calendar — left, 3/4 width on desktop */}
                 <div className="lg:col-span-3 order-2 lg:order-1">
-                  <div className="rounded-2xl bg-white border border-neutral-200 p-4 sm:p-5">
-                    <div className="flex items-center justify-between mb-4">
-                      <h2 className="text-base font-bold text-neutral-900">Equipment Calendar</h2>
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setMonthOffset((o) => o - 1)}
-                          className="w-8 h-8 rounded-lg border border-neutral-200 flex items-center justify-center text-neutral-600 hover:bg-neutral-100 transition-colors"
-                        >
-                          <FaChevronLeft className="text-xs" />
-                        </button>
-                        <span className="text-sm font-semibold text-neutral-900 min-w-[120px] text-center">
-                          {monthLabel} {yearLabel}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => setMonthOffset((o) => o + 1)}
-                          className="w-8 h-8 rounded-lg border border-neutral-200 flex items-center justify-center text-neutral-600 hover:bg-neutral-100 transition-colors"
-                        >
-                          <FaChevronRight className="text-xs" />
-                        </button>
+                    <div className="rounded-2xl bg-white border border-neutral-200 p-4 sm:p-5 min-w-0">
+                      <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
+                        <h2 className="text-base font-bold text-neutral-900">Equipment Calendar</h2>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setMonthOffset((o) => o - 1)}
+                            className="w-8 h-8 rounded-lg border border-neutral-200 flex items-center justify-center text-neutral-600 hover:bg-neutral-100 transition-colors"
+                          >
+                            <FaChevronLeft className="text-xs" />
+                          </button>
+                          <span className="text-sm font-semibold text-neutral-900 min-w-[120px] text-center">
+                            {monthLabel} {yearLabel}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setMonthOffset((o) => o + 1)}
+                            className="w-8 h-8 rounded-lg border border-neutral-200 flex items-center justify-center text-neutral-600 hover:bg-neutral-100 transition-colors"
+                          >
+                            <FaChevronRight className="text-xs" />
+                          </button>
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="grid grid-cols-7 gap-1 mb-1">
-                      {DAYS.map((day) => (
-                        <div key={day} className="text-center text-[11px] font-semibold text-neutral-400 py-1">
-                          {day}
-                        </div>
-                      ))}
-                    </div>
+                      <div className="grid grid-cols-7 gap-1 mb-1">
+                        {DAYS.map((day) => (
+                          <div key={day} className="text-center text-[11px] font-semibold text-neutral-400 py-1">
+                            {day}
+                          </div>
+                        ))}
+                      </div>
 
-                    <div className="grid grid-cols-7 gap-1">
-                      {calendarDays.map((cell, i) => (
-                        <button
-                          key={i}
-                          type="button"
-                          onClick={() => !cell.muted && setDetailDate(getDateStr(cell.d))}
-                          disabled={cell.muted}
-                          className={`
-                            cal-cell rounded-xl border text-center p-1 sm:p-1.5
-                            min-h-[44px] sm:min-h-[52px] flex flex-col items-center justify-center gap-0.5
-                            ${cell.muted
-                              ? 'bg-white border-neutral-100 text-neutral-300 cursor-default'
-                              : cell.status && cellStyle[cell.status]
-                                ? `${cellStyle[cell.status]} cursor-pointer`
-                                : 'bg-white border-neutral-200 text-neutral-600 hover:bg-[#F3F4F6] cursor-pointer'}
-                            ${!cell.muted && detailDate === getDateStr(cell.d) ? 'ring-2 ring-[#3B5BDB] ring-offset-1' : ''}
-                          `}
-                        >
-                          <span className="text-[11px] sm:text-xs font-semibold leading-none">{cell.d}</span>
-                          {cell.status && !cell.muted && cell.status !== 'available' && (
-                            <span className="text-[8px] sm:text-[9px] font-medium leading-tight truncate w-full opacity-80">
-                              {cell.status === 'blocked'
-                                ? 'Blocked'
-                                : cell.status === 'booked'
-                                  ? (cell.equipment ?? 'Booked')
-                                  : (cell.equipment ?? 'Done')}
-                            </span>
-                          )}
-                        </button>
-                      ))}
-                    </div>
+                      <div className="grid grid-cols-7 gap-1">
+                        {calendarDays.map((cell, i) => (
+                          <button
+                            key={i}
+                            type="button"
+                            onClick={() => !cell.muted && setDetailDate(getDateStr(cell.d))}
+                            disabled={cell.muted}
+                            className={`
+                              cal-cell rounded-xl border text-center p-1 sm:p-1.5
+                              min-h-[44px] sm:min-h-[52px] flex flex-col items-center justify-center gap-0.5
+                              ${cell.muted
+                                ? 'bg-white border-neutral-100 text-neutral-300 cursor-default'
+                                : cell.status && cellStyle[cell.status]
+                                  ? `${cellStyle[cell.status]} cursor-pointer`
+                                  : 'bg-white border-neutral-200 text-neutral-600 hover:bg-[#F3F4F6] cursor-pointer'}
+                              ${!cell.muted && detailDate === getDateStr(cell.d) ? 'ring-2 ring-[#3B5BDB] ring-offset-1' : ''}
+                            `}
+                          >
+                            <span className="text-[11px] sm:text-xs font-semibold leading-none">{cell.d}</span>
+                            {cell.status && !cell.muted && cell.status !== 'available' && (
+                              <span className="text-[8px] sm:text-[9px] font-medium leading-tight truncate w-full opacity-80">
+                                {cell.status === 'blocked'
+                                  ? 'Blocked'
+                                  : cell.status === 'booked'
+                                    ? (cell.project?.split(/\s|,/).slice(0, 2).join(' ') || 'Booked')
+                                    : (cell.project?.split(/\s|,/).slice(0, 2).join(' ') || 'Done')}
+                              </span>
+                            )}
+                          </button>
+                        ))}
+                      </div>
 
-                    <div className="flex flex-wrap gap-4 mt-4 pt-4 border-t border-neutral-100">
-                      {availLoading && (
-                        <span className="text-[10px] text-neutral-400 w-full">Syncing availability…</span>
-                      )}
-                      {[
-                        { color: 'bg-[#22C55E]', label: 'Available' },
-                        { color: 'bg-[#3B82F6]', label: 'Booked' },
-                        { color: 'bg-[#3B82F6]', label: 'Completed' },
-                        { color: 'bg-[#EF4444]', label: 'Blocked' },
-                      ].map(({ color, label }) => (
-                        <div key={label} className="flex items-center gap-2">
-                          <div className={`w-2.5 h-2.5 rounded-full ${color}`} />
-                          <span className="text-xs text-neutral-500">{label}</span>
-                        </div>
-                      ))}
+                      <div className="flex flex-wrap gap-4 mt-4 pt-4 border-t border-neutral-100">
+                        {availLoading && (
+                          <span className="text-[10px] text-neutral-400 w-full">Syncing availability…</span>
+                        )}
+                        {[
+                          { color: 'bg-[#22C55E]', label: 'Available' },
+                          { color: 'bg-[#3B82F6]', label: 'Booked' },
+                          { color: 'bg-[#3B82F6]', label: 'Completed' },
+                          { color: 'bg-[#EF4444]', label: 'Blocked' },
+                        ].map(({ color, label }) => (
+                          <div key={label} className="flex items-center gap-2">
+                            <div className={`w-2.5 h-2.5 rounded-full ${color}`} />
+                            <span className="text-xs text-neutral-500">{label}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="mt-3 text-[11px] text-neutral-400">
+                        Go to <Link to="/dashboard/vendor-availability" className="text-[#3B5BDB] hover:underline">Availability</Link> to manage your schedule.
+                      </p>
                     </div>
-                    <p className="mt-3 text-[11px] text-neutral-400">
-                      Go to <Link to="/dashboard/vendor-availability" className="text-[#3B5BDB] hover:underline">Availability</Link> to manage your schedule.
-                    </p>
-                  </div>
                 </div>
 
                 {/* Right column — Booking Requests, Recent Rentals, Quick Actions */}
@@ -444,18 +529,84 @@ export default function VendorDashboard() {
         </main>
       </div>
 
-      <AvailabilityDateDetailModal
-        open={!!detailDate}
-        onClose={() => setDetailDate(null)}
-        selectedDate={detailDate}
-        slot={detailDate ? monthSlotDetails[detailDate] : undefined}
-        booking={detailDate ? bookingDetails[detailDate] : undefined}
-        mode="self_manage"
-        blocking={detailSaving}
-        onBlock={handleDetailBlock}
-        onUnblock={handleDetailUnblock}
-        blockReasonOptions={vendorBlockReasons}
-      />
+      {detailDate && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/25 backdrop-blur-[2px] z-40 lg:bg-black/10 lg:backdrop-blur-[1px]"
+            onClick={() => setDetailDate(null)}
+            aria-hidden
+          />
+          <aside className="fixed right-0 top-0 h-full w-full max-w-[380px] sm:max-w-[400px] bg-white/95 backdrop-blur-xl border-l border-neutral-200/60 shadow-2xl z-50 flex flex-col panel-enter rounded-l-3xl">
+            <VendorCalendarDayPanel
+              variant="drawer"
+              selectedDate={detailDate}
+              onDismiss={() => setDetailDate(null)}
+              slot={slotForDetailPanel}
+              booking={bookingDetails[detailDate]
+                ? bookingDetails[detailDate]
+                : undefined}
+              fallbackBookings={fallbackBookingsForDay}
+              blockReasons={vendorBlockReasons}
+              saving={detailSaving}
+              onBlock={async (reason) => { await handleDetailBlock(reason); }}
+              onUnblock={async () => { await handleDetailUnblock(); }}
+              onRequestCancel={(bookingId) => { setCancellingId(bookingId); }}
+            />
+          </aside>
+        </>
+      )}
+
+      {cancellingId && (
+        <>
+          <div className="fixed inset-0 bg-black/40 z-[60]" onClick={() => !actioning?.endsWith('req-cancel') && setCancellingId(null)} />
+          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 pointer-events-none">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 pointer-events-auto">
+              <h2 className="text-base font-bold text-neutral-900 mb-2">Request cancellation</h2>
+              <p className="text-sm text-neutral-600 mb-4">
+                The production company must approve before your booking is released.
+              </p>
+              <div className="mb-4">
+                <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Reason (optional)</label>
+                <textarea
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  rows={3}
+                  placeholder="e.g., Equipment conflict…"
+                  className="w-full px-4 py-2.5 border border-neutral-300 rounded-xl text-sm bg-[#F3F4F6] focus:bg-white focus:outline-none focus:border-[#3B5BDB] resize-none"
+                />
+              </div>
+              {actionError && (
+                <div className="flex items-center gap-2 mb-4 p-3 bg-red-50 border border-red-200 rounded-xl">
+                  <FaTriangleExclamation className="text-red-500 text-xs shrink-0" />
+                  <p className="text-xs text-red-700">{actionError}</p>
+                </div>
+              )}
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => { setCancellingId(null); setCancelReason(''); setActionError(null); }}
+                  disabled={!!actioning}
+                  className="flex-1 py-2.5 rounded-xl border border-neutral-200 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
+                >
+                  Back
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void doRequestCancel()}
+                  disabled={!!actioning}
+                  className="flex-1 py-2.5 rounded-xl bg-amber-600 text-white text-sm font-semibold hover:bg-amber-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {actioning?.endsWith('req-cancel') ? (
+                    <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Sending…</>
+                  ) : (
+                    'Send request'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

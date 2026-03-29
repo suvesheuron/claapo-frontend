@@ -12,19 +12,12 @@ import { api, ApiException } from '../../services/api';
 import { useApiQuery } from '../../hooks/useApiQuery';
 import { vendorNavLinks } from '../../navigation/dashboardNav';
 import LocationAutocomplete from '../../components/LocationAutocomplete';
-
-/** Matches search filter options so vendor type filter works correctly */
-const VENDOR_TYPE_OPTIONS: { value: string; label: string }[] = [
-  { value: 'all',       label: 'All types' },
-  { value: 'equipment', label: 'Equipment' },
-  { value: 'lighting', label: 'Lighting' },
-  { value: 'transport', label: 'Transport' },
-  { value: 'catering', label: 'Catering' },
-];
+import { REGISTRATION_VENDOR_CATEGORIES, vendorCategoryToVendorType } from '../../constants/registrationCategories';
 
 interface VendorProfileData {
   companyName: string;
   vendorType: string;
+  vendorServiceCategory?: string | null;
   locationCity: string | null;
   locationState: string | null;
   bio: string | null;
@@ -50,7 +43,7 @@ export default function VendorProfile() {
   const { data: me, loading: meLoading } = useApiQuery<MeResponse>('/profile/me');
 
   const [companyName,   setCompanyName]   = useState('');
-  const [vendorType,    setVendorType]    = useState('');
+  const [vendorServiceCategory, setVendorServiceCategory] = useState('');
   const [locationCity,  setLocationCity]  = useState('');
   const [locationState, setLocationState] = useState('');
   const [bio,           setBio]           = useState('');
@@ -97,7 +90,7 @@ export default function VendorProfile() {
     const p = me.profile as VendorProfileData & { avatarUrl?: string; logoUrl?: string };
     if (p.logoUrl || p.avatarUrl) setAvatarUrl(p.logoUrl ?? p.avatarUrl ?? null);
     setCompanyName(p.companyName ?? '');
-    setVendorType(p.vendorType ?? '');
+    setVendorServiceCategory(p.vendorServiceCategory ?? '');
     setLocationCity(p.locationCity ?? '');
     setLocationState(p.locationState ?? '');
     setBio(p.bio ?? '');
@@ -111,7 +104,8 @@ export default function VendorProfile() {
     try {
       await api.patch('/profile/vendor', {
         companyName:   companyName.trim()   || undefined,
-        vendorType:    (vendorType && vendorType !== '') ? vendorType : 'all',
+        vendorType:    vendorCategoryToVendorType(vendorServiceCategory || 'all'),
+        vendorServiceCategory: vendorServiceCategory.trim() || undefined,
         locationCity:  locationCity.trim()  || undefined,
         locationState: locationState.trim() || undefined,
         bio:           bio.trim()           || undefined,
@@ -184,7 +178,7 @@ export default function VendorProfile() {
                     </div>
                     <h2 className="text-base font-bold text-neutral-900 mb-0.5">{companyName || '—'}</h2>
                     <p className="text-xs text-neutral-500 mb-1">
-                      {VENDOR_TYPE_OPTIONS.find(o => o.value === vendorType)?.label ?? (vendorType ? String(vendorType) : 'Equipment Vendor')}
+                      {vendorServiceCategory || 'Vendor'}
                     </p>
                     {me?.isVerified && (
                       <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-[#D1FAE5] text-[#065F46] font-semibold">
@@ -236,7 +230,7 @@ export default function VendorProfile() {
                       <h3 className="text-sm font-bold text-neutral-900 mb-4">Profile Details</h3>
                       <dl className="space-y-3">
                         <div><dt className="text-xs text-neutral-500 mb-0.5">Business Name</dt><dd className="text-sm font-medium text-neutral-900">{companyName || '—'}</dd></div>
-                        <div><dt className="text-xs text-neutral-500 mb-0.5">Equipment type</dt><dd className="text-sm text-neutral-700">{VENDOR_TYPE_OPTIONS.find(o => o.value === vendorType)?.label ?? vendorType ?? '—'}</dd></div>
+                        <div><dt className="text-xs text-neutral-500 mb-0.5">Service category</dt><dd className="text-sm text-neutral-700">{vendorServiceCategory || '—'}</dd></div>
                         <div><dt className="text-xs text-neutral-500 mb-0.5">Email</dt><dd className="text-sm text-neutral-700">{me?.email ?? '—'}</dd></div>
                         <div><dt className="text-xs text-neutral-500 mb-0.5">Phone</dt><dd className="text-sm text-neutral-700">{me?.phone ?? '—'}</dd></div>
                         <div><dt className="text-xs text-neutral-500 mb-0.5">City</dt><dd className="text-sm text-neutral-700">{locationCity || '—'}</dd></div>
@@ -263,13 +257,14 @@ export default function VendorProfile() {
                           </div>
                         </div>
                         <div>
-                          <label className="block text-xs font-medium text-neutral-600 mb-1">Equipment type</label>
-                          <select value={vendorType || 'all'} onChange={(e) => setVendorType(e.target.value)} disabled={saving} className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3B5BDB] transition-all bg-white disabled:bg-neutral-50">
-                            {VENDOR_TYPE_OPTIONS.map(({ value, label }) => (
-                              <option key={value} value={value}>{label}</option>
+                          <label className="block text-xs font-medium text-neutral-600 mb-1">Service category</label>
+                          <select value={vendorServiceCategory} onChange={(e) => setVendorServiceCategory(e.target.value)} disabled={saving} className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3B5BDB] transition-all bg-white disabled:bg-neutral-50">
+                            <option value="">Select category…</option>
+                            {REGISTRATION_VENDOR_CATEGORIES.map((c) => (
+                              <option key={c} value={c}>{c}</option>
                             ))}
                           </select>
-                          <p className="text-[10px] text-neutral-400 mt-0.5">Used in search filters so companies can find you by type</p>
+                          <p className="text-[10px] text-neutral-400 mt-0.5">Listed on your profile and used with search filters</p>
                         </div>
                         <div>
                           <label className="block text-xs font-medium text-neutral-600 mb-1">Email (read-only)</label>

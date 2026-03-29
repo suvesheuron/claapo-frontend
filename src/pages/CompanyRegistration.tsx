@@ -14,6 +14,7 @@ import AppHeader from '../components/AppHeader';
 import AppFooter from '../components/AppFooter';
 import { api, ApiException } from '../services/api';
 import { toE164India } from '../utils/phone';
+import { REGISTRATION_COMPANY_TYPES } from '../constants/registrationCategories';
 
 /* ── Validation helpers ── */
 
@@ -23,6 +24,7 @@ const PHONE_REGEX = /^[6-9]\d{9}$/;
 
 type FieldErrors = {
   companyName?: string;
+  companyType?: string;
   phone?: string;
   gst?: string;
   email?: string;
@@ -37,6 +39,9 @@ function validateField(
     case 'companyName':
       if (!value.trim()) return 'Company name is required';
       if (value.trim().length < 2) return 'Must be at least 2 characters';
+      return undefined;
+    case 'companyType':
+      if (!value.trim()) return 'Select your company category';
       return undefined;
     case 'phone': {
       const digits = value.replace(/\D/g, '').replace(/^91/, '');
@@ -91,6 +96,7 @@ export default function CompanyRegistration() {
   const navigate = useNavigate();
 
   const [companyName, setCompanyName] = useState('');
+  const [companyType, setCompanyType] = useState('');
   const [phone, setPhone] = useState('');
   const [gst, setGst] = useState('');
   const [email, setEmail] = useState('');
@@ -102,6 +108,7 @@ export default function CompanyRegistration() {
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [touched, setTouched] = useState<Record<keyof FieldErrors, boolean>>({
     companyName: false,
+    companyType: false,
     phone: false,
     gst: false,
     email: false,
@@ -139,6 +146,7 @@ export default function CompanyRegistration() {
     // Validate all fields
     const fields: { key: keyof FieldErrors; value: string }[] = [
       { key: 'companyName', value: companyName },
+      { key: 'companyType', value: companyType },
       { key: 'phone', value: phone },
       { key: 'gst', value: gst },
       { key: 'email', value: email },
@@ -148,6 +156,7 @@ export default function CompanyRegistration() {
     const newErrors: FieldErrors = {};
     const newTouched: Record<keyof FieldErrors, boolean> = {
       companyName: true,
+      companyType: true,
       phone: true,
       gst: true,
       email: true,
@@ -186,6 +195,7 @@ export default function CompanyRegistration() {
           userType: 'company',
           pendingProfile: {
             companyName: companyName.trim() || undefined,
+            companyType: companyType.trim() || undefined,
           },
         },
       });
@@ -329,6 +339,34 @@ export default function CompanyRegistration() {
                 />
                 {fieldErrors.companyName && (
                   <p className="text-xs text-red-500 mt-1">{fieldErrors.companyName}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-neutral-700 text-xs mb-1.5 font-semibold">
+                  Company category <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={companyType}
+                  onChange={(e) => {
+                    setCompanyType(e.target.value);
+                    if (touched.companyType)
+                      setFieldErrors((p) => ({
+                        ...p,
+                        companyType: validateField('companyType', e.target.value),
+                      }));
+                  }}
+                  onBlur={() => handleBlur('companyType', companyType)}
+                  disabled={loading}
+                  className={`${inputBase} border ${borderClass('companyType')}`}
+                >
+                  <option value="">Select category…</option>
+                  {REGISTRATION_COMPANY_TYPES.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+                {fieldErrors.companyType && (
+                  <p className="text-xs text-red-500 mt-1">{fieldErrors.companyType}</p>
                 )}
               </div>
 

@@ -52,6 +52,8 @@ export interface AvailabilityDateDetailModalProps {
   onRequestCancelBooking?: (booking: BookingWithDetails) => void;
   /** Override block-reason presets (e.g. vendors use equipment-specific reasons). */
   blockReasonOptions?: string[];
+  /** Sliding right pane (e.g. individual dashboard); default is centered modal. */
+  variant?: 'modal' | 'drawer';
 }
 
 export default function AvailabilityDateDetailModal({
@@ -66,6 +68,7 @@ export default function AvailabilityDateDetailModal({
   onUnblock,
   onRequestCancelBooking,
   blockReasonOptions,
+  variant = 'modal',
 }: AvailabilityDateDetailModalProps) {
   const reasonList = blockReasonOptions?.length ? blockReasonOptions : DEFAULT_BLOCK_REASONS;
   const [blockMode, setBlockMode] = useState(false);
@@ -80,6 +83,10 @@ export default function AvailabilityDateDetailModal({
       setBlockOther('');
     }
   }, [open, selectedDate, reasonListFirst]);
+
+  useEffect(() => {
+    if (slot?.status === 'blocked') setBlockMode(false);
+  }, [slot?.status]);
 
   if (!open || !selectedDate) return null;
 
@@ -109,16 +116,20 @@ export default function AvailabilityDateDetailModal({
     await onBlock(reason.trim());
   };
 
-  return (
-    <>
-      <div className="fixed inset-0 bg-black/40 z-[80] backdrop-blur-[1px]" aria-hidden onClick={onClose} />
-      <div
-        className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[90] w-[min(100vw-1.5rem,468px)] max-h-[min(90vh,720px)] overflow-hidden flex flex-col rounded-2xl bg-white shadow-2xl border border-neutral-200/80"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="avail-date-modal-title"
-      >
-        <div className="w-10 h-1 rounded-full bg-neutral-300 self-center mt-2 shrink-0 md:hidden" />
+  const isDrawer = variant === 'drawer';
+
+  const shellClass = isDrawer
+    ? 'pointer-events-auto flex flex-col h-full min-h-0 w-full bg-white/95 backdrop-blur-xl border-l border-neutral-200/60 shadow-2xl rounded-l-3xl panel-enter'
+    : 'pointer-events-auto w-[min(100vw-1.5rem,468px)] max-h-[min(90vh,720px)] overflow-hidden flex flex-col rounded-2xl bg-white shadow-2xl border border-neutral-200/80';
+
+  const panel = (
+    <div
+      className={shellClass}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="avail-date-modal-title"
+    >
+        {!isDrawer && <div className="w-10 h-1 rounded-full bg-neutral-300 self-center mt-2 shrink-0 md:hidden" />}
         <div className="flex items-start justify-between gap-2 px-5 pt-4 pb-2 border-b border-neutral-100">
           <h2 id="avail-date-modal-title" className="text-base font-bold text-neutral-900 leading-snug pr-2">
             {title}
@@ -212,7 +223,7 @@ export default function AvailabilityDateDetailModal({
                   </Link>
                 ) : (
                   <Link
-                    to="/dashboard/invoice/new"
+                    to={`/dashboard/invoice/new?bookingId=${encodeURIComponent(booking.id)}`}
                     onClick={onClose}
                     className={`inline-flex flex-1 min-w-[120px] items-center justify-center gap-2 rounded-xl py-2.5 px-3 text-sm font-semibold border ${
                       isCompany
@@ -278,26 +289,7 @@ export default function AvailabilityDateDetailModal({
             </button>
           )}
 
-          {canMutate && !selectedSlot && !booking && (
-            <>
-              <p className="text-sm font-semibold text-neutral-900">Block this date</p>
-              <div className="space-y-2">
-                {reasonList.map((reason) => (
-                  <button
-                    key={reason}
-                    type="button"
-                    disabled={blocking}
-                    onClick={() => onBlock?.(reason)}
-                    className="w-full flex items-center gap-2 rounded-xl border border-red-200 bg-red-50/50 px-3 py-2.5 text-left text-sm text-red-900 hover:bg-red-50 disabled:opacity-60"
-                  >
-                    {reason}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-
-          {canMutate && effectiveStatus === 'available' && selectedSlot && !blockMode && !booking && (
+          {canMutate && effectiveStatus === 'available' && !blockMode && !booking && (
             <>
               <p className="text-sm text-neutral-600">Open for booking requests.</p>
               <button
@@ -311,7 +303,7 @@ export default function AvailabilityDateDetailModal({
             </>
           )}
 
-          {canMutate && effectiveStatus === 'available' && selectedSlot && blockMode && !booking && (
+          {canMutate && effectiveStatus === 'available' && blockMode && !booking && (
             <div className="space-y-3">
               <p className="text-sm font-bold text-neutral-900">Why are you blocking?</p>
               <div className="space-y-2">
@@ -364,7 +356,14 @@ export default function AvailabilityDateDetailModal({
           )}
         </div>
 
-        <div className="px-5 py-3 border-t border-neutral-100 shrink-0">
+        <div className="px-5 py-3 border-t border-neutral-100 shrink-0 space-y-2">
+          <Link
+            to={`/dashboard/invoices?issuedOn=${encodeURIComponent(selectedDate)}`}
+            onClick={onClose}
+            className="w-full flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold bg-[#EEF4FF] text-[#3B5BDB] border border-[#3B5BDB]/20 hover:bg-[#DBEAFE]"
+          >
+            <FaFileInvoice className="text-sm" /> Invoices issued on this date
+          </Link>
           <button
             type="button"
             onClick={onClose}
@@ -373,6 +372,23 @@ export default function AvailabilityDateDetailModal({
             Close
           </button>
         </div>
+    </div>
+  );
+
+  if (isDrawer) {
+    return (
+      <>
+        <div className="fixed inset-0 bg-black/25 backdrop-blur-[2px] z-40 lg:bg-black/10 lg:backdrop-blur-[1px]" aria-hidden onClick={onClose} />
+        <aside className="fixed right-0 top-0 h-full z-50 w-[min(100vw,420px)] flex flex-col min-h-0">{panel}</aside>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <div className="fixed inset-0 bg-black/40 z-[80] backdrop-blur-[1px]" aria-hidden onClick={onClose} />
+      <div className="fixed inset-0 z-[90] flex items-center justify-center p-4 pointer-events-none">
+        {panel}
       </div>
     </>
   );

@@ -76,50 +76,54 @@ export default function Conversations() {
   });
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-[#F8F9FB] w-full">
+    <div className="h-screen flex flex-col overflow-hidden bg-gradient-to-br from-[#EEF2FF]/80 via-[#F8F9FB] to-[#F0F4FA] w-full">
       <DashboardHeader />
       <div className="flex-1 flex min-h-0 overflow-hidden">
         <DashboardSidebar links={navLinks} />
         <main className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
           <div className="flex-1 min-h-0 overflow-auto">
-            <div className="max-w-[700px] mx-auto px-0 sm:px-4 py-0 sm:py-4">
+            <div className="max-w-5xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
 
-              {/* Header */}
-              <div className="rounded-t-none sm:rounded-t-xl overflow-hidden shadow-sm border border-neutral-200/60">
-                <div className="px-4 py-3 flex items-center justify-between bg-[#3B5BDB]">
-                  <h1 className="text-lg font-bold text-white">Chats</h1>
-                  <div className="flex items-center gap-2">
-                    <button className="p-2 hover:bg-white/10 rounded-full transition-colors">
-                      <FaEllipsisVertical className="w-4 h-4 text-white" />
+              {/* Main chat shell — larger card, stronger depth */}
+              <div className="rounded-2xl sm:rounded-3xl overflow-hidden shadow-[0_25px_50px_-12px_rgba(59,91,219,0.18)] border border-neutral-200/80 bg-white min-h-[min(72vh,calc(100vh-10rem))] flex flex-col">
+                <div className="px-5 sm:px-8 py-5 sm:py-6 flex items-center justify-between bg-gradient-to-r from-[#2f4ac2] via-[#3B5BDB] to-[#4f6ee8] relative overflow-hidden">
+                  <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_120%_at_100%_-20%,rgba(255,255,255,0.12),transparent)] pointer-events-none" />
+                  <div className="relative">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-white/70 mb-0.5">Messages</p>
+                    <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">Chats</h1>
+                  </div>
+                  <div className="relative flex items-center gap-1">
+                    <button type="button" className="p-2.5 hover:bg-white/15 rounded-xl transition-colors" aria-label="More options">
+                      <FaEllipsisVertical className="w-5 h-5 text-white" />
                     </button>
                   </div>
                 </div>
 
                 {/* Search bar */}
-                <div className="px-3 py-2 bg-white border-b border-neutral-200/80">
-                  <div className="relative">
-                    <FaMagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-500" />
+                <div className="px-4 sm:px-8 py-4 bg-white/90 border-b border-neutral-100">
+                  <div className="relative max-w-3xl">
+                    <FaMagnifyingGlass className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
                     <input
                       type="text"
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
-                      placeholder="Search or start new chat"
-                      className="w-full rounded-lg pl-9 pr-3 py-2 text-sm bg-[#F0F2F5] text-[#111B21] placeholder-neutral-400 focus:outline-none focus:bg-white focus:ring-1 focus:ring-[#3B5BDB] transition-all"
+                      placeholder="Search conversations or project name…"
+                      className="w-full rounded-xl pl-11 pr-4 py-3.5 text-[15px] bg-neutral-100/90 text-neutral-900 placeholder-neutral-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-[#3B5BDB]/25 focus:border border-transparent border transition-all"
                     />
                   </div>
                 </div>
 
                 {/* Filter pills */}
-                <div className="px-3 py-2 bg-white border-b border-neutral-200/80 flex items-center gap-2">
+                <div className="px-4 sm:px-8 py-3 bg-white border-b border-neutral-100 flex items-center gap-2 flex-wrap">
                   {(['all', 'unread'] as Filter[]).map((f) => (
                     <button
                       key={f}
                       type="button"
                       onClick={() => setFilter(f)}
-                      className={`px-3 py-1 text-xs font-semibold rounded-full capitalize transition-all ${
+                      className={`px-4 py-2 text-sm font-semibold rounded-full capitalize transition-all ${
                         filter === f
-                          ? 'bg-[#EEF2FF] text-[#3B5BDB]'
-                          : 'bg-[#F0F2F5] text-neutral-500 hover:bg-neutral-200'
+                          ? 'bg-[#3B5BDB] text-white shadow-md shadow-[#3B5BDB]/25'
+                          : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200/80'
                       }`}
                     >
                       {f}
@@ -129,41 +133,43 @@ export default function Conversations() {
 
                 {/* Error */}
                 {error && (
-                  <div className="flex items-center gap-3 bg-red-50 border-b border-red-100 p-3">
-                    <FaTriangleExclamation className="text-red-500 shrink-0" />
+                  <div className="flex items-center gap-3 bg-red-50 border-b border-red-100 px-4 sm:px-8 py-4">
+                    <FaTriangleExclamation className="text-red-500 shrink-0 w-5 h-5" />
                     <p className="text-sm text-red-700">{error}</p>
                   </div>
                 )}
 
                 {/* Conversation list */}
-                <div className="bg-white">
+                <div className="bg-white flex-1 flex flex-col min-h-0">
                   {loading ? (
                     <div className="divide-y divide-neutral-100">
-                      {[1,2,3,4,5].map(i => (
-                        <div key={i} className="px-3 py-3 flex gap-3 animate-pulse">
-                          <div className="w-12 h-12 rounded-full bg-neutral-100 shrink-0" />
-                          <div className="flex-1 space-y-2.5 py-1">
-                            <div className="h-4 bg-neutral-100 rounded w-1/3" />
-                            <div className="h-3 bg-neutral-50 rounded w-2/3" />
+                      {[1, 2, 3, 4, 5, 6].map((i) => (
+                        <div key={i} className="px-4 sm:px-8 py-5 flex gap-4 animate-pulse">
+                          <div className="w-14 h-14 rounded-2xl bg-neutral-100 shrink-0" />
+                          <div className="flex-1 space-y-3 py-1">
+                            <div className="h-4 bg-neutral-100 rounded-lg w-2/5" />
+                            <div className="h-3 bg-neutral-50 rounded-lg w-4/5" />
                           </div>
                         </div>
                       ))}
                     </div>
                   ) : filtered.length === 0 ? (
-                    <div className="py-16 text-center">
-                      <div className="w-20 h-20 rounded-full bg-[#EEF2FF] flex items-center justify-center mx-auto mb-4">
-                        <FaMessage className="text-[#3B5BDB] text-2xl" />
+                    <div className="py-20 sm:py-24 text-center px-6 flex-1 flex flex-col items-center justify-center">
+                      <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-[#EEF2FF] to-[#DBEAFE] flex items-center justify-center mx-auto mb-6 shadow-inner border border-white/80">
+                        <FaMessage className="text-[#3B5BDB] text-3xl" />
                       </div>
-                      <p className="text-base font-semibold text-neutral-800 mb-1">
+                      <p className="text-lg font-bold text-neutral-900 mb-2">
                         {filter === 'unread' ? 'No unread chats' : 'No conversations yet'}
                       </p>
-                      <p className="text-sm text-neutral-500 max-w-xs mx-auto">
-                        {filter === 'unread' ? 'You\'re all caught up!' : 'Start a conversation from a booking or search.'}
+                      <p className="text-sm text-neutral-500 max-w-md mx-auto leading-relaxed">
+                        {filter === 'unread'
+                          ? "You're all caught up."
+                          : 'Open a project or booking to start chatting with companies, crew, or vendors.'}
                       </p>
                     </div>
                   ) : (
-                    <div className="divide-y divide-neutral-100/80">
-                      {filtered.map(conv => {
+                    <div className="divide-y divide-neutral-100 flex-1 overflow-auto">
+                      {filtered.map((conv) => {
                         const other = conv.otherParticipant ?? conv.otherUser;
                         if (!other?.id) return null;
                         const lastMsgTime = conv.lastMessage?.createdAt ?? conv.lastMessageAt ?? null;
@@ -173,34 +179,51 @@ export default function Conversations() {
                           <Link
                             key={conv.id}
                             to={`/dashboard/chat/${other.id}`}
-                            className="flex items-center gap-3 px-3 py-3 hover:bg-[#F5F6F6] transition-colors"
+                            className="flex items-start gap-4 px-4 sm:px-8 py-4 sm:py-5 hover:bg-[#F8FAFC] active:bg-[#F1F5F9] transition-colors group"
                           >
-                            <div className="relative shrink-0">
-                              <Avatar src={other.avatarUrl} name={getName(other)} size="md" />
+                            <div className="relative shrink-0 pt-0.5">
+                              <Avatar src={other.avatarUrl} name={getName(other)} size="lg" />
                             </div>
 
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between gap-2">
-                                <p className={`text-[15px] truncate ${hasUnread ? 'font-bold text-neutral-900' : 'font-normal text-neutral-800'}`}>
-                                  {getName(other)}
-                                </p>
+                            <div className="flex-1 min-w-0 py-0.5">
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0">
+                                  <p
+                                    className={`text-base sm:text-[17px] truncate leading-snug ${
+                                      hasUnread ? 'font-bold text-neutral-900' : 'font-semibold text-neutral-800 group-hover:text-[#3B5BDB]'
+                                    }`}
+                                  >
+                                    {getName(other)}
+                                  </p>
+                                  {conv.project?.title && (
+                                    <p className="text-xs text-neutral-400 truncate mt-0.5 font-medium">{conv.project.title}</p>
+                                  )}
+                                </div>
                                 {lastMsgTime && (
-                                  <span className={`text-xs shrink-0 ${hasUnread ? 'text-[#3B5BDB] font-semibold' : 'text-neutral-500'}`}>
+                                  <span
+                                    className={`text-xs shrink-0 tabular-nums mt-0.5 ${
+                                      hasUnread ? 'text-[#3B5BDB] font-bold' : 'text-neutral-400'
+                                    }`}
+                                  >
                                     {timeSince(lastMsgTime)}
                                   </span>
                                 )}
                               </div>
-                              <div className="flex items-center justify-between gap-2 mt-0.5">
-                                <div className="flex items-center gap-1 min-w-0">
+                              <div className="flex items-center justify-between gap-3 mt-2">
+                                <div className="flex items-center gap-2 min-w-0">
                                   {!hasUnread && lastMsgText && (
-                                    <FaCheck className="w-3 h-3 text-[#3B5BDB] shrink-0" />
+                                    <FaCheck className="w-3.5 h-3.5 text-[#3B5BDB] shrink-0 opacity-80" />
                                   )}
-                                  <p className={`text-sm truncate ${hasUnread ? 'text-neutral-800 font-medium' : 'text-neutral-500'}`}>
-                                    {lastMsgText ?? (conv.project ? conv.project.title : 'No messages yet')}
+                                  <p
+                                    className={`text-sm sm:text-[15px] truncate leading-snug ${
+                                      hasUnread ? 'text-neutral-900 font-medium' : 'text-neutral-500'
+                                    }`}
+                                  >
+                                    {lastMsgText ?? (conv.project ? `Project: ${conv.project.title}` : 'No messages yet')}
                                   </p>
                                 </div>
                                 {hasUnread && (
-                                  <span className="w-5 h-5 rounded-full bg-[#3B5BDB] text-white text-[10px] font-bold flex items-center justify-center shrink-0">
+                                  <span className="min-w-[1.5rem] h-6 px-1.5 rounded-full bg-[#3B5BDB] text-white text-xs font-bold flex items-center justify-center shrink-0">
                                     {conv.unreadCount}
                                   </span>
                                 )}

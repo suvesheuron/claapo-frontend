@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { FaArrowLeft, FaPrint, FaTriangleExclamation, FaCheck, FaPaperPlane, FaCreditCard, FaXmark, FaPaperclip, FaDownload, FaTrash } from 'react-icons/fa6';
+import { FaArrowLeft, FaPrint, FaTriangleExclamation, FaCheck, FaPaperPlane, FaPaperclip, FaDownload, FaTrash } from 'react-icons/fa6';
 import DashboardHeader from '../components/DashboardHeader';
 import AppFooter from '../components/AppFooter';
 import toast from 'react-hot-toast';
@@ -73,157 +73,6 @@ function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
-// ── Demo Razorpay-style Pay Modal (QR + UPI / Card) ─────────────────────────────
-function DemoPayModal({ invoice, onClose, onPaid }: { invoice: InvoiceData; onClose: () => void; onPaid: () => void }) {
-  const [paying, setPaying] = useState(false);
-  const [step, setStep] = useState<'form' | 'success'>('form');
-  const [method, setMethod] = useState<'upi' | 'card'>('upi');
-  const [cardNum, setCardNum] = useState('4111 1111 1111 1111');
-  const [expiry, setExpiry] = useState('12/26');
-  const [cvv, setCvv] = useState('123');
-  const [name, setName] = useState('');
-  const [upiId, setUpiId] = useState('customer@upi');
-
-  const amountRupees = (invoice.totalPaise / 100).toFixed(2);
-  const upiQrData = `upi://pay?pa=demo@razorpay&pn=${encodeURIComponent(invoice.fromName)}&am=${amountRupees}&cu=INR`;
-  const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(upiQrData)}`;
-
-  const handlePay = async () => {
-    if (method === 'card' && !name.trim()) {
-      toast.error('Please enter the cardholder name.');
-      return;
-    }
-    setPaying(true);
-    try {
-      await api.patch(`/invoices/${invoice.id}/mark-paid`, {});
-      setStep('success');
-      setTimeout(() => { onPaid(); onClose(); }, 2000);
-    } catch (err) {
-      toast.error(err instanceof ApiException ? err.payload.message : 'Payment failed. Please try again.');
-    } finally {
-      setPaying(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-neutral-200">
-        {step === 'success' ? (
-          <div className="p-8 text-center">
-            <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
-              <FaCheck className="text-green-600 text-2xl" />
-            </div>
-            <h3 className="text-lg font-bold text-neutral-900 mb-1">Payment Successful!</h3>
-            <p className="text-sm text-neutral-500">{formatPaise(invoice.totalPaise)} paid to {invoice.fromName}</p>
-          </div>
-        ) : (
-          <>
-            {/* Razorpay-style header */}
-            <div className="bg-[#0C2451] px-5 py-4 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-white font-bold text-lg tracking-tight">Razorpay</span>
-                <span className="text-[10px] font-semibold uppercase tracking-wider bg-amber-400 text-[#0C2451] px-1.5 py-0.5 rounded">Demo</span>
-              </div>
-              <button onClick={onClose} className="text-white/70 hover:text-white transition-colors p-1" aria-label="Close">
-                <FaXmark className="text-xl" />
-              </button>
-            </div>
-
-            {/* Amount block */}
-            <div className="px-5 py-4 border-b border-neutral-100 bg-neutral-50/80">
-              <p className="text-xs text-neutral-500 uppercase tracking-wide">Amount to pay</p>
-              <p className="text-2xl font-bold text-neutral-900 mt-0.5">{formatPaise(invoice.totalPaise)}</p>
-              <p className="text-xs text-neutral-500 mt-0.5">{invoice.invoiceNumber} · {invoice.fromName}</p>
-            </div>
-
-            {/* Payment method tabs */}
-            <div className="flex border-b border-neutral-200">
-              <button
-                type="button"
-                onClick={() => setMethod('upi')}
-                className={`flex-1 py-3 text-sm font-semibold transition-colors ${method === 'upi' ? 'text-[#0C2451] border-b-2 border-[#0C2451]' : 'text-neutral-500 hover:text-neutral-700'}`}
-              >
-                UPI
-              </button>
-              <button
-                type="button"
-                onClick={() => setMethod('card')}
-                className={`flex-1 py-3 text-sm font-semibold transition-colors ${method === 'card' ? 'text-[#0C2451] border-b-2 border-[#0C2451]' : 'text-neutral-500 hover:text-neutral-700'}`}
-              >
-                Card
-              </button>
-            </div>
-
-            <div className="p-5 space-y-4">
-              <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                Demo mode — no real payment is processed.
-              </p>
-
-              {method === 'upi' ? (
-                <>
-                  <div className="flex flex-col items-center py-2">
-                    <img src={qrImageUrl} alt="UPI QR Code" className="w-52 h-52 rounded-xl border border-neutral-200 bg-white" />
-                    <p className="text-sm font-medium text-neutral-700 mt-3">Scan with any UPI app</p>
-                    <p className="text-xs text-neutral-500 mt-0.5">or enter UPI ID below</p>
-                  </div>
-                  <div className="flex gap-2">
-                    <input
-                      value={upiId}
-                      onChange={(e) => setUpiId(e.target.value)}
-                      placeholder="yourname@upi"
-                      className="flex-1 border border-neutral-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0C2451]"
-                    />
-                    <button
-                      onClick={handlePay}
-                      disabled={paying}
-                      className="px-5 py-2.5 bg-[#0C2451] text-white rounded-xl font-semibold text-sm hover:bg-[#091d3a] disabled:opacity-50 transition-colors"
-                    >
-                      {paying ? '…' : 'Pay'}
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div>
-                    <label className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-1 block">Card Number</label>
-                    <input value={cardNum} onChange={(e) => setCardNum(e.target.value)}
-                      className="w-full border border-neutral-200 rounded-xl px-3 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#0C2451]" />
-                  </div>
-                  <div className="flex gap-3">
-                    <div className="flex-1">
-                      <label className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-1 block">Expiry</label>
-                      <input value={expiry} onChange={(e) => setExpiry(e.target.value)}
-                        className="w-full border border-neutral-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0C2451]" placeholder="MM/YY" />
-                    </div>
-                    <div className="flex-1">
-                      <label className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-1 block">CVV</label>
-                      <input value={cvv} onChange={(e) => setCvv(e.target.value)} type="password" maxLength={4}
-                        className="w-full border border-neutral-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0C2451]" />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-1 block">Cardholder Name</label>
-                    <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name on card"
-                      className="w-full border border-neutral-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0C2451]" />
-                  </div>
-                  <button
-                    onClick={handlePay}
-                    disabled={paying}
-                    className="w-full py-3 bg-[#0C2451] text-white rounded-xl font-bold text-sm hover:bg-[#091d3a] disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
-                  >
-                    <FaCreditCard className="w-4 h-4" />
-                    {paying ? 'Processing…' : `Pay ${formatPaise(invoice.totalPaise)}`}
-                  </button>
-                </>
-              )}
-            </div>
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
-
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function Invoice() {
   const { invoiceId } = useParams<{ invoiceId: string }>();
@@ -236,7 +85,6 @@ export default function Invoice() {
 
   const [sending, setSending] = useState(false);
   const [markingPaid, setMarkingPaid] = useState(false);
-  const [showPayModal, setShowPayModal] = useState(false);
   const [uploadingAttachment, setUploadingAttachment] = useState(false);
   const [deletingAttachmentId, setDeletingAttachmentId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -400,22 +248,14 @@ export default function Invoice() {
 
                           {/* Recipient/company actions */}
                           {isRecipient && invoice.status === 'sent' && (
-                            <>
-                              <button
-                                onClick={() => setShowPayModal(true)}
-                                className="no-print px-3 py-2 bg-[#22C55E] text-white rounded-xl text-sm font-semibold flex items-center gap-1.5 hover:bg-[#16a34a] transition-colors"
-                              >
-                                <FaCreditCard className="w-3.5 h-3.5" /> Pay Now
-                              </button>
-                              <button
-                                onClick={handleMarkPaid}
-                                disabled={markingPaid}
-                                className="no-print px-3 py-2 border border-neutral-200 text-neutral-600 rounded-xl text-sm font-semibold flex items-center gap-1.5 hover:bg-neutral-50 disabled:opacity-50 transition-colors"
-                              >
-                                <FaCheck className="w-3.5 h-3.5" />
-                                {markingPaid ? 'Saving…' : 'Mark Paid'}
-                              </button>
-                            </>
+                            <button
+                              onClick={handleMarkPaid}
+                              disabled={markingPaid}
+                              className="no-print px-3 py-2 bg-[#22C55E] text-white rounded-xl text-sm font-semibold flex items-center gap-1.5 hover:bg-[#16a34a] disabled:opacity-50 transition-colors"
+                            >
+                              <FaCheck className="w-3.5 h-3.5" />
+                              {markingPaid ? 'Saving…' : 'Mark as paid'}
+                            </button>
                           )}
 
                           <button
@@ -601,13 +441,6 @@ export default function Invoice() {
         </div>
       </div>
 
-      {showPayModal && invoice && (
-        <DemoPayModal
-          invoice={invoice}
-          onClose={() => setShowPayModal(false)}
-          onPaid={() => { toast.success('Payment recorded!'); refetch(); }}
-        />
-      )}
     </>
   );
 }

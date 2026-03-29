@@ -15,22 +15,9 @@ import AppHeader from '../components/AppHeader';
 import AppFooter from '../components/AppFooter';
 import { api, ApiException } from '../services/api';
 import { toE164India } from '../utils/phone';
+import { REGISTRATION_INDIVIDUAL_DEPARTMENTS } from '../constants/registrationCategories';
 
 /* ── constants ─────────────────────────────────────────────────────────────── */
-
-const ROLES = [
-  'Director',
-  'DOP/Cinematographer',
-  'Camera Operator',
-  'Sound Engineer',
-  'Gaffer',
-  'Editor',
-  'Makeup Artist',
-  'Production Designer',
-  'VFX Artist',
-  'Line Producer',
-  'Other',
-] as const;
 
 const BENEFITS = [
   { icon: FaCertificate, title: 'Verified Profiles', desc: 'Build trust with verified skills and portfolio' },
@@ -351,7 +338,7 @@ export default function IndividualRegistration() {
                     className={`${inputBase} ${borderClass('primaryRole')}`}
                   >
                     <option value="">Select role</option>
-                    {ROLES.map((r) => (
+                    {REGISTRATION_INDIVIDUAL_DEPARTMENTS.map((r) => (
                       <option key={r} value={r}>{r}</option>
                     ))}
                   </select>

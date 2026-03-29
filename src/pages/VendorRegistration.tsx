@@ -14,15 +14,7 @@ import AppHeader from '../components/AppHeader';
 import AppFooter from '../components/AppFooter';
 import { api, ApiException } from '../services/api';
 import { toE164India } from '../utils/phone';
-
-const VENDOR_TYPES = [
-  { value: 'equipment', label: 'Camera & Equipment' },
-  { value: 'lighting', label: 'Lighting' },
-  { value: 'transport', label: 'Transport' },
-  { value: 'catering', label: 'Catering' },
-] as const;
-
-type VendorType = typeof VENDOR_TYPES[number]['value'];
+import { REGISTRATION_VENDOR_CATEGORIES, vendorCategoryToVendorType } from '../constants/registrationCategories';
 
 /* ── Validation helpers ── */
 
@@ -35,7 +27,7 @@ type FieldErrors = {
   phone?: string;
   gst?: string;
   email?: string;
-  vendorType?: string;
+  vendorCategory?: string;
   password?: string;
 };
 
@@ -59,8 +51,8 @@ function validateField(name: keyof FieldErrors, value: string): string | undefin
       if (!value.trim()) return 'Email is required';
       if (!EMAIL_REGEX.test(value.trim())) return 'Enter a valid email address';
       return undefined;
-    case 'vendorType':
-      if (!value) return 'Please select a business type';
+    case 'vendorCategory':
+      if (!value) return 'Please select your vendor category';
       return undefined;
     case 'password':
       if (!value) return 'Password is required';
@@ -98,7 +90,7 @@ export default function VendorRegistration() {
   const [phone, setPhone] = useState('');
   const [gst, setGst] = useState('');
   const [email, setEmail] = useState('');
-  const [vendorType, setVendorType] = useState<VendorType | ''>('');
+  const [vendorCategory, setVendorCategory] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [agreedTerms, setAgreedTerms] = useState(false);
@@ -124,7 +116,7 @@ export default function VendorRegistration() {
       ['phone', phone],
       ['gst', gst],
       ['email', email],
-      ['vendorType', vendorType],
+      ['vendorCategory', vendorCategory],
       ['password', password],
     ];
     const newErrors: FieldErrors = {};
@@ -183,7 +175,12 @@ export default function VendorRegistration() {
           userType: 'vendor',
           pendingProfile: {
             companyName: businessName.trim() || undefined,
-            vendorType: vendorType || undefined,
+            ...(vendorCategory
+              ? {
+                  vendorType: vendorCategoryToVendorType(vendorCategory),
+                  vendorServiceCategory: vendorCategory,
+                }
+              : {}),
           },
         },
       });
@@ -379,21 +376,19 @@ export default function VendorRegistration() {
                   Business Type <span className="text-red-500">*</span>
                 </label>
                 <select
-                  value={vendorType}
-                  onChange={(e) => setVendorType(e.target.value as VendorType)}
-                  onBlur={() => handleBlur('vendorType', vendorType)}
+                  value={vendorCategory}
+                  onChange={(e) => setVendorCategory(e.target.value)}
+                  onBlur={() => handleBlur('vendorCategory', vendorCategory)}
                   disabled={loading}
-                  className={`${inputBase} ${borderClass('vendorType')}`}
+                  className={`${inputBase} ${borderClass('vendorCategory')}`}
                 >
-                  <option value="">Select type</option>
-                  {VENDOR_TYPES.map(({ value, label }) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
+                  <option value="">Select category…</option>
+                  {REGISTRATION_VENDOR_CATEGORIES.map((c) => (
+                    <option key={c} value={c}>{c}</option>
                   ))}
                 </select>
-                {fieldErrors.vendorType && (
-                  <p className="text-xs text-red-500 mt-1">{fieldErrors.vendorType}</p>
+                {fieldErrors.vendorCategory && (
+                  <p className="text-xs text-red-500 mt-1">{fieldErrors.vendorCategory}</p>
                 )}
               </div>
 

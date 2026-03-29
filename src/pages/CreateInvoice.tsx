@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { FaArrowLeft, FaPlus, FaTrash, FaFileInvoice } from 'react-icons/fa6';
 import DashboardHeader from '../components/DashboardHeader';
 import AppFooter from '../components/AppFooter';
@@ -26,9 +26,14 @@ interface LineItem {
 export default function CreateInvoice() {
   useEffect(() => { document.title = 'Create Invoice – Claapo'; }, []);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const bookingIdFromUrl = searchParams.get('bookingId')?.trim() ?? '';
 
   const { data: bookingsData, loading: bookingsLoading } = useApiQuery<{ items: BookingItem[] }>('/bookings/incoming');
-  const bookings = (bookingsData?.items ?? []).filter((b) => b.status === 'accepted' || b.status === 'locked');
+  const bookings = useMemo(
+    () => (bookingsData?.items ?? []).filter((b) => b.status === 'accepted' || b.status === 'locked'),
+    [bookingsData?.items],
+  );
 
   const [selectedBookingId, setSelectedBookingId] = useState('');
   const [dueDate, setDueDate] = useState('');
@@ -37,16 +42,31 @@ export default function CreateInvoice() {
 
   const selectedBooking = bookings.find((b) => b.id === selectedBookingId) ?? null;
 
+  useEffect(() => {
+    if (bookingsLoading || !bookingIdFromUrl) return;
+    const items = bookingsData?.items ?? [];
+    const match = items.find(
+      (b) => (b.status === 'accepted' || b.status === 'locked') && b.id === bookingIdFromUrl,
+    );
+    if (match) setSelectedBookingId(bookingIdFromUrl);
+  }, [bookingsLoading, bookingIdFromUrl, bookingsData]);
+
   // Pre-fill a line item when booking is selected
   useEffect(() => {
-    if (selectedBooking?.rateOffered) {
+    if (!selectedBooking) return;
+    const rolePart = selectedBooking.projectRole?.roleName?.trim();
+    const titlePart = selectedBooking.project.title?.trim();
+    const description = [titlePart, rolePart].filter(Boolean).join(' — ') || 'Services rendered';
+    if (selectedBooking.rateOffered != null) {
       setLineItems([{
-        description: selectedBooking.projectRole?.roleName ?? 'Services rendered',
+        description,
         quantity: '1',
         unitPrice: String(selectedBooking.rateOffered / 100),
       }]);
+    } else {
+      setLineItems([{ description, quantity: '1', unitPrice: '' }]);
     }
-  }, [selectedBookingId]);
+  }, [selectedBooking?.id]);
 
   const addLine = () => setLineItems((prev) => [...prev, { description: '', quantity: '1', unitPrice: '' }]);
   const removeLine = (i: number) => setLineItems((prev) => prev.filter((_, idx) => idx !== i));

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { FaPlus, FaXmark, FaTriangleExclamation, FaCircleCheck, FaTrash, FaEye, FaEyeSlash, FaPeopleGroup, FaArrowRightArrowLeft } from 'react-icons/fa6';
+import { Link } from 'react-router-dom';
+import { FaPlus, FaXmark, FaTriangleExclamation, FaCircleCheck, FaTrash, FaEye, FaEyeSlash, FaPeopleGroup, FaFolder } from 'react-icons/fa6';
 import DashboardHeader from '../../components/DashboardHeader';
 import DashboardSidebar from '../../components/DashboardSidebar';
 import AppFooter from '../../components/AppFooter';
@@ -10,7 +11,14 @@ import { useApiQuery } from '../../hooks/useApiQuery';
 import { toE164India } from '../../utils/phone';
 import { companyNavLinks } from '../../navigation/dashboardNav';
 
-interface SubUser { id: string; email: string; phone: string; isActive: boolean; createdAt: string }
+interface SubUser {
+  id: string;
+  email: string;
+  phone: string;
+  isActive: boolean;
+  createdAt: string;
+  assignedProjects?: { id: string; title: string }[];
+}
 interface SubUsersResponse { items: SubUser[] }
 interface Project { id: string; title: string }
 interface ProjectsResponse { items: Project[] }
@@ -48,13 +56,6 @@ export default function TeamPage() {
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  // Transfer sub-user
-  const [transferringUser, setTransferringUser] = useState<SubUser | null>(null);
-  const [targetMainUserId, setTargetMainUserId] = useState('');
-  const [transferring, setTransferring] = useState(false);
-  const [transferError, setTransferError] = useState<string | null>(null);
-  const [transferSuccess, setTransferSuccess] = useState(false);
-
   const handleCreate = async () => {
     if (!email?.trim() || !phone?.trim() || !password) { setCreateError('All fields are required.'); return; }
     const e164Phone = toE164India(phone.trim());
@@ -86,6 +87,7 @@ export default function TeamPage() {
       setAssignSuccess(true);
       setAssigningUser(null);
       setAssignProjectId('');
+      refetchUsers();
       setTimeout(() => setAssignSuccess(false), 3000);
     } catch (err) {
       const msg = err instanceof ApiException ? err.payload.message : 'Failed to assign project.';
@@ -110,29 +112,6 @@ export default function TeamPage() {
       setDeleteError(msg);
     } finally {
       setDeleting(false);
-    }
-  };
-
-  const handleTransfer = async () => {
-    if (!transferringUser || !targetMainUserId?.trim()) {
-      setTransferError('Enter the target main account User ID (UUID).');
-      return;
-    }
-    setTransferring(true); setTransferError(null);
-    try {
-      await api.patch(`/profile/sub-users/${transferringUser.id}/transfer`, { newMainUserId: targetMainUserId.trim() });
-      toast.success('Sub-user transferred to the other account.');
-      setTransferSuccess(true);
-      setTransferringUser(null);
-      setTargetMainUserId('');
-      refetchUsers();
-      setTimeout(() => setTransferSuccess(false), 3000);
-    } catch (err) {
-      const msg = err instanceof ApiException ? err.payload.message : 'Failed to transfer sub-user.';
-      toast.error(msg);
-      setTransferError(msg);
-    } finally {
-      setTransferring(false);
     }
   };
 
@@ -178,11 +157,6 @@ export default function TeamPage() {
               {assignSuccess && (
                 <div className="flex items-center gap-2.5 mb-4 px-4 py-3 bg-emerald-50 border border-emerald-200/60 rounded-xl text-emerald-700 text-sm font-medium shadow-sm">
                   <FaCircleCheck className="shrink-0" /> Project assigned successfully!
-                </div>
-              )}
-              {transferSuccess && (
-                <div className="flex items-center gap-2.5 mb-4 px-4 py-3 bg-emerald-50 border border-emerald-200/60 rounded-xl text-emerald-700 text-sm font-medium shadow-sm">
-                  <FaCircleCheck className="shrink-0" /> Sub-user transferred successfully!
                 </div>
               )}
 
@@ -256,38 +230,58 @@ export default function TeamPage() {
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      {subUsers.map(u => (
-                        <div key={u.id} className="flex items-center gap-4 p-4 rounded-xl border border-neutral-200/80 bg-white hover:border-neutral-300 hover:shadow-sm transition-all group relative overflow-hidden">
+                      {subUsers.map(u => {
+                        const assigned = u.assignedProjects ?? [];
+                        return (
+                        <div key={u.id} className="flex flex-col sm:flex-row sm:items-stretch gap-4 p-4 rounded-xl border border-neutral-200/80 bg-white hover:border-neutral-300 hover:shadow-sm transition-all group relative overflow-hidden">
                           {/* Left accent border */}
                           <div className={`absolute left-0 top-0 bottom-0 w-[3px] rounded-l-xl ${u.isActive ? 'bg-emerald-400' : 'bg-neutral-300'}`} />
-                          <div className="pl-1">
+                          <div className="flex gap-4 flex-1 min-w-0 pl-1">
                             <Avatar name={u.email} size="md" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <p className="text-sm font-semibold text-neutral-900 truncate">{u.email}</p>
-                              {/* Status dot */}
-                              <span className={`w-2 h-2 rounded-full shrink-0 ${u.isActive ? 'bg-emerald-500' : 'bg-neutral-300'}`} title={u.isActive ? 'Active' : 'Inactive'} />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <p className="text-sm font-semibold text-neutral-900 truncate">{u.email}</p>
+                                <span className={`w-2 h-2 rounded-full shrink-0 ${u.isActive ? 'bg-emerald-500' : 'bg-neutral-300'}`} title={u.isActive ? 'Active' : 'Inactive'} />
+                              </div>
+                              <p className="text-xs text-neutral-500 truncate mt-0.5">{u.phone}</p>
+                              <div className="mt-3">
+                                <p className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                                  <FaFolder className="w-3 h-3" /> Assigned projects
+                                </p>
+                                {assigned.length === 0 ? (
+                                  <p className="text-xs text-neutral-400">None yet — use Assign Project to grant access.</p>
+                                ) : (
+                                  <ul className="flex flex-wrap gap-1.5">
+                                    {assigned.map((proj) => (
+                                      <li key={proj.id}>
+                                        <Link
+                                          to={`/dashboard/projects/${proj.id}`}
+                                          className="inline-flex items-center gap-1 rounded-lg px-2 py-1 bg-[#EEF4FF] border border-[#3B5BDB]/15 text-[11px] font-semibold text-[#3B5BDB] hover:bg-[#DBEAFE] hover:border-[#3B5BDB]/25 transition-colors max-w-[220px]"
+                                          title={proj.title}
+                                        >
+                                          <span className="truncate">{proj.title}</span>
+                                        </Link>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                )}
+                              </div>
                             </div>
-                            <p className="text-xs text-neutral-500 truncate mt-0.5">{u.phone}</p>
                           </div>
-                          <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+                          <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end sm:flex-col sm:justify-center sm:items-stretch pt-1 sm:pt-0 border-t sm:border-t-0 border-neutral-100">
                             <button type="button" onClick={() => { setAssigningUser(u); setAssignProjectId(''); setAssignError(null); }}
-                              className="rounded-lg px-3 py-2 border border-[#3B5BDB]/20 text-[#3B5BDB] text-xs font-semibold hover:bg-[#3B5BDB]/5 transition-colors" title="Assign Project">
+                              className="rounded-lg px-3 py-2 border border-[#3B5BDB]/20 text-[#3B5BDB] text-xs font-semibold hover:bg-[#3B5BDB]/5 transition-colors sm:w-full" title="Assign Project">
                               <span className="hidden sm:inline">Assign Project</span>
                               <span className="sm:hidden text-sm">Assign</span>
                             </button>
-                            <button type="button" onClick={() => { setTransferringUser(u); setTargetMainUserId(''); setTransferError(null); }}
-                              className="rounded-lg px-3 py-2 border border-amber-200 text-amber-700 text-xs font-semibold hover:bg-amber-50 transition-colors flex items-center gap-1.5" title="Transfer">
-                              <FaArrowRightArrowLeft className="w-3 h-3" /> <span className="hidden sm:inline">Transfer</span>
-                            </button>
                             <button type="button" onClick={() => { setDeletingUser(u); setDeleteError(null); }}
-                              className="rounded-lg px-3 py-2 border border-red-200/80 text-red-500 text-xs font-semibold hover:bg-red-50 transition-colors flex items-center gap-1.5" title="Remove">
+                              className="rounded-lg px-3 py-2 border border-red-200/80 text-red-500 text-xs font-semibold hover:bg-red-50 transition-colors flex items-center justify-center gap-1.5 sm:w-full" title="Remove">
                               <FaTrash className="w-3 h-3" /> <span className="hidden sm:inline">Remove</span>
                             </button>
                           </div>
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -408,58 +402,6 @@ export default function TeamPage() {
                 <button type="button" onClick={handleAssign} disabled={assigning || !assignProjectId}
                   className="flex-1 rounded-xl py-2.5 bg-[#3B5BDB] text-white text-sm font-semibold hover:bg-[#2f4ac2] active:scale-[0.98] transition-all disabled:opacity-60 flex items-center justify-center gap-2 shadow-sm shadow-[#3B5BDB]/20">
                   {assigning ? <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Assigning...</> : 'Assign'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* Transfer Sub-User Modal */}
-      {transferringUser && (
-        <>
-          <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40" onClick={() => !transferring && setTransferringUser(null)} />
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl shadow-xl border border-neutral-200/60 w-full max-w-md overflow-hidden">
-              <div className="px-6 py-4 border-b border-neutral-100 flex items-center justify-between">
-                <div>
-                  <h2 className="text-base font-bold text-neutral-900">Transfer Sub-User</h2>
-                  <p className="text-xs text-neutral-400 mt-0.5">Move this member to another account</p>
-                </div>
-                <button type="button" onClick={() => !transferring && setTransferringUser(null)} className="w-8 h-8 rounded-lg bg-neutral-100 flex items-center justify-center hover:bg-neutral-200 transition-colors">
-                  <FaXmark className="text-neutral-500 text-sm" />
-                </button>
-              </div>
-
-              <div className="p-6">
-                <div className="flex items-center gap-3 mb-4 p-3 rounded-xl bg-neutral-50 border border-neutral-100">
-                  <Avatar name={transferringUser.email} size="sm" />
-                  <span className="text-sm font-semibold text-neutral-800 truncate">{transferringUser.email}</span>
-                </div>
-                <p className="text-sm text-neutral-600 mb-5 leading-relaxed">
-                  Transfer to another main account (same role). The sub-user will then belong to that account.
-                </p>
-                {transferError && (
-                  <div className="flex items-center gap-2.5 mb-4 p-3 bg-red-50 border border-red-200/80 rounded-xl">
-                    <FaTriangleExclamation className="text-red-500 text-xs shrink-0" />
-                    <p className="text-sm text-red-700">{transferError}</p>
-                  </div>
-                )}
-                <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Target main account User ID (UUID)</label>
-                  <input type="text" value={targetMainUserId} onChange={(e) => setTargetMainUserId(e.target.value)} placeholder="e.g. 550e8400-e29b-41d4-a716-446655440000" disabled={transferring}
-                    className={`${modalInputClass} font-mono text-xs`} />
-                </div>
-              </div>
-
-              <div className="px-6 py-4 border-t border-neutral-100 bg-neutral-50/50 flex gap-3">
-                <button type="button" onClick={() => !transferring && setTransferringUser(null)} disabled={transferring}
-                  className="flex-1 rounded-xl py-2.5 border border-neutral-200 text-neutral-700 text-sm font-medium hover:bg-neutral-100 transition-colors disabled:opacity-50">
-                  Cancel
-                </button>
-                <button type="button" onClick={handleTransfer} disabled={transferring || !targetMainUserId.trim()}
-                  className="flex-1 rounded-xl py-2.5 bg-amber-500 text-white text-sm font-semibold hover:bg-amber-600 active:scale-[0.98] transition-all disabled:opacity-60 flex items-center justify-center gap-2 shadow-sm">
-                  {transferring ? <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Transferring...</> : <><FaArrowRightArrowLeft className="w-3 h-3" /> Transfer</>}
                 </button>
               </div>
             </div>

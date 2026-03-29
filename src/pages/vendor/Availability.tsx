@@ -3,12 +3,12 @@ import { FaChevronLeft, FaChevronRight, FaCircleInfo } from 'react-icons/fa6';
 import DashboardHeader from '../../components/DashboardHeader';
 import DashboardSidebar from '../../components/DashboardSidebar';
 import AppFooter from '../../components/AppFooter';
-import AvailabilityDateDetailModal from '../../components/AvailabilityDateDetailModal';
+import VendorCalendarDayPanel from '../../components/VendorCalendarDayPanel';
 import { api, ApiException } from '../../services/api';
 import toast from 'react-hot-toast';
 import { useApiQuery } from '../../hooks/useApiQuery';
 import { vendorNavLinks } from '../../navigation/dashboardNav';
-import type { BookingWithDetails } from '../../types/availability';
+import type { BookingWithDetails, SlotStatus } from '../../types/availability';
 import { parseAvailabilityMonthResponse } from '../../utils/parseAvailabilityResponse';
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -91,6 +91,25 @@ const cellStyle: Record<string, string> = {
 
 const VENDOR_BLOCK_REASONS = ['Equipment maintenance', 'Unavailable for rental', 'Reserved for other use', 'Other'];
 
+function isoInRange(d: string, start?: string | null, end?: string | null): boolean {
+  if (!start || !end) return false;
+  const a = d.slice(0, 10);
+  return a >= start.slice(0, 10) && a <= end.slice(0, 10);
+}
+
+interface IncomingBooking {
+  id: string;
+  status: string;
+  rateOffered?: number | null;
+  project: { id: string; title: string; startDate?: string; endDate?: string };
+  requester: { id: string; email: string; companyProfile?: { companyName?: string } | null };
+}
+interface PastBookingItem {
+  id: string;
+  project: { id: string; title: string; startDate: string; endDate: string };
+  requester: { companyProfile?: { companyName?: string } | null };
+}
+
 export default function VendorAvailability() {
   useEffect(() => { document.title = 'Equipment Availability – Claapo'; }, []);
 
@@ -106,15 +125,19 @@ export default function VendorAvailability() {
   const [bookingDetails, setBookingDetails] = useState<Record<string, BookingWithDetails>>({});
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [saving,      setSaving]      = useState(false);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
+  const [cancelBusy, setCancelBusy] = useState(false);
 
   const displayDate = new Date(BASE_YEAR, BASE_MONTH + monthOffset, 1);
   const monthLabel  = MONTHS[displayDate.getMonth()];
   const yearLabel   = displayDate.getFullYear();
+  const monthIndex  = displayDate.getMonth();
 
   const loadSlots = useCallback(async () => {
     setSlotsLoading(true);
     try {
-      const res = await api.get<unknown>(`/availability/me?year=${yearLabel}&month=${displayDate.getMonth() + 1}`);
+      const res = await api.get<unknown>(`/availability/me?year=${yearLabel}&month=${monthIndex + 1}`);
       const parsed = parseAvailabilityMonthResponse(res);
       setBookingDetails(parsed.bookingDetails);
       const map: Record<string, AvailabilitySlot> = {};
@@ -136,7 +159,7 @@ export default function VendorAvailability() {
       setBookingDetails({});
     }
     finally { setSlotsLoading(false); }
-  }, [yearLabel, displayDate]);
+  }, [yearLabel, monthIndex]);
 
   useEffect(() => { loadSlots(); }, [loadSlots]);
 
@@ -144,6 +167,70 @@ export default function VendorAvailability() {
     '/equipment/me',
   );
   const equipmentItems = equipmentList ?? [];
+
+  const { data: bookingsData, refetch: refetchBookings } = useApiQuery<{ items: IncomingBooking[] }>('/bookings/incoming');
+  const { data: pastData } = useApiQuery<{ items: PastBookingItem[] }>('/bookings/past');
+  const incomingItems = bookingsData?.items ?? [];
+  const pastItems = pastData?.items ?? [];
+
+  const fallbackBookingsForDay = useMemo(() => {
+    if (!detailDate || bookingDetails[detailDate]) return [];
+    const out: {
+      id: string;
+      projectId: string;
+      projectTitle: string;
+      companyLabel: string;
+      status: string;
+      rateOffered?: number | null;
+      equipmentLabel?: string | null;
+    }[] = [];
+    for (const b of incomingItems) {
+      if (
+        (b.status === 'accepted' || b.status === 'locked') &&
+        isoInRange(detailDate, b.project.startDate, b.project.endDate)
+      ) {
+        out.push({
+          id: b.id,
+          projectId: b.project.id,
+          projectTitle: b.project.title,
+          companyLabel: b.requester.companyProfile?.companyName ?? b.requester.email,
+          status: b.status,
+          rateOffered: b.rateOffered ?? null,
+          equipmentLabel: null,
+        });
+      }
+    }
+    for (const b of pastItems) {
+      if (isoInRange(detailDate, b.project.startDate, b.project.endDate)) {
+        out.push({
+          id: b.id,
+          projectId: b.project.id,
+          projectTitle: b.project.title,
+          companyLabel: b.requester.companyProfile?.companyName ?? '—',
+          status: 'past_work',
+          rateOffered: null,
+          equipmentLabel: null,
+        });
+      }
+    }
+    return out;
+  }, [detailDate, bookingDetails, incomingItems, pastItems]);
+
+  const slotForDetailPanel = detailDate
+    ? apiSlots[detailDate]
+      ? {
+          date: detailDate,
+          status: apiSlots[detailDate]!.status as SlotStatus,
+          notes: apiSlots[detailDate]!.notes ?? null,
+        }
+      : bookingDetails[detailDate]
+        ? { date: detailDate, status: 'booked' as const, notes: null as string | null }
+        : fallbackBookingsForDay.some((f) => f.status === 'past_work')
+          ? { date: detailDate, status: 'past_work' as const, notes: null as string | null }
+          : fallbackBookingsForDay.length
+            ? { date: detailDate, status: 'booked' as const, notes: null as string | null }
+            : { date: detailDate, status: 'available' as const, notes: null as string | null }
+    : undefined;
 
   const equipmentByDate = (() => {
     const map: Record<string, string[]> = {};
@@ -206,6 +293,23 @@ export default function VendorAvailability() {
     }
   };
 
+  const submitCancelRequest = async () => {
+    if (!cancellingId) return;
+    setCancelBusy(true);
+    try {
+      await api.patch(`/bookings/${cancellingId}/request-cancel`, { reason: cancelReason || undefined });
+      toast.success('Cancellation request sent. Awaiting company approval.');
+      setCancellingId(null);
+      setCancelReason('');
+      refetchBookings();
+      await loadSlots();
+    } catch (err) {
+      toast.error(err instanceof ApiException ? err.payload.message : 'Failed to request cancellation.');
+    } finally {
+      setCancelBusy(false);
+    }
+  };
+
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-[#F3F4F6] w-full">
       <DashboardHeader />
@@ -213,16 +317,16 @@ export default function VendorAvailability() {
         <DashboardSidebar links={vendorNavLinks} />
         <main className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
           <div className="flex-1 min-h-0 overflow-auto">
-            <div className="max-w-[1000px] mx-auto px-4 sm:px-6 lg:px-8 py-5">
+            <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-5">
 
               <div className="mb-5">
                 <h1 className="text-xl font-bold text-neutral-900">Equipment Availability</h1>
                 <p className="text-sm text-neutral-500 mt-0.5">Manage equipment schedule, block dates, and view rental history</p>
               </div>
 
-              <div className="rounded-2xl bg-white border border-neutral-200 p-5">
+              <div className="rounded-2xl bg-white border border-neutral-200 p-5 min-w-0">
                 {/* Header */}
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
                   <div className="flex items-center gap-2">
                     <button type="button" onClick={() => setMonthOffset((o) => o - 1)} className="w-9 h-9 rounded-xl border border-neutral-200 flex items-center justify-center text-neutral-600 hover:bg-neutral-100 transition-colors">
                       <FaChevronLeft className="text-xs" />
@@ -318,22 +422,57 @@ export default function VendorAvailability() {
         </main>
       </div>
 
-      <AvailabilityDateDetailModal
-        open={!!detailDate}
-        onClose={() => setDetailDate(null)}
-        selectedDate={detailDate}
-        slot={
-          detailDate && apiSlots[detailDate]
-            ? { date: detailDate, status: apiSlots[detailDate].status, notes: apiSlots[detailDate].notes }
-            : undefined
-        }
-        booking={detailDate ? bookingDetails[detailDate] : undefined}
-        mode="self_manage"
-        blocking={saving}
-        onBlock={handleBlock}
-        onUnblock={handleUnblock}
-        blockReasonOptions={vendorBlockReasons}
-      />
+      {detailDate && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/25 backdrop-blur-[2px] z-40 lg:bg-black/10 lg:backdrop-blur-[1px]"
+            onClick={() => setDetailDate(null)}
+            aria-hidden
+          />
+          <aside className="fixed right-0 top-0 h-full w-full max-w-[380px] sm:max-w-[400px] bg-white/95 backdrop-blur-xl border-l border-neutral-200/60 shadow-2xl z-50 flex flex-col panel-enter rounded-l-3xl">
+            <VendorCalendarDayPanel
+              variant="drawer"
+              selectedDate={detailDate}
+              onDismiss={() => setDetailDate(null)}
+              slot={slotForDetailPanel}
+              booking={detailDate ? bookingDetails[detailDate] : undefined}
+              fallbackBookings={fallbackBookingsForDay}
+              blockReasons={vendorBlockReasons}
+              saving={saving}
+              onBlock={handleBlock}
+              onUnblock={handleUnblock}
+              onRequestCancel={(id) => setCancellingId(id)}
+            />
+          </aside>
+        </>
+      )}
+
+      {cancellingId && (
+        <>
+          <div className="fixed inset-0 bg-black/40 z-[60]" onClick={() => !cancelBusy && setCancellingId(null)} />
+          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 pointer-events-none">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 pointer-events-auto">
+              <h2 className="text-base font-bold text-neutral-900 mb-2">Request cancellation</h2>
+              <p className="text-sm text-neutral-600 mb-4">The production company must approve before your booking is released.</p>
+              <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Reason (optional)</label>
+              <textarea
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                rows={3}
+                className="w-full px-4 py-2.5 border border-neutral-300 rounded-xl text-sm bg-[#F3F4F6] focus:bg-white focus:outline-none focus:border-[#3B5BDB] resize-none mb-4"
+              />
+              <div className="flex gap-3">
+                <button type="button" disabled={cancelBusy} onClick={() => { setCancellingId(null); setCancelReason(''); }} className="flex-1 py-2.5 rounded-xl border border-neutral-200 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 disabled:opacity-50">
+                  Back
+                </button>
+                <button type="button" disabled={cancelBusy} onClick={() => void submitCancelRequest()} className="flex-1 py-2.5 rounded-xl bg-amber-600 text-white text-sm font-semibold hover:bg-amber-700 disabled:opacity-50 flex items-center justify-center gap-2">
+                  {cancelBusy ? <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Sending…</> : 'Send request'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

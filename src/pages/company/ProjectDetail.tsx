@@ -268,7 +268,7 @@ export default function ProjectDetail() {
                 </div>
               )}
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              <div id="project-bookings" className="grid grid-cols-1 lg:grid-cols-2 gap-5 scroll-mt-24">
                 {/* Crew */}
                 <div className="rounded-2xl bg-white border border-neutral-200 p-5">
                   <div className="flex items-center justify-between mb-4">
