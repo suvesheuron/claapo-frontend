@@ -34,8 +34,7 @@ interface EquipmentItem {
   description?: string | null;
   imageUrl?: string | null;
   currentCity?: string | null;
-  dailyRateMin?: number | null;
-  dailyRateMax?: number | null;
+  dailyBudget?: number | null;
   availabilities?: EquipmentAvailability[];
   bookingRequests?: ActiveBooking[];
   /** From API: project shoot location while booked + short return buffer */
@@ -62,16 +61,14 @@ export default function Equipment() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [currentCity, setCurrentCity] = useState('');
-  const [dailyRateMin, setDailyRateMin] = useState('');
-  const [dailyRateMax, setDailyRateMax] = useState('');
+  const [dailyBudget, setDailyBudget] = useState('');
 
   const openAdd = () => {
     setSaveError(null);
     setName('');
     setDescription('');
     setCurrentCity('');
-    setDailyRateMin('');
-    setDailyRateMax('');
+    setDailyBudget('');
     setModal('add');
   };
 
@@ -81,8 +78,7 @@ export default function Equipment() {
     setName(item.name);
     setDescription(item.description ?? '');
     setCurrentCity(item.currentCity ?? '');
-    setDailyRateMin(item.dailyRateMin != null ? String(Math.round(item.dailyRateMin / 100)) : '');
-    setDailyRateMax(item.dailyRateMax != null ? String(Math.round(item.dailyRateMax / 100)) : '');
+    setDailyBudget(item.dailyBudget != null ? String(Math.round(item.dailyBudget / 100)) : '');
     setModal('edit');
   };
 
@@ -99,14 +95,9 @@ export default function Equipment() {
       setSaveError('Name is required.');
       return;
     }
-    const minPaise = dailyRateMin.trim() ? Math.round(parseFloat(dailyRateMin) * 100) : undefined;
-    const maxPaise = dailyRateMax.trim() ? Math.round(parseFloat(dailyRateMax) * 100) : undefined;
-    if (minPaise !== undefined && (Number.isNaN(minPaise) || minPaise < 0)) {
-      setSaveError('Min rate must be a valid number.');
-      return;
-    }
-    if (maxPaise !== undefined && (Number.isNaN(maxPaise) || maxPaise < 0)) {
-      setSaveError('Max rate must be a valid number.');
+    const budgetPaise = dailyBudget.trim() ? Math.round(parseFloat(dailyBudget) * 100) : undefined;
+    if (budgetPaise !== undefined && (Number.isNaN(budgetPaise) || budgetPaise < 0)) {
+      setSaveError('Daily budget must be a valid number.');
       return;
     }
     setSaving(true);
@@ -116,16 +107,14 @@ export default function Equipment() {
           name: nameTrim,
           description: description.trim() || undefined,
           currentCity: currentCity.trim() || undefined,
-          dailyRateMin: minPaise,
-          dailyRateMax: maxPaise,
+          dailyBudget: budgetPaise,
         });
       } else if (editingId) {
         await api.patch(`/equipment/${editingId}`, {
           name: nameTrim,
           description: description.trim() || undefined,
           currentCity: currentCity.trim() || undefined,
-          dailyRateMin: minPaise,
-          dailyRateMax: maxPaise,
+          dailyBudget: budgetPaise,
         });
       }
       refetch();
@@ -185,11 +174,9 @@ export default function Equipment() {
   };
 
   const formatRate = (item: EquipmentItem) => {
-    if (item.dailyRateMin != null && item.dailyRateMax != null && item.dailyRateMin !== item.dailyRateMax) {
-      return `₹${formatPaise(item.dailyRateMin)} – ${formatPaise(item.dailyRateMax)}/day`;
+    if (item.dailyBudget != null) {
+      return `₹${formatPaise(item.dailyBudget)}/day`;
     }
-    const rate = item.dailyRateMin ?? item.dailyRateMax;
-    if (rate != null) return `₹${formatPaise(rate)}/day`;
     return '—';
   };
 
@@ -390,15 +377,10 @@ export default function Equipment() {
                 onSelect={(loc) => setCurrentCity(loc.city)}
                 placeholder="e.g. Mumbai"
               />
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-neutral-600 mb-1">Daily rate min (₹)</label>
-                  <input type="number" min={0} step={100} value={dailyRateMin} onChange={(e) => setDailyRateMin(e.target.value)} placeholder="0" className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3B5BDB]" />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-neutral-600 mb-1">Daily rate max (₹)</label>
-                  <input type="number" min={0} step={100} value={dailyRateMax} onChange={(e) => setDailyRateMax(e.target.value)} placeholder="0" className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3B5BDB]" />
-                </div>
+              <div>
+                <label className="block text-xs font-medium text-neutral-600 mb-1">Daily Budget (₹)</label>
+                <input type="number" min={0} step={100} value={dailyBudget} onChange={(e) => setDailyBudget(e.target.value)} placeholder="0" className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3B5BDB]" />
+                <p className="text-[10px] text-neutral-400 mt-1">Your daily rental rate</p>
               </div>
             </div>
             <div className="flex gap-2 mt-5">

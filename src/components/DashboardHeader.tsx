@@ -89,7 +89,7 @@ export default function DashboardHeader({ userName: propUserName, userAvatar: pr
   };
 
   return (
-    <header className="h-[64px] bg-white shrink-0 flex items-stretch overflow-visible z-30 relative shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
+    <header className="h-[64px] bg-white/80 backdrop-blur-xl shrink-0 flex items-stretch overflow-visible z-30 relative shadow-sm border-b border-neutral-100">
       {/* Desktop logo area aligned with sidebar */}
       <Link
         to="/dashboard"

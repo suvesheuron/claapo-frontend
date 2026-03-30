@@ -1,4 +1,5 @@
 import { Link, useSearchParams } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { FaTruck, FaMagnifyingGlass, FaChevronLeft, FaChevronRight, FaPlus, FaTriangleExclamation, FaLocationDot, FaMessage } from 'react-icons/fa6';
 import AppFooter from '../components/AppFooter';
@@ -7,8 +8,9 @@ import BookingRequestModal from '../components/BookingRequestModal';
 import DashboardHeader from '../components/DashboardHeader';
 import DashboardSidebar from '../components/DashboardSidebar';
 import { api, ApiException } from '../services/api';
-import { formatRateRange } from '../utils/currency';
+import { formatPaise } from '../utils/currency';
 import { companyNavLinks } from '../navigation/dashboardNav';
+import { REGISTRATION_INDIVIDUAL_DEPARTMENTS, REGISTRATION_VENDOR_CATEGORIES, vendorCategoryToVendorType } from '../constants/registrationCategories';
 
 type SearchType = 'crew' | 'vendors';
 
@@ -18,8 +20,7 @@ interface CrewResult {
   skills: string[];
   locationCity?: string;
   locationState?: string;
-  dailyRateMin?: number;
-  dailyRateMax?: number;
+  dailyBudget?: number;
   isAvailable: boolean;
   bio?: string;
 }
@@ -42,8 +43,15 @@ interface SelectedUser { userId: string; name: string; role: string; rate: strin
 
 const PAGE_SIZE = 15;
 
-const CREW_SKILLS = ['Director', 'DOP', 'Camera Operator', 'Sound Engineer', 'Gaffer', 'Makeup Artist', 'Production Designer', 'Editor', 'VFX Artist', 'Line Producer'];
-const VENDOR_TYPES = ['equipment', 'lighting', 'transport', 'catering'];
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 15 },
+  visible: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 300, damping: 24 } }
+} satisfies Record<string, any>;
 
 export default function SearchFilter() {
   const [searchParams] = useSearchParams();
@@ -56,6 +64,8 @@ export default function SearchFilter() {
   const [query,      setQuery]      = useState('');
   const [location,   setLocation]   = useState('');
   const [skillFilter, setSkillFilter] = useState('');
+  const [startDate,  setStartDate]  = useState('');
+  const [endDate,    setEndDate]    = useState('');
   const [page,       setPage]       = useState(1);
 
   const [crewResults,   setCrewResults]   = useState<CrewResult[]>([]);
@@ -68,7 +78,7 @@ export default function SearchFilter() {
 
   useEffect(() => { document.title = 'Find Crew & Vendors – Claapo'; }, []);
 
-  const doSearch = useCallback(async (q: string, loc: string, skill: string, pg: number, type: SearchType) => {
+  const doSearch = useCallback(async (q: string, loc: string, skill: string, sDate: string, eDate: string, pg: number, type: SearchType) => {
     setLoading(true);
     setError(null);
     try {
@@ -77,14 +87,17 @@ export default function SearchFilter() {
         limit: String(PAGE_SIZE),
       };
 
+      if (sDate) params.startDate = new Date(sDate).toISOString();
+      if (eDate) params.endDate = new Date(eDate).toISOString();
+
       if (type === 'crew') {
         if (loc) params.city = loc;
         if (skill.trim()) params.skill = skill.trim();
         if (q.trim()) params.name = q.trim();
       } else {
         if (loc) params.city = loc;
-        if (skill) params.type = skill;
-        if (q) params.equipmentName = q;
+        if (skill) params.type = vendorCategoryToVendorType(skill);
+        if (q.trim()) params.companyName = q.trim();
       }
 
       const qs = new URLSearchParams(params);
@@ -105,16 +118,16 @@ export default function SearchFilter() {
   }, []);
 
   // Debounced search on input change
-  const triggerSearch = useCallback((q: string, loc: string, skill: string, pg: number, type: SearchType) => {
+  const triggerSearch = useCallback((q: string, loc: string, skill: string, sDate: string, eDate: string, pg: number, type: SearchType) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => doSearch(q, loc, skill, pg, type), 300);
+    debounceRef.current = setTimeout(() => doSearch(q, loc, skill, sDate, eDate, pg, type), 300);
   }, [doSearch]);
 
-  useEffect(() => { triggerSearch(query, location, skillFilter, page, searchType); }, [query, location, skillFilter, page, searchType, triggerSearch]);
+  useEffect(() => { triggerSearch(query, location, skillFilter, startDate, endDate, page, searchType); }, [query, location, skillFilter, startDate, endDate, page, searchType, triggerSearch]);
 
   const handleSendRequest = (user: SelectedUser) => { setSelectedUser(user); setIsModalOpen(true); };
 
-  const switchType = (type: SearchType) => { setSearchType(type); setPage(1); setQuery(''); setLocation(''); setSkillFilter(''); };
+  const switchType = (type: SearchType) => { setSearchType(type); setPage(1); setQuery(''); setLocation(''); setSkillFilter(''); setStartDate(''); setEndDate(''); };
 
   const results = searchType === 'crew' ? (crewResults ?? []) : (vendorResults ?? []);
   const resultCount = Array.isArray(results) ? results.length : 0;
@@ -151,58 +164,73 @@ export default function SearchFilter() {
               </div>
 
               {/* Horizontal filter bar */}
-              <div className="rounded-2xl bg-white border border-neutral-200/80 shadow-sm p-5 mb-5">
-                <div className="flex flex-wrap gap-3 items-end">
+              <div className="rounded-3xl bg-white shadow-soft border border-neutral-100 p-6 mb-8 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-[#3B5BDB]/5 to-transparent rounded-full blur-3xl pointer-events-none" />
+                <div className="flex flex-wrap gap-4 items-end relative z-10">
                   {/* Search input */}
-                  <div className="flex-1 min-w-[160px]">
-                    <label className="block text-[11px] font-semibold text-neutral-400 mb-1.5 uppercase tracking-wider">
+                  <div className="flex-1 min-w-[180px]">
+                    <label className="block text-[11px] font-bold text-neutral-500 mb-2 uppercase tracking-widest">
                       {searchType === 'crew' ? 'Skill / Name' : 'Vendor Name'}
                     </label>
-                    <div className="relative">
+                    <div className="relative group">
                       <input type="text" value={query} onChange={(e) => { setQuery(e.target.value); setPage(1); }}
                         placeholder={searchType === 'crew' ? 'e.g. Director, DOP…' : 'e.g. Camera House…'}
-                        className="w-full pl-9 pr-3 py-2.5 border border-neutral-200 rounded-xl text-sm bg-neutral-50 placeholder-neutral-400 focus:bg-white focus:outline-none focus:border-[#3B5BDB]/40 focus:ring-2 focus:ring-[#3B5BDB]/10 transition-all duration-200" />
-                      <FaMagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-xs pointer-events-none" />
+                        className="w-full pl-10 pr-4 py-3 border border-neutral-200 rounded-2xl text-sm bg-neutral-50 placeholder-neutral-400 focus:bg-white focus:outline-none focus:border-[#3B5BDB]/40 focus:ring-4 focus:ring-[#3B5BDB]/10 transition-all duration-300" />
+                      <FaMagnifyingGlass className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 text-sm group-focus-within:text-[#3B5BDB] transition-colors" />
                     </div>
                   </div>
 
                   {/* Location */}
-                  <div className="flex-1 min-w-[140px]">
-                    <label className="block text-[11px] font-semibold text-neutral-400 mb-1.5 uppercase tracking-wider">City</label>
-                    <div className="relative">
+                  <div className="flex-1 min-w-[150px]">
+                    <label className="block text-[11px] font-bold text-neutral-500 mb-2 uppercase tracking-widest">City</label>
+                    <div className="relative group">
                       <input type="text" value={location} onChange={(e) => { setLocation(e.target.value); setPage(1); }}
                         placeholder="e.g. Mumbai"
-                        className="w-full pl-9 pr-3 py-2.5 border border-neutral-200 rounded-xl text-sm bg-neutral-50 placeholder-neutral-400 focus:bg-white focus:outline-none focus:border-[#3B5BDB]/40 focus:ring-2 focus:ring-[#3B5BDB]/10 transition-all duration-200" />
-                      <FaLocationDot className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-xs pointer-events-none" />
+                        className="w-full pl-10 pr-4 py-3 border border-neutral-200 rounded-2xl text-sm bg-neutral-50 placeholder-neutral-400 focus:bg-white focus:outline-none focus:border-[#3B5BDB]/40 focus:ring-4 focus:ring-[#3B5BDB]/10 transition-all duration-300" />
+                      <FaLocationDot className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 text-sm group-focus-within:text-[#3B5BDB] transition-colors" />
                     </div>
                   </div>
 
                   {/* Skill filter for crew */}
                   {searchType === 'crew' && (
-                    <div className="flex-1 min-w-[140px]">
-                      <label className="block text-[11px] font-semibold text-neutral-400 mb-1.5 uppercase tracking-wider">Role</label>
+                    <div className="flex-1 min-w-[150px]">
+                      <label className="block text-[11px] font-bold text-neutral-500 mb-2 uppercase tracking-widest">Role</label>
                       <select value={skillFilter} onChange={(e) => { setSkillFilter(e.target.value); setPage(1); }}
-                        className="w-full px-3 py-2.5 border border-neutral-200 rounded-xl text-sm bg-neutral-50 focus:bg-white focus:outline-none focus:border-[#3B5BDB]/40 focus:ring-2 focus:ring-[#3B5BDB]/10 transition-all duration-200">
+                        className="w-full px-4 py-3 border border-neutral-200 rounded-2xl text-sm bg-neutral-50 focus:bg-white focus:outline-none focus:border-[#3B5BDB]/40 focus:ring-4 focus:ring-[#3B5BDB]/10 transition-all duration-300 appearance-none">
                         <option value="">All roles</option>
-                        {CREW_SKILLS.map(s => <option key={s} value={s}>{s}</option>)}
+                        {REGISTRATION_INDIVIDUAL_DEPARTMENTS.map(s => <option key={s} value={s}>{s}</option>)}
                       </select>
                     </div>
                   )}
 
                   {/* Vendor type filter */}
                   {searchType === 'vendors' && (
-                    <div className="flex-1 min-w-[140px]">
-                      <label className="block text-[11px] font-semibold text-neutral-400 mb-1.5 uppercase tracking-wider">Type</label>
+                    <div className="flex-1 min-w-[150px]">
+                      <label className="block text-[11px] font-bold text-neutral-500 mb-2 uppercase tracking-widest">Type</label>
                       <select value={skillFilter} onChange={(e) => { setSkillFilter(e.target.value); setPage(1); }}
-                        className="w-full px-3 py-2.5 border border-neutral-200 rounded-xl text-sm bg-neutral-50 focus:bg-white focus:outline-none focus:border-[#3B5BDB]/40 focus:ring-2 focus:ring-[#3B5BDB]/10 transition-all duration-200">
+                        className="w-full px-4 py-3 border border-neutral-200 rounded-2xl text-sm bg-neutral-50 focus:bg-white focus:outline-none focus:border-[#3B5BDB]/40 focus:ring-4 focus:ring-[#3B5BDB]/10 transition-all duration-300 appearance-none">
                         <option value="">All types</option>
-                        {VENDOR_TYPES.map(t => <option key={t} value={t} className="capitalize">{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
+                        {REGISTRATION_VENDOR_CATEGORIES.map(t => <option key={t} value={t}>{t}</option>)}
                       </select>
                     </div>
                   )}
 
-                  <button type="button" onClick={() => { setQuery(''); setLocation(''); setSkillFilter(''); setPage(1); }}
-                    className="px-4 py-2.5 rounded-xl border border-neutral-200 text-sm text-neutral-500 hover:text-neutral-700 hover:border-neutral-300 hover:bg-neutral-50 transition-all duration-200 whitespace-nowrap">
+                  {/* Start Date */}
+                  <div className="flex-1 min-w-[140px]">
+                    <label className="block text-[11px] font-bold text-neutral-500 mb-2 uppercase tracking-widest">Start Date</label>
+                    <input type="date" value={startDate} onChange={(e) => { setStartDate(e.target.value); setPage(1); }}
+                      className="w-full px-4 py-3 border border-neutral-200 rounded-2xl text-sm bg-neutral-50 focus:bg-white focus:outline-none focus:border-[#3B5BDB]/40 focus:ring-4 focus:ring-[#3B5BDB]/10 transition-all duration-300" />
+                  </div>
+
+                  {/* End Date */}
+                  <div className="flex-1 min-w-[140px]">
+                    <label className="block text-[11px] font-bold text-neutral-500 mb-2 uppercase tracking-widest">End Date</label>
+                    <input type="date" value={endDate} min={startDate || undefined} onChange={(e) => { setEndDate(e.target.value); setPage(1); }}
+                      className="w-full px-4 py-3 border border-neutral-200 rounded-2xl text-sm bg-neutral-50 focus:bg-white focus:outline-none focus:border-[#3B5BDB]/40 focus:ring-4 focus:ring-[#3B5BDB]/10 transition-all duration-300" />
+                  </div>
+
+                  <button type="button" onClick={() => { setQuery(''); setLocation(''); setSkillFilter(''); setStartDate(''); setEndDate(''); setPage(1); }}
+                    className="px-6 py-3 rounded-2xl border border-neutral-200 text-sm font-semibold text-neutral-600 hover:text-neutral-900 hover:border-neutral-300 hover:bg-neutral-100 hover:shadow-sm transition-all duration-300 whitespace-nowrap">
                     Reset
                   </button>
                 </div>
@@ -264,44 +292,54 @@ export default function SearchFilter() {
                     <p className="text-sm text-neutral-400 max-w-xs mx-auto">Try adjusting your filters or search in a different city</p>
                   </div>
                 ) : (
-                  <div className="space-y-2.5">
+                  <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {crewResults.map((r) => (
-                      <div key={r.userId} className="group relative rounded-2xl bg-white border border-neutral-200/80 shadow-sm hover:shadow-md hover:border-neutral-300 transition-all duration-200 flex items-center gap-4 overflow-hidden">
-                        {/* Subtle left accent */}
-                        <div className={`absolute left-0 top-0 bottom-0 w-1 rounded-l-2xl transition-all duration-200 ${r.isAvailable ? 'bg-emerald-400 group-hover:bg-emerald-500' : 'bg-neutral-200 group-hover:bg-neutral-300'}`} />
-                        <div className="flex items-center gap-4 flex-1 min-w-0 p-5 pl-6">
-                          <Avatar name={r.displayName} size="lg" />
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1 flex-wrap">
-                              <h3 className="text-sm font-bold text-neutral-900 truncate group-hover:text-[#3B5BDB] transition-colors duration-200">{r.displayName}</h3>
-                              <span className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full shrink-0 ${r.isAvailable ? 'bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200' : 'bg-neutral-100 text-neutral-400 ring-1 ring-neutral-200'}`}>
+                      <motion.div variants={itemVariants} key={r.userId} className="group relative rounded-3xl bg-white shadow-soft hover:shadow-float border border-neutral-100 transition-all duration-300 flex flex-col overflow-hidden">
+                        {/* Status accent top bar */}
+                        <div className={`h-1.5 w-full transition-colors duration-300 ${r.isAvailable ? 'bg-emerald-400 group-hover:bg-emerald-500' : 'bg-neutral-200 group-hover:bg-neutral-300'}`} />
+                        
+                        <div className="p-6 flex-1 flex flex-col">
+                          <div className="flex items-start justify-between gap-4 mb-4">
+                            <div className="ring-4 ring-neutral-50 rounded-full shadow-sm">
+                              <Avatar name={r.displayName} size="lg" />
+                            </div>
+                            <span className={`text-[10px] font-bold px-3 py-1 rounded-full border ${r.isAvailable ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-neutral-50 text-neutral-500 border-neutral-200'}`}>
                                 {r.isAvailable ? 'Available' : 'Unavailable'}
+                            </span>
+                          </div>
+                          
+                          <h3 className="text-lg font-extrabold text-neutral-900 truncate group-hover:text-[#3B5BDB] transition-colors duration-200">{r.displayName}</h3>
+                          <p className="text-xs uppercase tracking-widest text-neutral-400 font-semibold mb-3 truncate">{r.skills?.join(' · ') || '—'}</p>
+                          
+                          <div className="flex flex-col gap-2 mb-4 mt-auto pt-4 border-t border-neutral-100">
+                            {r.locationCity && (
+                              <span className="text-xs text-neutral-500 flex items-center gap-2">
+                                <FaLocationDot className="text-neutral-400" /> {r.locationCity}{r.locationState ? `, ${r.locationState}` : ''}
                               </span>
+                            )}
+                            <span className="text-[13px] font-bold text-neutral-900 bg-neutral-50 p-2 rounded-lg inline-block w-fit mt-1">
+                              {r.dailyBudget ? formatPaise(r.dailyBudget) + ' /day' : 'Rate on request'}
+                            </span>
+                          </div>
+                          
+                          <div className="flex flex-col gap-2 mt-2">
+                            <button type="button" onClick={() => handleSendRequest({ userId: r.userId, name: r.displayName, role: r.skills?.[0] ?? 'Crew', rate: r.dailyBudget ? formatPaise(r.dailyBudget) + ' /day' : 'Rate on request' })}
+                              className="w-full rounded-xl px-4 py-3 bg-[#3B5BDB] text-white text-sm font-bold hover:bg-[#2f4ac2] shadow-sm hover:shadow-md transition-all duration-200 transform hover:-translate-y-0.5">
+                              Book Crew
+                            </button>
+                            <div className="flex gap-2">
+                              <Link to={`/dashboard/chat/${r.userId}`} className="flex-1 rounded-xl px-4 py-2 border border-neutral-200 text-neutral-600 text-xs font-semibold hover:bg-neutral-50 transition-all duration-200 flex items-center justify-center gap-1.5">
+                                <FaMessage className="w-3 h-3" /> Chat
+                              </Link>
+                              <Link to={`/dashboard/profile/${r.userId}`} className="flex-1 rounded-xl px-4 py-2 border border-neutral-200 text-neutral-600 text-xs font-semibold hover:bg-neutral-50 transition-all duration-200 text-center">
+                                View Profile
+                              </Link>
                             </div>
-                            <p className="text-xs text-neutral-500 mb-1.5 truncate">{r.skills?.join(' · ') || '—'}</p>
-                            <div className="flex items-center gap-3 flex-wrap">
-                              {r.locationCity && (
-                                <span className="text-xs text-neutral-400 flex items-center gap-1">
-                                  <FaLocationDot className="text-[10px]" /> {r.locationCity}{r.locationState ? `, ${r.locationState}` : ''}
-                                </span>
-                              )}
-                              <span className="text-sm font-bold text-neutral-900">{formatRateRange(r.dailyRateMin, r.dailyRateMax)}</span>
-                            </div>
-                            {r.bio && <p className="text-xs text-neutral-400 mt-2 line-clamp-1 leading-relaxed">{r.bio}</p>}
                           </div>
                         </div>
-                        <div className="flex flex-col gap-2 shrink-0 pr-5">
-                          <Link to={`/dashboard/profile/${r.userId}`} className="rounded-xl px-4 py-2 border border-neutral-200 text-neutral-600 text-xs font-medium hover:bg-neutral-50 hover:border-neutral-300 text-center transition-all duration-200">
-                            View profile
-                          </Link>
-                          <button type="button" onClick={() => handleSendRequest({ userId: r.userId, name: r.displayName, role: r.skills?.[0] ?? 'Crew', rate: formatRateRange(r.dailyRateMin, r.dailyRateMax) })}
-                            className="rounded-xl px-4 py-2 bg-[#3B5BDB] text-white text-xs font-bold hover:bg-[#2f4ac2] shadow-sm hover:shadow text-center transition-all duration-200">
-                            Book
-                          </button>
-                        </div>
-                      </div>
+                      </motion.div>
                     ))}
-                  </div>
+                  </motion.div>
                 )
               )}
 
@@ -316,40 +354,52 @@ export default function SearchFilter() {
                     <p className="text-sm text-neutral-400 max-w-xs mx-auto">Try adjusting your filters</p>
                   </div>
                 ) : (
-                  <div className="space-y-2.5">
+                  <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {vendorResults.map((r) => (
-                      <div key={r.userId} className="group relative rounded-2xl bg-white border border-neutral-200/80 shadow-sm hover:shadow-md hover:border-neutral-300 transition-all duration-200 flex items-center gap-4 overflow-hidden">
-                        {/* Subtle left accent */}
-                        <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-2xl bg-amber-300 group-hover:bg-amber-400 transition-all duration-200" />
-                        <div className="flex items-center gap-4 flex-1 min-w-0 p-5 pl-6">
-                          <div className="w-14 h-14 rounded-2xl bg-amber-50 ring-1 ring-amber-200/50 flex items-center justify-center shrink-0">
-                            <FaTruck className="text-amber-500 text-xl" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1 flex-wrap">
-                              <h3 className="text-sm font-bold text-neutral-900 truncate group-hover:text-[#3B5BDB] transition-colors duration-200">{r.companyName}</h3>
-                              {r.isGstVerified && <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200 shrink-0">GST Verified</span>}
+                      <motion.div variants={itemVariants} key={r.userId} className="group relative rounded-3xl bg-white shadow-soft hover:shadow-float border border-neutral-100 transition-all duration-300 flex flex-col overflow-hidden">
+                        {/* Vendor accent top bar */}
+                        <div className="h-1.5 w-full bg-[#F4C430] transition-colors duration-300" />
+                        
+                        <div className="p-6 flex-1 flex flex-col">
+                          <div className="flex items-start justify-between gap-4 mb-4">
+                            <div className="w-14 h-14 rounded-2xl bg-amber-50 ring-1 ring-amber-200/50 flex items-center justify-center shrink-0 shadow-sm">
+                              <FaTruck className="text-amber-500 text-xl group-hover:scale-110 transition-transform duration-300" />
                             </div>
-                            <p className="text-xs text-neutral-500">{r.vendorType === 'all' ? 'All types' : (r.vendorType?.replace(/_/g, ' ') ?? 'Vendor')}</p>
+                            <div className="flex flex-col gap-1 items-end">
+                              <span className="text-[10px] font-bold px-3 py-1 rounded-full border bg-emerald-50 text-emerald-600 border-emerald-200">Available</span>
+                              {r.isGstVerified && <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-200">GST Verified</span>}
+                            </div>
+                          </div>
+                          
+                          <h3 className="text-lg font-extrabold text-neutral-900 truncate group-hover:text-[#3B5BDB] transition-colors duration-200">{r.companyName}</h3>
+                          <p className="text-xs uppercase tracking-widest text-[#3B5BDB] font-semibold mb-3 truncate">{r.vendorType === 'all' ? 'All types' : (r.vendorType?.replace(/_/g, ' ') ?? 'Vendor')}</p>
+                          
+                          <div className="flex flex-col gap-2 mb-4 mt-auto pt-4 border-t border-neutral-100">
                             {r.locationCity && (
-                              <span className="text-xs text-neutral-400 flex items-center gap-1 mt-1.5">
-                                <FaLocationDot className="text-[10px]" /> {r.locationCity}
+                              <span className="text-xs text-neutral-500 flex items-center gap-2">
+                                <FaLocationDot className="text-neutral-400" /> {r.locationCity}
                               </span>
                             )}
                           </div>
+                          
+                          <div className="flex flex-col gap-2 mt-2">
+                            <button type="button" onClick={() => handleSendRequest({ userId: r.userId, name: r.companyName, role: r.vendorType === 'all' ? 'All types' : (r.vendorType?.replace(/_/g, ' ') ?? 'Vendor'), rate: '—', isVendor: true, initialVendorEquipmentId: r.equipment?.length === 1 ? r.equipment[0].id : undefined })}
+                              className="w-full rounded-xl px-4 py-3 bg-[#3B5BDB] text-white text-sm font-bold hover:bg-[#2f4ac2] shadow-sm hover:shadow-md transition-all duration-200 transform hover:-translate-y-0.5">
+                              Request Booking
+                            </button>
+                            <div className="flex gap-2">
+                              <Link to={`/dashboard/chat/${r.userId}`} className="flex-1 rounded-xl px-4 py-2 border border-neutral-200 text-neutral-600 text-xs font-semibold hover:bg-neutral-50 transition-all duration-200 flex items-center justify-center gap-1.5">
+                                <FaMessage className="w-3 h-3" /> Chat
+                              </Link>
+                              <Link to={`/dashboard/profile/${r.userId}`} className="flex-1 rounded-xl px-4 py-2 border border-neutral-200 text-neutral-600 text-xs font-semibold hover:bg-neutral-50 transition-all duration-200 text-center">
+                                View Profile
+                              </Link>
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex flex-col gap-2 shrink-0 pr-5">
-                          <Link to={`/dashboard/chat/${r.userId}`} className="rounded-xl px-4 py-2 border border-neutral-200 text-neutral-600 text-xs font-medium hover:bg-neutral-50 hover:border-neutral-300 text-center transition-all duration-200 flex items-center gap-1.5">
-                            <FaMessage className="w-3 h-3" /> Message
-                          </Link>
-                          <button type="button" onClick={() => handleSendRequest({ userId: r.userId, name: r.companyName, role: r.vendorType === 'all' ? 'All types' : (r.vendorType?.replace(/_/g, ' ') ?? 'Vendor'), rate: '—', isVendor: true, initialVendorEquipmentId: r.equipment?.length === 1 ? r.equipment[0].id : undefined })}
-                            className="rounded-xl px-4 py-2 bg-[#3B5BDB] text-white text-xs font-bold hover:bg-[#2f4ac2] shadow-sm hover:shadow text-center transition-all duration-200">
-                            Book
-                          </button>
-                        </div>
-                      </div>
+                      </motion.div>
                     ))}
-                  </div>
+                  </motion.div>
                 )
               )}
 

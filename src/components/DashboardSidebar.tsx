@@ -39,16 +39,16 @@ export default function DashboardSidebar({ links }: Props) {
   }
 
   return (
-    <aside className="hidden lg:flex lg:flex-col w-56 xl:w-60 shrink-0 bg-[#FAFBFC] border-r border-neutral-200/70 overflow-hidden">
-      <nav className="flex-1 overflow-y-auto px-3 pt-5 pb-4">
+    <aside className="hidden lg:flex lg:flex-col w-56 xl:w-60 shrink-0 bg-white/60 backdrop-blur-xl border-r border-neutral-100/80 overflow-hidden relative z-20">
+      <nav className="flex-1 overflow-y-auto px-4 pt-6 pb-6 scrollbar-hide">
         {sections.map((section, sIdx) => (
-          <div key={sIdx} className={sIdx > 0 ? 'mt-5' : ''}>
+          <div key={sIdx} className={sIdx > 0 ? 'mt-8' : ''}>
             {section.label && (
-              <div className="px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-neutral-400 select-none">
+              <div className="px-3 mb-2.5 text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-400 select-none">
                 {section.label}
               </div>
             )}
-            <div className="space-y-0.5">
+            <div className="space-y-1">
               {section.items.map((item) => {
                 const active = isActive(item.to);
                 const showChatBadge = item.to === CHAT_PATH && totalUnread > 0;
@@ -56,10 +56,10 @@ export default function DashboardSidebar({ links }: Props) {
                   <Link
                     key={item.to}
                     to={item.to}
-                    className={`group relative flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-150 ${
+                    className={`group relative flex items-center gap-3.5 px-3.5 py-2.5 rounded-2xl text-[13px] font-bold transition-all duration-300 ${
                       active
-                        ? 'bg-[#EEF2FF] text-[#3B5BDB]'
-                        : 'text-neutral-500 hover:bg-white hover:text-neutral-900 hover:shadow-[0_1px_2px_rgba(0,0,0,0.04)]'
+                        ? 'bg-gradient-to-r from-[#EEF4FF] border border-[#3B5BDB]/10 to-transparent text-[#3B5BDB]'
+                        : 'text-neutral-500 hover:bg-neutral-50 border border-transparent hover:text-neutral-900'
                     }`}
                   >
                     {/* Left accent bar for active state */}

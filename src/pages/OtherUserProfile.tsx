@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import { useParams, Link } from 'react-router-dom';
 import { FaArrowLeft, FaLocationDot, FaUpRightFromSquare, FaCalendarDays, FaTriangleExclamation, FaVideo } from 'react-icons/fa6';
 import DashboardHeader from '../components/DashboardHeader';
@@ -86,6 +87,16 @@ function buildCalendarCells(
   return rows;
 }
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 15 },
+  visible: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 300, damping: 24 } }
+} satisfies Record<string, any>;
+
 export default function OtherUserProfile() {
   const { userId } = useParams<{ userId: string }>();
   const [profile, setProfile] = useState<PublicProfileResponse | null>(null);
@@ -170,9 +181,11 @@ export default function OtherUserProfile() {
       <DashboardHeader />
       <div className="flex-1 flex min-h-0 overflow-hidden">
         <DashboardSidebar links={companyNavLinks} />
-        <main className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
-          <div className="flex-1 min-h-0 overflow-auto">
-            <div className="max-w-[1100px] mx-auto px-4 sm:px-6 md:px-8 lg:px-6 xl:px-8 py-4 sm:py-5">
+        <main className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden relative">
+          {/* Subtle background mesh */}
+          <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-br from-[#3B5BDB]/5 via-[#DBEAFE]/30 to-transparent pointer-events-none" />
+          <div className="flex-1 min-h-0 overflow-auto z-10">
+            <div className="max-w-[1100px] mx-auto px-4 sm:px-6 md:px-8 lg:px-6 xl:px-8 py-4 sm:py-6">
               <div className="mb-4 flex items-center gap-3">
                 <Link
                   to="/dashboard/search"
@@ -194,61 +207,76 @@ export default function OtherUserProfile() {
                   <p className="text-sm text-red-700">{error}</p>
                 </div>
               ) : profile && p ? (
-                <div className="space-y-5">
-                  <div className="rounded-2xl bg-white border border-neutral-200 p-6 flex flex-col sm:flex-row gap-5">
-                    <div className="flex-shrink-0">
-                      <Avatar name={title} size="lg" />
+                <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-6">
+                  {/* Hero Card */}
+                  <motion.div variants={itemVariants} className="rounded-3xl bg-white shadow-soft border border-neutral-100 overflow-hidden relative">
+                    <div className="h-32 bg-gradient-to-r from-[#3B5BDB]/10 via-[#7c96ff]/10 to-transparent w-full absolute top-0 left-0 pointer-events-none" />
+                    <div className="p-6 sm:p-8 flex flex-col sm:flex-row gap-6 sm:gap-8 relative z-10 mt-6 sm:mt-10">
+                      <div className="flex-shrink-0">
+                        <div className="ring-4 ring-white rounded-full bg-white shadow-sm inline-block">
+                          <Avatar name={title} size="lg" />
+                        </div>
+                      </div>
+                      <div className="flex-1 min-w-0 pt-2">
+                        <h1 className="text-2xl sm:text-3xl font-extrabold text-neutral-900 mb-1">{title}</h1>
+                        <p className="text-xs uppercase tracking-[0.15em] font-semibold text-[#3B5BDB] mb-3">
+                          {profile.role.replace(/_/g, ' ')}
+                        </p>
+                        {(p.locationCity || p.locationState) && (
+                          <p className="text-sm text-neutral-600 flex items-center gap-1.5 mb-2">
+                            <FaLocationDot className="w-3.5 h-3.5 text-neutral-400" />
+                            {[p.locationCity, p.locationState].filter(Boolean).join(', ')}
+                          </p>
+                        )}
+                        {isIndividual && (p.dailyRateMin != null || p.dailyRateMax != null) && (
+                          <div className="inline-block mt-2 mb-3 bg-[#EEF4FF] border border-[#3B5BDB]/20 text-[#3B5BDB] px-3 py-1.5 rounded-lg">
+                            <p className="text-sm font-bold">
+                              {formatRate(p.dailyRateMin ?? null, p.dailyRateMax ?? null)}
+                            </p>
+                          </div>
+                        )}
+                        {isIndividual && p.skills?.length ? (
+                          <div className="flex flex-wrap gap-1.5 mt-2">
+                            {p.skills.map((s) => (
+                              <span key={s} className="px-2.5 py-1 bg-neutral-100 text-neutral-700 text-xs font-medium rounded-md border border-neutral-200">
+                                {s}
+                              </span>
+                            ))}
+                          </div>
+                        ) : null}
+                        {worklink && (
+                          <div className="mt-4 pt-4 border-t border-neutral-100">
+                            <a
+                              href={worklink}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1.5 text-sm font-medium text-[#3B5BDB] hover:text-[#2f4ac2] transition-colors group"
+                            >
+                              View Portfolio
+                              <FaUpRightFromSquare className="w-3.5 h-3.5 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition-transform" />
+                            </a>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <h1 className="text-xl sm:text-2xl font-bold text-neutral-900 mb-1">{title}</h1>
-                      <p className="text-xs uppercase tracking-[0.12em] text-neutral-500 mb-2">
-                        {profile.role}
-                      </p>
-                      {(p.locationCity || p.locationState) && (
-                        <p className="text-sm text-neutral-600 flex items-center gap-1 mb-1">
-                          <FaLocationDot className="w-3 h-3 text-neutral-400" />
-                          {[p.locationCity, p.locationState].filter(Boolean).join(', ')}
-                        </p>
-                      )}
-                      {isIndividual && (p.dailyRateMin != null || p.dailyRateMax != null) && (
-                        <p className="text-sm font-semibold text-neutral-900 mb-1">
-                          Rate: {formatRate(p.dailyRateMin ?? null, p.dailyRateMax ?? null)}
-                        </p>
-                      )}
-                      {isIndividual && p.skills?.length ? (
-                        <p className="text-xs text-neutral-600 mb-1">
-                          Skills: <span className="font-medium text-neutral-800">{p.skills.join(', ')}</span>
-                        </p>
-                      ) : null}
-                      {worklink && (
-                        <p className="text-xs text-neutral-600 mt-2">
-                          Worklink:{' '}
-                          <a
-                            href={worklink}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex items-center gap-1 text-[#3B5BDB] hover:underline"
-                          >
-                            {worklink}
-                            <FaUpRightFromSquare className="w-3 h-3" />
-                          </a>
-                        </p>
-                      )}
-                    </div>
-                  </div>
+                  </motion.div>
 
                   {(p.bio || p.aboutMe || p.aboutUs) && (
-                    <div className="rounded-2xl bg-white border border-neutral-200 p-5">
-                      <h2 className="text-sm font-bold text-neutral-900 mb-3">About</h2>
-                      <p className="text-sm text-neutral-700 whitespace-pre-wrap">
+                    <motion.div variants={itemVariants} className="rounded-3xl bg-white shadow-soft border border-neutral-100 p-6 sm:p-8">
+                      <h2 className="text-base font-bold text-neutral-900 mb-4 flex items-center gap-2">
+                        <span className="w-1 h-5 rounded-full bg-[#3B5BDB]" /> About
+                      </h2>
+                      <p className="text-sm text-neutral-600 leading-relaxed whitespace-pre-wrap">
                         {p.aboutMe || p.aboutUs || p.bio}
                       </p>
-                    </div>
+                    </motion.div>
                   )}
 
                   {isVendor && (
-                    <div className="rounded-2xl bg-white border border-neutral-200 p-5">
-                      <h2 className="text-sm font-bold text-neutral-900 mb-3">Vendor details</h2>
+                    <motion.div variants={itemVariants} className="rounded-3xl bg-white shadow-soft border border-neutral-100 p-6 sm:p-8">
+                      <h2 className="text-base font-bold text-neutral-900 mb-5 flex items-center gap-2">
+                        <span className="w-1 h-5 rounded-full bg-[#F4C430]" /> Vendor details
+                      </h2>
                       <dl className="space-y-2 text-sm text-neutral-700">
                         <div>
                           <dt className="text-xs text-neutral-500 mb-0.5">Type</dt>
@@ -319,12 +347,12 @@ export default function OtherUserProfile() {
                           </div>
                         )}
                       </dl>
-                    </div>
+                    </motion.div>
                   )}
 
                   {(isIndividual || isVendor) && (
                   <>
-                  <div className="rounded-2xl bg-white border border-neutral-200 p-5">
+                  <motion.div variants={itemVariants} className="rounded-3xl bg-white shadow-soft border border-neutral-100 p-6 sm:p-8">
                     <div className="flex items-center justify-between mb-3">
                       <h2 className="text-sm font-bold text-neutral-900 flex items-center gap-2">
                         <FaCalendarDays className="w-4 h-4 text-neutral-500" />
@@ -427,7 +455,7 @@ export default function OtherUserProfile() {
                         </div>
                       </>
                     )}
-                  </div>
+                  </motion.div>
 
                   <AvailabilityDateDetailModal
                     open={!!detailDate}
@@ -439,14 +467,14 @@ export default function OtherUserProfile() {
                   />
                   </>
                   )}
-                </div>
+                </motion.div>
               ) : null}
 
               {/* Reviews section */}
               {profile && (
-                <div className="mt-6">
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="mt-8">
                   <ReviewsList userId={profile.id} />
-                </div>
+                </motion.div>
               )}
             </div>
           </div>

@@ -18,6 +18,7 @@
  */
 
 import { useEffect, useState, useRef, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import {
   FaArrowLeft, FaPaperPlane, FaTriangleExclamation, FaPaperclip,
@@ -671,40 +672,53 @@ export default function Chat() {
                 </div>
               )}
 
-              {filteredMessages.map((msg, idx) => {
-                const isMe = msg.senderId === user?.id;
-                const isDeleted = !!msg.deletedAt;
-                const showDate = shouldShowDateLabel(filteredMessages, idx);
+              {/* Messages wrapper */}
+              <AnimatePresence initial={false}>
+                {filteredMessages.map((msg, idx) => {
+                  const isMe = msg.senderId === user?.id;
+                  const isDeleted = !!msg.deletedAt;
+                  const showDate = shouldShowDateLabel(filteredMessages, idx);
 
-                return (
-                  <div key={msg.id}>
-                    {/* Date separator */}
-                    {showDate && (
-                      <div className="flex justify-center my-3">
-                        <span className="bg-white/90 text-[11px] text-neutral-500 font-medium px-3 py-1 rounded-lg shadow-sm">
-                          {formatDateLabel(msg.createdAt)}
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Message bubble */}
-                    <div
-                      className={`flex mb-1 ${isMe ? 'justify-end' : 'justify-start'}`}
-                      onContextMenu={(e) => {
-                        e.preventDefault();
-                        if (!isDeleted) setContextMenu({ msgId: msg.id, x: e.clientX, y: e.clientY });
-                      }}
+                  return (
+                    <motion.div 
+                      key={msg.id}
+                      initial={{ opacity: 0, y: 15, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                     >
+                      {/* Date separator */}
+                      {showDate && (
+                        <div className="flex justify-center my-4">
+                          <span className="bg-white/80 backdrop-blur-md text-[11px] text-neutral-500 font-medium px-4 py-1.5 rounded-full shadow-sm border border-white/50">
+                            {formatDateLabel(msg.createdAt)}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Message bubble */}
                       <div
-                        className={`relative max-w-[75%] sm:max-w-[65%] px-2.5 py-1.5 rounded-lg shadow-sm group ${
-                          isDeleted
-                            ? 'bg-neutral-100 italic'
-                            : isMe
-                              ? 'rounded-tr-none'
-                              : 'rounded-tl-none'
-                        }`}
-                        style={{ backgroundColor: isDeleted ? '#f0f0f0' : isMe ? BRAND.outgoing : BRAND.incoming }}
+                        className={`flex mb-2 ${isMe ? 'justify-end' : 'justify-start'}`}
+                        onContextMenu={(e) => {
+                          e.preventDefault();
+                          if (!isDeleted) setContextMenu({ msgId: msg.id, x: e.clientX, y: e.clientY });
+                        }}
                       >
+                        <div
+                          className={`relative max-w-[80%] sm:max-w-[70%] px-3.5 py-2.5 rounded-2xl shadow-sm group ${
+                            isDeleted
+                              ? 'bg-neutral-100 italic'
+                              : isMe
+                                ? 'rounded-br-sm'
+                                : 'rounded-bl-sm border border-neutral-100'
+                          }`}
+                          style={
+                            isDeleted
+                              ? { backgroundColor: '#f0f0f0' }
+                              : isMe
+                                ? { background: 'linear-gradient(135deg, #3B5BDB, #5B9DF9)', color: '#fff' }
+                                : { backgroundColor: BRAND.incoming }
+                          }
+                        >
                         {/* Forwarded label */}
                         {msg.forwardedFromId && !isDeleted && (
                           <p className="text-[10px] text-neutral-500 italic mb-0.5 flex items-center gap-1">
@@ -729,18 +743,18 @@ export default function Chat() {
 
                         {/* Message content */}
                         {isDeleted ? (
-                          <p className="text-[13px] text-neutral-400 italic">
+                          <p className="text-[13px] opacity-70 italic">
                             This message was deleted
                           </p>
                         ) : (
                           <>
                             {msg.type === 'image' && msg.mediaUrl && (
-                              <img src={msg.mediaUrl} alt="Shared image" className="rounded-md mb-1 max-w-full max-h-60 object-cover" />
+                              <img src={msg.mediaUrl} alt="Shared image" className="rounded-xl mb-2 max-w-full max-h-60 object-cover shadow-sm border border-black/5" />
                             )}
-                            <p className="text-[13.5px] text-[#111B21] leading-[19px] break-words whitespace-pre-wrap">
+                            <p className={`text-[14px] leading-relaxed break-words whitespace-pre-wrap ${isMe ? 'text-white' : 'text-[#111B21]'}`}>
                               {msg.content ?? ''}
                               {/* Invisible spacer for timestamp */}
-                              <span className="invisible text-[11px] pl-3">
+                              <span className="invisible text-[11px] pl-4">
                                 {formatTime(msg.createdAt)}
                                 {isMe && '  ✓✓'}
                               </span>
@@ -749,10 +763,10 @@ export default function Chat() {
                         )}
 
                         {/* Timestamp + read status */}
-                        <span className="absolute bottom-1 right-2 flex items-center gap-0.5 text-[11px] text-neutral-500">
+                        <span className={`absolute bottom-1 right-2 flex items-center gap-0.5 text-[10px] ${isMe ? 'text-white/80' : 'text-neutral-400'}`}>
                           {formatTime(msg.createdAt)}
                           {isMe && !isDeleted && (
-                            <span className={`ml-0.5 ${msg.readAt || msg.isRead ? 'text-[#3B5BDB]' : 'text-neutral-400'}`}>
+                            <span className={`ml-0.5 ${msg.readAt || msg.isRead ? 'text-blue-200' : 'opacity-70'}`}>
                               {msg.readAt || msg.isRead ? '✓✓' : '✓✓'}
                             </span>
                           )}
@@ -762,21 +776,22 @@ export default function Chat() {
                         {!isDeleted && (
                           <button
                             type="button"
-                            className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-full hover:bg-black/5"
+                            className="absolute top-1 -right-8 opacity-0 group-hover:opacity-100 transition-opacity p-2 rounded-full sm:hover:bg-black/5"
                             onClick={(e) => {
                               e.stopPropagation();
                               const rect = (e.target as HTMLElement).getBoundingClientRect();
                               setContextMenu({ msgId: msg.id, x: rect.right, y: rect.bottom });
                             }}
                           >
-                            <FaChevronDown className="w-3 h-3 text-neutral-400" />
+                            <FaChevronDown className="w-3.5 h-3.5 text-neutral-400" />
                           </button>
                         )}
                       </div>
                     </div>
-                  </div>
+                  </motion.div>
                 );
               })}
+              </AnimatePresence>
               <div ref={bottomRef} />
             </div>
 
@@ -889,32 +904,34 @@ export default function Chat() {
             )}
 
             {/* ── Emoji picker ── */}
-            {showEmojiPicker && (
-              <div className="bg-white border-t border-neutral-200 px-3 py-2">
-                <div className="flex flex-wrap gap-1">
-                  {emojiList.map((emoji) => (
-                    <button
-                      key={emoji}
-                      type="button"
-                      onClick={() => insertEmoji(emoji)}
-                      className="w-9 h-9 flex items-center justify-center text-xl hover:bg-neutral-100 rounded-lg transition-colors"
-                    >
-                      {emoji}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+            <AnimatePresence>
+              {showEmojiPicker && (
+                <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 20, opacity: 0 }} className="bg-white/90 backdrop-blur-md border-t border-neutral-200 px-4 py-3 shadow-lg">
+                  <div className="flex flex-wrap gap-2 max-w-lg mx-auto">
+                    {emojiList.map((emoji) => (
+                      <button
+                        key={emoji}
+                        type="button"
+                        onClick={() => insertEmoji(emoji)}
+                        className="w-10 h-10 flex items-center justify-center text-2xl hover:bg-neutral-100 rounded-xl transition-colors hover:scale-110 active:scale-95"
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-            {/* ── Message input ── */}
-            <form onSubmit={handleSend} className="px-2 sm:px-3 py-2 shrink-0" style={{ backgroundColor: BRAND.inputBg }}>
-              <div className="flex items-end gap-2">
+            {/* ── Floating Message Input ── */}
+            <div className="px-3 sm:px-6 pb-4 pt-1 bg-transparent absolute bottom-0 left-0 w-full z-20 pointer-events-none">
+              <form onSubmit={handleSend} className="glass-input flex items-end gap-2 p-2 rounded-3xl shadow-float max-w-4xl mx-auto pointer-events-auto transition-all">
                 {/* Attachment & emoji buttons */}
-                <div className="flex items-center gap-0.5 mb-1">
+                <div className="flex items-center gap-1 mb-1 bg-neutral-100/50 rounded-full p-1 ml-1">
                   <button
                     type="button"
                     onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                    className={`p-2 transition-colors rounded-full hover:bg-black/5 ${showEmojiPicker ? 'text-[#3B5BDB]' : 'text-neutral-500 hover:text-[#3B5BDB]'}`}
+                    className={`p-2 transition-colors rounded-full hover:bg-white hover:shadow-sm ${showEmojiPicker ? 'text-[#3B5BDB]' : 'text-neutral-500 hover:text-[#3B5BDB]'}`}
                   >
                     <FaFaceSmile className="w-5 h-5" />
                   </button>
@@ -922,69 +939,72 @@ export default function Chat() {
                     <button
                       type="button"
                       onClick={(e) => { e.stopPropagation(); setShowAttachMenu(!showAttachMenu); }}
-                      className="p-2 text-neutral-500 hover:text-[#3B5BDB] transition-colors rounded-full hover:bg-black/5"
+                      className="p-2 text-neutral-500 hover:text-[#3B5BDB] transition-colors rounded-full hover:bg-white hover:shadow-sm"
                     >
-                      <FaPaperclip className="w-5 h-5 rotate-45" />
+                      <FaPaperclip className="w-5 h-5 " />
                     </button>
 
                     {/* Attachment menu popup */}
-                    {showAttachMenu && (
-                      <div className="absolute bottom-full left-0 mb-2 flex flex-col gap-2 z-50" onClick={(e) => e.stopPropagation()}>
-                        <button
-                          type="button"
-                          onClick={() => imageInputRef.current?.click()}
-                          className="w-12 h-12 rounded-full bg-[#BF59CF] text-white flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
-                          title="Photos"
-                        >
-                          <FaImage className="w-5 h-5" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => fileInputRef.current?.click()}
-                          className="w-12 h-12 rounded-full bg-[#3B5BDB] text-white flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
-                          title="Document"
-                        >
-                          <FaFile className="w-5 h-5" />
-                        </button>
-                      </div>
-                    )}
+                    <AnimatePresence>
+                      {showAttachMenu && (
+                        <motion.div initial={{ opacity: 0, y: 10, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.9 }} className="absolute bottom-full left-0 mb-4 flex flex-col gap-3 z-50 pointer-events-auto" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            type="button"
+                            onClick={() => imageInputRef.current?.click()}
+                            className="w-12 h-12 rounded-full bg-gradient-to-br from-[#BF59CF] to-[#9c3eb0] text-white flex items-center justify-center shadow-lg hover:shadow-xl hover:scale-105 transition-all"
+                            title="Photos"
+                          >
+                            <FaImage className="w-5 h-5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            className="w-12 h-12 rounded-full bg-gradient-to-br from-[#3B5BDB] to-[#5B9DF9] text-white flex items-center justify-center shadow-lg hover:shadow-xl hover:scale-105 transition-all"
+                            title="Document"
+                          >
+                            <FaFile className="w-5 h-5" />
+                          </button>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 </div>
 
                 {/* Text input */}
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 flex items-center">
                   <input
                     type="text"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    placeholder="Type a message"
+                    placeholder="Message..."
                     disabled={sending}
-                    className="w-full px-4 py-2.5 bg-white rounded-3xl text-[15px] text-[#111B21] placeholder-neutral-400 focus:outline-none disabled:opacity-50 shadow-sm"
+                    className="w-full px-4 py-3 bg-transparent text-[15px] font-medium text-[#111B21] placeholder-neutral-400 focus:outline-none disabled:opacity-50"
                   />
                 </div>
 
                 {/* Send / Mic button */}
-                {input.trim() ? (
-                  <button
-                    type="submit"
-                    disabled={sending}
-                    className="w-11 h-11 rounded-full flex items-center justify-center transition-colors disabled:opacity-50 shrink-0 mb-0.5 bg-[#3B5BDB] hover:bg-[#364FC7]"
-                  >
-                    {sending
-                      ? <span className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                      : <FaPaperPlane className="w-4 h-4 text-white ml-0.5" />
-                    }
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    className="w-11 h-11 rounded-full flex items-center justify-center transition-colors shrink-0 mb-0.5 bg-[#3B5BDB] hover:bg-[#364FC7]"
-                  >
-                    <FaMicrophone className="w-5 h-5 text-white" />
-                  </button>
-                )}
-              </div>
-
+                <div className="mb-0.5 mr-0.5">
+                  {input.trim() ? (
+                    <button
+                      type="submit"
+                      disabled={sending}
+                      className="w-11 h-11 rounded-full flex items-center justify-center transition-all shadow-md disabled:opacity-50 bg-[#3B5BDB] hover:bg-[#2f4ac2] hover:scale-105 active:scale-95"
+                    >
+                      {sending
+                        ? <span className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                        : <FaPaperPlane className="w-4 h-4 text-white ml-0.5" />
+                      }
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="w-11 h-11 rounded-full flex items-center justify-center transition-all bg-neutral-100 hover:bg-neutral-200 text-neutral-600 hover:text-[#3B5BDB] hover:scale-105 active:scale-95 border border-neutral-200"
+                    >
+                      <FaMicrophone className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              </form>
               {/* Hidden file inputs */}
               <input
                 ref={imageInputRef}
@@ -1007,7 +1027,7 @@ export default function Chat() {
                   e.target.value = '';
                 }}
               />
-            </form>
+            </div>
           </div>
         </main>
       </div>

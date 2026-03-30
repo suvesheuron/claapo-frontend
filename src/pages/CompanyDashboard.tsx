@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { FaPlus, FaUsers, FaTruck, FaFolder, FaChevronLeft, FaChevronRight, FaXmark, FaEye, FaMessage, FaPeopleGroup, FaFileInvoice, FaBan } from 'react-icons/fa6';
 import DashboardHeader from '../components/DashboardHeader';
@@ -197,57 +198,70 @@ export default function CompanyDashboard() {
   const greetingHour = today.getHours();
   const greeting = greetingHour < 12 ? 'Good morning' : greetingHour < 17 ? 'Good afternoon' : 'Good evening';
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 15 },
+    visible: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 300, damping: 24 } }
+  } satisfies Record<string, any>;
+
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-[#F5F6F8] w-full">
+    <div className="h-screen flex flex-col overflow-hidden bg-[#F8F9FB] w-full">
       <DashboardHeader />
       <div className="flex-1 flex min-h-0 overflow-hidden">
         <DashboardSidebar links={companyNavLinks} />
-        <main className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
-          <div className="flex-1 min-h-0 overflow-auto">
+        <main className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden relative">
+          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-bl from-[#3B5BDB]/5 via-[#5B9DF9]/5 to-transparent rounded-full blur-3xl pointer-events-none" />
+          <div className="flex-1 min-h-0 overflow-auto z-10">
             <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-6 xl:px-8 py-5">
+              
+              <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-6">
 
               {/* Greeting banner */}
-              <div className="relative mb-6 rounded-2xl bg-gradient-to-r from-[#3B5BDB]/[0.07] via-[#5B9DF9]/[0.05] to-transparent border border-[#3B5BDB]/10 px-6 py-5 overflow-hidden">
-                <div className="absolute top-0 right-0 w-40 h-40 bg-[#3B5BDB]/[0.04] rounded-full -translate-y-1/2 translate-x-1/3" />
-                <div className="absolute bottom-0 right-24 w-20 h-20 bg-[#5B9DF9]/[0.06] rounded-full translate-y-1/2" />
-                <div className="relative flex items-center justify-between">
+              <motion.div variants={itemVariants} className="relative rounded-3xl bg-white shadow-soft border border-neutral-100 px-8 py-6 overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-[#3B5BDB]/10 via-[#7c96ff]/5 to-transparent rounded-full blur-2xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
+                <div className="absolute bottom-0 right-32 w-40 h-40 bg-[#5B9DF9]/10 rounded-full blur-2xl translate-y-1/2 pointer-events-none" />
+                <div className="relative flex items-center justify-between z-10">
                   <div>
-                    <h1 className="text-xl font-bold text-neutral-900 tracking-tight">{greeting}</h1>
-                    <p className="text-sm text-neutral-500 mt-0.5">Manage your projects and crew scheduling</p>
+                    <h1 className="text-2xl font-extrabold text-neutral-900 tracking-tight">{greeting}</h1>
+                    <p className="text-sm text-neutral-500 mt-1">Manage your projects and crew scheduling</p>
                   </div>
                   <RoleIndicator />
                 </div>
-              </div>
+              </motion.div>
 
               {/* Quick actions */}
-              <div className="grid grid-cols-3 gap-3 mb-6">
+              <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {[
                   { icon: FaPlus,  title: 'New Project', desc: 'Start a production', to: '/dashboard/projects/new', primary: true },
                   { icon: FaUsers, title: 'Find Crew',    desc: 'Hire freelancers',  to: '/dashboard/search' },
                   { icon: FaTruck, title: 'Find Vendors', desc: 'Equipment & services', to: '/dashboard/search?type=vendors' },
                 ].map((action) => (
-                  <Link key={action.title} to={action.to} className={`rounded-2xl p-4 border flex items-center gap-3.5 group transition-all duration-200 ${
+                  <Link key={action.title} to={action.to} className={`rounded-3xl p-5 border flex items-center gap-4 group transition-all duration-300 ${
                     action.primary
-                      ? 'bg-gradient-to-br from-[#3B5BDB] to-[#2f4ac2] border-[#3B5BDB]/80 text-white shadow-md shadow-[#3B5BDB]/20 hover:shadow-lg hover:shadow-[#3B5BDB]/30 hover:-translate-y-0.5'
-                      : 'bg-white border-neutral-200/60 shadow-sm text-neutral-700 hover:shadow-md hover:border-[#3B5BDB]/40 hover:-translate-y-0.5'
+                      ? 'bg-gradient-to-br from-[#3B5BDB] to-[#2f4ac2] border-transparent text-white shadow-float hover:shadow-[0_15px_40px_-10px_rgba(59,91,219,0.3)] hover:-translate-y-1'
+                      : 'bg-white shadow-soft border-neutral-100 text-neutral-700 hover:shadow-float hover:border-[#3B5BDB]/30 hover:-translate-y-1'
                   }`}>
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
-                      action.primary ? 'bg-white/15 ring-1 ring-white/20' : 'bg-gradient-to-br from-[#EEF4FF] to-[#DBEAFE] group-hover:from-[#DBEAFE] group-hover:to-[#C7D9FE]'
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-110 ${
+                      action.primary ? 'bg-white/20' : 'bg-gradient-to-br from-[#EEF4FF] border border-[#3B5BDB]/10'
                     }`}>
-                      <action.icon className={`text-sm ${action.primary ? 'text-white' : 'text-[#3B5BDB]'}`} />
+                      <action.icon className={`text-lg ${action.primary ? 'text-white' : 'text-[#3B5BDB]'}`} />
                     </div>
                     <div className="min-w-0">
-                      <p className={`text-sm font-bold truncate ${action.primary ? 'text-white' : 'text-neutral-900'}`}>{action.title}</p>
-                      <p className={`text-xs truncate ${action.primary ? 'text-blue-200' : 'text-neutral-500'}`}>{action.desc}</p>
+                      <p className={`text-base font-bold truncate ${action.primary ? 'text-white' : 'text-neutral-900'}`}>{action.title}</p>
+                      <p className={`text-xs mt-0.5 truncate ${action.primary ? 'text-blue-100' : 'text-neutral-500'}`}>{action.desc}</p>
                     </div>
                   </Link>
                 ))}
-              </div>
+              </motion.div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+              <motion.div variants={itemVariants} className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                 {/* Calendar (full width at top, 3/4 on desktop) */}
-                <div className="lg:col-span-3 order-2 lg:order-1 space-y-4">
-                  <div className="rounded-2xl bg-white border border-neutral-200/60 shadow-sm p-4 sm:p-5">
+                <div className="lg:col-span-3 order-2 lg:order-1 space-y-6">
+                  <div className="rounded-3xl bg-white shadow-soft border border-neutral-100 p-6">
                     <div className="flex items-center justify-between mb-5">
                       <div className="flex items-center gap-2.5">
                         <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#EEF4FF] to-[#DBEAFE] flex items-center justify-center">
@@ -307,29 +321,29 @@ export default function CompanyDashboard() {
                   </div>
 
                   {/* Stats — below calendar as per PRD layout */}
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {loading ? (
                       <>
-                        {[1,2].map(i => <div key={i} className="rounded-2xl bg-white border border-neutral-200/60 shadow-sm p-4 animate-pulse h-20" />)}
+                        {[1,2].map(i => <div key={i} className="rounded-3xl bg-white border border-neutral-100 shadow-soft p-5 animate-pulse h-24" />)}
                       </>
                     ) : (
                       <>
-                        <div className="rounded-2xl bg-gradient-to-br from-white to-[#EEF4FF]/50 border border-neutral-200/60 shadow-sm p-4 flex items-center gap-4">
-                          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#3B5BDB] to-[#5B9DF9] flex items-center justify-center shrink-0 shadow-sm shadow-[#3B5BDB]/20">
-                            <FaFolder className="text-white text-sm" />
+                        <div className="rounded-3xl bg-white shadow-soft border border-neutral-100 p-5 flex items-center gap-5 hover:shadow-float transition-shadow group">
+                          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#EEF4FF] to-white border border-[#3B5BDB]/10 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                            <FaFolder className="text-[#3B5BDB] text-xl" />
                           </div>
                           <div>
-                            <p className="text-xs text-neutral-500 font-medium">Active Projects</p>
-                            <p className="text-2xl font-bold mt-0.5 text-neutral-900">{activeProjects}</p>
+                            <p className="text-xs uppercase tracking-widest text-neutral-500 font-bold">Active Projects</p>
+                            <p className="text-3xl font-extrabold mt-1 text-neutral-900">{activeProjects}</p>
                           </div>
                         </div>
-                        <div className="rounded-2xl bg-gradient-to-br from-white to-[#F0FDF4]/50 border border-neutral-200/60 shadow-sm p-4 flex items-center gap-4">
-                          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#059669] to-[#34D399] flex items-center justify-center shrink-0 shadow-sm shadow-emerald-500/20">
-                            <FaUsers className="text-white text-sm" />
+                        <div className="rounded-3xl bg-white shadow-soft border border-neutral-100 p-5 flex items-center gap-5 hover:shadow-float transition-shadow group">
+                          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#ECFDF5] to-white border border-emerald-500/10 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                            <FaUsers className="text-emerald-500 text-xl" />
                           </div>
                           <div>
-                            <p className="text-xs text-neutral-500 font-medium">Crew Hired</p>
-                            <p className="text-2xl font-bold mt-0.5 text-neutral-900">{crewHired}</p>
+                            <p className="text-xs uppercase tracking-widest text-neutral-500 font-bold">Crew Hired</p>
+                            <p className="text-3xl font-extrabold mt-1 text-neutral-900">{crewHired}</p>
                           </div>
                         </div>
                       </>
@@ -337,26 +351,26 @@ export default function CompanyDashboard() {
                   </div>
 
                   {/* Quick links — Requests, Chat, Notifications */}
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     {[
-                      { label: 'Requests', icon: FaUsers, to: '/dashboard/projects', desc: 'View all booking requests', color: 'from-[#3B5BDB] to-[#5B9DF9]' },
+                      { label: 'Requests', icon: FaUsers, to: '/dashboard/projects', desc: 'Booking requests', color: 'from-[#3B5BDB] to-[#5B9DF9]' },
                       { label: 'Chats',    icon: FaMessage, to: '/dashboard/conversations', desc: 'Open conversations', color: 'from-[#7C3AED] to-[#A78BFA]' },
                       { label: 'Notifications', icon: FaFolder, to: '/dashboard/projects', desc: 'Project updates', color: 'from-[#EA580C] to-[#FB923C]' },
                     ].map(({ label, icon: Icon, to, desc, color }) => (
-                      <Link key={label} to={to} className="rounded-2xl bg-white border border-neutral-200/60 shadow-sm p-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group">
-                        <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center mb-3 shadow-sm`}>
-                          <Icon className="text-white text-xs" />
+                      <Link key={label} to={to} className="rounded-3xl bg-white border border-neutral-100 shadow-soft p-5 hover:shadow-float hover:-translate-y-1 transition-all duration-300 group">
+                        <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${color} flex items-center justify-center mb-4 shadow-sm group-hover:scale-110 transition-transform`}>
+                          <Icon className="text-white text-lg" />
                         </div>
-                        <p className="text-sm font-bold text-neutral-900">{label}</p>
-                        <p className="text-xs text-neutral-500 mt-0.5">{desc}</p>
+                        <p className="text-base font-bold text-neutral-900">{label}</p>
+                        <p className="text-xs text-neutral-500 mt-1">{desc}</p>
                       </Link>
                     ))}
                   </div>
                 </div>
 
                 {/* Right sidebar */}
-                <div className="space-y-4 order-1 lg:order-2">
-                  <div className="rounded-2xl bg-white border border-neutral-200/60 shadow-sm p-4">
+                <div className="space-y-6 order-1 lg:order-2">
+                  <div className="rounded-3xl bg-white shadow-soft border border-neutral-100 p-6">
                     <div className="flex items-center justify-between mb-3">
                       <h3 className="text-sm font-bold text-neutral-900 flex items-center gap-2">
                         <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-[#EEF4FF] to-[#DBEAFE] flex items-center justify-center">
@@ -393,36 +407,38 @@ export default function CompanyDashboard() {
                     </Link>
                   </div>
 
-                  <div className="rounded-2xl bg-white border border-neutral-200/60 shadow-sm p-4">
-                    <h3 className="text-sm font-bold text-neutral-900 mb-3 flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-[#FEF9E6] to-[#FDE68A]/40 flex items-center justify-center">
-                        <FaPlus className="w-2.5 h-2.5 text-[#92400E]" />
+                  <div className="rounded-3xl bg-white shadow-soft border border-neutral-100 p-6">
+                    <h3 className="text-base font-bold text-neutral-900 mb-4 flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#FEF9E6] to-[#FDE68A]/40 flex items-center justify-center">
+                        <FaPlus className="w-3.5 h-3.5 text-[#92400E]" />
                       </div>
                       <span>Quick Actions</span>
                     </h3>
-                    <div className="space-y-1.5">
-                      <Link to="/dashboard/search" className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-neutral-50/80 border border-transparent text-neutral-700 text-xs font-semibold hover:bg-[#EEF4FF] hover:border-[#3B5BDB]/10 hover:text-[#3B5BDB] transition-all duration-150">
-                        <div className="w-6 h-6 rounded-lg bg-white shadow-sm flex items-center justify-center shrink-0">
-                          <FaUsers className="w-2.5 h-2.5 text-neutral-400" />
+                    <div className="space-y-2">
+                      <Link to="/dashboard/search" className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-neutral-50/80 border border-transparent text-neutral-700 text-sm font-semibold hover:bg-[#EEF4FF] hover:border-[#3B5BDB]/20 hover:text-[#3B5BDB] transition-all duration-200">
+                        <div className="w-8 h-8 rounded-xl bg-white shadow-sm flex items-center justify-center shrink-0">
+                          <FaUsers className="w-3.5 h-3.5 text-neutral-400" />
                         </div>
                         Search Crew
                       </Link>
-                      <Link to="/dashboard/search?type=vendors" className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-neutral-50/80 border border-transparent text-neutral-700 text-xs font-semibold hover:bg-[#EEF4FF] hover:border-[#3B5BDB]/10 hover:text-[#3B5BDB] transition-all duration-150">
-                        <div className="w-6 h-6 rounded-lg bg-white shadow-sm flex items-center justify-center shrink-0">
-                          <FaTruck className="w-2.5 h-2.5 text-neutral-400" />
+                      <Link to="/dashboard/search?type=vendors" className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-neutral-50/80 border border-transparent text-neutral-700 text-sm font-semibold hover:bg-[#EEF4FF] hover:border-[#3B5BDB]/20 hover:text-[#3B5BDB] transition-all duration-200">
+                        <div className="w-8 h-8 rounded-xl bg-white shadow-sm flex items-center justify-center shrink-0">
+                          <FaTruck className="w-3.5 h-3.5 text-neutral-400" />
                         </div>
                         Search Vendors
                       </Link>
-                      <Link to="/dashboard/team" className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-neutral-50/80 border border-transparent text-neutral-700 text-xs font-semibold hover:bg-[#EEF4FF] hover:border-[#3B5BDB]/10 hover:text-[#3B5BDB] transition-all duration-150">
-                        <div className="w-6 h-6 rounded-lg bg-white shadow-sm flex items-center justify-center shrink-0">
-                          <FaPeopleGroup className="w-2.5 h-2.5 text-neutral-400" />
+                      <Link to="/dashboard/team" className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-neutral-50/80 border border-transparent text-neutral-700 text-sm font-semibold hover:bg-[#EEF4FF] hover:border-[#3B5BDB]/20 hover:text-[#3B5BDB] transition-all duration-200">
+                        <div className="w-8 h-8 rounded-xl bg-white shadow-sm flex items-center justify-center shrink-0">
+                          <FaPeopleGroup className="w-3.5 h-3.5 text-neutral-400" />
                         </div>
                         Manage Team
                       </Link>
                     </div>
                   </div>
                 </div>
-              </div>
+              </motion.div>
+              
+              </motion.div>
             </div>
           </div>
           <AppFooter />

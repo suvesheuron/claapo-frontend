@@ -1,7 +1,8 @@
 import { useEffect, useState, useRef } from 'react';
 import {
   FaBuilding, FaLocationDot, FaIdCard, FaTriangleExclamation, FaCircleCheck,
-  FaPen, FaEye, FaEyeSlash, FaGlobe, FaInstagram, FaFileContract, FaCamera,
+  FaPen, FaEye, FaEyeSlash, FaGlobe, FaCamera, FaUser,
+  FaEnvelope,
 } from 'react-icons/fa6';
 import DashboardHeader from '../../components/DashboardHeader';
 import DashboardSidebar from '../../components/DashboardSidebar';
@@ -11,6 +12,13 @@ import { api, ApiException } from '../../services/api';
 import { useApiQuery } from '../../hooks/useApiQuery';
 import { companyNavLinks } from '../../navigation/dashboardNav';
 import LocationAutocomplete from '../../components/LocationAutocomplete';
+import { 
+  ProfileSection, InfoRow, EditableField, SocialLinks,
+  ProfileCompletionBadge,
+} from '../../components/profile/ProfileComponents';
+import { 
+  calculateCompanyCompletion, getProfileImprovementTips 
+} from '../../utils/profileCompletion';
 
 interface CompanyProfileData {
   companyName: string;
@@ -23,6 +31,9 @@ interface CompanyProfileData {
   companyType: string | null;
   website: string | null;
   instagramUrl: string | null;
+  linkedinUrl: string | null;
+  twitterUrl: string | null;
+  youtubeUrl: string | null;
   address: string | null;
   isGstVerified: boolean;
 }
@@ -41,20 +52,23 @@ export default function CompanyProfile() {
 
   const { data: me, loading: meLoading } = useApiQuery<MeResponse>('/profile/me');
 
-  const [companyName,    setCompanyName]    = useState('');
-  const [locationCity,   setLocationCity]   = useState('');
-  const [locationState,  setLocationState]  = useState('');
-  const [address,        setAddress]        = useState('');
-  const [bio,            setBio]            = useState('');
-  const [aboutUs,        setAboutUs]        = useState('');
-  const [companyType,    setCompanyType]    = useState('');
-  const [website,        setWebsite]        = useState('');
-  const [instagramUrl,   setInstagramUrl]   = useState('');
-  const [panNumber,      setPanNumber]      = useState('');
+  const [companyName, setCompanyName] = useState('');
+  const [locationCity, setLocationCity] = useState('');
+  const [locationState, setLocationState] = useState('');
+  const [address, setAddress] = useState('');
+  const [bio, setBio] = useState('');
+  const [aboutUs, setAboutUs] = useState('');
+  const [companyType, setCompanyType] = useState('');
+  const [website, setWebsite] = useState('');
+  const [instagramUrl, setInstagramUrl] = useState('');
+  const [linkedinUrl, setLinkedinUrl] = useState('');
+  const [twitterUrl, setTwitterUrl] = useState('');
+  const [youtubeUrl, setYoutubeUrl] = useState('');
+  const [panNumber, setPanNumber] = useState('');
 
-  const [saving,  setSaving]  = useState(false);
-  const [saved,   setSaved]   = useState(false);
-  const [error,   setError]   = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
 
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -62,13 +76,14 @@ export default function CompanyProfile() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Password change state
-  const [curPass,  setCurPass]  = useState('');
-  const [newPass,  setNewPass]  = useState('');
+  const [showPasswordSection, setShowPasswordSection] = useState(false);
+  const [curPass, setCurPass] = useState('');
+  const [newPass, setNewPass] = useState('');
   const [confPass, setConfPass] = useState('');
   const [showPw, setShowPw] = useState<{ cur: boolean; new: boolean; conf: boolean }>({ cur: false, new: false, conf: false });
   const [pwSaving, setPwSaving] = useState(false);
-  const [pwError,  setPwError]  = useState<string | null>(null);
-  const [pwSaved,  setPwSaved]  = useState(false);
+  const [pwError, setPwError] = useState<string | null>(null);
+  const [pwSaved, setPwSaved] = useState(false);
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -100,6 +115,9 @@ export default function CompanyProfile() {
     setCompanyType(p.companyType ?? '');
     setWebsite(p.website ?? '');
     setInstagramUrl(p.instagramUrl ?? '');
+    setLinkedinUrl(p.linkedinUrl ?? '');
+    setTwitterUrl(p.twitterUrl ?? '');
+    setYoutubeUrl(p.youtubeUrl ?? '');
     setPanNumber(p.panNumber ?? '');
   }, [me]);
 
@@ -116,6 +134,9 @@ export default function CompanyProfile() {
         companyType: companyType.trim() || undefined,
         website: website.trim() || undefined,
         instagramUrl: instagramUrl.trim() || undefined,
+        linkedinUrl: linkedinUrl.trim() || undefined,
+        twitterUrl: twitterUrl.trim() || undefined,
+        youtubeUrl: youtubeUrl.trim() || undefined,
         panNumber: panNumber.trim() || undefined,
       });
       setSaved(true);
@@ -145,11 +166,15 @@ export default function CompanyProfile() {
     }
   };
 
-  const profile = me?.profile;
+  // Calculate profile completion
+  const profileCompletion = me?.profile ? calculateCompanyCompletion({
+    ...me.profile,
+    avatarUrl,
+  }) : 0;
+  
+  const improvementTips = me?.profile ? getProfileImprovementTips('company', { ...me.profile, avatarUrl }) : [];
 
-  const inputClass = 'w-full px-3 py-2.5 border border-neutral-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#3B5BDB]/20 focus:border-[#3B5BDB] transition-all disabled:bg-neutral-50 disabled:text-neutral-400 placeholder:text-neutral-400';
-  const inputWithIconClass = 'w-full pl-10 pr-3 py-2.5 border border-neutral-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#3B5BDB]/20 focus:border-[#3B5BDB] transition-all disabled:bg-neutral-50 disabled:text-neutral-400 placeholder:text-neutral-400';
-  const readOnlyClass = 'w-full px-3 py-2.5 border border-neutral-100 rounded-xl text-sm bg-neutral-50/80 text-neutral-500 cursor-not-allowed';
+  const profile = me?.profile;
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-[#F8F9FB] w-full">
@@ -158,30 +183,32 @@ export default function CompanyProfile() {
         <DashboardSidebar links={companyNavLinks} />
         <main className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
           <div className="flex-1 min-h-0 overflow-auto">
-            <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-6 xl:px-8 py-6">
+            <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-6 xl:px-8 py-6">
 
               <div className="mb-6">
-                <h1 className="text-xl font-bold text-neutral-900 tracking-tight">Company Profile</h1>
-                <p className="text-sm text-neutral-500 mt-1">Manage your company details and settings</p>
+                <h1 className="text-2xl font-bold text-neutral-900 tracking-tight">Company Profile</h1>
+                <p className="text-sm text-neutral-600 mt-1">Manage your company details and settings</p>
               </div>
 
               {meLoading ? (
-                <div className="animate-pulse space-y-5">
-                  <div className="h-52 bg-neutral-200/60 rounded-2xl" />
-                  <div className="h-72 bg-neutral-200/60 rounded-2xl" />
+                <div className="animate-pulse space-y-6">
+                  <div className="h-64 bg-neutral-200 rounded-2xl" />
+                  <div className="h-96 bg-neutral-200 rounded-2xl" />
                 </div>
               ) : (
-                <div className="space-y-5 max-w-2xl">
-
-                  {/* Profile card (top) */}
-                  <div className="rounded-2xl bg-white border border-neutral-200/80 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
-                    {/* Gradient banner */}
-                    <div className="h-24 bg-gradient-to-br from-[#3B5BDB] via-[#5B7CF7] to-[#8B9CF7] relative">
-                      <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(255,255,255,0.3) 0%, transparent 50%), radial-gradient(circle at 80% 30%, rgba(255,255,255,0.2) 0%, transparent 50%)' }} />
-                    </div>
-                    <div className="px-6 pb-6">
-                      {/* Avatar overlapping the banner */}
-                      <div className="flex justify-center -mt-10 mb-4">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  
+                  {/* Left Sidebar - Profile Card & Completion */}
+                  <div className="lg:col-span-1 space-y-6">
+                    {/* Profile Card */}
+                    <div className="rounded-2xl bg-white border border-neutral-200 shadow-sm overflow-hidden">
+                      {/* Gradient Banner */}
+                      <div className="h-32 bg-gradient-to-br from-brand-primary via-brand-primary/90 to-brand-primary/80 relative overflow-hidden">
+                        <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(255,255,255,0.3) 0%, transparent 50%), radial-gradient(circle at 80% 30%, rgba(255,255,255,0.2) 0%, transparent 50%)' }} />
+                      </div>
+                      
+                      {/* Avatar */}
+                      <div className="flex justify-center -mt-14 mb-4">
                         <div className="relative group cursor-pointer ring-4 ring-white rounded-full shadow-lg" onClick={() => fileInputRef.current?.click()}>
                           <Avatar src={avatarUrl ?? undefined} name={companyName || 'Co'} size="lg" />
                           <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
@@ -192,169 +219,285 @@ export default function CompanyProfile() {
                           <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
                         </div>
                       </div>
-                      <div className="text-center">
-                        <h2 className="text-lg font-bold text-neutral-900 tracking-tight">{companyName || '—'}</h2>
-                        <p className="text-xs text-neutral-500 mt-0.5">Production Company</p>
+
+                      {/* Info */}
+                      <div className="px-6 pb-6 text-center">
+                        <h2 className="text-xl font-bold text-neutral-900 tracking-tight">{companyName || '—'}</h2>
+                        <p className="text-sm text-neutral-500 mt-1">{companyType || 'Production Company'}</p>
                         {me?.isVerified && (
-                          <span className="inline-flex items-center gap-1 text-[11px] px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-semibold mt-2 border border-emerald-200/60">
-                            <FaCircleCheck className="w-2.5 h-2.5" /> Verified
+                          <span className="inline-flex items-center gap-1.5 text-xs px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 font-semibold mt-2 border border-emerald-200/60">
+                            <FaCircleCheck className="w-3 h-3" /> Verified
                           </span>
                         )}
-                      </div>
-                      <div className="mt-5 pt-5 border-t border-neutral-100 space-y-2.5">
-                        {companyType && (
-                          <div className="flex items-center gap-3 text-sm text-neutral-600">
-                            <div className="w-7 h-7 rounded-lg bg-neutral-100 flex items-center justify-center shrink-0">
-                              <FaBuilding className="w-3 h-3 text-neutral-500" />
-                            </div>
-                            <span>{companyType}</span>
-                          </div>
+                        {profile?.isGstVerified && (
+                          <span className="inline-flex items-center gap-1.5 text-xs px-3 py-1 rounded-full bg-blue-50 text-blue-700 font-semibold mt-2 border border-blue-200/60">
+                            <FaIdCard className="w-3 h-3" /> GST Verified
+                          </span>
                         )}
+                        
+                        {/* Location */}
                         {locationCity && (
-                          <div className="flex items-center gap-3 text-sm text-neutral-600">
-                            <div className="w-7 h-7 rounded-lg bg-neutral-100 flex items-center justify-center shrink-0">
-                              <FaLocationDot className="w-3 h-3 text-neutral-500" />
-                            </div>
+                          <div className="flex items-center justify-center gap-1.5 text-xs text-neutral-500 mt-3">
+                            <FaLocationDot className="w-3.5 h-3.5" />
                             <span>{locationCity}{locationState ? `, ${locationState}` : ''}</span>
                           </div>
                         )}
-                        {website && (
-                          <div className="flex items-center gap-3 text-sm text-neutral-600">
-                            <div className="w-7 h-7 rounded-lg bg-neutral-100 flex items-center justify-center shrink-0">
-                              <FaGlobe className="w-3 h-3 text-neutral-500" />
-                            </div>
-                            <a href={website} target="_blank" rel="noopener noreferrer" className="text-[#3B5BDB] hover:underline truncate">{website.replace(/^https?:\/\//, '')}</a>
-                          </div>
-                        )}
-                        {instagramUrl && (
-                          <div className="flex items-center gap-3 text-sm text-neutral-600">
-                            <div className="w-7 h-7 rounded-lg bg-neutral-100 flex items-center justify-center shrink-0">
-                              <FaInstagram className="w-3 h-3 text-neutral-500" />
-                            </div>
-                            <a href={instagramUrl} target="_blank" rel="noopener noreferrer" className="text-[#3B5BDB] hover:underline truncate">{instagramUrl.replace(/^https?:\/\//, '')}</a>
-                          </div>
-                        )}
-                        {profile?.gstNumber && (
-                          <div className="flex items-center gap-3 text-sm text-neutral-600">
-                            <div className="w-7 h-7 rounded-lg bg-neutral-100 flex items-center justify-center shrink-0">
-                              <FaIdCard className="w-3 h-3 text-neutral-500" />
-                            </div>
-                            <span className="font-mono text-xs">GST: {profile.gstNumber}{profile.isGstVerified ? ' ✓' : ''}</span>
-                          </div>
-                        )}
-                        {me?.email && (
-                          <div className="flex items-center gap-3 text-sm text-neutral-600">
-                            <div className="w-7 h-7 rounded-lg bg-neutral-100 flex items-center justify-center shrink-0">
-                              <FaBuilding className="w-3 h-3 text-neutral-500" />
-                            </div>
-                            <span className="truncate">{me.email}</span>
-                          </div>
-                        )}
-                        {(bio || aboutUs) && (
-                          <div className="mt-3 p-3 rounded-xl bg-neutral-50/80 border border-neutral-100">
-                            <span className="text-xs font-semibold text-neutral-700 block mb-1">About us</span>
-                            <span className="text-sm text-neutral-600 leading-relaxed line-clamp-2">{aboutUs || bio}</span>
-                          </div>
+
+                        {/* Edit Button */}
+                        {!editing && (
+                          <button 
+                            type="button" 
+                            onClick={() => setEditing(true)} 
+                            className="mt-5 w-full px-4 py-2.5 bg-brand-primary text-white rounded-xl text-sm font-semibold hover:bg-brand-primary/90 transition-colors flex items-center justify-center gap-2 shadow-sm"
+                          >
+                            <FaPen className="w-3.5 h-3.5" /> Edit Profile
+                          </button>
                         )}
                       </div>
-                      {!editing && (
-                        <button type="button" onClick={() => setEditing(true)} className="mt-5 w-full px-4 py-2.5 bg-[#3B5BDB] text-white rounded-xl text-sm font-semibold hover:bg-[#2f4ac2] active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-sm shadow-[#3B5BDB]/20">
-                          <FaPen className="w-3.5 h-3.5" /> Edit Profile
-                        </button>
+                    </div>
+
+                    {/* Profile Completion */}
+                    <div className="rounded-2xl bg-white border border-neutral-200 shadow-sm p-5">
+                      <ProfileCompletionBadge percentage={profileCompletion} size="lg" />
+                      {improvementTips.length > 0 && editing && (
+                        <div className="mt-4 space-y-2">
+                          <p className="text-xs font-semibold text-neutral-700">Quick Tips:</p>
+                          <ul className="space-y-1.5">
+                            {improvementTips.slice(0, 3).map((tip, idx) => (
+                              <li key={idx} className="flex items-start gap-2 text-xs text-neutral-600">
+                                <span className="text-brand-primary mt-0.5">•</span>
+                                {tip}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
                       )}
+                    </div>
+
+                    {/* Quick Stats */}
+                    <div className="rounded-2xl bg-white border border-neutral-200 shadow-sm p-5 space-y-3">
+                      <div className="flex items-center gap-3 text-sm text-neutral-600">
+                        <div className="w-8 h-8 rounded-lg bg-brand-primary/10 flex items-center justify-center shrink-0">
+                          <FaUser className="w-4 h-4 text-brand-primary" />
+                        </div>
+                        <div>
+                          <p className="text-xs text-neutral-500">Team Members</p>
+                          <p className="font-semibold text-neutral-900">Manage in Team</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 text-sm text-neutral-600">
+                        <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center shrink-0">
+                          <FaCircleCheck className="w-4 h-4 text-emerald-600" />
+                        </div>
+                        <div>
+                          <p className="text-xs text-neutral-500">GST Status</p>
+                          <p className="font-semibold text-neutral-900">{profile?.isGstVerified ? 'Verified' : 'Not Verified'}</p>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Profile Details (below profile card) — read-only, no Edit button */}
-                  {!editing ? (
-                    <div className="rounded-2xl bg-white border border-neutral-200/80 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
-                      <div className="px-6 py-4 border-b border-neutral-100">
-                        <h3 className="text-sm font-bold text-neutral-900">Profile Details</h3>
-                        <p className="text-xs text-neutral-400 mt-0.5">Your company information at a glance</p>
-                      </div>
-                      <dl className="divide-y divide-neutral-50">
-                        {[
-                          { label: 'Company Name', value: companyName || '—', bold: true },
-                          { label: 'Company Type', value: companyType || '—' },
-                          { label: 'Email', value: me?.email ?? '—' },
-                          { label: 'Phone', value: me?.phone ?? '—' },
-                          { label: 'City', value: locationCity || '—' },
-                          { label: 'State', value: locationState || '—' },
-                          { label: 'Address', value: address || '—', wrap: true },
-                          { label: 'PAN Number', value: panNumber || '—', mono: true },
-                        ].map(({ label, value, bold, wrap, mono }) => (
-                          <div key={label} className="px-6 py-3 flex items-start gap-4 even:bg-neutral-50/40">
-                            <dt className="text-xs font-medium text-neutral-500 w-32 shrink-0 pt-0.5">{label}</dt>
-                            <dd className={`text-sm text-neutral-800 ${bold ? 'font-semibold' : ''} ${wrap ? 'whitespace-pre-wrap' : ''} ${mono ? 'font-mono' : ''}`}>{value}</dd>
-                          </div>
-                        ))}
-                        <div className="px-6 py-3 flex items-start gap-4">
-                          <dt className="text-xs font-medium text-neutral-500 w-32 shrink-0 pt-0.5">Website</dt>
-                          <dd className="text-sm text-neutral-800">{website ? <a href={website} target="_blank" rel="noopener noreferrer" className="text-[#3B5BDB] hover:underline">{website}</a> : '—'}</dd>
-                        </div>
-                        <div className="px-6 py-3 flex items-start gap-4 even:bg-neutral-50/40">
-                          <dt className="text-xs font-medium text-neutral-500 w-32 shrink-0 pt-0.5">Instagram</dt>
-                          <dd className="text-sm text-neutral-800">{instagramUrl ? <a href={instagramUrl} target="_blank" rel="noopener noreferrer" className="text-[#3B5BDB] hover:underline">{instagramUrl}</a> : '—'}</dd>
-                        </div>
-                        <div className="px-6 py-3 flex items-start gap-4">
-                          <dt className="text-xs font-medium text-neutral-500 w-32 shrink-0 pt-0.5">GST Number</dt>
-                          <dd className="text-sm text-neutral-800 font-mono flex items-center gap-2">{profile?.gstNumber || '—'}{profile?.isGstVerified && <span className="text-[10px] px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-full font-semibold border border-emerald-200/60">Verified</span>}</dd>
-                        </div>
-                        <div className="px-6 py-3 flex items-start gap-4 even:bg-neutral-50/40">
-                          <dt className="text-xs font-medium text-neutral-500 w-32 shrink-0 pt-0.5">About</dt>
-                          <dd className="text-sm text-neutral-800 whitespace-pre-wrap">{bio || '—'}</dd>
-                        </div>
-                        <div className="px-6 py-3 flex items-start gap-4">
-                          <dt className="text-xs font-medium text-neutral-500 w-32 shrink-0 pt-0.5">About Us</dt>
-                          <dd className="text-sm text-neutral-800 whitespace-pre-wrap">{aboutUs || '—'}</dd>
-                        </div>
-                      </dl>
-                    </div>
-                  ) : (
+                  {/* Main Content */}
+                  <div className="lg:col-span-2 space-y-6">
+                    
+                    {!editing ? (
                       <>
-                    {/* Company info — edit form */}
-                    <div className="rounded-2xl bg-white border border-neutral-200/80 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
-                      <div className="px-6 py-4 border-b border-neutral-100 flex items-center justify-between">
-                        <div>
-                          <h3 className="text-sm font-bold text-neutral-900">Company Information</h3>
-                          <p className="text-xs text-neutral-400 mt-0.5">Update your company details below</p>
-                        </div>
-                        <button type="button" onClick={() => setEditing(false)} className="text-xs text-neutral-500 hover:text-neutral-700 font-medium px-3 py-1.5 rounded-lg hover:bg-neutral-100 transition-colors">Cancel</button>
-                      </div>
-                      <div className="p-6 space-y-5">
-                        {/* Basic Info Section */}
-                        <div>
-                          <h4 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-3">Basic Info</h4>
-                          <div className="space-y-3">
+                        {/* Company Information */}
+                        <ProfileSection 
+                          title="Company Information" 
+                          icon={<FaBuilding />}
+                        >
+                          <div className="space-y-1">
+                            <InfoRow label="Company Name" value={companyName || '—'} icon={<FaBuilding />} />
+                            <InfoRow label="Company Type" value={companyType || '—'} />
+                            <InfoRow label="Email" value={me?.email ?? '—'} icon={<FaEnvelope />} />
+                            <InfoRow label="Phone" value={me?.phone ?? '—'} />
+                            <InfoRow label="Location" value={locationCity ? `${locationCity}${locationState ? `, ${locationState}` : ''}` : '—'} icon={<FaLocationDot />} />
+                            <InfoRow label="Address" value={address || '—'} />
+                          </div>
+                        </ProfileSection>
+
+                        {/* About */}
+                        <ProfileSection 
+                          title="About Company" 
+                          icon={<FaUser />}
+                        >
+                          <div className="space-y-4">
                             <div>
-                              <label className="block text-xs font-medium text-neutral-700 mb-1.5">Company Name</label>
-                              <div className="relative">
-                                <FaBuilding className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 w-3.5 h-3.5" />
-                                <input type="text" value={companyName} onChange={(e) => setCompanyName(e.target.value)} disabled={saving} placeholder="Your company name" className={inputWithIconClass} />
+                              <dt className="text-xs font-medium text-neutral-500 mb-1">Bio</dt>
+                              <dd className="text-sm text-neutral-700 whitespace-pre-wrap">{bio || '—'}</dd>
+                            </div>
+                            <div>
+                              <dt className="text-xs font-medium text-neutral-500 mb-1">About Us</dt>
+                              <dd className="text-sm text-neutral-700 whitespace-pre-wrap">{aboutUs || '—'}</dd>
+                            </div>
+                          </div>
+                        </ProfileSection>
+
+                        {/* Social Links */}
+                        <ProfileSection 
+                          title="Online Presence" 
+                          icon={<FaGlobe />}
+                        >
+                          <SocialLinks links={{
+                            website: website || null,
+                            instagramUrl: instagramUrl || null,
+                            linkedinUrl: linkedinUrl || null,
+                            twitterUrl: twitterUrl || null,
+                            youtubeUrl: youtubeUrl || null,
+                            imdbUrl: null,
+                          }} />
+                        </ProfileSection>
+
+                        {/* Verification & Tax */}
+                        <ProfileSection 
+                          title="Verification & Tax Details" 
+                          icon={<FaIdCard />}
+                        >
+                          <div className="space-y-1 divide-y divide-neutral-50">
+                            <InfoRow 
+                              label="GST Number" 
+                              value={
+                                <div className="flex items-center gap-2">
+                                  <span className="font-mono">{profile?.gstNumber || '—'}</span>
+                                  {profile?.isGstVerified && (
+                                    <span className="text-[10px] px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-full font-semibold border border-emerald-200/60">
+                                      Verified
+                                    </span>
+                                  )}
+                                </div>
+                              } 
+                              icon={<FaIdCard />}
+                              copyable
+                            />
+                            <InfoRow label="PAN Number" value={panNumber || '—'} copyable />
+                          </div>
+                        </ProfileSection>
+
+                        {/* Change Password */}
+                        <ProfileSection 
+                          title="Security" 
+                          icon={<FaEye />}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => setShowPasswordSection(!showPasswordSection)}
+                            className="text-sm text-brand-primary font-medium hover:text-brand-primary/80 flex items-center gap-2"
+                          >
+                            {showPasswordSection ? 'Hide' : 'Change'} Password
+                            <FaPen className="w-3.5 h-3.5" />
+                          </button>
+                          
+                          {showPasswordSection && (
+                            <div className="mt-4 space-y-3">
+                              {[
+                                { label: 'Current Password', val: curPass, set: setCurPass, key: 'cur' as const },
+                                { label: 'New Password', val: newPass, set: setNewPass, key: 'new' as const },
+                                { label: 'Confirm Password', val: confPass, set: setConfPass, key: 'conf' as const },
+                              ].map(({ label, val, set, key }) => (
+                                <div key={label}>
+                                  <label className="block text-xs font-medium text-neutral-700 mb-1.5">{label}</label>
+                                  <div className="relative">
+                                    <input 
+                                      type={showPw[key] ? 'text' : 'password'} 
+                                      value={val} 
+                                      onChange={(e) => set(e.target.value)} 
+                                      placeholder="••••••••" 
+                                      disabled={pwSaving}
+                                      className="w-full px-3 py-2.5 pr-11 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary disabled:bg-neutral-50"
+                                    />
+                                    <button 
+                                      type="button" 
+                                      onClick={() => setShowPw((p) => ({ ...p, [key]: !p[key] }))} 
+                                      className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 p-1"
+                                    >
+                                      {showPw[key] ? <FaEyeSlash className="w-4 h-4" /> : <FaEye className="w-4 h-4" />}
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                              {pwError && (
+                                <div className="flex items-start gap-2 rounded-xl bg-red-50 border border-red-200 px-3 py-2.5">
+                                  <FaTriangleExclamation className="text-red-500 text-xs shrink-0 mt-0.5" />
+                                  <p className="text-xs text-red-700">{pwError}</p>
+                                </div>
+                              )}
+                              {pwSaved && (
+                                <div className="flex items-center gap-2 text-emerald-700 text-sm font-semibold">
+                                  <FaCircleCheck /> Password updated!
+                                </div>
+                              )}
+                              <div className="flex justify-end">
+                                <button 
+                                  type="button" 
+                                  onClick={handlePasswordChange} 
+                                  disabled={pwSaving}
+                                  className="px-5 py-2.5 bg-brand-primary text-white rounded-xl text-sm font-semibold hover:bg-brand-primary/90 transition-colors disabled:opacity-60"
+                                >
+                                  {pwSaving ? 'Updating…' : 'Update Password'}
+                                </button>
                               </div>
                             </div>
-                            <div>
-                              <label className="block text-xs font-medium text-neutral-700 mb-1.5">Email <span className="text-neutral-400">(read-only)</span></label>
-                              <input type="email" value={me?.email ?? ''} readOnly className={readOnlyClass} />
-                            </div>
-                            <div>
-                              <label className="block text-xs font-medium text-neutral-700 mb-1.5">Phone <span className="text-neutral-400">(read-only)</span></label>
-                              <input type="tel" value={me?.phone ?? ''} readOnly className={readOnlyClass} />
-                            </div>
-                            <div>
-                              <label className="block text-xs font-medium text-neutral-700 mb-1.5">Company Type</label>
-                              <input type="text" value={companyType} onChange={(e) => setCompanyType(e.target.value)} disabled={saving} placeholder="e.g., Production House, Ad Agency, OTT" className={inputClass} />
-                            </div>
+                          )}
+                        </ProfileSection>
+                      </>
+                    ) : (
+                      <>
+                        {/* Edit Mode */}
+                        {error && (
+                          <div className="flex items-start gap-2 rounded-xl bg-red-50 border border-red-200 px-4 py-3">
+                            <FaTriangleExclamation className="text-red-500 text-sm shrink-0 mt-0.5" />
+                            <p className="text-sm text-red-700">{error}</p>
                           </div>
-                        </div>
+                        )}
+                        {saved && (
+                          <div className="flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-emerald-700 text-sm font-semibold">
+                            <FaCircleCheck /> Profile saved successfully!
+                          </div>
+                        )}
 
-                        {/* Divider */}
-                        <div className="border-t border-neutral-100" />
-
-                        {/* Location Section */}
-                        <div>
-                          <h4 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-3">Location</h4>
-                          <div className="space-y-3">
+                        {/* Company Information */}
+                        <ProfileSection 
+                          title="Company Information" 
+                          icon={<FaBuilding />}
+                        >
+                          <div className="space-y-4">
+                            <EditableField
+                              label="Company Name"
+                              value={companyName}
+                              onChange={setCompanyName}
+                              placeholder="Your company name"
+                              disabled={saving}
+                              icon={<FaBuilding />}
+                              required
+                            />
+                            <EditableField
+                              label="Company Type"
+                              value={companyType}
+                              onChange={setCompanyType}
+                              placeholder="e.g., Production House, Ad Agency, OTT Platform"
+                              disabled={saving}
+                              helpText="Describe your company type"
+                            />
+                            <EditableField
+                              label="Email"
+                              value={me?.email ?? ''}
+                              onChange={() => {}}
+                              readOnly
+                              readOnlyReason="read-only"
+                              type="email"
+                              disabled={saving}
+                              icon={<FaEnvelope />}
+                            />
+                            <EditableField
+                              label="Phone"
+                              value={me?.phone ?? ''}
+                              onChange={() => {}}
+                              readOnly
+                              readOnlyReason="read-only"
+                              type="tel"
+                              disabled={saving}
+                            />
                             <LocationAutocomplete
                               label="Location"
                               city={locationCity}
@@ -363,141 +506,141 @@ export default function CompanyProfile() {
                               onSelect={(loc) => { setLocationCity(loc.city); setLocationState(loc.state); }}
                               placeholder="Search city or pin code..."
                             />
-                            <div className="grid grid-cols-2 gap-3" style={{ display: 'none' }}>
-                              {/* Hidden — kept for form compatibility */}
-                              <div></div>
-                              <div></div>
-                            </div>
-                            <div>
-                              <label className="block text-xs font-medium text-neutral-700 mb-1.5">Address</label>
-                              <textarea value={address} onChange={(e) => setAddress(e.target.value)} rows={2} disabled={saving} placeholder="Office address..." className={`${inputClass} resize-none`} />
-                            </div>
+                            <EditableField
+                              label="Address"
+                              type="textarea"
+                              rows={2}
+                              value={address}
+                              onChange={setAddress}
+                              placeholder="Office address..."
+                              disabled={saving}
+                              icon={<FaLocationDot />}
+                            />
                           </div>
-                        </div>
+                        </ProfileSection>
 
-                        {/* Divider */}
-                        <div className="border-t border-neutral-100" />
-
-                        {/* About Section */}
-                        <div>
-                          <h4 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-3">About</h4>
-                          <div className="space-y-3">
-                            <div>
-                              <label className="block text-xs font-medium text-neutral-700 mb-1.5">About / Description</label>
-                              <textarea value={bio} onChange={(e) => setBio(e.target.value)} rows={3} disabled={saving} placeholder="Brief description of your company..." className={`${inputClass} resize-none`} />
-                            </div>
-                            <div>
-                              <label className="block text-xs font-medium text-neutral-700 mb-1.5">About Us</label>
-                              <textarea value={aboutUs} onChange={(e) => setAboutUs(e.target.value)} rows={4} disabled={saving} placeholder="Longer company story, values, team..." className={`${inputClass} resize-none`} />
-                            </div>
+                        {/* About */}
+                        <ProfileSection 
+                          title="About Company" 
+                          icon={<FaUser />}
+                        >
+                          <div className="space-y-4">
+                            <EditableField
+                              label="Bio / Short Description"
+                              type="textarea"
+                              rows={3}
+                              value={bio}
+                              onChange={setBio}
+                              placeholder="Brief description of your company..."
+                              disabled={saving}
+                              helpText="A short tagline or description"
+                            />
+                            <EditableField
+                              label="About Us"
+                              type="textarea"
+                              rows={4}
+                              value={aboutUs}
+                              onChange={setAboutUs}
+                              placeholder="Tell your company story, values, mission..."
+                              disabled={saving}
+                            />
                           </div>
-                        </div>
+                        </ProfileSection>
 
-                        {/* Divider */}
-                        <div className="border-t border-neutral-100" />
+                        {/* Social Links */}
+                        <ProfileSection 
+                          title="Online Presence" 
+                          icon={<FaGlobe />}
+                        >
+                          <SocialLinks 
+                            links={{
+                              website,
+                              instagramUrl,
+                              linkedinUrl,
+                              twitterUrl,
+                              youtubeUrl,
+                              imdbUrl: null,
+                            }}
+                            editable
+                            onChange={(field, value) => {
+                              if (field === 'website') setWebsite(value);
+                              if (field === 'instagramUrl') setInstagramUrl(value);
+                              if (field === 'linkedinUrl') setLinkedinUrl(value);
+                              if (field === 'twitterUrl') setTwitterUrl(value);
+                              if (field === 'youtubeUrl') setYoutubeUrl(value);
+                            }}
+                            disabled={saving}
+                          />
+                        </ProfileSection>
 
-                        {/* Links & Documents Section */}
-                        <div>
-                          <h4 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-3">Links & Documents</h4>
-                          <div className="space-y-3">
+                        {/* Verification & Tax */}
+                        <ProfileSection 
+                          title="Verification & Tax Details" 
+                          icon={<FaIdCard />}
+                        >
+                          <div className="space-y-4">
                             <div>
-                              <label className="block text-xs font-medium text-neutral-700 mb-1.5">Website</label>
+                              <label className="block text-xs font-medium text-neutral-700 mb-1.5">
+                                GST Number
+                                {profile?.isGstVerified && (
+                                  <span className="ml-2 text-xs px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-full font-semibold border border-emerald-200/60">
+                                    Verified
+                                  </span>
+                                )}
+                              </label>
                               <div className="relative">
-                                <FaGlobe className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 w-3.5 h-3.5" />
-                                <input type="url" value={website} onChange={(e) => setWebsite(e.target.value)} disabled={saving} placeholder="https://yourcompany.com" className={inputWithIconClass} />
+                                <FaIdCard className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 w-4 h-4" />
+                                <input 
+                                  type="text" 
+                                  value={profile?.gstNumber ?? ''} 
+                                  readOnly 
+                                  className="w-full pl-10 pr-3 py-2.5 border border-neutral-200 rounded-xl text-sm bg-neutral-50 text-neutral-500 cursor-not-allowed font-mono"
+                                />
                               </div>
+                              <p className="text-[10px] text-neutral-400 mt-1.5">GST number verification is done by admin</p>
                             </div>
-                            <div>
-                              <label className="block text-xs font-medium text-neutral-700 mb-1.5">Instagram URL</label>
-                              <div className="relative">
-                                <FaInstagram className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 w-3.5 h-3.5" />
-                                <input type="url" value={instagramUrl} onChange={(e) => setInstagramUrl(e.target.value)} disabled={saving} placeholder="https://instagram.com/yourcompany" className={inputWithIconClass} />
-                              </div>
-                            </div>
-                            <div>
-                              <label className="block text-xs font-medium text-neutral-700 mb-1.5">PAN Number</label>
-                              <div className="relative">
-                                <FaFileContract className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 w-3.5 h-3.5" />
-                                <input type="text" value={panNumber} onChange={(e) => setPanNumber(e.target.value.toUpperCase())} disabled={saving} placeholder="AAAAA1234A" maxLength={10} className={`${inputWithIconClass} font-mono`} />
-                              </div>
-                            </div>
-                            {profile?.gstNumber && (
-                              <div>
-                                <label className="block text-xs font-medium text-neutral-700 mb-1.5">GST Number <span className="text-neutral-400">(read-only)</span></label>
-                                <div className="relative">
-                                  <FaIdCard className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 w-3.5 h-3.5" />
-                                  <input type="text" value={profile.gstNumber} readOnly className={`${readOnlyClass} pl-10`} />
-                                </div>
-                              </div>
+                            <EditableField
+                              label="PAN Number"
+                              value={panNumber}
+                              onChange={setPanNumber}
+                              placeholder="e.g. ABCDE1234F"
+                              disabled={saving}
+                              helpText="10-character PAN"
+                            />
+                          </div>
+                        </ProfileSection>
+
+                        {/* Action Buttons */}
+                        <div className="flex justify-end gap-3">
+                          <button 
+                            type="button" 
+                            onClick={() => setEditing(false)} 
+                            className="px-6 py-2.5 border border-neutral-300 text-neutral-700 rounded-xl text-sm font-medium hover:bg-neutral-50 transition-colors"
+                          >
+                            Cancel
+                          </button>
+                          <button 
+                            type="button" 
+                            onClick={() => { handleSave(); setEditing(false); }} 
+                            disabled={saving}
+                            className="px-6 py-2.5 bg-brand-primary text-white rounded-xl text-sm font-semibold hover:bg-brand-primary/90 disabled:opacity-60 transition-colors flex items-center gap-2"
+                          >
+                            {saving ? (
+                              <>
+                                <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                                Saving…
+                              </>
+                            ) : (
+                              <>
+                                <FaCircleCheck className="w-4 h-4" />
+                                Save Changes
+                              </>
                             )}
-                          </div>
+                          </button>
                         </div>
-                      </div>
-
-                      {/* Error / Success */}
-                      {error && (
-                        <div className="mx-6 mb-4 flex items-start gap-2.5 rounded-xl bg-red-50 border border-red-200/80 px-4 py-3">
-                          <FaTriangleExclamation className="text-red-500 text-xs shrink-0 mt-0.5" />
-                          <p className="text-sm text-red-700">{error}</p>
-                        </div>
-                      )}
-                      {saved && (
-                        <div className="mx-6 mb-4 flex items-center gap-2 text-emerald-700 bg-emerald-50 border border-emerald-200/60 rounded-xl px-4 py-3 text-sm font-semibold">
-                          <FaCircleCheck /> Profile saved!
-                        </div>
-                      )}
-
-                      {/* Action buttons */}
-                      <div className="px-6 py-4 border-t border-neutral-100 bg-neutral-50/50 flex justify-end gap-3">
-                        <button type="button" onClick={() => setEditing(false)} className="px-5 py-2.5 border border-neutral-200 text-neutral-700 rounded-xl text-sm font-medium hover:bg-neutral-100 transition-colors">Cancel</button>
-                        <button type="button" onClick={() => { handleSave(); setEditing(false); }} disabled={saving} className="px-5 py-2.5 bg-[#3B5BDB] text-white rounded-xl text-sm font-semibold hover:bg-[#2f4ac2] active:scale-[0.98] transition-all disabled:opacity-60 flex items-center gap-2 shadow-sm shadow-[#3B5BDB]/20">
-                          {saving ? <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Saving...</> : 'Save Changes'}
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Change password */}
-                    <div className="rounded-2xl bg-white border border-neutral-200/80 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
-                      <div className="px-6 py-4 border-b border-neutral-100">
-                        <h3 className="text-sm font-bold text-neutral-900">Change Password</h3>
-                        <p className="text-xs text-neutral-400 mt-0.5">Update your account password</p>
-                      </div>
-                      <div className="p-6 space-y-3">
-                        {[
-                          { label: 'Current Password', val: curPass, set: setCurPass, key: 'cur' as const },
-                          { label: 'New Password',     val: newPass, set: setNewPass, key: 'new' as const },
-                          { label: 'Confirm Password', val: confPass, set: setConfPass, key: 'conf' as const },
-                        ].map(({ label, val, set, key }) => (
-                          <div key={label}>
-                            <label className="block text-xs font-medium text-neutral-700 mb-1.5">{label}</label>
-                            <div className="relative">
-                              <input type={showPw[key] ? 'text' : 'password'} value={val} onChange={(e) => set(e.target.value)} placeholder="••••••••" disabled={pwSaving} className={`${inputClass} pr-11`} />
-                              <button type="button" onClick={() => setShowPw((p) => ({ ...p, [key]: !p[key] }))} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 p-1 rounded-md hover:bg-neutral-100 transition-colors" aria-label={showPw[key] ? 'Hide password' : 'Show password'}>
-                                {showPw[key] ? <FaEyeSlash className="w-4 h-4" /> : <FaEye className="w-4 h-4" />}
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                      {pwError && (
-                        <div className="mx-6 mb-4 flex items-start gap-2.5 rounded-xl bg-red-50 border border-red-200/80 px-4 py-3">
-                          <FaTriangleExclamation className="text-red-500 text-xs shrink-0 mt-0.5" />
-                          <p className="text-sm text-red-700">{pwError}</p>
-                        </div>
-                      )}
-                      {pwSaved && (
-                        <div className="mx-6 mb-4 flex items-center gap-2 text-emerald-700 bg-emerald-50 border border-emerald-200/60 rounded-xl px-4 py-3 text-sm font-semibold">
-                          <FaCircleCheck /> Password updated!
-                        </div>
-                      )}
-                      <div className="px-6 py-4 border-t border-neutral-100 bg-neutral-50/50 flex justify-end">
-                        <button type="button" onClick={handlePasswordChange} disabled={pwSaving} className="px-5 py-2.5 bg-[#3B5BDB] text-white rounded-xl text-sm font-semibold hover:bg-[#2f4ac2] active:scale-[0.98] transition-all disabled:opacity-60 flex items-center gap-2 shadow-sm shadow-[#3B5BDB]/20">
-                          {pwSaving ? <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Saving...</> : 'Update Password'}
-                        </button>
-                      </div>
-                    </div>
                       </>
-                  )}
+                    )}
+                  </div>
                 </div>
               )}
             </div>

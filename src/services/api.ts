@@ -19,8 +19,8 @@
  * the browser treats it as same-origin and requests hit Vercel → 405.
  */
 function normalizeApiBase(raw: string | undefined): string {
-  let v = (raw ?? '/v1').trim();
-  if (!v) v = '/v1';
+  let v = (raw ?? 'http://localhost:3000/v1').trim();
+  if (!v) v = 'http://localhost:3000/v1';
   if (v.startsWith('http://') || v.startsWith('https://')) {
     return v.replace(/\/$/, '');
   }
