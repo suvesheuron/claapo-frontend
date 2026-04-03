@@ -1,16 +1,7 @@
 /** Filmmaking department / category lists (Claapo PRD). Used on registration and profile. */
 
-export const REGISTRATION_COMPANY_TYPES = [
-  'Agency',
-  'Production House',
-  'Agency & Production House',
-  'Line Production',
-] as const;
-
-export const REGISTRATION_INDIVIDUAL_DEPARTMENTS = [
-  'Executive Producer',
-  'Producer',
-  'Director',
+/** Genre tags (separate from primary role / department). */
+export const REGISTRATION_GENRES = [
   'Action',
   'Comedy',
   'Drama',
@@ -23,6 +14,19 @@ export const REGISTRATION_INDIVIDUAL_DEPARTMENTS = [
   'Fashion',
   'Beauty',
   'Noir',
+] as const;
+
+export const REGISTRATION_COMPANY_TYPES = [
+  'Agency',
+  'Production House',
+  'Agency & Production House',
+  'Line Production',
+] as const;
+
+export const REGISTRATION_INDIVIDUAL_DEPARTMENTS = [
+  'Executive Producer',
+  'Producer',
+  'Director',
   'Director of Photography',
   "Director's Assistant",
   'First AD',

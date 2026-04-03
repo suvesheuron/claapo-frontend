@@ -59,6 +59,8 @@ export default function BookingRequestModal({
   const [projectId, setProjectId] = useState('');
   const [rateOffered, setRateOffered] = useState('');
   const [message, setMessage] = useState('');
+  const [bookingDates, setBookingDates] = useState<string[]>([]);
+  const [datePicker, setDatePicker] = useState('');
   const [selectedEquipmentId, setSelectedEquipmentId] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -112,6 +114,8 @@ export default function BookingRequestModal({
       setProjectId('');
       setRateOffered('');
       setMessage('');
+      setBookingDates([]);
+      setDatePicker('');
       setError(null);
       setSent(false);
       setSelectedEquipmentId('');
@@ -142,6 +146,7 @@ export default function BookingRequestModal({
         vendorEquipmentId: selectedEquipmentId || undefined,
         rateOffered: rateOffered ? Math.round(parseFloat(rateOffered.replace(/[^0-9.]/g, '')) * 100) : undefined,
         message: message.trim() || undefined,
+        shootDates: bookingDates.length ? bookingDates : undefined,
       });
       toast.success('Booking request sent!');
       setSent(true);
@@ -272,6 +277,52 @@ export default function BookingRequestModal({
                   No active projects found.{' '}
                   <Link to="/dashboard/projects/new" className="text-[#3B5BDB] hover:underline">Create one first.</Link>
                 </p>
+              )}
+            </div>
+
+            {/* Dates needed */}
+            <div>
+              <label className="block text-xs font-semibold text-neutral-700 mb-1.5">
+                Dates you need this person
+                <span className="ml-1 text-[9px] font-normal text-neutral-400 bg-neutral-100 px-1.5 py-0.5 rounded-full">Optional</span>
+              </label>
+              <div className="flex gap-2 flex-wrap items-center">
+                <input
+                  type="date"
+                  value={datePicker}
+                  onChange={(e) => setDatePicker(e.target.value)}
+                  disabled={loading}
+                  className="rounded-xl px-3 py-2 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 text-sm focus:outline-none focus:border-[#3B5BDB] focus:bg-white disabled:opacity-50"
+                />
+                <button
+                  type="button"
+                  disabled={loading || !datePicker}
+                  onClick={() => {
+                    if (!datePicker || bookingDates.includes(datePicker)) return;
+                    setBookingDates((prev) => [...prev, datePicker].sort());
+                    setDatePicker('');
+                  }}
+                  className="rounded-xl px-3 py-2 bg-neutral-100 text-neutral-800 text-xs font-semibold hover:bg-neutral-200 disabled:opacity-50"
+                >
+                  Add date
+                </button>
+              </div>
+              {bookingDates.length > 0 && (
+                <ul className="mt-2 flex flex-wrap gap-1.5">
+                  {bookingDates.map((d) => (
+                    <li key={d} className="inline-flex items-center gap-1 text-[11px] font-medium bg-[#EEF4FF] text-[#1D4ED8] px-2 py-1 rounded-lg border border-[#3B5BDB]/20">
+                      {new Date(d + 'T12:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      <button
+                        type="button"
+                        className="text-[#3B5BDB] hover:text-red-600"
+                        onClick={() => setBookingDates((prev) => prev.filter((x) => x !== d))}
+                        aria-label={`Remove ${d}`}
+                      >
+                        ×
+                      </button>
+                    </li>
+                  ))}
+                </ul>
               )}
             </div>
 

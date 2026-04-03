@@ -15,7 +15,7 @@ import AppHeader from '../components/AppHeader';
 import AppFooter from '../components/AppFooter';
 import { api, ApiException } from '../services/api';
 import { toE164India } from '../utils/phone';
-import { REGISTRATION_INDIVIDUAL_DEPARTMENTS } from '../constants/registrationCategories';
+import { REGISTRATION_INDIVIDUAL_DEPARTMENTS, REGISTRATION_GENRES } from '../constants/registrationCategories';
 
 /* ── constants ─────────────────────────────────────────────────────────────── */
 
@@ -104,7 +104,7 @@ export default function IndividualRegistration() {
   const [phone, setPhone] = useState('');
   const [primaryRole, setPrimaryRole] = useState('');
   const [email, setEmail] = useState('');
-  const [experience, setExperience] = useState('');
+  const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [dailyRate, setDailyRate] = useState('');
   const [location, setLocation] = useState('');
   const [password, setPassword] = useState('');
@@ -195,7 +195,8 @@ export default function IndividualRegistration() {
       console.log('[DEV] OTP send response:', otpRes);
 
       const [locationCity = '', locationState = ''] = location.trim().split(',').map((s) => s.trim());
-      const rateNum = parseInt(dailyRate.replace(/[^0-9]/g, ''), 10) || undefined;
+      const rateRupees = parseInt(dailyRate.replace(/[^0-9]/g, ''), 10) || undefined;
+      const dailyBudgetPaise = rateRupees != null ? rateRupees * 100 : undefined;
 
       navigate('/otp-verify', {
         state: {
@@ -204,9 +205,10 @@ export default function IndividualRegistration() {
           pendingProfile: {
             displayName: fullName.trim() || undefined,
             skills: primaryRole ? [primaryRole] : undefined,
+            genres: selectedGenres.length ? selectedGenres : undefined,
             locationCity: locationCity || undefined,
             locationState: locationState || undefined,
-            dailyRateMin: rateNum,
+            dailyBudget: dailyBudgetPaise,
           },
         },
         replace: false,
@@ -363,32 +365,50 @@ export default function IndividualRegistration() {
                 {fieldErrors.email && <p className="text-xs text-red-500 mt-1">{fieldErrors.email}</p>}
               </div>
 
-              {/* Experience + Daily Rate */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-neutral-700 text-xs mb-1 font-semibold">Experience</label>
-                  <input
-                    type="text"
-                    value={experience}
-                    onChange={(e) => setExperience(e.target.value)}
-                    placeholder="e.g., 8 years"
-                    disabled={loading}
-                    className={`${inputBase} border-neutral-300 focus:border-[#3B5BDB]`}
-                  />
+              {/* Genre (multi) */}
+              <div>
+                <label className="block text-neutral-700 text-xs mb-1.5 font-semibold">
+                  Genre <span className="text-neutral-400 font-normal">(optional, select any)</span>
+                </label>
+                <div className="flex flex-wrap gap-2 p-3 rounded-xl border border-neutral-200 bg-[#f8fafc] max-h-40 overflow-y-auto">
+                  {REGISTRATION_GENRES.map((g) => {
+                    const on = selectedGenres.includes(g);
+                    return (
+                      <button
+                        key={g}
+                        type="button"
+                        disabled={loading}
+                        onClick={() =>
+                          setSelectedGenres((prev) =>
+                            on ? prev.filter((x) => x !== g) : [...prev, g],
+                          )
+                        }
+                        className={`text-xs font-medium px-2.5 py-1 rounded-lg border transition-colors ${
+                          on
+                            ? 'bg-[#3B5BDB] text-white border-[#3B5BDB]'
+                            : 'bg-white text-neutral-600 border-neutral-200 hover:border-[#3B5BDB]/40'
+                        }`}
+                      >
+                        {g}
+                      </button>
+                    );
+                  })}
                 </div>
-                <div>
-                  <label className="block text-neutral-700 text-xs mb-1 font-semibold">Daily Rate (INR)</label>
-                  <input
-                    type="text"
-                    value={dailyRate}
-                    onChange={(e) => setDailyRate(e.target.value)}
-                    onBlur={() => handleBlur('dailyRate')}
-                    placeholder="e.g., 45000"
-                    disabled={loading}
-                    className={`${inputBase} ${borderClass('dailyRate')}`}
-                  />
-                  {fieldErrors.dailyRate && <p className="text-xs text-red-500 mt-1">{fieldErrors.dailyRate}</p>}
-                </div>
+              </div>
+
+              {/* Budget */}
+              <div>
+                <label className="block text-neutral-700 text-xs mb-1 font-semibold">Budget (INR / day)</label>
+                <input
+                  type="text"
+                  value={dailyRate}
+                  onChange={(e) => setDailyRate(e.target.value)}
+                  onBlur={() => handleBlur('dailyRate')}
+                  placeholder="e.g., 45000"
+                  disabled={loading}
+                  className={`${inputBase} ${borderClass('dailyRate')}`}
+                />
+                {fieldErrors.dailyRate && <p className="text-xs text-red-500 mt-1">{fieldErrors.dailyRate}</p>}
               </div>
 
               {/* Location */}

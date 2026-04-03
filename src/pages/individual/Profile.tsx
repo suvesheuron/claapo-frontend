@@ -21,27 +21,23 @@ import {
   calculateIndividualCompletion,
   getProfileImprovementTips
 } from '../../utils/profileCompletion';
-
-const GENRES = [
-  'Action', 'Comedy', 'Drama', 'Romance', 'Science Fiction', 
-  'Fantasy', 'Horror', 'Beauty', 'Noir', 'Fashion', 
-  'Documentary', 'Thriller'
-];
+import { REGISTRATION_GENRES } from '../../constants/registrationCategories';
 
 interface ProfileData {
   displayName: string;
   bio: string | null;
   aboutMe: string | null;
   skills: string[];
-  genre: string | null;
+  genres?: string[] | null;
+  genre?: string | null;
+  address: string | null;
   locationCity: string | null;
   locationState: string | null;
   dailyBudget: number | null;
   imdbUrl: string | null;
   instagramUrl: string | null;
-  linkedinUrl: string | null;
-  twitterUrl: string | null;
   youtubeUrl: string | null;
+  vimeoUrl: string | null;
   isAvailable: boolean;
   panNumber: string | null;
   bankAccountName: string | null;
@@ -71,15 +67,15 @@ export default function IndividualProfile() {
   const [bio, setBio] = useState('');
   const [aboutMe, setAboutMe] = useState('');
   const [skills, setSkills] = useState('');
-  const [genre, setGenre] = useState('');
+  const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
+  const [address, setAddress] = useState('');
   const [locationCity, setLocationCity] = useState('');
   const [locationState, setLocationState] = useState('');
   const [dailyBudget, setDailyBudget] = useState('');
   const [imdbUrl, setImdbUrl] = useState('');
   const [instagramUrl, setInstagramUrl] = useState('');
-  const [linkedinUrl, setLinkedinUrl] = useState('');
-  const [twitterUrl, setTwitterUrl] = useState('');
   const [youtubeUrl, setYoutubeUrl] = useState('');
+  const [vimeoUrl, setVimeoUrl] = useState('');
   const [panNumber, setPanNumber] = useState('');
   const [bankAccountName, setBankAccountName] = useState('');
   const [bankAccountNumber, setBankAccountNumber] = useState('');
@@ -121,15 +117,16 @@ export default function IndividualProfile() {
     setBio(p.bio ?? '');
     setAboutMe(p.aboutMe ?? '');
     setSkills(p.skills?.join(', ') ?? '');
-    setGenre(p.genre ?? '');
+    const g = (p.genres?.length ? p.genres : p.genre ? [p.genre] : []) as string[];
+    setSelectedGenres(g);
+    setAddress(p.address ?? '');
     setLocationCity(p.locationCity ?? '');
     setLocationState(p.locationState ?? '');
     setDailyBudget(p.dailyBudget ? String(paiseToRupees(p.dailyBudget)) : '');
     setImdbUrl(p.imdbUrl ?? '');
     setInstagramUrl(p.instagramUrl ?? '');
-    setLinkedinUrl(p.linkedinUrl ?? '');
-    setTwitterUrl(p.twitterUrl ?? '');
     setYoutubeUrl(p.youtubeUrl ?? '');
+    setVimeoUrl(p.vimeoUrl ?? '');
     setPanNumber((p as ProfileData).panNumber ?? '');
     setBankAccountName((p as ProfileData).bankAccountName ?? '');
     setBankAccountNumber((p as ProfileData).bankAccountNumber ?? '');
@@ -140,6 +137,10 @@ export default function IndividualProfile() {
   const handleSave = async () => {
     setError(null);
     setSaved(false);
+    if (!address.trim()) {
+      setError('Address is required for invoices. Please add your mailing address.');
+      return;
+    }
     setSaving(true);
     try {
       await api.patch('/profile/individual', {
@@ -147,15 +148,15 @@ export default function IndividualProfile() {
         bio: bio.trim() || undefined,
         aboutMe: aboutMe.trim() || undefined,
         skills: skills.split(',').map((s) => s.trim()).filter(Boolean),
-        genre: genre || undefined,
+        genres: selectedGenres.length ? selectedGenres : undefined,
+        address: address.trim() || undefined,
         locationCity: locationCity.trim() || undefined,
         locationState: locationState.trim() || undefined,
         dailyBudget: dailyBudget ? rupeesToPaise(dailyBudget) : undefined,
         imdbUrl: imdbUrl.trim() || undefined,
         instagramUrl: instagramUrl.trim() || undefined,
-        linkedinUrl: linkedinUrl.trim() || undefined,
-        twitterUrl: twitterUrl.trim() || undefined,
         youtubeUrl: youtubeUrl.trim() || undefined,
+        vimeoUrl: vimeoUrl.trim() || undefined,
         panNumber: panNumber.trim() || undefined,
         bankAccountName: bankAccountName.trim() || undefined,
         bankAccountNumber: bankAccountNumber.trim() || undefined,
@@ -233,7 +234,9 @@ export default function IndividualProfile() {
                       {/* Info */}
                       <div className="px-6 pb-6 text-center">
                         <h2 className="text-xl font-bold text-neutral-900">{displayName || '—'}</h2>
-                        <p className="text-sm text-neutral-500 mt-1">{genre || 'Freelancer'}</p>
+                        <p className="text-sm text-neutral-500 mt-1">
+                          {selectedGenres.length ? selectedGenres.join(', ') : 'Freelancer'}
+                        </p>
                         {me?.isVerified && (
                           <span className="inline-flex items-center gap-1.5 text-xs px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 font-semibold mt-2 border border-emerald-200/60">
                             <FaCircleCheck className="w-3 h-3" /> Verified
@@ -302,7 +305,7 @@ export default function IndividualProfile() {
                           <FaMoneyBillWave className="w-4 h-4 text-brand-primary" />
                         </div>
                         <div>
-                          <p className="text-xs text-neutral-500">Daily Rate</p>
+                          <p className="text-xs text-neutral-500">Budget</p>
                           <p className="font-semibold text-neutral-900">{dailyBudget ? `₹${dailyBudget}` : 'Not set'}</p>
                         </div>
                       </div>
@@ -333,6 +336,7 @@ export default function IndividualProfile() {
                             <InfoRow label="Email" value={me?.email ?? '—'} />
                             <InfoRow label="Phone" value={me?.phone ?? '—'} />
                             <InfoRow label="Location" value={locationCity ? `${locationCity}${locationState ? `, ${locationState}` : ''}` : '—'} icon={<FaLocationDot />} />
+                            <InfoRow label="Address" value={address || '—'} icon={<FaBuilding />} />
                           </div>
                         </ProfileSection>
 
@@ -356,8 +360,21 @@ export default function IndividualProfile() {
                               )}
                             </div>
 
-                            {/* Genre */}
-                            <InfoRow label="Genre" value={genre || '—'} icon={<FaFilm />} />
+                            {/* Genres */}
+                            <div>
+                              <dt className="text-xs font-medium text-neutral-500 mb-2 flex items-center gap-1">
+                                <FaFilm className="w-3.5 h-3.5" /> Genres
+                              </dt>
+                              {selectedGenres.length > 0 ? (
+                                <div className="flex flex-wrap gap-2">
+                                  {selectedGenres.map((g) => (
+                                    <SkillTag key={g} skill={g} />
+                                  ))}
+                                </div>
+                              ) : (
+                                <p className="text-sm text-neutral-400">—</p>
+                              )}
+                            </div>
 
                             {/* Bio */}
                             <div>
@@ -371,8 +388,7 @@ export default function IndividualProfile() {
                               <dd className="text-sm text-neutral-700 whitespace-pre-wrap">{aboutMe || '—'}</dd>
                             </div>
 
-                            {/* Daily Budget */}
-                            <InfoRow label="Daily Rate" value={dailyBudget ? `₹${dailyBudget}/day` : '—'} icon={<FaMoneyBillWave />} />
+                            <InfoRow label="Budget" value={dailyBudget ? `₹${dailyBudget}/day` : '—'} icon={<FaMoneyBillWave />} />
                           </div>
                         </ProfileSection>
 
@@ -385,9 +401,8 @@ export default function IndividualProfile() {
                             website: null,
                             instagramUrl: instagramUrl || null,
                             imdbUrl: imdbUrl || null,
-                            linkedinUrl: linkedinUrl || null,
-                            twitterUrl: twitterUrl || null,
                             youtubeUrl: youtubeUrl || null,
+                            vimeoUrl: vimeoUrl || null,
                           }} />
                         </ProfileSection>
 
@@ -461,6 +476,16 @@ export default function IndividualProfile() {
                               onSelect={(loc) => { setLocationCity(loc.city); setLocationState(loc.state); }}
                               placeholder="Search city or pin code..."
                             />
+                            <EditableField
+                              label="Address (required for invoices)"
+                              type="textarea"
+                              rows={2}
+                              value={address}
+                              onChange={setAddress}
+                              placeholder="Full street address, city, PIN"
+                              disabled={saving}
+                              icon={<FaBuilding />}
+                            />
                           </div>
                         </ProfileSection>
 
@@ -496,16 +521,31 @@ export default function IndividualProfile() {
                             </div>
 
                             <div>
-                              <label className="block text-xs font-medium text-neutral-700 mb-1.5">Genre</label>
-                              <select 
-                                value={genre} 
-                                onChange={(e) => setGenre(e.target.value)} 
-                                disabled={saving}
-                                className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary disabled:bg-neutral-50 bg-white"
-                              >
-                                <option value="">Select genre…</option>
-                                {GENRES.map(g => <option key={g} value={g}>{g}</option>)}
-                              </select>
+                              <label className="block text-xs font-medium text-neutral-700 mb-2">Genres</label>
+                              <div className="flex flex-wrap gap-2 p-3 rounded-xl border border-neutral-200 bg-neutral-50 max-h-36 overflow-y-auto">
+                                {REGISTRATION_GENRES.map((g) => {
+                                  const on = selectedGenres.includes(g);
+                                  return (
+                                    <button
+                                      key={g}
+                                      type="button"
+                                      disabled={saving}
+                                      onClick={() =>
+                                        setSelectedGenres((prev) =>
+                                          on ? prev.filter((x) => x !== g) : [...prev, g],
+                                        )
+                                      }
+                                      className={`text-xs font-medium px-2.5 py-1 rounded-lg border transition-colors ${
+                                        on
+                                          ? 'bg-brand-primary text-white border-brand-primary'
+                                          : 'bg-white text-neutral-600 border-neutral-200 hover:border-brand-primary/40'
+                                      }`}
+                                    >
+                                      {g}
+                                    </button>
+                                  );
+                                })}
+                              </div>
                             </div>
 
                             <EditableField
@@ -530,14 +570,14 @@ export default function IndividualProfile() {
                             />
 
                             <EditableField
-                              label="Daily Rate (₹/day)"
+                              label="Budget (₹/day)"
                               type="number"
                               value={dailyBudget}
                               onChange={setDailyBudget}
                               placeholder="e.g. 5000"
                               disabled={saving}
                               icon={<FaMoneyBillWave />}
-                              helpText="Your expected daily compensation"
+                              helpText="Your expected daily budget or rate"
                             />
                           </div>
                         </ProfileSection>
@@ -552,17 +592,15 @@ export default function IndividualProfile() {
                               website: null,
                               instagramUrl,
                               imdbUrl,
-                              linkedinUrl,
-                              twitterUrl,
                               youtubeUrl,
+                              vimeoUrl,
                             }}
                             editable
                             onChange={(field, value) => {
                               if (field === 'instagramUrl') setInstagramUrl(value);
                               if (field === 'imdbUrl') setImdbUrl(value);
-                              if (field === 'linkedinUrl') setLinkedinUrl(value);
-                              if (field === 'twitterUrl') setTwitterUrl(value);
                               if (field === 'youtubeUrl') setYoutubeUrl(value);
+                              if (field === 'vimeoUrl') setVimeoUrl(value);
                             }}
                             disabled={saving}
                           />

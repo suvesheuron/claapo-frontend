@@ -3,7 +3,7 @@ import { Link, useParams, useNavigate } from 'react-router-dom';
 import {
   FaArrowLeft, FaUsers, FaTruck, FaLock, FaUnlock,
   FaTrash, FaBan, FaMessage, FaFileInvoice,
-  FaTriangleExclamation,
+  FaTriangleExclamation, FaPenToSquare,
 } from 'react-icons/fa6';
 import DashboardHeader from '../../components/DashboardHeader';
 import DashboardSidebar from '../../components/DashboardSidebar';
@@ -237,6 +237,12 @@ export default function ProjectDetail() {
                     ) : null}
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
+                    <Link
+                      to={`/dashboard/projects/${projectId}/edit`}
+                      className="rounded-xl px-4 py-2 border border-neutral-200 text-neutral-800 text-sm font-semibold hover:bg-neutral-50 flex items-center gap-2 transition-colors"
+                    >
+                      <FaPenToSquare className="w-3.5 h-3.5" /> Edit
+                    </Link>
                     {canDeleteProject && (
                       <button type="button" onClick={() => setConfirmDeleteProject(true)}
                         className="rounded-xl px-4 py-2 border border-[#FEE2E2] text-[#B91C1C] text-sm font-semibold hover:bg-[#FEE2E2] flex items-center gap-2 transition-colors">

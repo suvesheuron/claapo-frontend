@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useParams, Link } from 'react-router-dom';
-import { FaArrowLeft, FaLocationDot, FaUpRightFromSquare, FaCalendarDays, FaTriangleExclamation, FaVideo } from 'react-icons/fa6';
+import { FaArrowLeft, FaLocationDot, FaUpRightFromSquare, FaCalendarDays, FaTriangleExclamation, FaVideo, FaLink } from 'react-icons/fa6';
 import DashboardHeader from '../components/DashboardHeader';
 import DashboardSidebar from '../components/DashboardSidebar';
 import AppFooter from '../components/AppFooter';
@@ -33,6 +33,7 @@ interface PublicProfileResponse {
     aboutUs?: string;
     skills?: string[];
     genre?: string;
+    genres?: string[];
     locationCity?: string;
     locationState?: string;
     dailyRateMin?: number;
@@ -42,6 +43,8 @@ interface PublicProfileResponse {
     website?: string;
     imdbUrl?: string;
     instagramUrl?: string;
+    youtubeUrl?: string;
+    vimeoUrl?: string;
     isAvailable?: boolean;
     equipment?: VendorEquipment[];
   } | null;
@@ -161,20 +164,18 @@ export default function OtherUserProfile() {
   const title = p?.displayName ?? p?.companyName ?? 'Profile';
   const worklink = (p as any)?.imdbUrl as string | undefined;
 
-  const prevMonth = () => {
-    if (calMonth === 0) {
-      setCalYear((y) => y - 1);
-      setCalMonth(11);
-    } else setCalMonth((m) => m - 1);
-  };
-  const nextMonth = () => {
-    if (calMonth === 11) {
-      setCalYear((y) => y + 1);
-      setCalMonth(0);
-    } else setCalMonth((m) => m + 1);
-  };
+  useEffect(() => {
+    const n = new Date();
+    setCalYear(n.getFullYear());
+    setCalMonth(n.getMonth());
+  }, [userId]);
 
   const rows = buildCalendarCells(calYear, calMonth, profileSlotMap, profileBookingDetails);
+
+  const profileShareUrl =
+    typeof window !== 'undefined' && userId
+      ? `${window.location.origin}/dashboard/profile/${userId}`
+      : '';
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-neutral-50 min-w-0 w-full">
@@ -219,9 +220,16 @@ export default function OtherUserProfile() {
                       </div>
                       <div className="flex-1 min-w-0 pt-2">
                         <h1 className="text-2xl sm:text-3xl font-extrabold text-neutral-900 mb-1">{title}</h1>
-                        <p className="text-xs uppercase tracking-[0.15em] font-semibold text-[#3B5BDB] mb-3">
-                          {profile.role.replace(/_/g, ' ')}
-                        </p>
+                        {!isIndividual && (
+                          <p className="text-xs uppercase tracking-[0.15em] font-semibold text-[#3B5BDB] mb-3">
+                            {profile.role.replace(/_/g, ' ')}
+                          </p>
+                        )}
+                        {isIndividual && (p.genres?.length || p.genre) && (
+                          <p className="text-sm text-neutral-600 mb-3">
+                            {(p.genres?.length ? p.genres : [p.genre!]).filter(Boolean).join(', ')}
+                          </p>
+                        )}
                         {(p.locationCity || p.locationState) && (
                           <p className="text-sm text-neutral-600 flex items-center gap-1.5 mb-2">
                             <FaLocationDot className="w-3.5 h-3.5 text-neutral-400" />
@@ -272,6 +280,71 @@ export default function OtherUserProfile() {
                     </motion.div>
                   )}
 
+                  {(isIndividual || isVendor) &&
+                    (p.website || p.instagramUrl || p.youtubeUrl || p.vimeoUrl || p.imdbUrl) && (
+                    <motion.div variants={itemVariants} className="rounded-3xl bg-white shadow-soft border border-neutral-100 p-6 sm:p-8">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                        <h2 className="text-base font-bold text-neutral-900 flex items-center gap-2">
+                          <span className="w-1 h-5 rounded-full bg-[#F4C430]" /> Social & links
+                        </h2>
+                        {profileShareUrl && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              void navigator.clipboard.writeText(profileShareUrl);
+                            }}
+                            className="inline-flex items-center justify-center gap-2 text-xs font-semibold text-[#3B5BDB] border border-[#3B5BDB]/30 rounded-xl px-3 py-2 hover:bg-[#EEF4FF] transition-colors"
+                          >
+                            <FaLink className="w-3.5 h-3.5" />
+                            Copy profile link
+                          </button>
+                        )}
+                      </div>
+                      <ul className="space-y-2 text-sm">
+                        {p.website && (
+                          <li>
+                            <span className="text-neutral-500 text-xs font-medium mr-2">Website</span>
+                            <a href={p.website} target="_blank" rel="noreferrer" className="text-[#3B5BDB] hover:underline break-all">
+                              {p.website}
+                            </a>
+                          </li>
+                        )}
+                        {p.instagramUrl && (
+                          <li>
+                            <span className="text-neutral-500 text-xs font-medium mr-2">Instagram</span>
+                            <a href={p.instagramUrl} target="_blank" rel="noreferrer" className="text-[#3B5BDB] hover:underline break-all">
+                              {p.instagramUrl}
+                            </a>
+                          </li>
+                        )}
+                        {p.youtubeUrl && (
+                          <li>
+                            <span className="text-neutral-500 text-xs font-medium mr-2">YouTube</span>
+                            <a href={p.youtubeUrl} target="_blank" rel="noreferrer" className="text-[#3B5BDB] hover:underline break-all">
+                              {p.youtubeUrl}
+                            </a>
+                          </li>
+                        )}
+                        {p.vimeoUrl && (
+                          <li>
+                            <span className="text-neutral-500 text-xs font-medium mr-2">Vimeo</span>
+                            <a href={p.vimeoUrl} target="_blank" rel="noreferrer" className="text-[#3B5BDB] hover:underline break-all">
+                              {p.vimeoUrl}
+                            </a>
+                          </li>
+                        )}
+                        {p.imdbUrl && (
+                          <li>
+                            <span className="text-neutral-500 text-xs font-medium mr-2">IMDb</span>
+                            <a href={p.imdbUrl} target="_blank" rel="noreferrer" className="text-[#3B5BDB] hover:underline break-all">
+                              {p.imdbUrl}
+                            </a>
+                          </li>
+                        )}
+                      </ul>
+                    </motion.div>
+                  )}
+
                   {isVendor && (
                     <motion.div variants={itemVariants} className="rounded-3xl bg-white shadow-soft border border-neutral-100 p-6 sm:p-8">
                       <h2 className="text-base font-bold text-neutral-900 mb-5 flex items-center gap-2">
@@ -285,40 +358,6 @@ export default function OtherUserProfile() {
                         <div>
                           <dt className="text-xs text-neutral-500 mb-0.5">GST Number</dt>
                           <dd>{p.gstNumber ?? '—'}</dd>
-                        </div>
-                        <div>
-                          <dt className="text-xs text-neutral-500 mb-0.5">Website</dt>
-                          <dd>
-                            {p.website ? (
-                              <a
-                                href={p.website}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="text-[#3B5BDB] hover:underline"
-                              >
-                                {p.website}
-                              </a>
-                            ) : (
-                              '—'
-                            )}
-                          </dd>
-                        </div>
-                        <div>
-                          <dt className="text-xs text-neutral-500 mb-0.5">Instagram</dt>
-                          <dd>
-                            {p.instagramUrl ? (
-                              <a
-                                href={p.instagramUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="text-[#3B5BDB] hover:underline"
-                              >
-                                {p.instagramUrl}
-                              </a>
-                            ) : (
-                              '—'
-                            )}
-                          </dd>
                         </div>
                         {p.equipment && p.equipment.length > 0 && (
                           <div className="pt-2 border-t border-neutral-200 mt-2">
@@ -358,25 +397,9 @@ export default function OtherUserProfile() {
                         <FaCalendarDays className="w-4 h-4 text-neutral-500" />
                         Schedule – availability
                       </h2>
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={prevMonth}
-                          className="w-7 h-7 rounded-lg border border-neutral-200 flex items-center justify-center text-neutral-600 hover:bg-neutral-100"
-                        >
-                          ‹
-                        </button>
-                        <span className="text-xs text-neutral-700 font-medium">
-                          {MONTHS[calMonth]} {calYear}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={nextMonth}
-                          className="w-7 h-7 rounded-lg border border-neutral-200 flex items-center justify-center text-neutral-600 hover:bg-neutral-100"
-                        >
-                          ›
-                        </button>
-                      </div>
+                      <span className="text-xs text-neutral-700 font-medium">
+                        {MONTHS[calMonth]} {calYear}
+                      </span>
                     </div>
                     <p className="text-xs text-neutral-500 mb-3">
                       Green: available · Blue: booked or completed work · Red: blocked. Tap any day for details (including your active bookings with this person).

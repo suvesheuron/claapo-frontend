@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import {
   FaBuilding, FaLocationDot, FaIdCard, FaTriangleExclamation, FaCircleCheck,
   FaPen, FaEye, FaEyeSlash, FaGlobe, FaCamera, FaUser,
-  FaEnvelope,
+  FaEnvelope, FaBriefcase,
 } from 'react-icons/fa6';
 import DashboardHeader from '../../components/DashboardHeader';
 import DashboardSidebar from '../../components/DashboardSidebar';
@@ -14,7 +14,7 @@ import { companyNavLinks } from '../../navigation/dashboardNav';
 import LocationAutocomplete from '../../components/LocationAutocomplete';
 import { 
   ProfileSection, InfoRow, EditableField, SocialLinks,
-  ProfileCompletionBadge,
+  ProfileCompletionBadge, SkillTag,
 } from '../../components/profile/ProfileComponents';
 import { 
   calculateCompanyCompletion, getProfileImprovementTips 
@@ -29,12 +29,17 @@ interface CompanyProfileData {
   gstNumber: string | null;
   panNumber: string | null;
   companyType: string | null;
+  skills?: string[] | null;
   website: string | null;
+  imdbUrl?: string | null;
   instagramUrl: string | null;
-  linkedinUrl: string | null;
-  twitterUrl: string | null;
   youtubeUrl: string | null;
+  vimeoUrl?: string | null;
   address: string | null;
+  bankAccountName?: string | null;
+  bankAccountNumber?: string | null;
+  ifscCode?: string | null;
+  bankName?: string | null;
   isGstVerified: boolean;
 }
 
@@ -59,12 +64,17 @@ export default function CompanyProfile() {
   const [bio, setBio] = useState('');
   const [aboutUs, setAboutUs] = useState('');
   const [companyType, setCompanyType] = useState('');
+  const [skills, setSkills] = useState('');
   const [website, setWebsite] = useState('');
+  const [imdbUrl, setImdbUrl] = useState('');
   const [instagramUrl, setInstagramUrl] = useState('');
-  const [linkedinUrl, setLinkedinUrl] = useState('');
-  const [twitterUrl, setTwitterUrl] = useState('');
   const [youtubeUrl, setYoutubeUrl] = useState('');
+  const [vimeoUrl, setVimeoUrl] = useState('');
   const [panNumber, setPanNumber] = useState('');
+  const [bankAccountName, setBankAccountName] = useState('');
+  const [bankAccountNumber, setBankAccountNumber] = useState('');
+  const [ifscCode, setIfscCode] = useState('');
+  const [bankName, setBankName] = useState('');
 
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -113,16 +123,26 @@ export default function CompanyProfile() {
     setBio(p.bio ?? '');
     setAboutUs(p.aboutUs ?? '');
     setCompanyType(p.companyType ?? '');
+    setSkills((p.skills ?? []).join(', '));
     setWebsite(p.website ?? '');
+    setImdbUrl(p.imdbUrl ?? '');
     setInstagramUrl(p.instagramUrl ?? '');
-    setLinkedinUrl(p.linkedinUrl ?? '');
-    setTwitterUrl(p.twitterUrl ?? '');
     setYoutubeUrl(p.youtubeUrl ?? '');
+    setVimeoUrl(p.vimeoUrl ?? '');
     setPanNumber(p.panNumber ?? '');
+    setBankAccountName(p.bankAccountName ?? '');
+    setBankAccountNumber(p.bankAccountNumber ?? '');
+    setIfscCode(p.ifscCode ?? '');
+    setBankName(p.bankName ?? '');
   }, [me]);
 
   const handleSave = async () => {
-    setError(null); setSaved(false); setSaving(true);
+    setError(null); setSaved(false);
+    if (!address.trim()) {
+      setError('Address is required for invoices.');
+      return;
+    }
+    setSaving(true);
     try {
       await api.patch('/profile/company', {
         companyName: companyName.trim() || undefined,
@@ -132,12 +152,17 @@ export default function CompanyProfile() {
         bio: bio.trim() || undefined,
         aboutUs: aboutUs.trim() || undefined,
         companyType: companyType.trim() || undefined,
+        skills: skills.split(',').map((s) => s.trim()).filter(Boolean),
         website: website.trim() || undefined,
+        imdbUrl: imdbUrl.trim() || undefined,
         instagramUrl: instagramUrl.trim() || undefined,
-        linkedinUrl: linkedinUrl.trim() || undefined,
-        twitterUrl: twitterUrl.trim() || undefined,
         youtubeUrl: youtubeUrl.trim() || undefined,
+        vimeoUrl: vimeoUrl.trim() || undefined,
         panNumber: panNumber.trim() || undefined,
+        bankAccountName: bankAccountName.trim() || undefined,
+        bankAccountNumber: bankAccountNumber.trim() || undefined,
+        ifscCode: ifscCode.trim() || undefined,
+        bankName: bankName.trim() || undefined,
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
@@ -175,6 +200,7 @@ export default function CompanyProfile() {
   const improvementTips = me?.profile ? getProfileImprovementTips('company', { ...me.profile, avatarUrl }) : [];
 
   const profile = me?.profile;
+  const skillsArray = skills.split(',').map((s) => s.trim()).filter(Boolean);
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-[#F8F9FB] w-full">
@@ -317,6 +343,18 @@ export default function CompanyProfile() {
                           </div>
                         </ProfileSection>
 
+                        <ProfileSection title="Skills" icon={<FaBriefcase />}>
+                          {skillsArray.length > 0 ? (
+                            <div className="flex flex-wrap gap-2">
+                              {skillsArray.map((s) => (
+                                <SkillTag key={s} skill={s} />
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-neutral-400">No skills added yet</p>
+                          )}
+                        </ProfileSection>
+
                         {/* About */}
                         <ProfileSection 
                           title="About Company" 
@@ -342,10 +380,9 @@ export default function CompanyProfile() {
                           <SocialLinks links={{
                             website: website || null,
                             instagramUrl: instagramUrl || null,
-                            linkedinUrl: linkedinUrl || null,
-                            twitterUrl: twitterUrl || null,
                             youtubeUrl: youtubeUrl || null,
-                            imdbUrl: null,
+                            vimeoUrl: vimeoUrl || null,
+                            imdbUrl: imdbUrl || null,
                           }} />
                         </ProfileSection>
 
@@ -371,6 +408,9 @@ export default function CompanyProfile() {
                               copyable
                             />
                             <InfoRow label="PAN Number" value={panNumber || '—'} copyable />
+                            <InfoRow label="Bank" value={bankName || '—'} />
+                            <InfoRow label="Account" value={bankAccountNumber || '—'} copyable />
+                            <InfoRow label="IFSC" value={ifscCode || '—'} copyable />
                           </div>
                         </ProfileSection>
 
@@ -519,6 +559,27 @@ export default function CompanyProfile() {
                           </div>
                         </ProfileSection>
 
+                        <ProfileSection title="Skills" icon={<FaBriefcase />}>
+                          <EditableField
+                            label="Skills (comma-separated)"
+                            value={skills}
+                            onChange={setSkills}
+                            placeholder="e.g. Production, Post-production, VFX"
+                            disabled={saving}
+                          />
+                          {skillsArray.length > 0 && (
+                            <div className="flex flex-wrap gap-2 mt-2">
+                              {skillsArray.map((s, idx) => (
+                                <SkillTag
+                                  key={`${s}-${idx}`}
+                                  skill={s}
+                                  onRemove={() => setSkills(skillsArray.filter((_, i) => i !== idx).join(', '))}
+                                />
+                              ))}
+                            </div>
+                          )}
+                        </ProfileSection>
+
                         {/* About */}
                         <ProfileSection 
                           title="About Company" 
@@ -556,18 +617,17 @@ export default function CompanyProfile() {
                             links={{
                               website,
                               instagramUrl,
-                              linkedinUrl,
-                              twitterUrl,
                               youtubeUrl,
-                              imdbUrl: null,
+                              vimeoUrl,
+                              imdbUrl,
                             }}
                             editable
                             onChange={(field, value) => {
                               if (field === 'website') setWebsite(value);
                               if (field === 'instagramUrl') setInstagramUrl(value);
-                              if (field === 'linkedinUrl') setLinkedinUrl(value);
-                              if (field === 'twitterUrl') setTwitterUrl(value);
                               if (field === 'youtubeUrl') setYoutubeUrl(value);
+                              if (field === 'vimeoUrl') setVimeoUrl(value);
+                              if (field === 'imdbUrl') setImdbUrl(value);
                             }}
                             disabled={saving}
                           />
@@ -607,6 +667,10 @@ export default function CompanyProfile() {
                               disabled={saving}
                               helpText="10-character PAN"
                             />
+                            <EditableField label="Bank name" value={bankName} onChange={setBankName} placeholder="e.g. HDFC Bank" disabled={saving} icon={<FaBuilding />} />
+                            <EditableField label="Account holder name" value={bankAccountName} onChange={setBankAccountName} disabled={saving} />
+                            <EditableField label="Account number" value={bankAccountNumber} onChange={setBankAccountNumber} disabled={saving} />
+                            <EditableField label="IFSC" value={ifscCode} onChange={setIfscCode} placeholder="e.g. HDFC0001234" disabled={saving} />
                           </div>
                         </ProfileSection>
 

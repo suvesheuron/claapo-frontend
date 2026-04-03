@@ -31,10 +31,16 @@ interface VendorProfileData {
   bio: string | null;
   aboutUs: string | null;
   website: string | null;
+  imdbUrl?: string | null;
   instagramUrl: string | null;
-  linkedinUrl: string | null;
-  twitterUrl: string | null;
   youtubeUrl: string | null;
+  vimeoUrl?: string | null;
+  address?: string | null;
+  panNumber?: string | null;
+  bankAccountName?: string | null;
+  bankAccountNumber?: string | null;
+  ifscCode?: string | null;
+  bankName?: string | null;
   gstNumber: string | null;
   isGstVerified: boolean;
 }
@@ -60,10 +66,16 @@ export default function VendorProfile() {
   const [bio, setBio] = useState('');
   const [aboutUs, setAboutUs] = useState('');
   const [website, setWebsite] = useState('');
+  const [imdbUrl, setImdbUrl] = useState('');
   const [instagramUrl, setInstagramUrl] = useState('');
-  const [linkedinUrl, setLinkedinUrl] = useState('');
-  const [twitterUrl, setTwitterUrl] = useState('');
   const [youtubeUrl, setYoutubeUrl] = useState('');
+  const [vimeoUrl, setVimeoUrl] = useState('');
+  const [address, setAddress] = useState('');
+  const [panNumber, setPanNumber] = useState('');
+  const [bankAccountName, setBankAccountName] = useState('');
+  const [bankAccountNumber, setBankAccountNumber] = useState('');
+  const [ifscCode, setIfscCode] = useState('');
+  const [bankName, setBankName] = useState('');
 
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -111,14 +123,25 @@ export default function VendorProfile() {
     setBio(p.bio ?? '');
     setAboutUs(p.aboutUs ?? '');
     setWebsite(p.website ?? '');
+    setImdbUrl(p.imdbUrl ?? '');
     setInstagramUrl(p.instagramUrl ?? '');
-    setLinkedinUrl(p.linkedinUrl ?? '');
-    setTwitterUrl(p.twitterUrl ?? '');
     setYoutubeUrl(p.youtubeUrl ?? '');
+    setVimeoUrl(p.vimeoUrl ?? '');
+    setAddress(p.address ?? '');
+    setPanNumber(p.panNumber ?? '');
+    setBankAccountName(p.bankAccountName ?? '');
+    setBankAccountNumber(p.bankAccountNumber ?? '');
+    setIfscCode(p.ifscCode ?? '');
+    setBankName(p.bankName ?? '');
   }, [me]);
 
   const handleSave = async () => {
-    setError(null); setSaved(false); setSaving(true);
+    setError(null); setSaved(false);
+    if (!address.trim()) {
+      setError('Address is required for invoices.');
+      return;
+    }
+    setSaving(true);
     try {
       await api.patch('/profile/vendor', {
         companyName: companyName.trim() || undefined,
@@ -129,10 +152,16 @@ export default function VendorProfile() {
         bio: bio.trim() || undefined,
         aboutUs: aboutUs.trim() || undefined,
         website: website.trim() || undefined,
+        imdbUrl: imdbUrl.trim() || undefined,
         instagramUrl: instagramUrl.trim() || undefined,
-        linkedinUrl: linkedinUrl.trim() || undefined,
-        twitterUrl: twitterUrl.trim() || undefined,
         youtubeUrl: youtubeUrl.trim() || undefined,
+        vimeoUrl: vimeoUrl.trim() || undefined,
+        address: address.trim() || undefined,
+        panNumber: panNumber.trim() || undefined,
+        bankAccountName: bankAccountName.trim() || undefined,
+        bankAccountNumber: bankAccountNumber.trim() || undefined,
+        ifscCode: ifscCode.trim() || undefined,
+        bankName: bankName.trim() || undefined,
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
@@ -313,6 +342,7 @@ export default function VendorProfile() {
                             <InfoRow label="Email" value={me?.email ?? '—'} icon={<FaEnvelope />} />
                             <InfoRow label="Phone" value={me?.phone ?? '—'} icon={<FaPhone />} />
                             <InfoRow label="Location" value={locationCity ? `${locationCity}${locationState ? `, ${locationState}` : ''}` : '—'} icon={<FaLocationDot />} />
+                            <InfoRow label="Address" value={address || '—'} />
                           </div>
                         </ProfileSection>
 
@@ -341,10 +371,9 @@ export default function VendorProfile() {
                           <SocialLinks links={{
                             website: website || null,
                             instagramUrl: instagramUrl || null,
-                            linkedinUrl: linkedinUrl || null,
-                            twitterUrl: twitterUrl || null,
                             youtubeUrl: youtubeUrl || null,
-                            imdbUrl: null,
+                            vimeoUrl: vimeoUrl || null,
+                            imdbUrl: imdbUrl || null,
                           }} />
                         </ProfileSection>
 
@@ -369,6 +398,10 @@ export default function VendorProfile() {
                               icon={<FaIdCard />}
                               copyable
                             />
+                            <InfoRow label="PAN" value={panNumber || '—'} copyable />
+                            <InfoRow label="Bank" value={bankName || '—'} />
+                            <InfoRow label="Account" value={bankAccountNumber || '—'} copyable />
+                            <InfoRow label="IFSC" value={ifscCode || '—'} copyable />
                           </div>
                         </ProfileSection>
 
@@ -514,6 +547,16 @@ export default function VendorProfile() {
                               onSelect={(loc) => { setLocationCity(loc.city); setLocationState(loc.state); }}
                               placeholder="Search city or pin code..."
                             />
+                            <EditableField
+                              label="Address (required for invoices)"
+                              type="textarea"
+                              rows={2}
+                              value={address}
+                              onChange={setAddress}
+                              placeholder="Full business address"
+                              disabled={saving}
+                              icon={<FaLocationDot />}
+                            />
                           </div>
                         </ProfileSection>
 
@@ -554,18 +597,17 @@ export default function VendorProfile() {
                             links={{
                               website,
                               instagramUrl,
-                              linkedinUrl,
-                              twitterUrl,
                               youtubeUrl,
-                              imdbUrl: null,
+                              vimeoUrl,
+                              imdbUrl,
                             }}
                             editable
                             onChange={(field, value) => {
                               if (field === 'website') setWebsite(value);
                               if (field === 'instagramUrl') setInstagramUrl(value);
-                              if (field === 'linkedinUrl') setLinkedinUrl(value);
-                              if (field === 'twitterUrl') setTwitterUrl(value);
                               if (field === 'youtubeUrl') setYoutubeUrl(value);
+                              if (field === 'vimeoUrl') setVimeoUrl(value);
+                              if (field === 'imdbUrl') setImdbUrl(value);
                             }}
                             disabled={saving}
                           />
@@ -597,6 +639,11 @@ export default function VendorProfile() {
                               </div>
                               <p className="text-[10px] text-neutral-400 mt-1.5">GST number verification is done by admin</p>
                             </div>
+                            <EditableField label="PAN Number" value={panNumber} onChange={setPanNumber} placeholder="e.g. ABCDE1234F" disabled={saving} />
+                            <EditableField label="Bank name" value={bankName} onChange={setBankName} disabled={saving} icon={<FaBuilding />} />
+                            <EditableField label="Account holder name" value={bankAccountName} onChange={setBankAccountName} disabled={saving} />
+                            <EditableField label="Account number" value={bankAccountNumber} onChange={setBankAccountNumber} disabled={saving} />
+                            <EditableField label="IFSC" value={ifscCode} onChange={setIfscCode} disabled={saving} />
                           </div>
                         </ProfileSection>
 

@@ -7,15 +7,17 @@ interface IndividualProfileData {
   bio: string | null;
   aboutMe: string | null;
   skills: string[];
-  genre: string | null;
+  genres?: string[] | null;
+  /** @deprecated legacy single genre */
+  genre?: string | null;
+  address?: string | null;
   locationCity: string | null;
   locationState: string | null;
   dailyBudget: number | null;
   imdbUrl: string | null;
   instagramUrl: string | null;
-  linkedinUrl: string | null;
-  twitterUrl: string | null;
   youtubeUrl: string | null;
+  vimeoUrl?: string | null;
   panNumber: string | null;
   bankAccountName: string | null;
   bankAccountNumber: string | null;
@@ -31,11 +33,12 @@ interface CompanyProfileData {
   bio: string | null;
   aboutUs: string | null;
   companyType: string | null;
+  skills?: string[] | null;
   website: string | null;
+  imdbUrl?: string | null;
   instagramUrl: string | null;
-  linkedinUrl: string | null;
-  twitterUrl: string | null;
   youtubeUrl: string | null;
+  vimeoUrl?: string | null;
   address: string | null;
   panNumber: string | null;
   gstNumber: string | null;
@@ -51,10 +54,11 @@ interface VendorProfileData {
   bio: string | null;
   aboutUs: string | null;
   website: string | null;
+  imdbUrl?: string | null;
   instagramUrl: string | null;
-  linkedinUrl: string | null;
-  twitterUrl: string | null;
   youtubeUrl: string | null;
+  vimeoUrl?: string | null;
+  address?: string | null;
   gstNumber: string | null;
   isGstVerified?: boolean;
   avatarUrl?: string | null;
@@ -65,20 +69,22 @@ interface VendorProfileData {
  * Weighted fields based on importance
  */
 export function calculateIndividualCompletion(profile: IndividualProfileData): number {
+  const hasGenres =
+    (profile.genres && profile.genres.length > 0) || (profile.genre && profile.genre.trim() !== '');
   const fields = [
     { value: profile.displayName, weight: 10, required: true },
     { value: profile.avatarUrl, weight: 8, required: false },
     { value: profile.bio, weight: 8, required: true },
     { value: profile.aboutMe, weight: 5, required: false },
     { value: profile.skills?.length > 0 ? 'yes' : null, weight: 10, required: true },
-    { value: profile.genre, weight: 5, required: false },
+    { value: hasGenres ? 'yes' : null, weight: 5, required: false },
+    { value: profile.address, weight: 6, required: false },
     { value: profile.locationCity, weight: 10, required: true },
     { value: profile.locationState, weight: 5, required: false },
     { value: profile.dailyBudget, weight: 8, required: false },
     { value: profile.instagramUrl, weight: 4, required: false },
-    { value: profile.linkedinUrl, weight: 4, required: false },
-    { value: profile.twitterUrl, weight: 3, required: false },
     { value: profile.youtubeUrl, weight: 3, required: false },
+    { value: profile.vimeoUrl, weight: 3, required: false },
     { value: profile.imdbUrl, weight: 4, required: false },
     { value: profile.panNumber, weight: 5, required: false },
     { value: profile.bankAccountName && profile.bankAccountNumber && profile.ifscCode ? 'yes' : null, weight: 8, required: false },
@@ -105,16 +111,17 @@ export function calculateCompanyCompletion(profile: CompanyProfileData): number 
     { value: profile.companyName, weight: 12, required: true },
     { value: profile.avatarUrl, weight: 8, required: false },
     { value: profile.companyType, weight: 8, required: true },
+    { value: profile.skills?.length ? 'yes' : null, weight: 6, required: false },
     { value: profile.locationCity, weight: 8, required: true },
     { value: profile.locationState, weight: 4, required: false },
-    { value: profile.address, weight: 4, required: false },
+    { value: profile.address, weight: 6, required: false },
     { value: profile.bio, weight: 8, required: true },
     { value: profile.aboutUs, weight: 5, required: false },
     { value: profile.website, weight: 5, required: false },
     { value: profile.instagramUrl, weight: 4, required: false },
-    { value: profile.linkedinUrl, weight: 4, required: false },
-    { value: profile.twitterUrl, weight: 3, required: false },
     { value: profile.youtubeUrl, weight: 3, required: false },
+    { value: profile.vimeoUrl, weight: 3, required: false },
+    { value: profile.imdbUrl, weight: 3, required: false },
     { value: profile.panNumber, weight: 6, required: false },
     { value: profile.gstNumber, weight: 8, required: false },
     { value: profile.isGstVerified, weight: 10, required: false },
@@ -143,13 +150,14 @@ export function calculateVendorCompletion(profile: VendorProfileData): number {
     { value: profile.vendorServiceCategory, weight: 12, required: true },
     { value: profile.locationCity, weight: 8, required: true },
     { value: profile.locationState, weight: 4, required: false },
+    { value: profile.address, weight: 6, required: false },
     { value: profile.bio, weight: 10, required: true },
     { value: profile.aboutUs, weight: 5, required: false },
     { value: profile.website, weight: 5, required: false },
     { value: profile.instagramUrl, weight: 4, required: false },
-    { value: profile.linkedinUrl, weight: 4, required: false },
-    { value: profile.twitterUrl, weight: 3, required: false },
     { value: profile.youtubeUrl, weight: 3, required: false },
+    { value: profile.vimeoUrl, weight: 3, required: false },
+    { value: profile.imdbUrl, weight: 3, required: false },
     { value: profile.gstNumber, weight: 8, required: false },
     { value: profile.isGstVerified, weight: 14, required: false },
   ];
@@ -200,9 +208,12 @@ export function getProfileImprovementTips(
     if (!p.avatarUrl) tips.push('Add a professional profile photo');
     if (!p.bio) tips.push('Write a brief bio about yourself');
     if (!p.skills?.length) tips.push('Add your skills and expertise');
-    if (!p.genre) tips.push('Select your preferred genre');
+    const hasGenres =
+      (p.genres && p.genres.length > 0) || (p.genre && p.genre.trim() !== '');
+    if (!hasGenres) tips.push('Select one or more genres you work in');
+    if (!p.address?.trim()) tips.push('Add your address for invoices');
     if (!p.locationCity) tips.push('Add your location city');
-    if (!p.dailyBudget) tips.push('Set your daily budget/rate');
+    if (!p.dailyBudget) tips.push('Set your daily budget');
     if (!p.imdbUrl && !p.instagramUrl) tips.push('Add portfolio links (IMDb, Instagram)');
     if (!p.panNumber) tips.push('Add your PAN number for invoices');
     if (!p.bankAccountName || !p.bankAccountNumber || !p.ifscCode) {
@@ -212,7 +223,9 @@ export function getProfileImprovementTips(
     const p = profile as CompanyProfileData;
     if (!p.avatarUrl) tips.push('Add your company logo');
     if (!p.companyType) tips.push('Specify your company type');
+    if (!p.skills?.length) tips.push('Add skills or departments your company works with');
     if (!p.locationCity) tips.push('Add your office location');
+    if (!p.address?.trim()) tips.push('Add your business address for invoices');
     if (!p.bio) tips.push('Write a company description');
     if (!p.aboutUs) tips.push('Tell your company story');
     if (!p.website) tips.push('Add your company website');
@@ -224,6 +237,7 @@ export function getProfileImprovementTips(
     if (!p.avatarUrl) tips.push('Add your business logo');
     if (!p.vendorServiceCategory) tips.push('Select your service category');
     if (!p.locationCity) tips.push('Add your business location');
+    if (!p.address?.trim()) tips.push('Add your business address for invoices');
     if (!p.bio) tips.push('Describe your services briefly');
     if (!p.aboutUs) tips.push('Tell your business story');
     if (!p.website) tips.push('Add your business website');

@@ -230,9 +230,8 @@ interface SocialLinksData {
   website?: string | null;
   instagramUrl?: string | null;
   imdbUrl?: string | null;
-  linkedinUrl?: string | null;
-  twitterUrl?: string | null;
   youtubeUrl?: string | null;
+  vimeoUrl?: string | null;
 }
 
 interface SocialLinksProps {
@@ -249,10 +248,9 @@ export function SocialLinks({ links, editable = false, onChange, disabled = fals
   const socialPlatforms = [
     { key: 'website' as const, label: 'Website', icon: '🌐', placeholder: 'https://yourwebsite.com' },
     { key: 'instagramUrl' as const, label: 'Instagram', icon: '📸', placeholder: 'https://instagram.com/username' },
-    { key: 'imdbUrl' as const, label: 'IMDb', icon: '🎬', placeholder: 'https://imdb.com/name/...' },
-    { key: 'linkedinUrl' as const, label: 'LinkedIn', icon: '💼', placeholder: 'https://linkedin.com/in/username' },
-    { key: 'twitterUrl' as const, label: 'Twitter', icon: '🐦', placeholder: 'https://twitter.com/username' },
     { key: 'youtubeUrl' as const, label: 'YouTube', icon: '▶️', placeholder: 'https://youtube.com/@channel' },
+    { key: 'vimeoUrl' as const, label: 'Vimeo', icon: '🎥', placeholder: 'https://vimeo.com/username' },
+    { key: 'imdbUrl' as const, label: 'IMDb', icon: '🎬', placeholder: 'https://imdb.com/name/...' },
   ];
 
   if (editable) {

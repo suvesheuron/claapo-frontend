@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   FaCircleCheck, FaXmark,
-  FaMessage, FaTriangleExclamation, FaClock, FaStar, FaArrowRightArrowLeft,
+  FaMessage, FaTriangleExclamation, FaClock, FaStar,
 } from 'react-icons/fa6';
 import DashboardHeader from '../components/DashboardHeader';
 import DashboardSidebar from '../components/DashboardSidebar';
@@ -67,28 +67,6 @@ export default function Bookings() {
   const [actioning, setActioning] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [reviewBookingId, setReviewBookingId] = useState<string | null>(null);
-  const [counterBookingId, setCounterBookingId] = useState<string | null>(null);
-  const [counterRate, setCounterRate] = useState('');
-  const [counterMessage, setCounterMessage] = useState('');
-
-  const doCounterOffer = async (bookingId: string) => {
-    const rate = parseInt(counterRate) * 100; // Convert to paise
-    if (!rate || rate <= 0) { toast.error('Enter a valid rate'); return; }
-    setActioning(bookingId + 'counter');
-    try {
-      await api.patch(`/bookings/${bookingId}/counter`, { counterRate: rate, counterMessage });
-      toast.success('Counter offer sent!');
-      setCounterBookingId(null);
-      setCounterRate('');
-      setCounterMessage('');
-      refetch();
-    } catch (err) {
-      toast.error(err instanceof ApiException ? err.payload.message : 'Failed to send counter offer');
-    } finally {
-      setActioning(null);
-    }
-  };
-
   const { data, loading, error, refetch } = useApiQuery<BookingsResponse>('/bookings/incoming');
 
   // Exclude cancelled projects (backend also filters; this guards against stale data)
@@ -250,10 +228,6 @@ export default function Bookings() {
                                 <FaXmark className="w-3 h-3" />
                                 {actioning === booking.id + 'decline' ? 'Declining…' : 'Decline'}
                               </button>
-                              <button type="button" onClick={() => setCounterBookingId(counterBookingId === booking.id ? null : booking.id)}
-                                className="rounded-xl px-4 py-2 border border-[#3B5BDB] text-[#3B5BDB] text-xs font-semibold hover:bg-[#EEF2FF] flex items-center gap-1.5 transition-colors">
-                                <FaArrowRightArrowLeft className="w-3 h-3" /> Counter Offer
-                              </button>
                             </>
                           )}
 
@@ -264,29 +238,6 @@ export default function Bookings() {
                             </button>
                           )}
                         </div>
-
-                        {/* Counter offer form */}
-                        {counterBookingId === booking.id && (
-                          <div className="mt-3 p-4 bg-[#EEF2FF] rounded-xl border border-[#3B5BDB]/20">
-                            <p className="text-xs font-semibold text-[#3B5BDB] mb-2">Counter Offer</p>
-                            <div className="flex gap-2 items-end">
-                              <div className="flex-1">
-                                <label className="text-[10px] text-neutral-600 block mb-1">Your rate (₹/day)</label>
-                                <input type="number" value={counterRate} onChange={(e) => setCounterRate(e.target.value)} placeholder="e.g. 5000"
-                                  className="w-full px-3 py-2 text-sm border border-neutral-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#3B5BDB]" />
-                              </div>
-                              <div className="flex-1">
-                                <label className="text-[10px] text-neutral-600 block mb-1">Message (optional)</label>
-                                <input type="text" value={counterMessage} onChange={(e) => setCounterMessage(e.target.value)} placeholder="Optional note"
-                                  className="w-full px-3 py-2 text-sm border border-neutral-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#3B5BDB]" />
-                              </div>
-                              <button type="button" onClick={() => doCounterOffer(booking.id)} disabled={actioning === booking.id + 'counter'}
-                                className="px-4 py-2 bg-[#3B5BDB] text-white text-xs font-semibold rounded-lg hover:bg-[#2f4ac2] disabled:opacity-50 whitespace-nowrap">
-                                {actioning === booking.id + 'counter' ? 'Sending…' : 'Send'}
-                              </button>
-                            </div>
-                          </div>
-                        )}
 
                         {/* Review form */}
                         {reviewBookingId === booking.id && (

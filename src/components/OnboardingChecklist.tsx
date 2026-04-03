@@ -8,7 +8,7 @@ interface ProfileMe {
   displayName?: string;
   companyName?: string;
   skills?: string[];
-  dailyRateMin?: number | null;
+  dailyBudget?: number | null;
   availabilitySlots?: unknown[];
   availabilities?: unknown[];
 }
@@ -22,7 +22,7 @@ interface Step {
 function getSteps(role: string, profile: ProfileMe | null): Step[] {
   if (!profile) return [];
   const hasName = !!(profile.displayName || profile.companyName);
-  const hasRate = !!(profile.dailyRateMin);
+  const hasRate = !!(profile.dailyBudget != null && profile.dailyBudget > 0);
   const hasSkills = !!(profile.skills?.length);
   const hasAvailability = !!(
     (profile.availabilitySlots && (profile.availabilitySlots as unknown[]).length > 0) ||
@@ -32,7 +32,7 @@ function getSteps(role: string, profile: ProfileMe | null): Step[] {
   if (role === 'individual') {
     return [
       { label: 'Complete your profile', done: hasName, to: '/dashboard/profile' },
-      { label: 'Add your skills & rate', done: hasSkills && hasRate, to: '/dashboard/profile' },
+      { label: 'Add your skills & budget', done: hasSkills && hasRate, to: '/dashboard/profile' },
       { label: 'Set your availability', done: hasAvailability, to: '/dashboard/availability' },
       { label: "You're ready to get hired!", done: hasName && hasSkills && hasRate && hasAvailability, to: '/dashboard' },
     ];

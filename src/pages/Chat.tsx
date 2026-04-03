@@ -555,7 +555,16 @@ export default function Chat() {
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <h2 className="text-sm font-semibold text-white truncate">{otherName}</h2>
+                {targetUserId && (user?.role === 'company' || user?.role === 'admin') ? (
+                  <Link
+                    to={`/dashboard/profile/${targetUserId}`}
+                    className="block text-left hover:underline decoration-white/80 underline-offset-2"
+                  >
+                    <h2 className="text-sm font-semibold text-white truncate">{otherName}</h2>
+                  </Link>
+                ) : (
+                  <h2 className="text-sm font-semibold text-white truncate">{otherName}</h2>
+                )}
                 <p className="text-[11px] text-white/70 truncate">
                   {scopedProjectTitle
                     ? scopedProjectTitle

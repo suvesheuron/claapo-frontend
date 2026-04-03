@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useEffect, useState, useMemo, useCallback } from 'react';
-import { FaPlus, FaUsers, FaTruck, FaFolder, FaChevronLeft, FaChevronRight, FaXmark, FaEye, FaMessage, FaPeopleGroup, FaFileInvoice, FaBan } from 'react-icons/fa6';
+import { FaPlus, FaUsers, FaTruck, FaFolder, FaXmark, FaEye, FaMessage, FaPeopleGroup, FaFileInvoice, FaBan } from 'react-icons/fa6';
 import DashboardHeader from '../components/DashboardHeader';
 import DashboardSidebar from '../components/DashboardSidebar';
 import AppFooter from '../components/AppFooter';
@@ -56,7 +56,6 @@ interface DayChatMessage {
 function buildCalendar(year: number, month: number, projects: Project[]): CalendarCell[] {
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const prevDays = new Date(year, month, 0).getDate();
 
   // Map: day -> all projects that span that day
   const dayMap: Record<number, Project[]> = {};
@@ -78,10 +77,9 @@ function buildCalendar(year: number, month: number, projects: Project[]): Calend
   }
 
   const cells: CalendarCell[] = [];
-  for (let i = firstDay - 1; i >= 0; i--) cells.push({ d: prevDays - i, muted: true, projects: [] });
+  for (let i = 0; i < firstDay; i++) cells.push({ d: 0, muted: true, projects: [] });
   for (let day = 1; day <= daysInMonth; day++) cells.push({ d: day, muted: false, projects: dayMap[day] ?? [] });
-  const rem = 7 - (cells.length % 7);
-  if (rem < 7) for (let d2 = 1; d2 <= rem; d2++) cells.push({ d: d2, muted: true, projects: [] });
+  while (cells.length % 7 !== 0) cells.push({ d: 0, muted: true, projects: [] });
   return cells;
 }
 
@@ -89,7 +87,6 @@ export default function CompanyDashboard() {
   useEffect(() => { document.title = 'Dashboard – Claapo'; }, []);
 
   const today = new Date();
-  const [monthOffset, setMonthOffset] = useState(0);
   const [panel, setPanel] = useState<PanelData | null>(null);
   const [dayChatsForProject, setDayChatsForProject] = useState<string | null>(null);
   const [dayChatsLoading, setDayChatsLoading] = useState(false);
@@ -99,7 +96,7 @@ export default function CompanyDashboard() {
   const { data: projectsData, loading } = useApiQuery<ProjectsApiResponse>('/projects?limit=100');
   const projects = projectsData?.items ?? [];
 
-  const displayDate = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
+  const displayDate = new Date(today.getFullYear(), today.getMonth(), 1);
   const monthLabel = MONTHS[displayDate.getMonth()];
   const yearLabel = displayDate.getFullYear();
 
@@ -112,11 +109,11 @@ export default function CompanyDashboard() {
   const crewHired = projects.reduce((acc, p) => acc + (p._count?.bookings ?? 0), 0);
 
   const isToday = (cell: CalendarCell) => {
-    return !cell.muted && cell.d === today.getDate() && displayDate.getMonth() === today.getMonth() && displayDate.getFullYear() === today.getFullYear();
+    return !cell.muted && cell.d > 0 && cell.d === today.getDate() && displayDate.getMonth() === today.getMonth() && displayDate.getFullYear() === today.getFullYear();
   };
 
   const openPanel = (cell: CalendarCell) => {
-    if (cell.muted) return;
+    if (cell.muted || cell.d === 0) return;
     const m = displayDate.getMonth();
     const y = displayDate.getFullYear();
     const dateIso = `${y}-${String(m + 1).padStart(2, '0')}-${String(cell.d).padStart(2, '0')}`;
@@ -269,15 +266,7 @@ export default function CompanyDashboard() {
                         </div>
                         <h2 className="text-base font-bold text-neutral-900">Project Calendar</h2>
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        <button type="button" onClick={() => setMonthOffset((o) => o - 1)} className="w-8 h-8 rounded-xl border border-neutral-200/80 flex items-center justify-center text-neutral-500 hover:bg-neutral-50 hover:border-neutral-300 transition-all">
-                          <FaChevronLeft className="text-[10px]" />
-                        </button>
-                        <span className="text-sm font-semibold text-neutral-900 min-w-[130px] text-center tabular-nums">{monthLabel} {yearLabel}</span>
-                        <button type="button" onClick={() => setMonthOffset((o) => o + 1)} className="w-8 h-8 rounded-xl border border-neutral-200/80 flex items-center justify-center text-neutral-500 hover:bg-neutral-50 hover:border-neutral-300 transition-all">
-                          <FaChevronRight className="text-[10px]" />
-                        </button>
-                      </div>
+                      <span className="text-sm font-semibold text-neutral-900 min-w-[130px] text-center tabular-nums">{monthLabel} {yearLabel}</span>
                     </div>
                     <div className="grid grid-cols-7 gap-1 mb-2">
                       {DAYS.map((day) => (
@@ -286,6 +275,9 @@ export default function CompanyDashboard() {
                     </div>
                     <div className="grid grid-cols-7 gap-1">
                       {calendarDays.map((cell, i) => {
+                        if (cell.muted && cell.d === 0) {
+                          return <div key={i} className="min-h-[44px] sm:min-h-[54px]" aria-hidden />;
+                        }
                         // Primary project is the highest-priority non-cancelled project; fall back to first
                         const primary = cell.projects.find(p => p.status !== 'cancelled') ?? cell.projects[0] ?? null;
                         const cfg = primary ? (statusConfig[primary.status] ?? statusConfig.draft) : null;

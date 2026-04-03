@@ -23,9 +23,10 @@ import { maskPhone } from '../utils/phone';
 interface PendingProfile {
   displayName?: string;
   skills?: string[];
+  genres?: string[];
   locationCity?: string;
   locationState?: string;
-  dailyRateMin?: number;
+  dailyBudget?: number;
   companyName?: string;
   companyType?: string;
   vendorType?: string;
@@ -184,9 +185,10 @@ export default function OtpVerify() {
           await api.patch('/profile/individual', {
             ...(pending.displayName  && { displayName:  pending.displayName }),
             ...(pending.skills?.length && { skills: pending.skills }),
+            ...(pending.genres?.length && { genres: pending.genres }),
             ...(pending.locationCity  && { locationCity:  pending.locationCity }),
             ...(pending.locationState && { locationState: pending.locationState }),
-            ...(pending.dailyRateMin  && { dailyRateMin: pending.dailyRateMin }),
+            ...(pending.dailyBudget != null && pending.dailyBudget > 0 && { dailyBudget: pending.dailyBudget }),
           });
         } else if (userType === 'company' && (pending.companyName || pending.companyType)) {
           await api.patch('/profile/company', {
