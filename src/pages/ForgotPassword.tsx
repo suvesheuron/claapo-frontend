@@ -4,6 +4,7 @@ import { FaVideo, FaTriangleExclamation, FaCircleCheck, FaChevronLeft, FaEye, Fa
 import AppLayout from '../components/AppLayout';
 import { api, ApiException } from '../services/api';
 import { toE164India, maskPhone } from '../utils/phone';
+import { devOtpFromResponse } from '../utils/devOtp';
 
 type Step = 'phone' | 'otp';
 
@@ -27,6 +28,7 @@ export default function ForgotPassword() {
   const [success, setSuccess]     = useState(false);
   const [resendCountdown, setResendCountdown] = useState(0);
   const [resending, setResending] = useState(false);
+  const [devOtpDisplay, setDevOtpDisplay] = useState<string | null>(null);
 
   const inputRefs = useRef<Array<HTMLInputElement | null>>(Array(OTP_LENGTH).fill(null));
   const timerRef  = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -62,7 +64,7 @@ export default function ForgotPassword() {
     setLoading(true);
     try {
       const res = await api.post<unknown>('/auth/password/reset/request', { phone: formatted });
-      console.log('[DEV] Password reset OTP send response (check backend terminal for OTP):', res);
+      setDevOtpDisplay(devOtpFromResponse(res));
       setE164Phone(formatted);
       startCountdown();
       setStep('otp');
@@ -107,7 +109,7 @@ export default function ForgotPassword() {
     setError(null);
     try {
       const res = await api.post<unknown>('/auth/password/reset/request', { phone: e164Phone });
-      console.log('[DEV] Password reset OTP resend response:', res);
+      setDevOtpDisplay(devOtpFromResponse(res));
       setDigits(Array(OTP_LENGTH).fill(''));
       inputRefs.current[0]?.focus();
       startCountdown();
@@ -248,12 +250,6 @@ export default function ForgotPassword() {
                   </div>
                 )}
 
-                {import.meta.env.DEV && (
-                  <p className="text-[11px] text-amber-600 bg-amber-50 rounded-lg px-3 py-2 border border-amber-200">
-                    Dev: OTP will appear in the backend terminal console.
-                  </p>
-                )}
-
                 <button
                   type="submit"
                   disabled={loading}
@@ -272,11 +268,28 @@ export default function ForgotPassword() {
                 {/* Back to step 1 */}
                 <button
                   type="button"
-                  onClick={() => { setStep('phone'); setError(null); setDigits(Array(OTP_LENGTH).fill('')); }}
+                  onClick={() => {
+                    setStep('phone');
+                    setError(null);
+                    setDigits(Array(OTP_LENGTH).fill(''));
+                    setDevOtpDisplay(null);
+                  }}
                   className="flex items-center gap-1.5 text-xs text-neutral-500 hover:text-neutral-700 mb-1 -mt-1"
                 >
                   <FaChevronLeft className="text-[10px]" /> Change number
                 </button>
+
+                {devOtpDisplay && (
+                  <div className="rounded-2xl border-2 border-dashed border-amber-300 bg-gradient-to-b from-amber-50 to-amber-50/80 px-4 py-4 text-center shadow-sm mb-1">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-amber-800/90 mb-1">
+                      Demo — SMS not active
+                    </p>
+                    <p className="text-xs text-amber-900/75 mb-3">Your reset code:</p>
+                    <p className="text-2xl sm:text-3xl font-extrabold tracking-[0.2em] font-mono text-neutral-900 tabular-nums select-all">
+                      {devOtpDisplay}
+                    </p>
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-3 text-center">

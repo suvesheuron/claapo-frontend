@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useEffect, useState, useMemo, useCallback } from 'react';
-import { FaPlus, FaUsers, FaTruck, FaFolder, FaXmark, FaEye, FaMessage, FaPeopleGroup, FaFileInvoice, FaBan } from 'react-icons/fa6';
+import { FaPlus, FaUsers, FaTruck, FaFolder, FaXmark, FaEye, FaMessage, FaPeopleGroup, FaFileInvoice, FaBan, FaChevronLeft, FaChevronRight } from 'react-icons/fa6';
 import DashboardHeader from '../components/DashboardHeader';
 import DashboardSidebar from '../components/DashboardSidebar';
 import AppFooter from '../components/AppFooter';
@@ -87,6 +87,8 @@ export default function CompanyDashboard() {
   useEffect(() => { document.title = 'Dashboard – Claapo'; }, []);
 
   const today = new Date();
+  const [calendarYear, setCalendarYear] = useState(() => today.getFullYear());
+  const [calendarMonth, setCalendarMonth] = useState(() => today.getMonth());
   const [panel, setPanel] = useState<PanelData | null>(null);
   const [dayChatsForProject, setDayChatsForProject] = useState<string | null>(null);
   const [dayChatsLoading, setDayChatsLoading] = useState(false);
@@ -96,13 +98,24 @@ export default function CompanyDashboard() {
   const { data: projectsData, loading } = useApiQuery<ProjectsApiResponse>('/projects?limit=100');
   const projects = projectsData?.items ?? [];
 
-  const displayDate = new Date(today.getFullYear(), today.getMonth(), 1);
+  const displayDate = new Date(calendarYear, calendarMonth, 1);
   const monthLabel = MONTHS[displayDate.getMonth()];
   const yearLabel = displayDate.getFullYear();
 
+  const goPrevMonth = () => {
+    const d = new Date(calendarYear, calendarMonth - 1, 1);
+    setCalendarYear(d.getFullYear());
+    setCalendarMonth(d.getMonth());
+  };
+  const goNextMonth = () => {
+    const d = new Date(calendarYear, calendarMonth + 1, 1);
+    setCalendarYear(d.getFullYear());
+    setCalendarMonth(d.getMonth());
+  };
+
   const calendarDays = useMemo(
     () => buildCalendar(displayDate.getFullYear(), displayDate.getMonth(), projects),
-    [displayDate.getFullYear(), displayDate.getMonth(), projects]
+    [calendarYear, calendarMonth, projects]
   );
 
   const activeProjects = projects.filter(p => p.status === 'active' || p.status === 'in_progress' || p.status === 'open').length;
@@ -266,7 +279,25 @@ export default function CompanyDashboard() {
                         </div>
                         <h2 className="text-base font-bold text-neutral-900">Project Calendar</h2>
                       </div>
-                      <span className="text-sm font-semibold text-neutral-900 min-w-[130px] text-center tabular-nums">{monthLabel} {yearLabel}</span>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={goPrevMonth}
+                          aria-label="Previous month"
+                          className="w-9 h-9 rounded-xl border border-neutral-200/80 bg-white text-neutral-600 hover:bg-[#EEF4FF] hover:border-[#3B5BDB]/30 hover:text-[#3B5BDB] flex items-center justify-center transition-all shrink-0"
+                        >
+                          <FaChevronLeft className="text-xs" />
+                        </button>
+                        <span className="text-sm font-semibold text-neutral-900 min-w-[130px] text-center tabular-nums px-1">{monthLabel} {yearLabel}</span>
+                        <button
+                          type="button"
+                          onClick={goNextMonth}
+                          aria-label="Next month"
+                          className="w-9 h-9 rounded-xl border border-neutral-200/80 bg-white text-neutral-600 hover:bg-[#EEF4FF] hover:border-[#3B5BDB]/30 hover:text-[#3B5BDB] flex items-center justify-center transition-all shrink-0"
+                        >
+                          <FaChevronRight className="text-xs" />
+                        </button>
+                      </div>
                     </div>
                     <div className="grid grid-cols-7 gap-1 mb-2">
                       {DAYS.map((day) => (

@@ -7,9 +7,8 @@
  *   pendingProfile — extra profile fields collected during registration to PATCH
  *                    after OTP verify succeeds and tokens are available
  *
- * Dev flow: OTP is generated on the backend.  Since SMS is not configured in
- * development, the backend will log the OTP to its terminal.  The frontend
- * console.log below surfaces the /otp/send response for additional debugging.
+ * When SMS is not configured, the API may return `devOtp` and we show it on
+ * this page for demos and client review.
  */
 
 import { useEffect, useRef, useState, useCallback } from 'react';
@@ -19,6 +18,7 @@ import AppLayout from '../components/AppLayout';
 import { api, ApiException } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { maskPhone } from '../utils/phone';
+import { devOtpFromResponse } from '../utils/devOtp';
 
 interface PendingProfile {
   displayName?: string;
@@ -64,6 +64,7 @@ export default function OtpVerify() {
   const [resendCountdown, setResendCountdown] = useState(RESEND_SECONDS);
   const [resending, setResending]       = useState(false);
   const [sendError, setSendError]       = useState<string | null>(null);
+  const [devOtpDisplay, setDevOtpDisplay] = useState<string | null>(null);
 
   const inputRefs = useRef<Array<HTMLInputElement | null>>(Array(OTP_LENGTH).fill(null));
   const timerRef  = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -96,8 +97,7 @@ export default function OtpVerify() {
     async function sendOtp() {
       try {
         const res = await api.post<unknown>('/auth/otp/send', { phone });
-        // DEV: surface any debug info from the backend response
-        console.log('[DEV] OTP send response (check backend terminal for OTP):', res);
+        setDevOtpDisplay(devOtpFromResponse(res));
         startCountdown();
       } catch (err) {
         const msg =
@@ -147,7 +147,7 @@ export default function OtpVerify() {
     setResending(true);
     try {
       const res = await api.post<unknown>('/auth/otp/send', { phone });
-      console.log('[DEV] OTP resend response (check backend terminal for OTP):', res);
+      setDevOtpDisplay(devOtpFromResponse(res));
       setDigits(Array(OTP_LENGTH).fill(''));
       inputRefs.current[0]?.focus();
       startCountdown();
@@ -174,7 +174,6 @@ export default function OtpVerify() {
     setVerifying(true);
     try {
       const tokenRes = await api.post<TokenResponse>('/auth/otp/verify', { phone, otp });
-      console.log('[DEV] OTP verify success, tokens received.');
 
       // Hydrate auth context immediately (also updates module-level token)
       setSession(tokenRes.accessToken, tokenRes.refreshToken);
@@ -250,11 +249,20 @@ export default function OtpVerify() {
             </p>
           </div>
 
-          {/* Dev banner */}
-          {import.meta.env.DEV && (
-            <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800 leading-relaxed">
-              <strong>Dev mode:</strong> SMS is not configured. Check the{' '}
-              <strong>backend terminal</strong> for the OTP, or open browser DevTools → Console.
+          {devOtpDisplay && (
+            <div className="mb-5 rounded-2xl border-2 border-dashed border-amber-300 bg-gradient-to-b from-amber-50 to-amber-50/80 px-4 py-5 text-center shadow-sm">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-amber-800/90 mb-1">
+                Demo — SMS not active
+              </p>
+              <p className="text-xs text-amber-900/75 mb-4 max-w-[280px] mx-auto leading-relaxed">
+                Your one-time code appears below so you can complete signup without a text message.
+              </p>
+              <p
+                className="text-3xl sm:text-4xl font-extrabold tracking-[0.2em] font-mono text-neutral-900 tabular-nums select-all"
+                title="Click and copy for screenshots"
+              >
+                {devOtpDisplay}
+              </p>
             </div>
           )}
 
