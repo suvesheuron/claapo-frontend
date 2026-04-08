@@ -339,7 +339,7 @@ export default function ProjectDetail() {
                               </div>
                               <div className="flex items-center gap-1.5 shrink-0">
                                 {statusBadge(booking.status)}
-                                <Link to={`/dashboard/chat/${booking.target.id}`} title="Chat"
+                                <Link to={`/dashboard/chat/${booking.target.id}?projectId=${encodeURIComponent(booking.projectId)}`} title="Chat"
                                   className="w-7 h-7 rounded-lg bg-[#F3F4F6] flex items-center justify-center text-neutral-500 hover:bg-[#EEF4FF] hover:text-[#3B5BDB] transition-colors">
                                   <FaMessage className="text-xs" />
                                 </Link>
@@ -430,7 +430,7 @@ export default function ProjectDetail() {
                               </div>
                               <div className="flex items-center gap-1.5 shrink-0">
                                 {statusBadge(booking.status)}
-                                <Link to={`/dashboard/chat/${booking.target.id}`} title="Chat"
+                                <Link to={`/dashboard/chat/${booking.target.id}?projectId=${encodeURIComponent(booking.projectId)}`} title="Chat"
                                   className="w-7 h-7 rounded-lg bg-[#F3F4F6] flex items-center justify-center text-neutral-500 hover:bg-[#EEF4FF] hover:text-[#3B5BDB] transition-colors">
                                   <FaMessage className="text-xs" />
                                 </Link>

@@ -40,17 +40,38 @@ const STATUS_PRIORITY: Record<string, number> = { active: 0, open: 1, in_progres
 interface CalendarCell { d: number; muted: boolean; projects: Project[] }
 interface PanelData { date: number; month: string; year: number; projects: Project[]; dateIso: string }
 
-function localDateKey(iso: string): string {
-  const d = new Date(iso);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
 interface DayChatMessage {
   id: string;
   content: string | null;
   createdAt: string;
   senderLabel: string;
   conversationId: string;
+  otherParticipantId: string;
+}
+
+interface ProjectDayChatGroup {
+  projectId: string;
+  projectTitle: string;
+  items: DayChatMessage[];
+}
+
+interface ProjectDayChatsResponse {
+  items?: Array<{
+    id: string;
+    content: string | null;
+    createdAt: string;
+    conversationId: string;
+    otherParticipantId: string;
+    sender?: { displayName?: string };
+  }>;
+  meta?: { pages?: number };
+}
+
+function getDateRangeIso(dateIso: string): { startIso: string; endIso: string } {
+  const dayStart = new Date(`${dateIso}T00:00:00`);
+  const dayEnd = new Date(dayStart);
+  dayEnd.setDate(dayEnd.getDate() + 1);
+  return { startIso: dayStart.toISOString(), endIso: dayEnd.toISOString() };
 }
 
 function buildCalendar(year: number, month: number, projects: Project[]): CalendarCell[] {
@@ -94,6 +115,9 @@ export default function CompanyDashboard() {
   const [dayChatsLoading, setDayChatsLoading] = useState(false);
   const [dayChatsItems, setDayChatsItems] = useState<DayChatMessage[]>([]);
   const [dayChatsError, setDayChatsError] = useState<string | null>(null);
+  const [dateChatGroups, setDateChatGroups] = useState<ProjectDayChatGroup[]>([]);
+  const [dateChatGroupsLoading, setDateChatGroupsLoading] = useState(false);
+  const [dateChatGroupsError, setDateChatGroupsError] = useState<string | null>(null);
 
   const { data: projectsData, loading } = useApiQuery<ProjectsApiResponse>('/projects?limit=100');
   const projects = projectsData?.items ?? [];
@@ -133,44 +157,58 @@ export default function CompanyDashboard() {
     setDayChatsForProject(null);
     setDayChatsItems([]);
     setDayChatsError(null);
+    setDateChatGroups([]);
+    setDateChatGroupsError(null);
     setPanel({ date: cell.d, month: monthLabel, year: yearLabel, projects: cell.projects, dateIso });
   };
 
   const fetchProjectDayChats = useCallback(async (projectId: string, dateIso: string) => {
-    type ConvRow = { id: string; project?: { id: string } | null };
-    type MsgRow = {
-      id: string;
-      content: string | null;
-      createdAt: string;
-      sender?: { displayName?: string };
-    };
-    const convRes = await api.get<{ items: ConvRow[] }>('/conversations?page=1&limit=100');
-    const convs = (convRes.items ?? []).filter((c) => c.project?.id === projectId);
+    const { startIso, endIso } = getDateRangeIso(dateIso);
     const out: DayChatMessage[] = [];
-    for (const c of convs) {
-      let cursor: string | undefined;
-      for (let page = 0; page < 20; page++) {
-        const q = cursor ? `?limit=100&cursor=${encodeURIComponent(cursor)}` : '?limit=100';
-        const msgRes = await api.get<{ items: MsgRow[]; nextCursor: string | null }>(`/conversations/${c.id}/messages${q}`);
-        const batch = msgRes.items ?? [];
-        for (const m of batch) {
-          if (localDateKey(m.createdAt) === dateIso) {
-            out.push({
-              id: m.id,
-              content: m.content,
-              createdAt: m.createdAt,
-              senderLabel: m.sender?.displayName ?? '—',
-              conversationId: c.id,
-            });
-          }
-        }
-        cursor = msgRes.nextCursor ?? undefined;
-        if (!cursor || batch.length === 0) break;
+    const firstRes = await api.get<ProjectDayChatsResponse>(
+      `/conversations/project/${projectId}/messages/by-date?start=${encodeURIComponent(startIso)}&end=${encodeURIComponent(endIso)}&page=1&limit=50`,
+    );
+    for (const m of firstRes.items ?? []) {
+      out.push({
+        id: m.id,
+        content: m.content,
+        createdAt: m.createdAt,
+        senderLabel: m.sender?.displayName ?? '—',
+        conversationId: m.conversationId,
+        otherParticipantId: m.otherParticipantId,
+      });
+    }
+    const pages = Math.max(1, firstRes.meta?.pages ?? 1);
+    for (let page = 2; page <= pages; page++) {
+      const pageRes = await api.get<ProjectDayChatsResponse>(
+        `/conversations/project/${projectId}/messages/by-date?start=${encodeURIComponent(startIso)}&end=${encodeURIComponent(endIso)}&page=${page}&limit=50`,
+      );
+      for (const m of pageRes.items ?? []) {
+        out.push({
+          id: m.id,
+          content: m.content,
+          createdAt: m.createdAt,
+          senderLabel: m.sender?.displayName ?? '—',
+          conversationId: m.conversationId,
+          otherParticipantId: m.otherParticipantId,
+        });
       }
     }
     out.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
     return out;
   }, []);
+
+  const loadDateChatGroups = useCallback(async (dateIso: string) => {
+    const eligibleProjects = projects;
+    if (eligibleProjects.length === 0) return [];
+    const groups = await Promise.all(
+      eligibleProjects.map(async (project) => {
+        const items = await fetchProjectDayChats(project.id, dateIso);
+        return { projectId: project.id, projectTitle: project.title, items };
+      }),
+    );
+    return groups.filter((group) => group.items.length > 0);
+  }, [fetchProjectDayChats, projects]);
 
   const toggleDayChats = useCallback(
     (projectId: string, dateIso: string) => {
@@ -200,7 +238,23 @@ export default function CompanyDashboard() {
     setDayChatsForProject(null);
     setDayChatsItems([]);
     setDayChatsError(null);
+    setDateChatGroups([]);
+    setDateChatGroupsError(null);
   };
+
+  useEffect(() => {
+    if (!panel) return;
+    setDateChatGroupsLoading(true);
+    setDateChatGroups([]);
+    setDateChatGroupsError(null);
+    void loadDateChatGroups(panel.dateIso)
+      .then((groups) => setDateChatGroups(groups))
+      .catch((err) => {
+        setDateChatGroups([]);
+        setDateChatGroupsError(err instanceof ApiException ? err.payload.message : 'Could not load project chats for this date.');
+      })
+      .finally(() => setDateChatGroupsLoading(false));
+  }, [loadDateChatGroups, panel]);
 
   const fmtChatTime = (iso: string) =>
     new Date(iso).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
@@ -592,6 +646,56 @@ export default function CompanyDashboard() {
                   )}
                 </div>
               )}
+              <div className="mt-4">
+                <p className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wider mb-2">Chats happened on this date</p>
+                {dateChatGroupsLoading && (
+                  <div className="flex justify-center py-4">
+                    <span className="w-5 h-5 border-2 border-[#3B5BDB]/30 border-t-[#3B5BDB] rounded-full animate-spin" />
+                  </div>
+                )}
+                {!dateChatGroupsLoading && dateChatGroupsError && (
+                  <p className="text-xs text-red-600">{dateChatGroupsError}</p>
+                )}
+                {!dateChatGroupsLoading && !dateChatGroupsError && dateChatGroups.length === 0 && (
+                  <p className="text-xs text-neutral-500">No project chats on this date.</p>
+                )}
+                {!dateChatGroupsLoading && dateChatGroups.length > 0 && (
+                  <div className="space-y-3">
+                    {dateChatGroups.map((group) => (
+                      <div key={group.projectId} className="rounded-xl border border-neutral-200/80 bg-white p-3">
+                        <div className="flex items-center justify-between gap-2 mb-2">
+                          <p className="text-xs font-semibold text-neutral-800 truncate">{group.projectTitle}</p>
+                          <Link
+                            to={`/dashboard/projects/${group.projectId}`}
+                            className="text-[10px] text-[#3B5BDB] font-semibold hover:underline shrink-0"
+                          >
+                            View project
+                          </Link>
+                        </div>
+                        <ul className="space-y-2 max-h-40 overflow-y-auto">
+                          {group.items.map((m) => (
+                            <li key={m.id} className="text-xs border-b border-neutral-100 last:border-0 pb-2 last:pb-0">
+                              <div className="flex items-center justify-between gap-2 mb-0.5">
+                                <span className="font-semibold text-neutral-800 truncate">{m.senderLabel}</span>
+                                <span className="text-[10px] text-neutral-400 shrink-0 tabular-nums">{fmtChatTime(m.createdAt)}</span>
+                              </div>
+                              <p className="text-neutral-600 line-clamp-2 whitespace-pre-wrap break-words">
+                                {m.content?.trim() || '(attachment or empty)'}
+                              </p>
+                              <Link
+                                to={`/dashboard/chat/${m.otherParticipantId}?projectId=${encodeURIComponent(group.projectId)}`}
+                                className="inline-flex items-center gap-1 mt-1 text-[10px] font-semibold text-[#3B5BDB] hover:underline"
+                              >
+                                <FaMessage className="w-2.5 h-2.5" /> Open chat
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
             <div className="px-5 py-4 border-t border-neutral-100 space-y-3">
               <Link

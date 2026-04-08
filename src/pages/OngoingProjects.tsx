@@ -186,7 +186,7 @@ export default function OngoingProjects() {
 
                         <div className="flex items-center gap-2 flex-wrap">
                           <Link
-                            to={`/dashboard/chat/${booking.requester.id}`}
+                            to={`/dashboard/chat/${booking.requester.id}?projectId=${encodeURIComponent(booking.projectId)}`}
                             className="rounded-xl px-4 py-2 border border-neutral-200 text-neutral-700 text-xs font-semibold hover:bg-neutral-50 flex items-center gap-1.5 transition-colors"
                           >
                             <FaMessage className="w-3 h-3" /> Message
