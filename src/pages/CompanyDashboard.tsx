@@ -114,6 +114,7 @@ export default function CompanyDashboard() {
   const [panel, setPanel] = useState<PanelData | null>(null);
   const [dateChatGroups, setDateChatGroups] = useState<ProjectDayChatGroup[]>([]);
   const [expandedChatProject, setExpandedChatProject] = useState<string | null>(null);
+  const [expandedChatPerson, setExpandedChatPerson] = useState<string | null>(null);
   const [dateChatGroupsLoading, setDateChatGroupsLoading] = useState(false);
   const [dateChatGroupsError, setDateChatGroupsError] = useState<string | null>(null);
 
@@ -155,6 +156,7 @@ export default function CompanyDashboard() {
     setDateChatGroups([]);
     setDateChatGroupsError(null);
     setExpandedChatProject(null);
+    setExpandedChatPerson(null);
     setPanel({ date: cell.d, month: monthLabel, year: yearLabel, projects: cell.projects, dateIso });
   };
 
@@ -213,6 +215,7 @@ export default function CompanyDashboard() {
     setDateChatGroups([]);
     setDateChatGroupsError(null);
     setExpandedChatProject(null);
+    setExpandedChatPerson(null);
   };
 
   useEffect(() => {
@@ -711,7 +714,10 @@ export default function CompanyDashboard() {
                         <div key={group.projectId} className="rounded-2xl border border-neutral-200/80 bg-white overflow-hidden transition-all">
                           <button
                             type="button"
-                            onClick={() => setExpandedChatProject(isExpanded ? null : group.projectId)}
+                            onClick={() => {
+                              setExpandedChatProject(isExpanded ? null : group.projectId);
+                              setExpandedChatPerson(null);
+                            }}
                             aria-expanded={isExpanded}
                             className={`w-full flex items-center gap-2.5 px-3.5 py-3 text-left transition-colors ${
                               isExpanded
@@ -745,15 +751,90 @@ export default function CompanyDashboard() {
                             <div className="bg-white">
                               {participants.length === 0 ? (
                                 <p className="px-4 py-4 text-[11px] text-neutral-400 text-center">No participants found.</p>
+                              ) : expandedChatPerson && participantMap.has(expandedChatPerson) ? (
+                                (() => {
+                                  const person = participantMap.get(expandedChatPerson)!;
+                                  const personMessages = group.items
+                                    .filter((m) => m.otherParticipantId === person.id)
+                                    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+                                  const initial = (person.name?.trim()?.[0] ?? '?').toUpperCase();
+                                  return (
+                                    <div className="flex flex-col">
+                                      {/* Person header with back */}
+                                      <div className="flex items-center gap-2.5 px-3.5 py-2.5 border-b border-neutral-100 bg-gradient-to-r from-[#F8FAFF] to-white">
+                                        <button
+                                          type="button"
+                                          onClick={() => setExpandedChatPerson(null)}
+                                          aria-label="Back to people"
+                                          className="w-7 h-7 rounded-lg bg-white border border-neutral-200 flex items-center justify-center text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800 shrink-0 transition-all"
+                                        >
+                                          <FaChevronLeft className="w-2.5 h-2.5" />
+                                        </button>
+                                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#3B5BDB] to-[#5B9DF9] text-white text-[11px] font-extrabold flex items-center justify-center shrink-0 shadow-sm">
+                                          {initial}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                          <p className="text-xs font-bold text-neutral-900 truncate">{person.name}</p>
+                                          <p className="text-[10px] text-neutral-500 font-medium">
+                                            {personMessages.length} {personMessages.length === 1 ? 'message' : 'messages'}
+                                          </p>
+                                        </div>
+                                        <Link
+                                          to={`/dashboard/chat/${person.id}?projectId=${encodeURIComponent(group.projectId)}`}
+                                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#3B5BDB] text-white text-[10px] font-bold hover:bg-[#2f4ac2] shrink-0 transition-all"
+                                        >
+                                          <FaMessage className="w-2.5 h-2.5" /> Open
+                                        </Link>
+                                      </div>
+
+                                      {/* Messages — chat-bubble scroll region */}
+                                      <div className="max-h-80 overflow-y-auto overscroll-contain px-3.5 py-3 bg-neutral-50/40 space-y-2">
+                                        {personMessages.length === 0 ? (
+                                          <p className="text-center text-[11px] text-neutral-400 py-4">No messages.</p>
+                                        ) : (
+                                          personMessages.map((m) => {
+                                            const isFromPerson = m.senderId === person.id;
+                                            return (
+                                              <div
+                                                key={m.id}
+                                                className={`flex flex-col ${isFromPerson ? 'items-start' : 'items-end'}`}
+                                              >
+                                                <div
+                                                  className={`max-w-[85%] rounded-2xl px-3 py-2 shadow-sm break-words ${
+                                                    isFromPerson
+                                                      ? 'bg-white border border-neutral-200 text-neutral-800 rounded-tl-sm'
+                                                      : 'bg-gradient-to-br from-[#3B5BDB] to-[#2f4ac2] text-white rounded-tr-sm'
+                                                  }`}
+                                                >
+                                                  <p className="text-[11px] whitespace-pre-wrap leading-snug">
+                                                    {m.content?.trim() || (
+                                                      <span className={`italic ${isFromPerson ? 'text-neutral-400' : 'text-blue-100'}`}>
+                                                        (attachment or empty)
+                                                      </span>
+                                                    )}
+                                                  </p>
+                                                </div>
+                                                <span className="text-[9px] text-neutral-400 tabular-nums font-medium mt-0.5 px-1">
+                                                  {fmtChatTime(m.createdAt)}
+                                                </span>
+                                              </div>
+                                            );
+                                          })
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                })()
                               ) : (
                                 <ul className="divide-y divide-neutral-100 max-h-72 overflow-y-auto">
                                   {participants.map((person) => {
                                     const initial = (person.name?.trim()?.[0] ?? '?').toUpperCase();
                                     return (
                                       <li key={person.id}>
-                                        <Link
-                                          to={`/dashboard/chat/${person.id}?projectId=${encodeURIComponent(group.projectId)}`}
-                                          className="flex items-center gap-3 px-3.5 py-3 hover:bg-[#F8FAFF] transition-colors group/person"
+                                        <button
+                                          type="button"
+                                          onClick={() => setExpandedChatPerson(person.id)}
+                                          className="w-full flex items-center gap-3 px-3.5 py-3 hover:bg-[#F8FAFF] transition-colors group/person text-left"
                                         >
                                           <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#3B5BDB] to-[#5B9DF9] text-white text-xs font-extrabold flex items-center justify-center shrink-0 shadow-sm">
                                             {initial}
@@ -774,8 +855,8 @@ export default function CompanyDashboard() {
                                               </span>
                                             </div>
                                           </div>
-                                          <FaMessage className="w-3 h-3 text-neutral-300 group-hover/person:text-[#3B5BDB] shrink-0 transition-colors" />
-                                        </Link>
+                                          <FaChevronRight className="w-2.5 h-2.5 text-neutral-300 group-hover/person:text-[#3B5BDB] shrink-0 transition-colors" />
+                                        </button>
                                       </li>
                                     );
                                   })}
