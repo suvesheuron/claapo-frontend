@@ -103,8 +103,8 @@ export default function EditProject() {
   const handleSave = async () => {
     if (!projectId) return;
     if (!title.trim()) { setError('Project name is required.'); return; }
-    if (!startDate)    { setError('Start date is required.'); return; }
-    if (!endDate)      { setError('End date is required.'); return; }
+    const filteredShootDates = shootDates.filter(d => d.trim());
+    if (!filteredShootDates.length) { setError('At least one shoot date is required.'); return; }
     setError(null);
     setLoading(true);
 
@@ -113,11 +113,11 @@ export default function EditProject() {
         title: title.trim(),
         productionHouseName: productionHouseName.trim() || undefined,
         description: description.trim() || undefined,
-        startDate,
-        endDate,
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
         deliveryDate: deliveryDate || undefined,
         locationCity: locationCity.trim() || undefined,
-        shootDates: shootDates.filter(d => d.trim()).length ? shootDates.filter(d => d.trim()) : undefined,
+        shootDates: filteredShootDates,
         shootLocations: shootLocations.filter(s => s.trim()),
         budget: budget ? Math.round(parseFloat(budget)) : undefined,
       });
@@ -186,14 +186,14 @@ export default function EditProject() {
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-neutral-700 text-xs mb-1.5 font-semibold">Start Date <span className="text-[#F40F02]">*</span></label>
+                          <label className="block text-neutral-700 text-xs mb-1.5 font-semibold">Start Date <span className="text-neutral-400 font-normal">(optional)</span></label>
                           <div className="relative">
                             <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} disabled={loading} className="date-input-no-native-icon rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 focus:outline-none focus:border-[#3B5BDB] focus:bg-white text-sm transition-all disabled:opacity-50" />
                             <FaCalendar className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 text-xs pointer-events-none" />
                           </div>
                         </div>
                         <div>
-                          <label className="block text-neutral-700 text-xs mb-1.5 font-semibold">End Date <span className="text-[#F40F02]">*</span></label>
+                          <label className="block text-neutral-700 text-xs mb-1.5 font-semibold">End Date <span className="text-neutral-400 font-normal">(optional)</span></label>
                           <div className="relative">
                             <input type="date" value={endDate} min={startDate} onChange={(e) => setEndDate(e.target.value)} disabled={loading} className="date-input-no-native-icon rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 focus:outline-none focus:border-[#3B5BDB] focus:bg-white text-sm transition-all disabled:opacity-50" />
                             <FaCalendar className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 text-xs pointer-events-none" />
@@ -217,7 +217,7 @@ export default function EditProject() {
                       </div>
                       <div>
                         <div className="flex items-center justify-between mb-2">
-                          <label className="text-neutral-700 text-xs font-semibold">Shoot Dates <span className="text-neutral-400 font-normal">(optional)</span></label>
+                          <label className="text-neutral-700 text-xs font-semibold">Shoot Dates <span className="text-[#F40F02]">*</span></label>
                           <button type="button" onClick={addShootDate} className="text-xs text-[#3B5BDB] hover:underline flex items-center gap-1">
                             <FaPlus className="w-2.5 h-2.5" /> Add Date
                           </button>

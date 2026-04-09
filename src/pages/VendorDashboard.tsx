@@ -32,20 +32,20 @@ const _today = new Date();
 const BASE_YEAR = _today.getFullYear();
 const BASE_MONTH = _today.getMonth();
 
-function isoInRange(d: string, start?: string | null, end?: string | null): boolean {
-  if (!start || !end) return false;
-  const a = d.slice(0, 10);
-  return a >= start.slice(0, 10) && a <= end.slice(0, 10);
+function normalizeDateOnly(input: string): string {
+  const direct = /^(\d{4}-\d{2}-\d{2})/.exec(input);
+  if (direct?.[1]) return direct[1];
+  const d = new Date(input);
+  if (Number.isNaN(d.getTime())) return input;
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(d.getUTCDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
-function datesBetween(start: string, end: string): string[] {
-  const out: string[] = [];
-  const s = new Date(start);
-  const e = new Date(end);
-  for (let d = new Date(s); d <= e; d.setDate(d.getDate() + 1)) {
-    out.push(d.toISOString().slice(0, 10));
-  }
-  return out;
+function getBookingDateKeys(booking: { shootDates?: string[] | null }): string[] {
+  if (!booking.shootDates?.length) return [];
+  return [...new Set(booking.shootDates.map((d) => normalizeDateOnly(d)).filter(Boolean))];
 }
 
 function buildCalendar(monthOffset: number, bookingsByDay?: Record<string, { status: CellStatus; company?: string; project?: string; invoice?: string }>): CalendarCell[] {
@@ -90,11 +90,13 @@ interface EquipmentItem {
 
 interface IncomingBooking {
   id: string; status: string; rateOffered?: number | null; message?: string | null;
+  shootDates?: string[] | null;
   project: { id: string; title: string; startDate?: string; endDate?: string };
   requester: { id: string; email: string; companyProfile?: { companyName?: string } | null };
 }
 interface PastBookingItem {
   id: string;
+  shootDates?: string[] | null;
   project: { id: string; title: string; startDate: string; endDate: string };
   requester: { id: string; companyProfile?: { companyName?: string } | null };
 }
@@ -133,16 +135,20 @@ export default function VendorDashboard() {
 
   const bookingRangesByDay = useMemo(() => {
     const map: Record<string, { status: CellStatus; project?: string; company?: string }> = {};
-    const add = (start: string, end: string, status: CellStatus, project?: string, company?: string) => {
-      datesBetween(start, end).forEach((dateStr) => {
+    const add = (dateKeys: string[], status: CellStatus, project?: string, company?: string) => {
+      dateKeys.forEach((dateStr) => {
         map[dateStr] = { status, project, company };
       });
     };
-    incomingItems.filter(b => (b.status === 'accepted' || b.status === 'locked') && b.project?.startDate && b.project?.endDate).forEach((b) => {
-      add(b.project.startDate!, b.project.endDate!, 'booked', b.project.title, b.requester.companyProfile?.companyName ?? undefined);
+    incomingItems.filter(b => (b.status === 'accepted' || b.status === 'locked')).forEach((b) => {
+      const dateKeys = getBookingDateKeys(b);
+      if (dateKeys.length === 0) return;
+      add(dateKeys, 'booked', b.project.title, b.requester.companyProfile?.companyName ?? undefined);
     });
     pastItems.forEach((b) => {
-      add(b.project.startDate, b.project.endDate, 'completed', b.project.title, b.requester.companyProfile?.companyName ?? undefined);
+      const dateKeys = getBookingDateKeys(b);
+      if (dateKeys.length === 0) return;
+      add(dateKeys, 'completed', b.project.title, b.requester.companyProfile?.companyName ?? undefined);
     });
     return map;
   }, [incomingItems, pastItems]);
@@ -187,9 +193,10 @@ export default function VendorDashboard() {
       equipmentLabel?: string | null;
     }[] = [];
     for (const b of incomingItems) {
+      const dateKeys = getBookingDateKeys(b);
       if (
         (b.status === 'accepted' || b.status === 'locked') &&
-        isoInRange(detailDate, b.project.startDate, b.project.endDate)
+        dateKeys.includes(detailDate)
       ) {
         out.push({
           id: b.id,
@@ -204,7 +211,7 @@ export default function VendorDashboard() {
       }
     }
     for (const b of pastItems) {
-      if (isoInRange(detailDate, b.project.startDate, b.project.endDate)) {
+      if (getBookingDateKeys(b).includes(detailDate)) {
         out.push({
           id: b.id,
           projectId: b.project.id,

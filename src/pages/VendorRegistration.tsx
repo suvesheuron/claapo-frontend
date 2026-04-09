@@ -36,7 +36,7 @@ function validateField(name: keyof FieldErrors, value: string): string | undefin
       if (value.trim().length < 2) return 'Must be at least 2 characters';
       return undefined;
     case 'phone': {
-      const digits = value.replace(/\D/g, '').replace(/^91/, '');
+      const digits = value.replace(/\D/g, '');
       if (!digits) return 'Phone number is required';
       if (!PHONE_REGEX.test(digits)) return 'Enter a valid 10-digit Indian mobile number';
       return undefined;
@@ -271,15 +271,24 @@ export default function VendorRegistration() {
             <label className="block text-[13px] text-neutral-700 mb-1.5 font-semibold">
               Phone <span className="text-red-500">*</span>
             </label>
-            <input
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              onBlur={() => handleBlur('phone', phone)}
-              placeholder="+91 98765 43210"
-              disabled={loading}
-              className={`${inputBase} ${borderClass('phone')}`}
-            />
+            <div className="flex items-center gap-0">
+              <span className="inline-flex items-center px-3 py-3 rounded-l-xl border border-r-0 border-neutral-300 bg-neutral-50 text-neutral-700 text-[15px] font-medium select-none h-[46px]">
+                +91
+              </span>
+              <input
+                type="tel"
+                value={phone}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                  setPhone(val);
+                }}
+                onBlur={() => handleBlur('phone', phone)}
+                placeholder="98765 43210"
+                disabled={loading}
+                maxLength={10}
+                className={`${inputBase} rounded-l-none border-l-0 ${borderClass('phone')}`}
+              />
+            </div>
             {fieldErrors.phone && <p className="text-xs text-red-500 mt-1.5">{fieldErrors.phone}</p>}
           </div>
           <div>
