@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useCallback, useEffect, useState, useRef } from 'react';
 import {
   FaBuilding, FaLocationDot, FaIdCard, FaTriangleExclamation, FaCircleCheck,
   FaPen, FaEye, FaEyeSlash, FaGlobe, FaCamera, FaUser,
@@ -55,7 +55,7 @@ interface MeResponse {
 export default function CompanyProfile() {
   useEffect(() => { document.title = 'Company Profile – Claapo'; }, []);
 
-  const { data: me, loading: meLoading } = useApiQuery<MeResponse>('/profile/me');
+  const { data: me, loading: meLoading, refetch: refetchMe } = useApiQuery<MeResponse>('/profile/me');
 
   const [companyName, setCompanyName] = useState('');
   const [locationCity, setLocationCity] = useState('');
@@ -98,12 +98,16 @@ export default function CompanyProfile() {
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setError(null);
     setAvatarUploading(true);
+    // Optimistic preview
+    const previewUrl = URL.createObjectURL(file);
+    setAvatarUrl(previewUrl);
     try {
       const { uploadUrl, key } = await api.post<{ uploadUrl: string; key: string }>('/profile/avatar', {});
       await fetch(uploadUrl, { method: 'PUT', headers: { 'Content-Type': file.type || 'image/jpeg' }, body: file });
       await api.post('/profile/avatar/confirm', { key });
-      setAvatarUrl(URL.createObjectURL(file));
+      refetchMe();
     } catch {
       setError('Failed to upload logo.');
     } finally {
@@ -112,7 +116,7 @@ export default function CompanyProfile() {
     }
   };
 
-  useEffect(() => {
+  const hydrateFromProfile = useCallback(() => {
     if (!me?.profile) return;
     const p = me.profile as CompanyProfileData & { avatarUrl?: string; logoUrl?: string };
     if (p.logoUrl || p.avatarUrl) setAvatarUrl(p.logoUrl ?? p.avatarUrl ?? null);
@@ -135,6 +139,14 @@ export default function CompanyProfile() {
     setIfscCode(p.ifscCode ?? '');
     setBankName(p.bankName ?? '');
   }, [me]);
+
+  useEffect(() => { hydrateFromProfile(); }, [hydrateFromProfile]);
+
+  const handleCancel = () => {
+    hydrateFromProfile();
+    setError(null);
+    setEditing(false);
+  };
 
   const handleSave = async () => {
     setError(null); setSaved(false);
@@ -165,6 +177,8 @@ export default function CompanyProfile() {
         bankName: bankName.trim() || undefined,
       });
       setSaved(true);
+      setEditing(false);
+      refetchMe();
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
       setError(err instanceof ApiException ? err.payload.message : 'Failed to save profile.');
@@ -191,16 +205,34 @@ export default function CompanyProfile() {
     }
   };
 
-  // Calculate profile completion
-  const profileCompletion = me?.profile ? calculateCompanyCompletion({
-    ...me.profile,
-    avatarUrl,
-  }) : 0;
-  
-  const improvementTips = me?.profile ? getProfileImprovementTips('company', { ...me.profile, avatarUrl }) : [];
-
   const profile = me?.profile;
   const skillsArray = skills.split(',').map((s) => s.trim()).filter(Boolean);
+
+  // Live profile completion — reflects form state while editing
+  const liveProfileSnapshot = {
+    ...(me?.profile ?? {}),
+    companyName,
+    companyType,
+    locationCity,
+    locationState,
+    address,
+    bio,
+    aboutUs,
+    skills: skillsArray,
+    website,
+    imdbUrl,
+    instagramUrl,
+    youtubeUrl,
+    vimeoUrl,
+    panNumber,
+    bankAccountName,
+    bankAccountNumber,
+    ifscCode,
+    bankName,
+    avatarUrl,
+  };
+  const profileCompletion = me?.profile ? calculateCompanyCompletion(liveProfileSnapshot as any) : 0;
+  const improvementTips = me?.profile ? getProfileImprovementTips('company', liveProfileSnapshot as any) : [];
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-[#F8F9FB] w-full">
@@ -211,9 +243,20 @@ export default function CompanyProfile() {
           <div className="flex-1 min-h-0 overflow-auto">
             <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-6 xl:px-8 py-6">
 
-              <div className="mb-6">
-                <h1 className="text-2xl font-bold text-neutral-900 tracking-tight">Company Profile</h1>
-                <p className="text-sm text-neutral-600 mt-1">Manage your company details and settings</p>
+              <div className="mb-6 flex items-start justify-between gap-4 flex-wrap">
+                <div>
+                  <h1 className="text-2xl font-bold text-neutral-900 tracking-tight">Company Profile</h1>
+                  <p className="text-sm text-neutral-600 mt-1">Manage your company details and settings</p>
+                </div>
+                {!editing && !meLoading && (
+                  <button
+                    type="button"
+                    onClick={() => setEditing(true)}
+                    className="px-4 py-2.5 bg-brand-primary text-white rounded-xl text-sm font-semibold hover:bg-brand-primary/90 transition-colors flex items-center gap-2 shadow-sm"
+                  >
+                    <FaPen className="w-3.5 h-3.5" /> Edit Profile
+                  </button>
+                )}
               </div>
 
               {meLoading ? (
@@ -250,16 +293,18 @@ export default function CompanyProfile() {
                       <div className="px-6 pb-6 text-center">
                         <h2 className="text-xl font-bold text-neutral-900 tracking-tight">{companyName || '—'}</h2>
                         <p className="text-sm text-neutral-500 mt-1">{companyType || 'Production Company'}</p>
-                        {me?.isVerified && (
-                          <span className="inline-flex items-center gap-1.5 text-xs px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 font-semibold mt-2 border border-emerald-200/60">
-                            <FaCircleCheck className="w-3 h-3" /> Verified
-                          </span>
-                        )}
-                        {profile?.isGstVerified && (
-                          <span className="inline-flex items-center gap-1.5 text-xs px-3 py-1 rounded-full bg-blue-50 text-blue-700 font-semibold mt-2 border border-blue-200/60">
-                            <FaIdCard className="w-3 h-3" /> GST Verified
-                          </span>
-                        )}
+                        <div className="flex flex-wrap items-center justify-center gap-2 mt-3">
+                          {me?.isVerified && (
+                            <span className="inline-flex items-center gap-1.5 text-xs px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200/60">
+                              <FaCircleCheck className="w-3 h-3" /> Verified
+                            </span>
+                          )}
+                          {profile?.isGstVerified && (
+                            <span className="inline-flex items-center gap-1.5 text-xs px-3 py-1 rounded-full bg-blue-50 text-blue-700 font-semibold border border-blue-200/60">
+                              <FaIdCard className="w-3 h-3" /> GST Verified
+                            </span>
+                          )}
+                        </div>
                         
                         {/* Location */}
                         {locationCity && (
@@ -325,7 +370,18 @@ export default function CompanyProfile() {
 
                   {/* Main Content */}
                   <div className="lg:col-span-2 space-y-6">
-                    
+                    {error && (
+                      <div className="flex items-start gap-2 rounded-xl bg-red-50 border border-red-200 px-4 py-3">
+                        <FaTriangleExclamation className="text-red-500 text-sm shrink-0 mt-0.5" />
+                        <p className="text-sm text-red-700">{error}</p>
+                      </div>
+                    )}
+                    {saved && (
+                      <div className="flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-emerald-700 text-sm font-semibold">
+                        <FaCircleCheck /> Profile saved successfully!
+                      </div>
+                    )}
+
                     {!editing ? (
                       <>
                         {/* Company Information */}
@@ -484,18 +540,6 @@ export default function CompanyProfile() {
                     ) : (
                       <>
                         {/* Edit Mode */}
-                        {error && (
-                          <div className="flex items-start gap-2 rounded-xl bg-red-50 border border-red-200 px-4 py-3">
-                            <FaTriangleExclamation className="text-red-500 text-sm shrink-0 mt-0.5" />
-                            <p className="text-sm text-red-700">{error}</p>
-                          </div>
-                        )}
-                        {saved && (
-                          <div className="flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-emerald-700 text-sm font-semibold">
-                            <FaCircleCheck /> Profile saved successfully!
-                          </div>
-                        )}
-
                         {/* Company Information */}
                         <ProfileSection 
                           title="Company Information" 
@@ -676,16 +720,17 @@ export default function CompanyProfile() {
 
                         {/* Action Buttons */}
                         <div className="flex justify-end gap-3">
-                          <button 
-                            type="button" 
-                            onClick={() => setEditing(false)} 
-                            className="px-6 py-2.5 border border-neutral-300 text-neutral-700 rounded-xl text-sm font-medium hover:bg-neutral-50 transition-colors"
+                          <button
+                            type="button"
+                            onClick={handleCancel}
+                            disabled={saving}
+                            className="px-6 py-2.5 border border-neutral-300 text-neutral-700 rounded-xl text-sm font-medium hover:bg-neutral-50 transition-colors disabled:opacity-60"
                           >
                             Cancel
                           </button>
-                          <button 
-                            type="button" 
-                            onClick={() => { handleSave(); setEditing(false); }} 
+                          <button
+                            type="button"
+                            onClick={handleSave}
                             disabled={saving}
                             className="px-6 py-2.5 bg-brand-primary text-white rounded-xl text-sm font-semibold hover:bg-brand-primary/90 disabled:opacity-60 transition-colors flex items-center gap-2"
                           >

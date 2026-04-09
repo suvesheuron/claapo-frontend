@@ -115,6 +115,9 @@ export default function CompanyDashboard() {
   const [dateChatGroups, setDateChatGroups] = useState<ProjectDayChatGroup[]>([]);
   const [expandedChatProject, setExpandedChatProject] = useState<string | null>(null);
   const [expandedChatPerson, setExpandedChatPerson] = useState<string | null>(null);
+  const [personChatMessages, setPersonChatMessages] = useState<Array<{ id: string; senderId: string; senderLabel: string; content: string | null; createdAt: string }>>([]);
+  const [personChatLoading, setPersonChatLoading] = useState(false);
+  const [personChatError, setPersonChatError] = useState<string | null>(null);
   const [dateChatGroupsLoading, setDateChatGroupsLoading] = useState(false);
   const [dateChatGroupsError, setDateChatGroupsError] = useState<string | null>(null);
 
@@ -157,6 +160,9 @@ export default function CompanyDashboard() {
     setDateChatGroupsError(null);
     setExpandedChatProject(null);
     setExpandedChatPerson(null);
+    setPersonChatMessages([]);
+    setPersonChatError(null);
+    setPersonChatLoading(false);
     setPanel({ date: cell.d, month: monthLabel, year: yearLabel, projects: cell.projects, dateIso });
   };
 
@@ -216,6 +222,9 @@ export default function CompanyDashboard() {
     setDateChatGroupsError(null);
     setExpandedChatProject(null);
     setExpandedChatPerson(null);
+    setPersonChatMessages([]);
+    setPersonChatError(null);
+    setPersonChatLoading(false);
   };
 
   useEffect(() => {
@@ -231,6 +240,52 @@ export default function CompanyDashboard() {
       })
       .finally(() => setDateChatGroupsLoading(false));
   }, [loadDateChatGroups, panel]);
+
+  // When a person is selected inside a project, load their full conversation for that project
+  useEffect(() => {
+    if (!expandedChatPerson || !expandedChatProject) {
+      setPersonChatMessages([]);
+      setPersonChatError(null);
+      setPersonChatLoading(false);
+      return;
+    }
+    const group = dateChatGroups.find((g) => g.projectId === expandedChatProject);
+    const sample = group?.items.find((m) => m.otherParticipantId === expandedChatPerson);
+    if (!sample) return;
+    const conversationId = sample.conversationId;
+    let cancelled = false;
+    setPersonChatLoading(true);
+    setPersonChatError(null);
+    void api
+      .get<{ items: Array<{ id: string; senderId: string; content: string | null; createdAt: string; sender?: { displayName?: string } }> }>(
+        `/conversations/${conversationId}/messages?limit=100`,
+      )
+      .then((res) => {
+        if (cancelled) return;
+        const sorted = (res.items ?? [])
+          .slice()
+          .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+          .map((m) => ({
+            id: m.id,
+            senderId: m.senderId,
+            senderLabel: m.sender?.displayName ?? '—',
+            content: m.content,
+            createdAt: m.createdAt,
+          }));
+        setPersonChatMessages(sorted);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setPersonChatError(err instanceof ApiException ? err.payload.message : 'Could not load conversation.');
+        setPersonChatMessages([]);
+      })
+      .finally(() => {
+        if (!cancelled) setPersonChatLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [expandedChatPerson, expandedChatProject, dateChatGroups]);
 
   const fmtChatTime = (iso: string) =>
     new Date(iso).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
@@ -717,6 +772,9 @@ export default function CompanyDashboard() {
                             onClick={() => {
                               setExpandedChatProject(isExpanded ? null : group.projectId);
                               setExpandedChatPerson(null);
+    setPersonChatMessages([]);
+    setPersonChatError(null);
+    setPersonChatLoading(false);
                             }}
                             aria-expanded={isExpanded}
                             className={`w-full flex items-center gap-2.5 px-3.5 py-3 text-left transition-colors ${
@@ -754,9 +812,6 @@ export default function CompanyDashboard() {
                               ) : expandedChatPerson && participantMap.has(expandedChatPerson) ? (
                                 (() => {
                                   const person = participantMap.get(expandedChatPerson)!;
-                                  const personMessages = group.items
-                                    .filter((m) => m.otherParticipantId === person.id)
-                                    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
                                   const initial = (person.name?.trim()?.[0] ?? '?').toUpperCase();
                                   return (
                                     <div className="flex flex-col">
@@ -776,7 +831,9 @@ export default function CompanyDashboard() {
                                         <div className="flex-1 min-w-0">
                                           <p className="text-xs font-bold text-neutral-900 truncate">{person.name}</p>
                                           <p className="text-[10px] text-neutral-500 font-medium">
-                                            {personMessages.length} {personMessages.length === 1 ? 'message' : 'messages'}
+                                            {personChatLoading
+                                              ? 'Loading conversation…'
+                                              : `${personChatMessages.length} ${personChatMessages.length === 1 ? 'message' : 'messages'} · full history`}
                                           </p>
                                         </div>
                                         <Link
@@ -787,39 +844,64 @@ export default function CompanyDashboard() {
                                         </Link>
                                       </div>
 
-                                      {/* Messages — chat-bubble scroll region */}
-                                      <div className="max-h-80 overflow-y-auto overscroll-contain px-3.5 py-3 bg-neutral-50/40 space-y-2">
-                                        {personMessages.length === 0 ? (
-                                          <p className="text-center text-[11px] text-neutral-400 py-4">No messages.</p>
+                                      {/* Messages — full history, chat-bubble scroll region */}
+                                      <div className="max-h-[22rem] min-h-[12rem] overflow-y-auto overscroll-contain px-3.5 py-3 bg-[#F8FAFF]/60 space-y-2">
+                                        {personChatLoading ? (
+                                          <div className="flex flex-col items-center justify-center gap-2 py-8">
+                                            <span className="w-6 h-6 border-2 border-[#3B5BDB]/20 border-t-[#3B5BDB] rounded-full animate-spin" />
+                                            <span className="text-[11px] text-neutral-400 font-medium">Loading conversation…</span>
+                                          </div>
+                                        ) : personChatError ? (
+                                          <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 mx-1">
+                                            <p className="text-[11px] text-red-700 font-medium">{personChatError}</p>
+                                          </div>
+                                        ) : personChatMessages.length === 0 ? (
+                                          <p className="text-center text-[11px] text-neutral-400 py-8">No messages in this conversation.</p>
                                         ) : (
-                                          personMessages.map((m) => {
-                                            const isFromPerson = m.senderId === person.id;
-                                            return (
-                                              <div
-                                                key={m.id}
-                                                className={`flex flex-col ${isFromPerson ? 'items-start' : 'items-end'}`}
-                                              >
-                                                <div
-                                                  className={`max-w-[85%] rounded-2xl px-3 py-2 shadow-sm break-words ${
-                                                    isFromPerson
-                                                      ? 'bg-white border border-neutral-200 text-neutral-800 rounded-tl-sm'
-                                                      : 'bg-gradient-to-br from-[#3B5BDB] to-[#2f4ac2] text-white rounded-tr-sm'
-                                                  }`}
-                                                >
-                                                  <p className="text-[11px] whitespace-pre-wrap leading-snug">
-                                                    {m.content?.trim() || (
-                                                      <span className={`italic ${isFromPerson ? 'text-neutral-400' : 'text-blue-100'}`}>
-                                                        (attachment or empty)
+                                          (() => {
+                                            let lastDateLabel = '';
+                                            return personChatMessages.map((m) => {
+                                              const isFromPerson = m.senderId === person.id;
+                                              const dateLabel = new Date(m.createdAt).toLocaleDateString('en-IN', {
+                                                day: 'numeric',
+                                                month: 'short',
+                                                year: 'numeric',
+                                              });
+                                              const showDivider = dateLabel !== lastDateLabel;
+                                              lastDateLabel = dateLabel;
+                                              return (
+                                                <div key={m.id}>
+                                                  {showDivider && (
+                                                    <div className="flex items-center justify-center my-2">
+                                                      <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider bg-white border border-neutral-200 rounded-full px-2.5 py-0.5 shadow-sm">
+                                                        {dateLabel}
                                                       </span>
-                                                    )}
-                                                  </p>
+                                                    </div>
+                                                  )}
+                                                  <div className={`flex flex-col ${isFromPerson ? 'items-start' : 'items-end'}`}>
+                                                    <div
+                                                      className={`max-w-[85%] rounded-2xl px-3 py-2 shadow-sm break-words ${
+                                                        isFromPerson
+                                                          ? 'bg-white border border-neutral-200 text-neutral-800 rounded-tl-sm'
+                                                          : 'bg-gradient-to-br from-[#3B5BDB] to-[#2f4ac2] text-white rounded-tr-sm'
+                                                      }`}
+                                                    >
+                                                      <p className="text-[11px] whitespace-pre-wrap leading-snug">
+                                                        {m.content?.trim() || (
+                                                          <span className={`italic ${isFromPerson ? 'text-neutral-400' : 'text-blue-100'}`}>
+                                                            (attachment or empty)
+                                                          </span>
+                                                        )}
+                                                      </p>
+                                                    </div>
+                                                    <span className="text-[9px] text-neutral-400 tabular-nums font-medium mt-0.5 px-1">
+                                                      {fmtChatTime(m.createdAt)}
+                                                    </span>
+                                                  </div>
                                                 </div>
-                                                <span className="text-[9px] text-neutral-400 tabular-nums font-medium mt-0.5 px-1">
-                                                  {fmtChatTime(m.createdAt)}
-                                                </span>
-                                              </div>
-                                            );
-                                          })
+                                              );
+                                            });
+                                          })()
                                         )}
                                       </div>
                                     </div>

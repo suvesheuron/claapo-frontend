@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { FaChevronLeft, FaChevronRight, FaCircleInfo } from 'react-icons/fa6';
+import { FaChevronLeft, FaChevronRight, FaCircleInfo, FaBan, FaLock, FaCircleCheck, FaCalendarCheck } from 'react-icons/fa6';
 import DashboardHeader from '../../components/DashboardHeader';
 import DashboardSidebar from '../../components/DashboardSidebar';
 import AppFooter from '../../components/AppFooter';
@@ -83,10 +83,10 @@ function buildCalendar(
 }
 
 const cellStyle: Record<string, string> = {
-  available: 'bg-[#DCFCE7] border-[#86EFAC] text-[#15803D]',
-  booked:    'bg-[#DBEAFE] border-[#93C5FD] text-[#1D4ED8]',
-  completed: 'bg-[#DBEAFE] border-[#93C5FD] text-[#1D4ED8]',
-  blocked:   'bg-[#FEE2E2] border-[#FECACA] text-[#B91C1C]',
+  available: 'bg-[#DCFCE7] border-[#86EFAC] text-[#15803D] hover:bg-[#BBF7D0]',
+  booked:    'bg-[#DBEAFE] border-[#93C5FD] text-[#1D4ED8] hover:bg-[#BFDBFE]',
+  completed: 'bg-[#DBEAFE] border-[#93C5FD] text-[#1D4ED8] hover:bg-[#BFDBFE]',
+  blocked:   'bg-gradient-to-br from-[#FEE2E2] to-[#FECACA] border-[#F87171] text-[#991B1B] hover:from-[#FECACA] hover:to-[#FCA5A5] shadow-sm shadow-red-200/40',
 };
 
 export default function IndividualAvailability() {
@@ -142,6 +142,19 @@ export default function IndividualAvailability() {
 
   const calendarDays = buildCalendar(displayYear, displayMonth, apiSlots);
 
+  // Month stats (exclude padding cells)
+  const monthStats = calendarDays.reduce(
+    (acc, c) => {
+      if (c.muted) return acc;
+      if (c.status === 'blocked') acc.blocked += 1;
+      else if (c.status === 'booked') acc.booked += 1;
+      else if (c.status === 'completed') acc.completed += 1;
+      else acc.available += 1;
+      return acc;
+    },
+    { available: 0, booked: 0, completed: 0, blocked: 0 },
+  );
+
   const getDateStr = (d: number): string => {
     const m = String(displayDate.getMonth() + 1).padStart(2, '0');
     return `${yearLabel}-${m}-${String(d).padStart(2, '0')}`;
@@ -195,9 +208,23 @@ export default function IndividualAvailability() {
           <div className="flex-1 min-h-0 overflow-auto">
             <div className="max-w-[1000px] mx-auto px-4 sm:px-6 lg:px-8 py-5">
 
-              <div className="mb-5">
-                <h1 className="text-xl font-bold text-neutral-900">Availability Calendar</h1>
-                <p className="text-sm text-neutral-500 mt-0.5">Manage your schedule, block dates, and view booking history</p>
+              <div className="mb-5 flex items-start justify-between gap-4 flex-wrap">
+                <div>
+                  <h1 className="text-xl font-bold text-neutral-900">Availability Calendar</h1>
+                  <p className="text-sm text-neutral-500 mt-0.5">Manage your schedule, block dates, and view booking history</p>
+                </div>
+                {/* Quick month stats */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-white border border-[#86EFAC] px-2.5 py-1 text-[11px] font-bold text-[#15803D] shadow-sm">
+                    <FaCircleCheck className="w-2.5 h-2.5" /> {monthStats.available} free
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-white border border-[#93C5FD] px-2.5 py-1 text-[11px] font-bold text-[#1D4ED8] shadow-sm">
+                    <FaCalendarCheck className="w-2.5 h-2.5" /> {monthStats.booked + monthStats.completed} booked
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[#FEE2E2] to-[#FECACA] border border-[#F87171] px-2.5 py-1 text-[11px] font-extrabold text-[#991B1B] shadow-sm">
+                    <FaBan className="w-2.5 h-2.5" /> {monthStats.blocked} blocked
+                  </span>
+                </div>
               </div>
 
               <div className="rounded-2xl bg-white border border-neutral-200 p-5">
@@ -250,9 +277,15 @@ export default function IndividualAvailability() {
                         role={cell.muted ? undefined : 'button'}
                         tabIndex={cell.muted ? undefined : 0}
                         onClick={() => openDay(cell)}
-                        title={cell.notes ? `Blocked: ${cell.notes}` : cell.project ?? undefined}
+                        title={
+                          cell.notes
+                            ? `Not available — ${cell.notes}`
+                            : cell.status === 'blocked'
+                              ? 'Not available'
+                              : cell.project ?? undefined
+                        }
                         className={`
-                          rounded-xl border text-center p-1.5 min-h-[56px] sm:min-h-[64px] select-none flex flex-col items-center justify-center gap-0.5
+                          relative rounded-xl border text-center p-1.5 min-h-[56px] sm:min-h-[64px] select-none flex flex-col items-center justify-center gap-0.5 transition-all overflow-hidden
                           ${cell.muted
                             ? 'bg-white border-neutral-100 text-neutral-300 cursor-default'
                             : `${cellStyle[cell.status ?? 'available'] ?? cellStyle.available} cal-cell cursor-pointer`
@@ -260,9 +293,25 @@ export default function IndividualAvailability() {
                           ${isSelected ? 'ring-2 ring-[#3B5BDB] ring-offset-1' : ''}
                         `}
                       >
-                        <span className="text-xs font-bold leading-none">{cell.d}</span>
+                        {/* Diagonal stripe overlay for blocked cells */}
+                        {!cell.muted && cell.status === 'blocked' && (
+                          <span
+                            aria-hidden
+                            className="absolute inset-0 pointer-events-none opacity-30"
+                            style={{
+                              backgroundImage:
+                                'repeating-linear-gradient(45deg, rgba(185,28,28,0.18) 0 4px, transparent 4px 8px)',
+                            }}
+                          />
+                        )}
+                        {!cell.muted && cell.status === 'blocked' && (
+                          <span className="absolute top-0.5 right-0.5 w-3.5 h-3.5 rounded-full bg-[#DC2626] text-white flex items-center justify-center shadow-sm">
+                            <FaLock className="w-1.5 h-1.5" />
+                          </span>
+                        )}
+                        <span className={`relative text-xs font-bold leading-none ${cell.status === 'blocked' ? 'line-through decoration-[1.5px] decoration-[#991B1B]/60' : ''}`}>{cell.d}</span>
                         {!cell.muted && cell.status && (
-                          <span className="text-[9px] leading-tight truncate w-full font-medium opacity-80">
+                          <span className="relative text-[9px] leading-tight truncate w-full font-semibold opacity-90">
                             {cell.status === 'available' && 'Free'}
                             {cell.status === 'booked' && (cell.project?.split(' ')[0] ?? 'Booked')}
                             {cell.status === 'completed' && (cell.project?.split(' ')[0] ?? 'Done')}
@@ -275,16 +324,16 @@ export default function IndividualAvailability() {
                 </div>
 
                 {/* Legend */}
-                <div className="flex flex-wrap gap-5 mt-5 pt-4 border-t border-neutral-100">
+                <div className="flex flex-wrap gap-x-5 gap-y-2 mt-5 pt-4 border-t border-neutral-100">
                   {[
-                    { color: 'bg-[#22C55E]', label: 'Available' },
-                    { color: 'bg-[#3B82F6]', label: 'Booked' },
-                    { color: 'bg-[#3B82F6]', label: 'Completed' },
-                    { color: 'bg-[#EF4444]', label: 'Blocked' },
-                  ].map(({ color, label }) => (
+                    { swatch: 'bg-[#DCFCE7] border-[#86EFAC]', label: 'Available' },
+                    { swatch: 'bg-[#DBEAFE] border-[#93C5FD]', label: 'Booked' },
+                    { swatch: 'bg-[#DBEAFE] border-[#93C5FD]', label: 'Completed' },
+                    { swatch: 'bg-gradient-to-br from-[#FEE2E2] to-[#FECACA] border-[#F87171]', label: 'Blocked / Not available' },
+                  ].map(({ swatch, label }) => (
                     <div key={label} className="flex items-center gap-2">
-                      <div className={`w-3 h-3 rounded-full ${color}`} />
-                      <span className="text-xs text-neutral-500">{label}</span>
+                      <div className={`w-4 h-4 rounded border ${swatch}`} />
+                      <span className="text-xs font-medium text-neutral-600">{label}</span>
                     </div>
                   ))}
                 </div>

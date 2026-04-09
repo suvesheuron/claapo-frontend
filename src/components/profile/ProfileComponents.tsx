@@ -1,4 +1,5 @@
 import React from 'react';
+import { FaGlobe, FaInstagram, FaYoutube, FaVimeoV, FaImdb } from 'react-icons/fa6';
 import { getCompletionStatus } from '../../utils/profileCompletion';
 
 interface ProfileSectionProps {
@@ -44,48 +45,62 @@ export function ProfileSection({
 interface InfoRowProps {
   label: string;
   value: React.ReactNode;
+  /** @deprecated icons are no longer rendered at row level — kept for call-site compatibility */
   icon?: React.ReactNode;
   copyable?: boolean;
-  onCopy?: () => void;
   className?: string;
 }
 
 /**
- * Reusable info row for displaying profile data
+ * Reusable info row for displaying profile data.
+ * Uses a fixed label column so every row in a section lines up.
  */
-export function InfoRow({ 
-  label, 
-  value, 
-  icon, 
-  copyable = false, 
-  onCopy,
-  className = '' 
+export function InfoRow({
+  label,
+  value,
+  copyable = false,
+  className = '',
 }: InfoRowProps) {
-  const isValueEmpty = value === null || value === undefined || value === '' || value === '—';
-  
+  const isValueEmpty =
+    value === null || value === undefined || value === '' || value === '—';
+  const [copied, setCopied] = React.useState(false);
+
+  const handleCopy = async () => {
+    const text = typeof value === 'string' ? value : String(value ?? '');
+    if (!text || text === '—') return;
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* noop */
+    }
+  };
+
   return (
-    <div className={`flex items-start gap-3 py-2.5 ${className}`}>
-      {icon && (
-        <div className="w-7 h-7 rounded-lg bg-neutral-100 flex items-center justify-center shrink-0 mt-0.5 text-neutral-500">
-          {icon}
-        </div>
-      )}
-      <div className="flex-1 min-w-0">
-        <div className="grid grid-cols-[minmax(80px,120px)_1fr] gap-4 items-start">
-          <dt className="text-xs font-medium text-neutral-500 pt-1">{label}</dt>
-          <dd className={`text-sm ${isValueEmpty ? 'text-neutral-400' : 'text-neutral-800'} break-all`}>
-            {value || '—'}
-          </dd>
-        </div>
-      </div>
-      {copyable && !isValueEmpty && onCopy && (
+    <div
+      className={`grid grid-cols-[140px_1fr_auto] gap-4 items-start py-3 border-b border-neutral-100 last:border-b-0 ${className}`}
+    >
+      <dt className="text-xs font-medium text-neutral-500 pt-0.5 uppercase tracking-wide">
+        {label}
+      </dt>
+      <dd
+        className={`text-sm leading-relaxed ${
+          isValueEmpty ? 'text-neutral-400 italic' : 'text-neutral-800'
+        } break-words min-w-0`}
+      >
+        {value || '—'}
+      </dd>
+      {copyable && !isValueEmpty ? (
         <button
           type="button"
-          onClick={onCopy}
-          className="text-xs text-brand-primary hover:text-brand-primary/80 font-medium px-2 py-1 rounded hover:bg-brand-primary/5 transition-colors shrink-0"
+          onClick={handleCopy}
+          className="text-[11px] text-brand-primary hover:text-brand-primary/80 font-semibold px-2 py-1 rounded-md hover:bg-brand-primary/5 transition-colors shrink-0"
         >
-          Copy
+          {copied ? 'Copied' : 'Copy'}
         </button>
+      ) : (
+        <span />
       )}
     </div>
   );
@@ -246,54 +261,52 @@ interface SocialLinksProps {
  */
 export function SocialLinks({ links, editable = false, onChange, disabled = false }: SocialLinksProps) {
   const socialPlatforms = [
-    { key: 'website' as const, label: 'Website', icon: '🌐', placeholder: 'https://yourwebsite.com' },
-    { key: 'instagramUrl' as const, label: 'Instagram', icon: '📸', placeholder: 'https://instagram.com/username' },
-    { key: 'youtubeUrl' as const, label: 'YouTube', icon: '▶️', placeholder: 'https://youtube.com/@channel' },
-    { key: 'vimeoUrl' as const, label: 'Vimeo', icon: '🎥', placeholder: 'https://vimeo.com/username' },
-    { key: 'imdbUrl' as const, label: 'IMDb', icon: '🎬', placeholder: 'https://imdb.com/name/...' },
+    { key: 'website' as const, label: 'Website', Icon: FaGlobe, placeholder: 'https://yourwebsite.com' },
+    { key: 'instagramUrl' as const, label: 'Instagram', Icon: FaInstagram, placeholder: 'https://instagram.com/username' },
+    { key: 'youtubeUrl' as const, label: 'YouTube', Icon: FaYoutube, placeholder: 'https://youtube.com/@channel' },
+    { key: 'vimeoUrl' as const, label: 'Vimeo', Icon: FaVimeoV, placeholder: 'https://vimeo.com/username' },
+    { key: 'imdbUrl' as const, label: 'IMDb', Icon: FaImdb, placeholder: 'https://imdb.com/name/...' },
   ];
 
   if (editable) {
     return (
       <div className="space-y-3">
-        {socialPlatforms.map(({ key, label, icon, placeholder }) => (
+        {socialPlatforms.map(({ key, label, Icon, placeholder }) => (
           <EditableField
             key={key}
-            label={`${icon} ${label}`}
+            label={label}
             type="url"
             value={(links[key] as string) || ''}
             onChange={(value) => onChange?.(key, value)}
             placeholder={placeholder}
             disabled={disabled}
+            icon={<Icon className="w-4 h-4" />}
           />
         ))}
       </div>
     );
   }
 
-  const hasLinks = Object.values(links).some(v => v && v !== '');
-  
+  const hasLinks = Object.values(links).some((v) => v && v !== '');
+
   if (!hasLinks) {
-    return (
-      <p className="text-sm text-neutral-400 italic">No social links added</p>
-    );
+    return <p className="text-sm text-neutral-400 italic">No social links added</p>;
   }
 
   return (
     <div className="flex flex-wrap gap-2">
-      {socialPlatforms.map(({ key, label, icon }) => {
+      {socialPlatforms.map(({ key, label, Icon }) => {
         const url = links[key] as string | null | undefined;
         if (!url) return null;
-        
         return (
           <a
             key={key}
             href={url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium bg-neutral-100 text-neutral-700 hover:bg-brand-primary hover:text-white transition-colors"
+            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-neutral-100 text-neutral-700 hover:bg-brand-primary hover:text-white transition-colors"
           >
-            <span>{icon}</span>
+            <Icon className="w-3.5 h-3.5" />
             <span>{label}</span>
           </a>
         );

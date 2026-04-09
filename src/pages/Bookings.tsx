@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import {
   FaCircleCheck, FaXmark,
   FaMessage, FaTriangleExclamation, FaClock, FaStar,
+  FaCalendarDay, FaBriefcase, FaLocationDot, FaIndianRupeeSign,
 } from 'react-icons/fa6';
 import DashboardHeader from '../components/DashboardHeader';
 import DashboardSidebar from '../components/DashboardSidebar';
@@ -25,7 +26,8 @@ interface Booking {
   rateOffered: number | null;
   message: string | null;
   createdAt: string;
-  project: { id: string; title: string; startDate: string; endDate: string; status?: string };
+  shootDates?: string[] | null;
+  project: { id: string; title: string; startDate: string; endDate: string; status?: string; locationCity?: string | null };
   requester: { id: string; email: string; companyProfile?: { companyName?: string } | null };
   vendorEquipment?: { id: string; name: string } | null;
   equipmentAlreadyBookedFor?: { projectTitle: string; startDate: string; endDate: string } | null;
@@ -51,6 +53,24 @@ type TabFilter = 'all' | 'pending' | 'accepted' | 'completed';
 function formatDate(iso: string | null): string {
   if (!iso) return '—';
   return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function formatShootDate(iso: string): string {
+  return new Date(iso.length === 10 ? iso + 'T12:00:00' : iso).toLocaleDateString('en-IN', {
+    weekday: 'short', day: 'numeric', month: 'short',
+  });
+}
+
+function formatTimeAgo(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 7) return `${days}d ago`;
+  return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 }
 
 export default function Bookings() {
@@ -91,34 +111,40 @@ export default function Bookings() {
 
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-[#F3F4F6] w-full">
+    <div className="h-screen flex flex-col overflow-hidden bg-[#F8F9FB] w-full">
       <DashboardHeader />
       <div className="flex-1 flex min-h-0 overflow-hidden">
         <DashboardSidebar links={navLinks} />
 
         <main className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
           <div className="flex-1 min-h-0 overflow-auto">
-            <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-6 xl:px-8 py-5">
+            <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-6 xl:px-8 py-6">
 
-              <div className="mb-5">
-                <h1 className="text-xl font-bold text-neutral-900">Booking Requests</h1>
-                <p className="text-sm text-neutral-500 mt-0.5">Manage incoming booking requests from production companies</p>
+              <div className="mb-6">
+                <h1 className="text-2xl font-bold text-neutral-900 tracking-tight">Booking Requests</h1>
+                <p className="text-sm text-neutral-500 mt-1">Review incoming booking requests from production companies</p>
               </div>
 
               {/* Tab filter */}
-              <div className="flex items-center gap-1 mb-5 bg-white rounded-xl p-1 border border-neutral-200 w-fit">
-                {(['all', 'pending', 'accepted', 'completed'] as TabFilter[]).map((t) => (
-                  <button
-                    key={t}
-                    type="button"
-                    onClick={() => setTab(t)}
-                    className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors capitalize ${
-                      tab === t ? 'bg-[#3B5BDB] text-white shadow-sm' : 'text-neutral-600 hover:bg-[#F3F4F6]'
-                    }`}
-                  >
-                    {t}
-                  </button>
-                ))}
+              <div className="flex items-center gap-1 mb-5 bg-white rounded-xl p-1 border border-neutral-200 w-fit shadow-sm">
+                {(['all', 'pending', 'accepted', 'completed'] as TabFilter[]).map((t) => {
+                  const count = t === 'all' ? allBookings.length : allBookings.filter((b) => b.status === t).length;
+                  return (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setTab(t)}
+                      className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors capitalize flex items-center gap-2 ${
+                        tab === t ? 'bg-brand-primary text-white shadow-sm' : 'text-neutral-600 hover:bg-neutral-50'
+                      }`}
+                    >
+                      {t}
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-bold ${tab === t ? 'bg-white/20 text-white' : 'bg-neutral-100 text-neutral-500'}`}>
+                        {count}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
 
               {/* Error */}
@@ -144,107 +170,200 @@ export default function Bookings() {
 
               {/* Empty state */}
               {!loading && !error && bookings.length === 0 && (
-                <div className="rounded-2xl bg-white border border-neutral-200 p-12 text-center">
-                  <div className="w-14 h-14 rounded-2xl bg-[#EEF4FF] flex items-center justify-center mx-auto mb-4">
-                    <FaClock className="text-[#3B5BDB] text-2xl" />
+                <div className="rounded-2xl bg-white border border-neutral-200 p-12 text-center shadow-sm">
+                  <div className="w-16 h-16 rounded-2xl bg-brand-primary/10 flex items-center justify-center mx-auto mb-4">
+                    <FaClock className="text-brand-primary text-2xl" />
                   </div>
                   <h3 className="text-base font-bold text-neutral-900 mb-2">No booking requests</h3>
-                  <p className="text-sm text-neutral-500">
-                    {tab === 'pending' ? 'No pending requests right now.' : 'Booking requests will appear here.'}
+                  <p className="text-sm text-neutral-500 max-w-sm mx-auto">
+                    {tab === 'pending'
+                      ? 'No pending requests right now. New requests will show up here when companies want to hire you.'
+                      : 'Booking requests will appear here.'}
                   </p>
                 </div>
               )}
 
               {/* Booking cards */}
               {!loading && bookings.length > 0 && (
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {bookings.map((booking) => {
                     const cfg = STATUS_CONFIG[booking.status as BookingStatus] ?? STATUS_CONFIG.pending;
                     const isActioning = actioning?.startsWith(booking.id);
                     const companyName = booking.requester.companyProfile?.companyName ?? booking.requester.email;
+                    const shootDates = (booking.shootDates ?? []).map((d) =>
+                      typeof d === 'string' ? d.slice(0, 10) : new Date(d as unknown as string).toISOString().slice(0, 10),
+                    );
+
                     return (
-                      <div key={booking.id} className="rounded-2xl bg-white border border-neutral-200 p-5 hover:border-neutral-300 transition-all">
-                        <div className="flex items-start justify-between gap-4 mb-3">
+                      <div
+                        key={booking.id}
+                        className="rounded-2xl bg-white border border-neutral-200 shadow-sm hover:shadow-md hover:border-neutral-300 transition-all overflow-hidden"
+                      >
+                        {/* Header strip */}
+                        <div className="px-5 py-4 border-b border-neutral-100 flex items-start justify-between gap-4">
                           <div className="flex items-start gap-3 flex-1 min-w-0">
                             <Avatar name={companyName} size="md" />
                             <div className="min-w-0">
                               <h3 className="text-sm font-bold text-neutral-900 truncate">{companyName}</h3>
-                              <p className="text-xs text-neutral-500 truncate">{booking.project.title}</p>
-                              <p className="text-xs text-neutral-400 mt-0.5">
-                                {formatDate(booking.project.startDate)}
-                                {booking.project.endDate !== booking.project.startDate && ` – ${formatDate(booking.project.endDate)}`}
-                              </p>
+                              <p className="text-xs text-neutral-500 mt-0.5">Requested {formatTimeAgo(booking.createdAt)}</p>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2 shrink-0">
-                            {booking.rateOffered && (
-                              <span className="text-sm font-bold text-neutral-900">{formatPaise(booking.rateOffered)}</span>
+                          <span className={`text-[11px] px-2.5 py-1 rounded-full font-semibold whitespace-nowrap ${cfg.bg} ${cfg.text}`}>
+                            {cfg.label}
+                          </span>
+                        </div>
+
+                        {/* Body */}
+                        <div className="p-5 space-y-4">
+
+                          {/* Quick facts grid */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div className="flex items-start gap-2.5">
+                              <div className="w-8 h-8 rounded-lg bg-brand-primary/10 flex items-center justify-center shrink-0">
+                                <FaBriefcase className="w-3.5 h-3.5 text-brand-primary" />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-[10px] uppercase tracking-wider font-semibold text-neutral-400">Project</p>
+                                <p className="text-sm font-semibold text-neutral-900 truncate">{booking.project.title}</p>
+                                <p className="text-[11px] text-neutral-500 mt-0.5">
+                                  {formatDate(booking.project.startDate)}
+                                  {booking.project.endDate !== booking.project.startDate && ` – ${formatDate(booking.project.endDate)}`}
+                                </p>
+                              </div>
+                            </div>
+
+                            {booking.project.locationCity && (
+                              <div className="flex items-start gap-2.5">
+                                <div className="w-8 h-8 rounded-lg bg-brand-primary/10 flex items-center justify-center shrink-0">
+                                  <FaLocationDot className="w-3.5 h-3.5 text-brand-primary" />
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-[10px] uppercase tracking-wider font-semibold text-neutral-400">Location</p>
+                                  <p className="text-sm font-semibold text-neutral-900 truncate">{booking.project.locationCity}</p>
+                                </div>
+                              </div>
                             )}
-                            <span className={`text-[11px] px-2.5 py-1 rounded-full font-semibold ${cfg.bg} ${cfg.text}`}>{cfg.label}</span>
+
+                            {booking.rateOffered != null && (
+                              <div className="flex items-start gap-2.5">
+                                <div className="w-8 h-8 rounded-lg bg-brand-primary/10 flex items-center justify-center shrink-0">
+                                  <FaIndianRupeeSign className="w-3.5 h-3.5 text-brand-primary" />
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-[10px] uppercase tracking-wider font-semibold text-neutral-400">Rate Offered</p>
+                                  <p className="text-sm font-bold text-neutral-900">{formatPaise(booking.rateOffered)}<span className="text-[11px] font-medium text-neutral-500">/day</span></p>
+                                </div>
+                              </div>
+                            )}
+
+                            {booking.vendorEquipment && (
+                              <div className="flex items-start gap-2.5">
+                                <div className="w-8 h-8 rounded-lg bg-brand-primary/10 flex items-center justify-center shrink-0">
+                                  <FaBriefcase className="w-3.5 h-3.5 text-brand-primary" />
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-[10px] uppercase tracking-wider font-semibold text-neutral-400">Equipment</p>
+                                  <p className="text-sm font-semibold text-neutral-900 truncate">{booking.vendorEquipment.name}</p>
+                                </div>
+                              </div>
+                            )}
                           </div>
-                        </div>
 
-                        {booking.vendorEquipment && (
-                          <p className="text-xs text-neutral-600 mb-2">
-                            <span className="font-semibold text-neutral-700">Equipment requested:</span>{' '}
-                            {booking.vendorEquipment.name}
-                          </p>
-                        )}
-
-                        {booking.equipmentAlreadyBookedFor && (
-                          <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 mb-4 flex items-start gap-2">
-                            <FaTriangleExclamation className="text-amber-600 shrink-0 mt-0.5" />
-                            <div>
-                              <p className="text-xs font-semibold text-amber-800">This equipment is already given to another shoot</p>
-                              <p className="text-xs text-amber-700 mt-0.5">
-                                {booking.equipmentAlreadyBookedFor.projectTitle} ({formatDate(booking.equipmentAlreadyBookedFor.startDate)}
-                                {booking.equipmentAlreadyBookedFor.endDate !== booking.equipmentAlreadyBookedFor.startDate && ` – ${formatDate(booking.equipmentAlreadyBookedFor.endDate)}`})
-                              </p>
-                              <p className="text-[11px] text-amber-600 mt-1">You can decline this request or offer an alternative if you have another unit.</p>
+                          {/* Shoot dates — the part that was missing */}
+                          {shootDates.length > 0 && (
+                            <div className="rounded-xl bg-brand-primary/5 border border-brand-primary/15 p-3.5">
+                              <div className="flex items-center gap-2 mb-2">
+                                <FaCalendarDay className="w-3.5 h-3.5 text-brand-primary" />
+                                <p className="text-[10px] uppercase tracking-wider font-bold text-brand-primary">
+                                  Hire dates · {shootDates.length} {shootDates.length === 1 ? 'day' : 'days'}
+                                </p>
+                              </div>
+                              <ul className="flex flex-wrap gap-1.5">
+                                {shootDates.map((d) => (
+                                  <li
+                                    key={d}
+                                    className="inline-flex items-center text-[11px] font-semibold bg-white text-brand-primary px-2.5 py-1 rounded-lg border border-brand-primary/30 shadow-sm"
+                                  >
+                                    {formatShootDate(d)}
+                                  </li>
+                                ))}
+                              </ul>
                             </div>
-                          </div>
-                        )}
-
-                        {booking.message && (
-                          <div className="rounded-xl bg-[#F3F4F6] px-4 py-3 mb-4">
-                            <p className="text-xs text-neutral-600 leading-relaxed">{booking.message}</p>
-                          </div>
-                        )}
-
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <Link to={`/dashboard/chat/${booking.requester.id}?projectId=${encodeURIComponent(booking.projectId)}`} className="rounded-xl px-4 py-2 border border-neutral-200 text-neutral-700 text-xs font-semibold hover:bg-neutral-50 flex items-center gap-1.5 transition-colors">
-                            <FaMessage className="w-3 h-3" /> Message
-                          </Link>
-
-                          {booking.status === 'pending' && (
-                            <>
-                              <button type="button" onClick={() => doAction(booking.id, 'accept')} disabled={!!isActioning}
-                                className="rounded-xl px-4 py-2 bg-[#3B5BDB] text-white text-xs font-semibold hover:bg-[#2f4ac2] flex items-center gap-1.5 transition-colors disabled:opacity-50">
-                                <FaCircleCheck className="w-3 h-3" />
-                                {actioning === booking.id + 'accept' ? 'Accepting…' : 'Accept'}
-                              </button>
-                              <button type="button" onClick={() => doAction(booking.id, 'decline')} disabled={!!isActioning}
-                                className="rounded-xl px-4 py-2 bg-[#FEE2E2] text-[#B91C1C] text-xs font-semibold hover:bg-[#FECACA] flex items-center gap-1.5 transition-colors disabled:opacity-50">
-                                <FaXmark className="w-3 h-3" />
-                                {actioning === booking.id + 'decline' ? 'Declining…' : 'Decline'}
-                              </button>
-                            </>
                           )}
 
-                          {(booking.status === 'accepted' || booking.status === 'locked') && (
-                            <button type="button" onClick={() => setReviewBookingId(reviewBookingId === booking.id ? null : booking.id)}
-                              className="rounded-xl px-4 py-2 border border-amber-300 text-amber-700 text-xs font-semibold hover:bg-amber-50 flex items-center gap-1.5 transition-colors">
-                              <FaStar className="w-3 h-3" /> Leave Review
-                            </button>
+                          {/* Message */}
+                          {booking.message && (
+                            <div className="rounded-xl bg-neutral-50 border border-neutral-200 px-4 py-3">
+                              <p className="text-[10px] uppercase tracking-wider font-semibold text-neutral-400 mb-1">Message</p>
+                              <p className="text-xs text-neutral-700 leading-relaxed whitespace-pre-wrap">{booking.message}</p>
+                            </div>
+                          )}
+
+                          {/* Equipment conflict warning */}
+                          {booking.equipmentAlreadyBookedFor && (
+                            <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 flex items-start gap-2.5">
+                              <FaTriangleExclamation className="text-amber-600 shrink-0 mt-0.5" />
+                              <div className="min-w-0">
+                                <p className="text-xs font-semibold text-amber-800">This equipment is already committed to another shoot</p>
+                                <p className="text-xs text-amber-700 mt-0.5">
+                                  {booking.equipmentAlreadyBookedFor.projectTitle} ({formatDate(booking.equipmentAlreadyBookedFor.startDate)}
+                                  {booking.equipmentAlreadyBookedFor.endDate !== booking.equipmentAlreadyBookedFor.startDate && ` – ${formatDate(booking.equipmentAlreadyBookedFor.endDate)}`})
+                                </p>
+                                <p className="text-[11px] text-amber-600 mt-1">Decline this request or offer an alternative if you have another unit.</p>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Actions */}
+                          <div className="flex items-center gap-2 flex-wrap pt-1">
+                            <Link
+                              to={`/dashboard/chat/${booking.requester.id}?projectId=${encodeURIComponent(booking.projectId)}`}
+                              className="rounded-xl px-4 py-2 border border-neutral-300 text-neutral-700 text-xs font-semibold hover:bg-neutral-50 flex items-center gap-1.5 transition-colors"
+                            >
+                              <FaMessage className="w-3 h-3" /> Message
+                            </Link>
+
+                            {booking.status === 'pending' && (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => doAction(booking.id, 'accept')}
+                                  disabled={!!isActioning}
+                                  className="rounded-xl px-4 py-2 bg-brand-primary text-white text-xs font-semibold hover:bg-brand-primary/90 flex items-center gap-1.5 transition-colors disabled:opacity-50 shadow-sm"
+                                >
+                                  <FaCircleCheck className="w-3 h-3" />
+                                  {actioning === booking.id + 'accept' ? 'Accepting…' : 'Accept'}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => doAction(booking.id, 'decline')}
+                                  disabled={!!isActioning}
+                                  className="rounded-xl px-4 py-2 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold hover:bg-red-100 flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                                >
+                                  <FaXmark className="w-3 h-3" />
+                                  {actioning === booking.id + 'decline' ? 'Declining…' : 'Decline'}
+                                </button>
+                              </>
+                            )}
+
+                            {(booking.status === 'accepted' || booking.status === 'locked') && (
+                              <button
+                                type="button"
+                                onClick={() => setReviewBookingId(reviewBookingId === booking.id ? null : booking.id)}
+                                className="rounded-xl px-4 py-2 border border-amber-300 text-amber-700 text-xs font-semibold hover:bg-amber-50 flex items-center gap-1.5 transition-colors"
+                              >
+                                <FaStar className="w-3 h-3" /> Leave Review
+                              </button>
+                            )}
+                          </div>
+
+                          {/* Review form */}
+                          {reviewBookingId === booking.id && (
+                            <div className="pt-1">
+                              <ReviewForm bookingId={booking.id} onSubmitted={() => { setReviewBookingId(null); toast.success('Review submitted!'); }} />
+                            </div>
                           )}
                         </div>
-
-                        {/* Review form */}
-                        {reviewBookingId === booking.id && (
-                          <div className="mt-3">
-                            <ReviewForm bookingId={booking.id} onSubmitted={() => { setReviewBookingId(null); toast.success('Review submitted!'); }} />
-                          </div>
-                        )}
                       </div>
                     );
                   })}

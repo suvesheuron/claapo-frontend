@@ -1,7 +1,7 @@
-import { useEffect, useState, useRef } from 'react';
+import { useCallback, useEffect, useState, useRef } from 'react';
 import { 
   FaTriangleExclamation, FaCircleCheck, FaPen, FaCamera, FaUser, FaLocationDot,
-  FaBriefcase, FaMoneyBillWave, FaIdCard, FaBuilding, FaGraduationCap, FaFilm,
+  FaBriefcase, FaMoneyBillWave, FaIdCard, FaBuilding, FaFilm,
   FaGlobe,
 } from 'react-icons/fa6';
 import DashboardHeader from '../../components/DashboardHeader';
@@ -21,7 +21,7 @@ import {
   calculateIndividualCompletion,
   getProfileImprovementTips
 } from '../../utils/profileCompletion';
-import { REGISTRATION_GENRES } from '../../constants/registrationCategories';
+import { REGISTRATION_GENRES, REGISTRATION_INDIVIDUAL_DEPARTMENTS } from '../../constants/registrationCategories';
 
 interface ProfileData {
   displayName: string;
@@ -60,7 +60,7 @@ export default function IndividualProfile() {
     document.title = 'My Profile – Claapo';
   }, []);
 
-  const { data: me, loading: meLoading } = useApiQuery<MeResponse>('/profile/me');
+  const { data: me, loading: meLoading, refetch: refetchMe } = useApiQuery<MeResponse>('/profile/me');
 
   // Form state
   const [displayName, setDisplayName] = useState('');
@@ -94,12 +94,14 @@ export default function IndividualProfile() {
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setError(null);
     setAvatarUploading(true);
+    setAvatarUrl(URL.createObjectURL(file));
     try {
       const { uploadUrl, key } = await api.post<{ uploadUrl: string; key: string }>('/profile/avatar', {});
       await fetch(uploadUrl, { method: 'PUT', headers: { 'Content-Type': file.type || 'image/jpeg' }, body: file });
       await api.post('/profile/avatar/confirm', { key });
-      setAvatarUrl(URL.createObjectURL(file));
+      refetchMe();
     } catch {
       setError('Failed to upload avatar.');
     } finally {
@@ -108,8 +110,7 @@ export default function IndividualProfile() {
     }
   };
 
-  // Hydrate form when API data arrives
-  useEffect(() => {
+  const hydrateFromProfile = useCallback(() => {
     if (!me?.profile) return;
     const p = me.profile as ProfileData & { avatarUrl?: string };
     if (p.avatarUrl) setAvatarUrl(p.avatarUrl);
@@ -127,12 +128,20 @@ export default function IndividualProfile() {
     setInstagramUrl(p.instagramUrl ?? '');
     setYoutubeUrl(p.youtubeUrl ?? '');
     setVimeoUrl(p.vimeoUrl ?? '');
-    setPanNumber((p as ProfileData).panNumber ?? '');
-    setBankAccountName((p as ProfileData).bankAccountName ?? '');
-    setBankAccountNumber((p as ProfileData).bankAccountNumber ?? '');
-    setIfscCode((p as ProfileData).ifscCode ?? '');
-    setBankName((p as ProfileData).bankName ?? '');
+    setPanNumber(p.panNumber ?? '');
+    setBankAccountName(p.bankAccountName ?? '');
+    setBankAccountNumber(p.bankAccountNumber ?? '');
+    setIfscCode(p.ifscCode ?? '');
+    setBankName(p.bankName ?? '');
   }, [me]);
+
+  useEffect(() => { hydrateFromProfile(); }, [hydrateFromProfile]);
+
+  const handleCancel = () => {
+    hydrateFromProfile();
+    setError(null);
+    setEditing(false);
+  };
 
   const handleSave = async () => {
     setError(null);
@@ -145,7 +154,6 @@ export default function IndividualProfile() {
     try {
       await api.patch('/profile/individual', {
         displayName: displayName.trim() || undefined,
-        bio: bio.trim() || undefined,
         aboutMe: aboutMe.trim() || undefined,
         skills: skills.split(',').map((s) => s.trim()).filter(Boolean),
         genres: selectedGenres.length ? selectedGenres : undefined,
@@ -164,6 +172,8 @@ export default function IndividualProfile() {
         bankName: bankName.trim() || undefined,
       });
       setSaved(true);
+      setEditing(false);
+      refetchMe();
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
       const msg = err instanceof ApiException ? err.payload.message : 'Failed to save profile.';
@@ -173,19 +183,37 @@ export default function IndividualProfile() {
     }
   };
 
-  // Calculate profile completion
-  const profileCompletion = me?.profile ? calculateIndividualCompletion({
-    ...me.profile,
+  // Live profile completion — reflects form state while editing
+  const liveSnapshot = {
+    ...(me?.profile ?? {}),
+    displayName,
+    bio,
+    aboutMe,
+    skills: skills.split(',').map((s) => s.trim()).filter(Boolean),
+    genres: selectedGenres,
+    address,
+    locationCity,
+    locationState,
+    dailyBudget: dailyBudget ? rupeesToPaise(dailyBudget) : null,
+    imdbUrl,
+    instagramUrl,
+    youtubeUrl,
+    vimeoUrl,
+    panNumber,
+    bankAccountName,
+    bankAccountNumber,
+    ifscCode,
+    bankName,
     avatarUrl,
-  }) : 0;
-  
-  const improvementTips = me?.profile ? getProfileImprovementTips('individual', { ...me.profile, avatarUrl }) : [];
+  };
+  const profileCompletion = me?.profile ? calculateIndividualCompletion(liveSnapshot as any) : 0;
+  const improvementTips = me?.profile ? getProfileImprovementTips('individual', liveSnapshot as any) : [];
 
   const nameForAvatar = displayName || me?.email?.split('@')[0] || 'User';
   const skillsArray = skills.split(',').map(s => s.trim()).filter(Boolean);
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-neutral-50 min-w-0 w-full">
+    <div className="h-screen flex flex-col overflow-hidden bg-[#F8F9FB] min-w-0 w-full">
       <DashboardHeader />
 
       <div className="flex-1 flex min-h-0 overflow-hidden">
@@ -194,11 +222,22 @@ export default function IndividualProfile() {
         <main className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
           <div className="flex-1 min-h-0 overflow-auto">
             <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-6 xl:px-8 py-6">
-              
+
               {/* Header Section */}
-              <div className="mb-6">
-                <h1 className="text-2xl font-bold text-neutral-900">My Profile</h1>
-                <p className="text-sm text-neutral-600 mt-1">Manage your professional profile and settings</p>
+              <div className="mb-6 flex items-start justify-between gap-4 flex-wrap">
+                <div>
+                  <h1 className="text-2xl font-bold text-neutral-900 tracking-tight">My Profile</h1>
+                  <p className="text-sm text-neutral-600 mt-1">Manage your professional profile and settings</p>
+                </div>
+                {!editing && !meLoading && (
+                  <button
+                    type="button"
+                    onClick={() => setEditing(true)}
+                    className="px-4 py-2.5 bg-brand-primary text-white rounded-xl text-sm font-semibold hover:bg-brand-primary/90 transition-colors flex items-center gap-2 shadow-sm"
+                  >
+                    <FaPen className="w-3.5 h-3.5" /> Edit Profile
+                  </button>
+                )}
               </div>
 
               {meLoading ? (
@@ -233,49 +272,31 @@ export default function IndividualProfile() {
 
                       {/* Info */}
                       <div className="px-6 pb-6 text-center">
-                        <h2 className="text-xl font-bold text-neutral-900">{displayName || '—'}</h2>
-                        <p className="text-sm text-neutral-500 mt-1">
-                          {selectedGenres.length ? selectedGenres.join(', ') : 'Freelancer'}
-                        </p>
-                        {me?.isVerified && (
-                          <span className="inline-flex items-center gap-1.5 text-xs px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 font-semibold mt-2 border border-emerald-200/60">
-                            <FaCircleCheck className="w-3 h-3" /> Verified
-                          </span>
+                        <h2 className="text-xl font-bold text-neutral-900 tracking-tight truncate">
+                          {displayName || '—'}
+                        </h2>
+                        {skillsArray[0] && (
+                          <p className="text-sm text-neutral-500 mt-1 truncate">{skillsArray[0]}</p>
                         )}
-                        
-                        {/* Location */}
+
+                        <div className="flex flex-wrap items-center justify-center gap-2 mt-3">
+                          {me?.isVerified && (
+                            <span className="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200/60">
+                              <FaCircleCheck className="w-3 h-3" /> Verified
+                            </span>
+                          )}
+                          {me?.profile?.isAvailable && (
+                            <span className="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 font-semibold border border-blue-200/60">
+                              <span className="w-1.5 h-1.5 rounded-full bg-blue-500" /> Available
+                            </span>
+                          )}
+                        </div>
+
                         {locationCity && (
                           <div className="flex items-center justify-center gap-1.5 text-xs text-neutral-500 mt-3">
                             <FaLocationDot className="w-3 h-3" />
-                            <span>{locationCity}{locationState ? `, ${locationState}` : ''}</span>
+                            <span className="truncate">{locationCity}{locationState ? `, ${locationState}` : ''}</span>
                           </div>
-                        )}
-
-                        {/* Skills */}
-                        {skillsArray.length > 0 && (
-                          <div className="flex flex-wrap justify-center gap-1.5 mt-3">
-                            {skillsArray.slice(0, 5).map((skill, idx) => (
-                              <span key={idx} className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-brand-primary/10 text-brand-primary">
-                                {skill}
-                              </span>
-                            ))}
-                            {skillsArray.length > 5 && (
-                              <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-neutral-100 text-neutral-600">
-                                +{skillsArray.length - 5} more
-                              </span>
-                            )}
-                          </div>
-                        )}
-
-                        {/* Edit Button */}
-                        {!editing && (
-                          <button 
-                            type="button" 
-                            onClick={() => setEditing(true)} 
-                            className="mt-5 w-full px-4 py-2.5 bg-brand-primary text-white rounded-xl text-sm font-semibold hover:bg-brand-primary/90 transition-colors flex items-center justify-center gap-2"
-                          >
-                            <FaPen className="w-3.5 h-3.5" /> Edit Profile
-                          </button>
                         )}
                       </div>
                     </div>
@@ -323,7 +344,18 @@ export default function IndividualProfile() {
 
                   {/* Main Content */}
                   <div className="lg:col-span-2 space-y-6">
-                    
+                    {error && (
+                      <div className="flex items-start gap-2 rounded-xl bg-red-50 border border-red-200 px-4 py-3">
+                        <FaTriangleExclamation className="text-red-500 text-sm shrink-0 mt-0.5" />
+                        <p className="text-sm text-red-700">{error}</p>
+                      </div>
+                    )}
+                    {saved && (
+                      <div className="flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-emerald-700 text-sm font-semibold">
+                        <FaCircleCheck /> Profile saved successfully!
+                      </div>
+                    )}
+
                     {!editing ? (
                       <>
                         {/* Personal Information */}
@@ -345,24 +377,20 @@ export default function IndividualProfile() {
                           title="Professional Details" 
                           icon={<FaBriefcase />}
                         >
-                          <div className="space-y-4">
-                            {/* Skills */}
+                          <div className="space-y-5">
+                            {/* Role */}
                             <div>
-                              <dt className="text-xs font-medium text-neutral-500 mb-2">Skills</dt>
-                              {skillsArray.length > 0 ? (
-                                <div className="flex flex-wrap gap-2">
-                                  {skillsArray.map((skill, idx) => (
-                                    <SkillTag key={idx} skill={skill} />
-                                  ))}
-                                </div>
+                              <dt className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-2">Role</dt>
+                              {skillsArray[0] ? (
+                                <SkillTag skill={skillsArray[0]} />
                               ) : (
-                                <p className="text-sm text-neutral-400">No skills added</p>
+                                <p className="text-sm text-neutral-400 italic">No role selected</p>
                               )}
                             </div>
 
                             {/* Genres */}
                             <div>
-                              <dt className="text-xs font-medium text-neutral-500 mb-2 flex items-center gap-1">
+                              <dt className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-2 flex items-center gap-1.5">
                                 <FaFilm className="w-3.5 h-3.5" /> Genres
                               </dt>
                               {selectedGenres.length > 0 ? (
@@ -372,23 +400,24 @@ export default function IndividualProfile() {
                                   ))}
                                 </div>
                               ) : (
-                                <p className="text-sm text-neutral-400">—</p>
+                                <p className="text-sm text-neutral-400 italic">—</p>
                               )}
-                            </div>
-
-                            {/* Bio */}
-                            <div>
-                              <dt className="text-xs font-medium text-neutral-500 mb-1">Bio</dt>
-                              <dd className="text-sm text-neutral-700 whitespace-pre-wrap">{bio || '—'}</dd>
                             </div>
 
                             {/* About Me */}
                             <div>
-                              <dt className="text-xs font-medium text-neutral-500 mb-1">About Me</dt>
-                              <dd className="text-sm text-neutral-700 whitespace-pre-wrap">{aboutMe || '—'}</dd>
+                              <dt className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-2">About Me</dt>
+                              <dd className="text-sm text-neutral-700 whitespace-pre-wrap leading-relaxed">
+                                {aboutMe || <span className="text-neutral-400 italic">—</span>}
+                              </dd>
                             </div>
 
-                            <InfoRow label="Budget" value={dailyBudget ? `₹${dailyBudget}/day` : '—'} icon={<FaMoneyBillWave />} />
+                            <div>
+                              <dt className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-2">Budget</dt>
+                              <dd className="text-sm text-neutral-800 font-semibold">
+                                {dailyBudget ? `₹${dailyBudget}/day` : <span className="text-neutral-400 italic font-normal">—</span>}
+                              </dd>
+                            </div>
                           </div>
                         </ProfileSection>
 
@@ -423,19 +452,6 @@ export default function IndividualProfile() {
                       </>
                     ) : (
                       <>
-                        {/* Edit Mode */}
-                        {error && (
-                          <div className="flex items-start gap-2 rounded-xl bg-red-50 border border-red-200 px-4 py-3">
-                            <FaTriangleExclamation className="text-red-500 text-sm shrink-0 mt-0.5" />
-                            <p className="text-sm text-red-700">{error}</p>
-                          </div>
-                        )}
-                        {saved && (
-                          <div className="flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-emerald-700 text-sm font-semibold">
-                            <FaCircleCheck /> Profile saved successfully!
-                          </div>
-                        )}
-
                         {/* Personal Information */}
                         <ProfileSection 
                           title="Personal Information" 
@@ -496,28 +512,24 @@ export default function IndividualProfile() {
                         >
                           <div className="space-y-4">
                             <div>
-                              <label className="block text-xs font-medium text-neutral-700 mb-2">Skills</label>
-                              <div className="space-y-2">
-                                <input 
-                                  type="text" 
-                                  value={skills} 
-                                  onChange={(e) => setSkills(e.target.value)} 
+                              <label className="block text-xs font-medium text-neutral-700 mb-1.5">
+                                Role <span className="text-red-500">*</span>
+                              </label>
+                              <div className="relative">
+                                <FaBriefcase className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 w-4 h-4 pointer-events-none" />
+                                <select
+                                  value={skillsArray[0] ?? ''}
+                                  onChange={(e) => setSkills(e.target.value)}
                                   disabled={saving}
-                                  placeholder="e.g. Cinematographer, Gaffer, Sound Designer (comma-separated)"
-                                  className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary disabled:bg-neutral-50"
-                                />
-                                {skillsArray.length > 0 && (
-                                  <div className="flex flex-wrap gap-2">
-                                    {skillsArray.map((skill, idx) => (
-                                      <SkillTag key={idx} skill={skill} onRemove={() => {
-                                        const newSkills = skillsArray.filter((_, i) => i !== idx);
-                                        setSkills(newSkills.join(', '));
-                                      }} />
-                                    ))}
-                                  </div>
-                                )}
+                                  className="w-full pl-10 pr-3 py-2.5 border border-neutral-300 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary disabled:bg-neutral-50 appearance-none"
+                                >
+                                  <option value="">Select your role…</option>
+                                  {REGISTRATION_INDIVIDUAL_DEPARTMENTS.map((r) => (
+                                    <option key={r} value={r}>{r}</option>
+                                  ))}
+                                </select>
                               </div>
-                              <p className="text-[10px] text-neutral-400 mt-1.5">Add skills separated by commas</p>
+                              <p className="text-[10px] text-neutral-400 mt-1.5">Your primary role on set</p>
                             </div>
 
                             <div>
@@ -547,17 +559,6 @@ export default function IndividualProfile() {
                                 })}
                               </div>
                             </div>
-
-                            <EditableField
-                              label="Bio"
-                              type="textarea"
-                              rows={3}
-                              value={bio}
-                              onChange={setBio}
-                              placeholder="Brief description about yourself..."
-                              disabled={saving}
-                              icon={<FaGraduationCap />}
-                            />
 
                             <EditableField
                               label="About Me"
@@ -656,16 +657,17 @@ export default function IndividualProfile() {
 
                         {/* Action Buttons */}
                         <div className="flex justify-end gap-3">
-                          <button 
-                            type="button" 
-                            onClick={() => setEditing(false)} 
-                            className="px-6 py-2.5 border border-neutral-300 text-neutral-700 rounded-xl text-sm font-medium hover:bg-neutral-50 transition-colors"
+                          <button
+                            type="button"
+                            onClick={handleCancel}
+                            disabled={saving}
+                            className="px-6 py-2.5 border border-neutral-300 text-neutral-700 rounded-xl text-sm font-medium hover:bg-neutral-50 transition-colors disabled:opacity-60"
                           >
                             Cancel
                           </button>
-                          <button 
-                            type="button" 
-                            onClick={() => { handleSave(); setEditing(false); }} 
+                          <button
+                            type="button"
+                            onClick={handleSave}
                             disabled={saving}
                             className="px-6 py-2.5 bg-brand-primary text-white rounded-xl text-sm font-semibold hover:bg-brand-primary/90 disabled:opacity-60 transition-colors flex items-center gap-2"
                           >

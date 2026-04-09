@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useParams, Link } from 'react-router-dom';
-import { FaArrowLeft, FaLocationDot, FaUpRightFromSquare, FaCalendarDays, FaTriangleExclamation, FaVideo, FaLink } from 'react-icons/fa6';
+import { FaArrowLeft, FaLocationDot, FaUpRightFromSquare, FaCalendarDays, FaTriangleExclamation, FaVideo, FaLink, FaChevronLeft, FaChevronRight, FaBan, FaCircleCheck, FaCalendarCheck } from 'react-icons/fa6';
 import DashboardHeader from '../components/DashboardHeader';
 import DashboardSidebar from '../components/DashboardSidebar';
 import AppFooter from '../components/AppFooter';
@@ -171,6 +171,49 @@ export default function OtherUserProfile() {
   }, [userId]);
 
   const rows = buildCalendarCells(calYear, calMonth, profileSlotMap, profileBookingDetails);
+
+  // Month stats computed from the fetched slot map (only for days in this month)
+  const calStats = (() => {
+    const acc = { available: 0, booked: 0, blocked: 0 };
+    const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+    const monthStr = String(calMonth + 1).padStart(2, '0');
+    for (let d = 1; d <= daysInMonth; d++) {
+      const key = `${calYear}-${monthStr}-${String(d).padStart(2, '0')}`;
+      const s = profileSlotMap[key]?.status;
+      if (s === 'blocked') acc.blocked += 1;
+      else if (s === 'booked' || s === 'past_work') acc.booked += 1;
+      else acc.available += 1;
+    }
+    return acc;
+  })();
+
+  const goPrevMonth = () => {
+    const m = calMonth - 1;
+    if (m < 0) {
+      setCalMonth(11);
+      setCalYear((y) => y - 1);
+    } else {
+      setCalMonth(m);
+    }
+  };
+  const goNextMonth = () => {
+    const m = calMonth + 1;
+    if (m > 11) {
+      setCalMonth(0);
+      setCalYear((y) => y + 1);
+    } else {
+      setCalMonth(m);
+    }
+  };
+  const goToday = () => {
+    const n = new Date();
+    setCalYear(n.getFullYear());
+    setCalMonth(n.getMonth());
+  };
+  const isCurrentMonth = (() => {
+    const n = new Date();
+    return n.getFullYear() === calYear && n.getMonth() === calMonth;
+  })();
 
   const profileShareUrl =
     typeof window !== 'undefined' && userId
@@ -391,31 +434,81 @@ export default function OtherUserProfile() {
 
                   {(isIndividual || isVendor) && (
                   <>
-                  <motion.div variants={itemVariants} className="rounded-3xl bg-white shadow-soft border border-neutral-100 p-6 sm:p-8">
-                    <div className="flex items-center justify-between mb-3">
-                      <h2 className="text-sm font-bold text-neutral-900 flex items-center gap-2">
-                        <FaCalendarDays className="w-4 h-4 text-neutral-500" />
-                        Schedule – availability
-                      </h2>
-                      <span className="text-xs text-neutral-700 font-medium">
-                        {MONTHS[calMonth]} {calYear}
-                      </span>
-                    </div>
-                    <p className="text-xs text-neutral-500 mb-3">
-                      Green: available · Blue: booked or completed work · Red: blocked. Tap any day for details (including your active bookings with this person).
-                    </p>
-                    {calLoading ? (
-                      <div className="py-8 flex items-center justify-center">
-                        <span className="w-6 h-6 border-2 border-[#3B5BDB]/30 border-t-[#3B5BDB] rounded-full animate-spin" />
+                  <motion.div variants={itemVariants} className="rounded-3xl bg-white shadow-soft border border-neutral-100 p-5 sm:p-6">
+                    {/* Header: title + month navigation */}
+                    <div className="flex items-start justify-between gap-3 flex-wrap mb-4">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#EEF4FF] to-[#DBEAFE] border border-[#3B5BDB]/10 flex items-center justify-center shrink-0">
+                          <FaCalendarDays className="w-4 h-4 text-[#3B5BDB]" />
+                        </div>
+                        <div>
+                          <h2 className="text-sm font-bold text-neutral-900 leading-tight">Schedule &amp; Availability</h2>
+                          <p className="text-[11px] text-neutral-500 mt-0.5">Browse past and upcoming months</p>
+                        </div>
                       </div>
-                    ) : calError ? (
-                      <div className="flex items-center gap-2 rounded-xl bg-red-50 border border-red-200 px-3 py-2">
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={goPrevMonth}
+                          aria-label="Previous month"
+                          className="w-9 h-9 rounded-xl border border-neutral-200 bg-white text-neutral-600 hover:bg-[#EEF4FF] hover:border-[#3B5BDB]/30 hover:text-[#3B5BDB] flex items-center justify-center transition-all"
+                        >
+                          <FaChevronLeft className="w-3 h-3" />
+                        </button>
+                        <div className="min-w-[140px] text-center px-2">
+                          <p className="text-sm font-extrabold text-neutral-900 leading-tight tabular-nums">
+                            {MONTHS[calMonth]} {calYear}
+                          </p>
+                          {!isCurrentMonth && (
+                            <button
+                              type="button"
+                              onClick={goToday}
+                              className="text-[10px] text-[#3B5BDB] font-bold hover:underline"
+                            >
+                              Jump to today
+                            </button>
+                          )}
+                          {isCurrentMonth && (
+                            <span className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wider">Current month</span>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={goNextMonth}
+                          aria-label="Next month"
+                          className="w-9 h-9 rounded-xl border border-neutral-200 bg-white text-neutral-600 hover:bg-[#EEF4FF] hover:border-[#3B5BDB]/30 hover:text-[#3B5BDB] flex items-center justify-center transition-all"
+                        >
+                          <FaChevronRight className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Quick stats for the visible month */}
+                    <div className="flex flex-wrap items-center gap-2 mb-4">
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-white border border-[#86EFAC] px-2.5 py-1 text-[11px] font-bold text-[#15803D] shadow-sm">
+                        <FaCircleCheck className="w-2.5 h-2.5" /> {calStats.available} free
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-white border border-[#93C5FD] px-2.5 py-1 text-[11px] font-bold text-[#1D4ED8] shadow-sm">
+                        <FaCalendarCheck className="w-2.5 h-2.5" /> {calStats.booked} booked
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[#FEE2E2] to-[#FECACA] border border-[#F87171] px-2.5 py-1 text-[11px] font-extrabold text-[#991B1B] shadow-sm">
+                        <FaBan className="w-2.5 h-2.5" /> {calStats.blocked} unavailable
+                      </span>
+                      {calLoading && (
+                        <span className="text-[11px] text-neutral-400 font-medium inline-flex items-center gap-1.5">
+                          <span className="w-3 h-3 border-2 border-[#3B5BDB]/30 border-t-[#3B5BDB] rounded-full animate-spin" />
+                          Loading…
+                        </span>
+                      )}
+                    </div>
+                    {calError ? (
+                      <div className="flex items-center gap-2 rounded-xl bg-red-50 border border-red-200 px-3 py-2 mb-3">
                         <FaTriangleExclamation className="text-red-500 text-xs" />
                         <p className="text-xs text-red-700">{calError}</p>
                       </div>
                     ) : (
                       <>
-                        <div className="border border-neutral-200 rounded-xl p-3">
+                        <div className={`border border-neutral-200 rounded-xl p-3 transition-opacity ${calLoading ? 'opacity-60' : 'opacity-100'}`}>
                           <div className="grid grid-cols-7 gap-1 mb-1">
                             {WEEKDAYS.map((d) => (
                               <div
@@ -435,26 +528,44 @@ export default function OtherUserProfile() {
                                     return <div key={key} className="h-9" />;
                                   }
                                   const { day, dateKey, status, hasBooking, isToday } = cell;
+                                  const isBlocked = status === 'blocked';
                                   const base =
-                                    'h-9 rounded-md text-[11px] font-medium flex items-center justify-center cursor-pointer border border-transparent hover:ring-2 hover:ring-[#3B5BDB]/25 transition-shadow';
+                                    'relative h-9 rounded-md text-[11px] font-semibold flex items-center justify-center cursor-pointer border border-transparent hover:ring-2 hover:ring-[#3B5BDB]/25 transition-all overflow-hidden';
                                   let bg = 'bg-neutral-50 text-neutral-700 border-neutral-100';
-                                  if (status === 'available') bg = 'bg-[#DCFCE7] text-[#15803D] border-[#86EFAC]';
-                                  else if (status === 'booked' || status === 'past_work') bg = 'bg-[#DBEAFE] text-[#1D4ED8] border-[#93C5FD]';
-                                  else if (status === 'blocked') bg = 'bg-[#FEE2E2] text-[#B91C1C] border-[#FECACA]';
+                                  if (status === 'available') bg = 'bg-[#DCFCE7] text-[#15803D] border-[#86EFAC] hover:bg-[#BBF7D0]';
+                                  else if (status === 'booked' || status === 'past_work') bg = 'bg-[#DBEAFE] text-[#1D4ED8] border-[#93C5FD] hover:bg-[#BFDBFE]';
+                                  else if (isBlocked) bg = 'bg-gradient-to-br from-[#FEE2E2] to-[#FECACA] text-[#991B1B] border-[#F87171] shadow-sm shadow-red-200/40 hover:from-[#FECACA] hover:to-[#FCA5A5]';
                                   const todayRing = isToday ? 'ring-2 ring-[#3B5BDB]/50 ring-offset-1' : '';
                                   return (
                                     <button
                                       key={key}
                                       type="button"
+                                      title={isBlocked ? 'Not available' : undefined}
+                                      aria-label={isBlocked ? `${dateKey} — not available` : dateKey}
                                       className={`${base} ${bg} ${todayRing}`}
                                       onClick={() => setDetailDate(dateKey)}
                                     >
+                                      {isBlocked && (
+                                        <span
+                                          aria-hidden
+                                          className="absolute inset-0 pointer-events-none opacity-30"
+                                          style={{
+                                            backgroundImage:
+                                              'repeating-linear-gradient(45deg, rgba(185,28,28,0.22) 0 3px, transparent 3px 6px)',
+                                          }}
+                                        />
+                                      )}
                                       <span className="relative flex flex-col items-center gap-0.5">
-                                        {day}
+                                        <span className={isBlocked ? 'line-through decoration-[1.5px] decoration-[#991B1B]/60' : ''}>{day}</span>
                                         {hasBooking ? (
                                           <span className="w-1 h-1 rounded-full bg-[#3B5BDB]" />
                                         ) : null}
                                       </span>
+                                      {isBlocked && (
+                                        <span className="absolute top-0 right-0 w-2.5 h-2.5 rounded-bl-md rounded-tr-md bg-[#DC2626] text-white flex items-center justify-center">
+                                          <span className="block w-0.5 h-0.5 rounded-full bg-white" />
+                                        </span>
+                                      )}
                                     </button>
                                   );
                                 })}
@@ -472,8 +583,8 @@ export default function OtherUserProfile() {
                             Booked / completed
                           </div>
                           <div className="flex items-center gap-1">
-                            <span className="w-3 h-3 rounded-sm bg-[#FEE2E2] border border-[#FECACA]" />
-                            Blocked
+                            <span className="w-3 h-3 rounded-sm bg-gradient-to-br from-[#FEE2E2] to-[#FECACA] border border-[#F87171]" />
+                            Not available
                           </div>
                         </div>
                       </>
