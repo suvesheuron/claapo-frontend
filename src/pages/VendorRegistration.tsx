@@ -1,7 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, type SyntheticEvent } from 'react';
 import {
-  FaTruck,
   FaShieldHalved,
   FaCertificate,
   FaHandshake,
@@ -10,25 +9,24 @@ import {
   FaEye,
   FaEyeSlash,
 } from 'react-icons/fa6';
-import AppHeader from '../components/AppHeader';
-import AppFooter from '../components/AppFooter';
+import AuthLayout from '../components/AuthLayout';
 import { api, ApiException } from '../services/api';
 import { toE164India } from '../utils/phone';
 import { REGISTRATION_VENDOR_CATEGORIES, vendorCategoryToVendorType } from '../constants/registrationCategories';
 
 /* ── Validation helpers ── */
 
-const GST_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[A-Z0-9]{1}Z[A-Z0-9]{1}$/;
+const GST_REGEX   = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[A-Z0-9]{1}Z[A-Z0-9]{1}$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_REGEX = /^[6-9]\d{9}$/;
 
 type FieldErrors = {
-  businessName?: string;
-  phone?: string;
-  gst?: string;
-  email?: string;
+  businessName?:   string;
+  phone?:          string;
+  gst?:            string;
+  email?:          string;
   vendorCategory?: string;
-  password?: string;
+  password?:       string;
 };
 
 function validateField(name: keyof FieldErrors, value: string): string | undefined {
@@ -75,33 +73,39 @@ function getPasswordStrength(pw: string): { label: string; color: string; width:
   if (/[0-9]/.test(pw)) score++;
   if (/[^A-Za-z0-9]/.test(pw)) score++;
 
-  if (score <= 2) return { label: 'Weak', color: '#EF4444', width: '33%' };
-  if (score <= 3) return { label: 'Fair', color: '#F59E0B', width: '55%' };
-  if (score === 4) return { label: 'Good', color: '#3B82F6', width: '75%' };
-  return { label: 'Strong', color: '#22C55E', width: '100%' };
+  if (score <= 2) return { label: 'Weak',   color: '#EF4444', width: '33%'  };
+  if (score <= 3) return { label: 'Fair',   color: '#F59E0B', width: '55%'  };
+  if (score === 4) return { label: 'Good',  color: '#3B82F6', width: '75%'  };
+  return                     { label: 'Strong', color: '#22C55E', width: '100%' };
 }
+
+const BENEFITS = [
+  { icon: FaCertificate,  title: 'Verified business',     body: 'Optional GST adds a verified badge to your vendor profile.' },
+  { icon: FaShieldHalved, title: 'Secure bookings',       body: 'Protected transactions, contracts and clear payment terms.' },
+  { icon: FaHandshake,    title: 'Pan-India reach',       body: 'Get discovered by production teams across the country.' },
+];
 
 /* ── Component ── */
 
 export default function VendorRegistration() {
   const navigate = useNavigate();
 
-  const [businessName, setBusinessName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [gst, setGst] = useState('');
-  const [email, setEmail] = useState('');
+  const [businessName,   setBusinessName]   = useState('');
+  const [phone,          setPhone]          = useState('');
+  const [gst,            setGst]            = useState('');
+  const [email,          setEmail]          = useState('');
   const [vendorCategory, setVendorCategory] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [agreedTerms, setAgreedTerms] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [password,       setPassword]       = useState('');
+  const [showPassword,   setShowPassword]   = useState(false);
+  const [agreedTerms,    setAgreedTerms]    = useState(false);
+  const [loading,        setLoading]        = useState(false);
+  const [error,          setError]          = useState<string | null>(null);
 
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    document.title = 'Vendor Registration \u2013 Claapo';
+    document.title = 'Vendor Registration – Claapo';
   }, []);
 
   const handleBlur = useCallback((name: keyof FieldErrors, value: string) => {
@@ -112,12 +116,12 @@ export default function VendorRegistration() {
 
   const validateAll = (): boolean => {
     const fields: [keyof FieldErrors, string][] = [
-      ['businessName', businessName],
-      ['phone', phone],
-      ['gst', gst],
-      ['email', email],
+      ['businessName',   businessName],
+      ['phone',          phone],
+      ['gst',            gst],
+      ['email',          email],
       ['vendorCategory', vendorCategory],
-      ['password', password],
+      ['password',       password],
     ];
     const newErrors: FieldErrors = {};
     const newTouched: Record<string, boolean> = {};
@@ -136,14 +140,14 @@ export default function VendorRegistration() {
   };
 
   const borderClass = (name: keyof FieldErrors) => {
-    if (fieldErrors[name]) return 'border-red-400 focus:border-red-500';
-    if (touched[name] && !fieldErrors[name]) return 'border-green-400 focus:border-green-500';
-    return 'border-neutral-300 focus:border-[#3B5BDB]';
+    if (fieldErrors[name]) return 'border-red-400 focus:border-red-500 focus:ring-red-500/12';
+    if (touched[name] && !fieldErrors[name]) return 'border-emerald-400 focus:border-emerald-500 focus:ring-emerald-500/12';
+    return 'border-neutral-300 focus:border-[#3B5BDB] focus:ring-[#3B5BDB]/12';
   };
 
   const passwordStrength = getPasswordStrength(password);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
 
@@ -196,313 +200,226 @@ export default function VendorRegistration() {
   };
 
   const inputBase =
-    'rounded-xl w-full px-3.5 py-2.5 bg-[#F8FAFC] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:bg-white text-sm transition-all disabled:opacity-50 border';
+    'w-full rounded-xl px-4 py-3 border bg-white text-[15px] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-4 transition-all disabled:opacity-50';
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#eef5fd]">
-      <AppHeader variant="landing" />
+    <AuthLayout
+      title="Register as a vendor"
+      subtitle="List your equipment and services to get discovered by production houses."
+      backTo="/register"
+      backLabel="Back to account types"
+      wide
+      brand={{
+        eyebrow: 'For equipment & service vendors',
+        headline: 'List once. Get booked everywhere.',
+        description:
+          'Add your inventory, manage rental calendars and receive direct booking requests from verified production teams.',
+        highlights: BENEFITS,
+        bottomText: 'Free to list — only pay when you get booked',
+      }}
+      footer={
+        <>
+          By creating an account, you agree to our{' '}
+          <Link to="/terms" className="hover:text-neutral-600 underline-offset-2 hover:underline">Terms</Link>
+          {' '}and{' '}
+          <Link to="/privacy" className="hover:text-neutral-600 underline-offset-2 hover:underline">Privacy Policy</Link>.
+        </>
+      }
+    >
+      <form className="space-y-5" onSubmit={handleSubmit} noValidate>
 
-      {/* Main content */}
-      <main className="flex-1 flex items-center justify-center px-4 py-10 sm:py-16">
-        <div className="w-full max-w-[960px] flex flex-col lg:flex-row rounded-2xl overflow-hidden shadow-xl">
-          {/* ── Left info panel ── */}
-          <section
-            className="hidden lg:flex flex-col w-[400px] xl:w-[420px] shrink-0 px-9 py-10 text-white relative overflow-hidden"
-            style={{ background: 'linear-gradient(135deg, #3B5BDB 0%, #4B6CF7 100%)' }}
+        {/* Business Name */}
+        <div>
+          <label className="block text-[13px] text-neutral-700 mb-1.5 font-semibold">
+            Business name <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            value={businessName}
+            onChange={(e) => setBusinessName(e.target.value)}
+            onBlur={() => handleBlur('businessName', businessName)}
+            placeholder="e.g., Pro Gear Rentals"
+            disabled={loading}
+            className={`${inputBase} ${borderClass('businessName')}`}
+          />
+          {fieldErrors.businessName && <p className="text-xs text-red-500 mt-1.5">{fieldErrors.businessName}</p>}
+        </div>
+
+        {/* Vendor Category */}
+        <div>
+          <label className="block text-[13px] text-neutral-700 mb-1.5 font-semibold">
+            Business type <span className="text-red-500">*</span>
+          </label>
+          <select
+            value={vendorCategory}
+            onChange={(e) => setVendorCategory(e.target.value)}
+            onBlur={() => handleBlur('vendorCategory', vendorCategory)}
+            disabled={loading}
+            className={`${inputBase} ${borderClass('vendorCategory')}`}
           >
-            {/* Decorative blobs */}
-            <div className="absolute -top-16 -right-16 w-56 h-56 bg-white/10 rounded-full" />
-            <div className="absolute -bottom-20 -left-12 w-72 h-72 bg-white/[0.07] rounded-full" />
-            <div className="absolute top-1/2 right-0 w-32 h-32 bg-white/[0.05] rounded-full translate-x-10" />
+            <option value="">Select category…</option>
+            {REGISTRATION_VENDOR_CATEGORIES.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+          {fieldErrors.vendorCategory && <p className="text-xs text-red-500 mt-1.5">{fieldErrors.vendorCategory}</p>}
+        </div>
 
-            <div className="relative z-10 flex flex-col h-full">
-              <div className="w-12 h-12 rounded-xl bg-white/15 flex items-center justify-center mb-5 border border-white/20">
-                <FaTruck className="text-white text-xl" />
-              </div>
-
-              <h2 className="text-2xl font-bold mb-2 leading-tight">Register as a Vendor</h2>
-              <p className="text-sm text-blue-100 mb-8 leading-relaxed">
-                List your equipment and services. Get discovered by production companies and manage
-                rentals in one place.
-              </p>
-
-              <div className="space-y-5 flex-1">
-                {[
-                  {
-                    icon: FaCertificate,
-                    title: 'GST Verification',
-                    desc: 'Optional GST for verified business profiles',
-                  },
-                  {
-                    icon: FaShieldHalved,
-                    title: 'Secure Bookings',
-                    desc: 'Protected transactions and clear contracts',
-                  },
-                  {
-                    icon: FaHandshake,
-                    title: 'Wide Reach',
-                    desc: 'Connect with production companies across India',
-                  },
-                ].map(({ icon: Icon, title, desc }) => (
-                  <div key={title} className="flex items-start gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-white/15 flex items-center justify-center shrink-0 border border-white/20">
-                      <Icon className="text-white text-sm" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-semibold text-white">{title}</h3>
-                      <p className="text-xs text-blue-100 mt-0.5 leading-relaxed">{desc}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-auto pt-6 flex items-center gap-5 text-xs text-blue-100 border-t border-white/15">
-                <span className="flex items-center gap-1.5">
-                  <FaCircleCheck className="text-[#22C55E]" /> Free to list
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <FaCircleCheck className="text-[#22C55E]" /> Flexible pricing
-                </span>
-              </div>
-            </div>
-          </section>
-
-          {/* ── Right form panel ── */}
-          <div className="flex-1 bg-white p-6 sm:p-8 lg:p-10 flex flex-col justify-center">
-            {/* Mobile-only header */}
-            <div className="lg:hidden text-center mb-5">
-              <div
-                className="w-11 h-11 rounded-xl mx-auto mb-2.5 flex items-center justify-center"
-                style={{ background: 'linear-gradient(135deg, #3B5BDB 0%, #4B6CF7 100%)' }}
-              >
-                <FaTruck className="text-white text-lg" />
-              </div>
-              <h1 className="text-xl font-bold text-neutral-900">Register as a Vendor</h1>
-              <p className="text-sm text-neutral-500 mt-1">
-                Create your vendor account to get started
-              </p>
-            </div>
-
-            <div className="hidden lg:block mb-5">
-              <h2 className="text-xl font-bold text-neutral-900">Create your vendor account</h2>
-              <p className="text-sm text-neutral-500 mt-1">
-                Add your business and equipment details
-              </p>
-            </div>
-
-            <form className="space-y-4" onSubmit={handleSubmit} noValidate>
-              {/* Business Name */}
-              <div>
-                <label className="block text-neutral-700 text-xs mb-1.5 font-semibold">
-                  Business Name <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={businessName}
-                  onChange={(e) => setBusinessName(e.target.value)}
-                  onBlur={() => handleBlur('businessName', businessName)}
-                  placeholder="e.g., Pro Gear Rentals"
-                  disabled={loading}
-                  className={`${inputBase} ${borderClass('businessName')}`}
-                />
-                {fieldErrors.businessName && (
-                  <p className="text-xs text-red-500 mt-1">{fieldErrors.businessName}</p>
-                )}
-              </div>
-
-              {/* Phone + GST side by side */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-neutral-700 text-xs mb-1.5 font-semibold">
-                    Phone <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    onBlur={() => handleBlur('phone', phone)}
-                    placeholder="+91 98765 43210"
-                    disabled={loading}
-                    className={`${inputBase} ${borderClass('phone')}`}
-                  />
-                  {fieldErrors.phone && (
-                    <p className="text-xs text-red-500 mt-1">{fieldErrors.phone}</p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-neutral-700 text-xs mb-1.5 font-semibold">
-                    GST
-                    <span className="ml-1.5 text-[9px] font-normal text-neutral-400 bg-neutral-100 px-1.5 py-0.5 rounded-full">
-                      Optional
-                    </span>
-                  </label>
-                  <input
-                    type="text"
-                    value={gst}
-                    onChange={(e) => setGst(e.target.value.toUpperCase())}
-                    onBlur={() => handleBlur('gst', gst)}
-                    placeholder="27AABCU9603R1ZM"
-                    disabled={loading}
-                    className={`${inputBase} ${borderClass('gst')}`}
-                  />
-                  {fieldErrors.gst && (
-                    <p className="text-xs text-red-500 mt-1">{fieldErrors.gst}</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Email */}
-              <div>
-                <label className="block text-neutral-700 text-xs mb-1.5 font-semibold">
-                  Email Address <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  onBlur={() => handleBlur('email', email)}
-                  placeholder="vendor@example.com"
-                  disabled={loading}
-                  className={`${inputBase} ${borderClass('email')}`}
-                />
-                {fieldErrors.email && (
-                  <p className="text-xs text-red-500 mt-1">{fieldErrors.email}</p>
-                )}
-              </div>
-
-              {/* Business Type */}
-              <div>
-                <label className="block text-neutral-700 text-xs mb-1.5 font-semibold">
-                  Business Type <span className="text-red-500">*</span>
-                </label>
-                <select
-                  value={vendorCategory}
-                  onChange={(e) => setVendorCategory(e.target.value)}
-                  onBlur={() => handleBlur('vendorCategory', vendorCategory)}
-                  disabled={loading}
-                  className={`${inputBase} ${borderClass('vendorCategory')}`}
-                >
-                  <option value="">Select category…</option>
-                  {REGISTRATION_VENDOR_CATEGORIES.map((c) => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                </select>
-                {fieldErrors.vendorCategory && (
-                  <p className="text-xs text-red-500 mt-1">{fieldErrors.vendorCategory}</p>
-                )}
-              </div>
-
-              {/* Password */}
-              <div>
-                <label className="block text-neutral-700 text-xs mb-1.5 font-semibold">
-                  Password <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    onBlur={() => handleBlur('password', password)}
-                    placeholder="At least 8 characters"
-                    disabled={loading}
-                    className={`${inputBase} pr-11 ${borderClass('password')}`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((v) => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 p-1"
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  >
-                    {showPassword ? (
-                      <FaEyeSlash className="w-4 h-4" />
-                    ) : (
-                      <FaEye className="w-4 h-4" />
-                    )}
-                  </button>
-                </div>
-                {fieldErrors.password && (
-                  <p className="text-xs text-red-500 mt-1">{fieldErrors.password}</p>
-                )}
-                {/* Password strength indicator */}
-                {password && (
-                  <div className="mt-2">
-                    <div className="h-1.5 w-full bg-neutral-200 rounded-full overflow-hidden">
-                      <div
-                        className="h-full rounded-full transition-all duration-300"
-                        style={{
-                          width: passwordStrength.width,
-                          backgroundColor: passwordStrength.color,
-                        }}
-                      />
-                    </div>
-                    <p className="text-xs mt-1 font-medium" style={{ color: passwordStrength.color }}>
-                      {passwordStrength.label}
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {/* Terms */}
-              <div className="flex items-start gap-2.5 pt-1">
-                <input
-                  type="checkbox"
-                  id="terms-vendor"
-                  checked={agreedTerms}
-                  onChange={(e) => setAgreedTerms(e.target.checked)}
-                  disabled={loading}
-                  className="w-4 h-4 mt-0.5 rounded border-neutral-300 accent-[#3B5BDB] cursor-pointer shrink-0"
-                />
-                <label
-                  htmlFor="terms-vendor"
-                  className="text-xs text-neutral-500 leading-relaxed cursor-pointer"
-                >
-                  I agree to the{' '}
-                  <Link to="/terms" className="text-[#3B5BDB] font-semibold hover:underline">
-                    Terms
-                  </Link>{' '}
-                  and{' '}
-                  <Link to="/privacy" className="text-[#3B5BDB] font-semibold hover:underline">
-                    Privacy Policy
-                  </Link>
-                </label>
-              </div>
-
-              {/* Global error */}
-              {error && (
-                <div className="flex items-start gap-2.5 rounded-xl bg-red-50 border border-red-200 px-3.5 py-3">
-                  <FaTriangleExclamation className="text-red-500 text-sm shrink-0 mt-0.5" />
-                  <p className="text-xs text-red-700 leading-snug">{error}</p>
-                </div>
-              )}
-
-              {/* Submit */}
-              <button
-                type="submit"
-                disabled={loading || !agreedTerms}
-                className="rounded-xl w-full py-3 bg-[#3B5BDB] text-white text-sm font-semibold hover:bg-[#3451c7] transition-colors shadow-sm disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                {loading ? (
-                  <>
-                    <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                    Creating account...
-                  </>
-                ) : (
-                  'Create Vendor Account'
-                )}
-              </button>
-
-              <p className="text-center text-xs text-neutral-500 pt-1">
-                Already have an account?{' '}
-                <Link to="/login" className="text-[#3B5BDB] font-semibold hover:underline">
-                  Sign in
-                </Link>
-              </p>
-            </form>
+        {/* Phone + GST */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-[13px] text-neutral-700 mb-1.5 font-semibold">
+              Phone <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              onBlur={() => handleBlur('phone', phone)}
+              placeholder="+91 98765 43210"
+              disabled={loading}
+              className={`${inputBase} ${borderClass('phone')}`}
+            />
+            {fieldErrors.phone && <p className="text-xs text-red-500 mt-1.5">{fieldErrors.phone}</p>}
+          </div>
+          <div>
+            <label className="block text-[13px] text-neutral-700 mb-1.5 font-semibold">
+              GST{' '}
+              <span className="text-[10px] font-normal text-neutral-400 bg-neutral-100 px-2 py-0.5 rounded-full ml-1">
+                Optional
+              </span>
+            </label>
+            <input
+              type="text"
+              value={gst}
+              onChange={(e) => setGst(e.target.value.toUpperCase())}
+              onBlur={() => handleBlur('gst', gst)}
+              placeholder="27AABCU9603R1ZM"
+              disabled={loading}
+              className={`${inputBase} ${borderClass('gst')}`}
+            />
+            {fieldErrors.gst && <p className="text-xs text-red-500 mt-1.5">{fieldErrors.gst}</p>}
           </div>
         </div>
-      </main>
 
-      <AppFooter variant="dark" />
-    </div>
+        {/* Email */}
+        <div>
+          <label className="block text-[13px] text-neutral-700 mb-1.5 font-semibold">
+            Email address <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            onBlur={() => handleBlur('email', email)}
+            placeholder="vendor@example.com"
+            disabled={loading}
+            className={`${inputBase} ${borderClass('email')}`}
+          />
+          {fieldErrors.email && <p className="text-xs text-red-500 mt-1.5">{fieldErrors.email}</p>}
+        </div>
+
+        {/* Password */}
+        <div>
+          <label className="block text-[13px] text-neutral-700 mb-1.5 font-semibold">
+            Password <span className="text-red-500">*</span>
+          </label>
+          <div className="relative">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onBlur={() => handleBlur('password', password)}
+              placeholder="At least 8 characters"
+              disabled={loading}
+              className={`${inputBase} pr-12 ${borderClass('password')}`}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((v) => !v)}
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 transition-colors"
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+            >
+              {showPassword ? <FaEyeSlash className="w-4 h-4" /> : <FaEye className="w-4 h-4" />}
+            </button>
+          </div>
+          {fieldErrors.password && <p className="text-xs text-red-500 mt-1.5">{fieldErrors.password}</p>}
+          {password && (
+            <div className="mt-2.5">
+              <div className="h-1.5 w-full bg-neutral-200 rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-300"
+                  style={{ width: passwordStrength.width, backgroundColor: passwordStrength.color }}
+                />
+              </div>
+              <p className="text-xs mt-1 font-medium" style={{ color: passwordStrength.color }}>
+                {passwordStrength.label}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Terms */}
+        <label className="flex items-start gap-2.5 text-[13px] text-neutral-600 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={agreedTerms}
+            onChange={(e) => setAgreedTerms(e.target.checked)}
+            disabled={loading}
+            className="w-4 h-4 mt-0.5 rounded border-neutral-300 text-[#3B5BDB] focus:ring-[#3B5BDB]/30 shrink-0"
+          />
+          <span className="leading-snug">
+            I agree to the{' '}
+            <Link to="/terms"   className="text-[#3B5BDB] font-semibold hover:underline">Terms</Link>
+            {' '}and{' '}
+            <Link to="/privacy" className="text-[#3B5BDB] font-semibold hover:underline">Privacy Policy</Link>.
+          </span>
+        </label>
+
+        {/* Global error */}
+        {error && (
+          <div className="flex items-start gap-2.5 rounded-xl bg-red-50 border border-red-200 px-3.5 py-3">
+            <FaTriangleExclamation className="text-red-500 text-sm shrink-0 mt-0.5" aria-hidden />
+            <p className="text-[13px] text-red-700 leading-snug">{error}</p>
+          </div>
+        )}
+
+        {/* Submit */}
+        <button
+          type="submit"
+          disabled={loading || !agreedTerms}
+          className="w-full inline-flex items-center justify-center gap-2 rounded-xl py-3.5 bg-[#3B5BDB] text-white text-[15px] font-semibold hover:bg-[#2f4ac2] transition-all shadow-[0_8px_24px_-8px_rgba(59,91,219,0.6)] hover:shadow-[0_12px_28px_-8px_rgba(59,91,219,0.7)] hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+        >
+          {loading ? (
+            <>
+              <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+              Creating account…
+            </>
+          ) : (
+            <>
+              Create vendor account
+              <FaCircleCheck className="w-4 h-4" aria-hidden />
+            </>
+          )}
+        </button>
+      </form>
+
+      {/* Divider */}
+      <div className="relative my-6">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-neutral-200" />
+        </div>
+        <div className="relative flex justify-center">
+          <span className="px-3 bg-white text-[11px] uppercase tracking-[0.14em] text-neutral-400 font-semibold">or</span>
+        </div>
+      </div>
+
+      <p className="text-center text-[14px] text-neutral-600">
+        Already have an account?{' '}
+        <Link to="/login" className="text-[#3B5BDB] font-semibold hover:underline">
+          Sign in
+        </Link>
+      </p>
+    </AuthLayout>
   );
 }

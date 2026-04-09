@@ -175,10 +175,13 @@ export default function Conversations() {
                         const lastMsgTime = conv.lastMessage?.createdAt ?? conv.lastMessageAt ?? null;
                         const lastMsgText = conv.lastMessage?.content ?? null;
                         const hasUnread = (conv.unreadCount ?? 0) > 0;
+                        const chatHref = conv.project?.id
+                          ? `/dashboard/chat/${other.id}?projectId=${encodeURIComponent(conv.project.id)}`
+                          : `/dashboard/chat/${other.id}`;
                         return (
                           <Link
                             key={conv.id}
-                            to={`/dashboard/chat/${other.id}`}
+                            to={chatHref}
                             className="flex items-start gap-4 px-4 sm:px-8 py-4 sm:py-5 hover:bg-[#F8FAFC] active:bg-[#F1F5F9] transition-colors group"
                           >
                             <div className="relative shrink-0 pt-0.5">

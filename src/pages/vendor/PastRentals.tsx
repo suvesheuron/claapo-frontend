@@ -76,7 +76,7 @@ export default function PastRentals() {
                         <p className="text-xs sm:text-sm text-neutral-600 mb-3">Company: {rental.requester.companyProfile?.companyName ?? '—'}</p>
                         {rental.rateOffered != null && <p className="text-sm font-semibold text-[#22C55E] mb-3">{formatPaise(rental.rateOffered)}</p>}
                         <div className="flex items-center gap-2">
-                          <Link to={`/dashboard/chat/${rental.requester.id}`} className="flex-1 text-xs px-3 py-1.5 bg-neutral-100 text-neutral-700 rounded hover:bg-neutral-200 text-center flex items-center justify-center gap-1">
+                          <Link to={`/dashboard/chat/${rental.requester.id}?projectId=${encodeURIComponent(rental.project.id)}`} className="flex-1 text-xs px-3 py-1.5 bg-neutral-100 text-neutral-700 rounded hover:bg-neutral-200 text-center flex items-center justify-center gap-1">
                             <FaMessage className="w-3 h-3" /> Chat
                           </Link>
                           {invoiceId ? (

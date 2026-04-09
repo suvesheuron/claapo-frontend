@@ -40,17 +40,39 @@ const STATUS_PRIORITY: Record<string, number> = { active: 0, open: 1, in_progres
 interface CalendarCell { d: number; muted: boolean; projects: Project[] }
 interface PanelData { date: number; month: string; year: number; projects: Project[]; dateIso: string }
 
-function localDateKey(iso: string): string {
-  const d = new Date(iso);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
 interface DayChatMessage {
   id: string;
   content: string | null;
   createdAt: string;
+  senderId: string;
   senderLabel: string;
   conversationId: string;
+  otherParticipantId: string;
+}
+
+interface ProjectDayChatGroup {
+  projectId: string;
+  projectTitle: string;
+  items: DayChatMessage[];
+}
+
+interface ProjectDayChatsResponse {
+  items?: Array<{
+    id: string;
+    content: string | null;
+    createdAt: string;
+    conversationId: string;
+    otherParticipantId: string;
+    sender?: { id?: string; displayName?: string };
+  }>;
+  meta?: { pages?: number };
+}
+
+function getDateRangeIso(dateIso: string): { startIso: string; endIso: string } {
+  const dayStart = new Date(`${dateIso}T00:00:00`);
+  const dayEnd = new Date(dayStart);
+  dayEnd.setDate(dayEnd.getDate() + 1);
+  return { startIso: dayStart.toISOString(), endIso: dayEnd.toISOString() };
 }
 
 function buildCalendar(year: number, month: number, projects: Project[]): CalendarCell[] {
@@ -90,10 +112,10 @@ export default function CompanyDashboard() {
   const [calendarYear, setCalendarYear] = useState(() => today.getFullYear());
   const [calendarMonth, setCalendarMonth] = useState(() => today.getMonth());
   const [panel, setPanel] = useState<PanelData | null>(null);
-  const [dayChatsForProject, setDayChatsForProject] = useState<string | null>(null);
-  const [dayChatsLoading, setDayChatsLoading] = useState(false);
-  const [dayChatsItems, setDayChatsItems] = useState<DayChatMessage[]>([]);
-  const [dayChatsError, setDayChatsError] = useState<string | null>(null);
+  const [dateChatGroups, setDateChatGroups] = useState<ProjectDayChatGroup[]>([]);
+  const [expandedChatProject, setExpandedChatProject] = useState<string | null>(null);
+  const [dateChatGroupsLoading, setDateChatGroupsLoading] = useState(false);
+  const [dateChatGroupsError, setDateChatGroupsError] = useState<string | null>(null);
 
   const { data: projectsData, loading } = useApiQuery<ProjectsApiResponse>('/projects?limit=100');
   const projects = projectsData?.items ?? [];
@@ -130,77 +152,82 @@ export default function CompanyDashboard() {
     const m = displayDate.getMonth();
     const y = displayDate.getFullYear();
     const dateIso = `${y}-${String(m + 1).padStart(2, '0')}-${String(cell.d).padStart(2, '0')}`;
-    setDayChatsForProject(null);
-    setDayChatsItems([]);
-    setDayChatsError(null);
+    setDateChatGroups([]);
+    setDateChatGroupsError(null);
+    setExpandedChatProject(null);
     setPanel({ date: cell.d, month: monthLabel, year: yearLabel, projects: cell.projects, dateIso });
   };
 
   const fetchProjectDayChats = useCallback(async (projectId: string, dateIso: string) => {
-    type ConvRow = { id: string; project?: { id: string } | null };
-    type MsgRow = {
-      id: string;
-      content: string | null;
-      createdAt: string;
-      sender?: { displayName?: string };
-    };
-    const convRes = await api.get<{ items: ConvRow[] }>('/conversations?page=1&limit=100');
-    const convs = (convRes.items ?? []).filter((c) => c.project?.id === projectId);
+    const { startIso, endIso } = getDateRangeIso(dateIso);
     const out: DayChatMessage[] = [];
-    for (const c of convs) {
-      let cursor: string | undefined;
-      for (let page = 0; page < 20; page++) {
-        const q = cursor ? `?limit=100&cursor=${encodeURIComponent(cursor)}` : '?limit=100';
-        const msgRes = await api.get<{ items: MsgRow[]; nextCursor: string | null }>(`/conversations/${c.id}/messages${q}`);
-        const batch = msgRes.items ?? [];
-        for (const m of batch) {
-          if (localDateKey(m.createdAt) === dateIso) {
-            out.push({
-              id: m.id,
-              content: m.content,
-              createdAt: m.createdAt,
-              senderLabel: m.sender?.displayName ?? '—',
-              conversationId: c.id,
-            });
-          }
-        }
-        cursor = msgRes.nextCursor ?? undefined;
-        if (!cursor || batch.length === 0) break;
+    const firstRes = await api.get<ProjectDayChatsResponse>(
+      `/conversations/project/${projectId}/messages/by-date?start=${encodeURIComponent(startIso)}&end=${encodeURIComponent(endIso)}&page=1&limit=50`,
+    );
+    for (const m of firstRes.items ?? []) {
+      out.push({
+        id: m.id,
+        content: m.content,
+        createdAt: m.createdAt,
+        senderId: m.sender?.id ?? '',
+        senderLabel: m.sender?.displayName ?? '—',
+        conversationId: m.conversationId,
+        otherParticipantId: m.otherParticipantId,
+      });
+    }
+    const pages = Math.max(1, firstRes.meta?.pages ?? 1);
+    for (let page = 2; page <= pages; page++) {
+      const pageRes = await api.get<ProjectDayChatsResponse>(
+        `/conversations/project/${projectId}/messages/by-date?start=${encodeURIComponent(startIso)}&end=${encodeURIComponent(endIso)}&page=${page}&limit=50`,
+      );
+      for (const m of pageRes.items ?? []) {
+        out.push({
+          id: m.id,
+          content: m.content,
+          createdAt: m.createdAt,
+          senderId: m.sender?.id ?? '',
+          senderLabel: m.sender?.displayName ?? '—',
+          conversationId: m.conversationId,
+          otherParticipantId: m.otherParticipantId,
+        });
       }
     }
     out.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
     return out;
   }, []);
 
-  const toggleDayChats = useCallback(
-    (projectId: string, dateIso: string) => {
-      if (dayChatsForProject === projectId) {
-        setDayChatsForProject(null);
-        setDayChatsItems([]);
-        setDayChatsError(null);
-        return;
-      }
-      setDayChatsForProject(projectId);
-      setDayChatsLoading(true);
-      setDayChatsError(null);
-      setDayChatsItems([]);
-      void fetchProjectDayChats(projectId, dateIso)
-        .then(setDayChatsItems)
-        .catch((err) => {
-          setDayChatsError(err instanceof ApiException ? err.payload.message : 'Could not load chats.');
-          setDayChatsItems([]);
-        })
-        .finally(() => setDayChatsLoading(false));
-    },
-    [dayChatsForProject, fetchProjectDayChats],
-  );
+  const loadDateChatGroups = useCallback(async (dateIso: string) => {
+    const eligibleProjects = projects;
+    if (eligibleProjects.length === 0) return [];
+    const groups = await Promise.all(
+      eligibleProjects.map(async (project) => {
+        const items = await fetchProjectDayChats(project.id, dateIso);
+        return { projectId: project.id, projectTitle: project.title, items };
+      }),
+    );
+    return groups.filter((group) => group.items.length > 0);
+  }, [fetchProjectDayChats, projects]);
 
   const closePanel = () => {
     setPanel(null);
-    setDayChatsForProject(null);
-    setDayChatsItems([]);
-    setDayChatsError(null);
+    setDateChatGroups([]);
+    setDateChatGroupsError(null);
+    setExpandedChatProject(null);
   };
+
+  useEffect(() => {
+    if (!panel) return;
+    setDateChatGroupsLoading(true);
+    setDateChatGroups([]);
+    setDateChatGroupsError(null);
+    void loadDateChatGroups(panel.dateIso)
+      .then((groups) => setDateChatGroups(groups))
+      .catch((err) => {
+        setDateChatGroups([]);
+        setDateChatGroupsError(err instanceof ApiException ? err.payload.message : 'Could not load project chats for this date.');
+      })
+      .finally(() => setDateChatGroupsLoading(false));
+  }, [loadDateChatGroups, panel]);
 
   const fmtChatTime = (iso: string) =>
     new Date(iso).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
@@ -469,146 +496,319 @@ export default function CompanyDashboard() {
       </div>
 
       {/* Sliding panel */}
-      {panel && (
+      {panel && (() => {
+        const activeProjectsList = panel.projects.filter(p => p.status !== 'cancelled');
+        const cancelledProjectsList = panel.projects.filter(p => p.status === 'cancelled');
+        const totalChats = dateChatGroups.reduce((acc, g) => acc + g.items.length, 0);
+        const weekday = new Date(`${panel.dateIso}T00:00:00`).toLocaleDateString('en-IN', { weekday: 'long' });
+        return (
         <>
-          <div className="fixed inset-0 bg-black/25 backdrop-blur-[2px] z-40 lg:bg-black/10 lg:backdrop-blur-[1px]" onClick={closePanel} />
-          <aside className="fixed right-0 top-0 h-full w-80 bg-white/95 backdrop-blur-xl border-l border-neutral-200/60 shadow-2xl z-50 flex flex-col panel-enter rounded-l-3xl">
-            <div className="flex items-center justify-between px-5 py-5 border-b border-neutral-100">
-              <div>
-                <p className="text-[11px] font-medium text-neutral-400 uppercase tracking-wider">{panel.month} {panel.year}</p>
-                <h3 className="text-xl font-bold text-neutral-900 mt-0.5">{panel.date} {panel.month}</h3>
-              </div>
-              <button type="button" onClick={closePanel} className="w-9 h-9 rounded-xl bg-neutral-100/80 flex items-center justify-center text-neutral-500 hover:bg-neutral-200 hover:text-neutral-700 transition-all">
-                <FaXmark className="text-sm" />
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto px-5 py-5">
-              {panel.projects.length === 0 ? (
-                <div className="text-center py-10">
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#EEF4FF] to-[#DBEAFE] flex items-center justify-center mx-auto mb-4 shadow-sm">
-                    <FaFolder className="text-[#3B5BDB] text-lg" />
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-40 animate-in fade-in duration-200" onClick={closePanel} />
+          <aside className="fixed right-0 top-0 h-full w-full sm:w-[420px] md:w-[460px] lg:w-[480px] bg-white border-l border-neutral-200/60 shadow-2xl z-50 flex flex-col panel-enter sm:rounded-l-3xl overflow-hidden">
+            {/* Header */}
+            <div className="relative px-5 sm:px-6 pt-5 pb-4 border-b border-neutral-100 bg-gradient-to-br from-white via-[#F8FAFF] to-[#EEF4FF]/40">
+              <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-[#3B5BDB]/10 to-transparent rounded-full blur-2xl pointer-events-none" />
+              <div className="relative flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-12 h-12 rounded-2xl bg-white border border-[#3B5BDB]/15 shadow-sm flex flex-col items-center justify-center shrink-0">
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-[#3B5BDB] leading-none">{panel.month.slice(0, 3)}</span>
+                    <span className="text-lg font-extrabold text-neutral-900 leading-none mt-0.5 tabular-nums">{panel.date}</span>
                   </div>
-                  <p className="text-sm font-bold text-neutral-900 mb-1">No project scheduled</p>
-                  <p className="text-xs text-neutral-500 mb-6">This date is available for production</p>
-                  <Link to="/dashboard/projects/new" className="rounded-xl inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-br from-[#3B5BDB] to-[#2f4ac2] text-white text-sm font-bold hover:shadow-lg hover:shadow-[#3B5BDB]/25 transition-all duration-200">
-                    <FaPlus className="w-3 h-3" /> Create Project
-                  </Link>
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">{weekday}</p>
+                    <h3 className="text-lg font-extrabold text-neutral-900 leading-tight truncate">{panel.month} {panel.year}</h3>
+                  </div>
                 </div>
-              ) : (
-                <div className="space-y-4">
-                  {/* Active / non-cancelled projects */}
-                  {panel.projects.filter(p => p.status !== 'cancelled').map((p) => {
-                    const cfg = statusConfig[p.status] ?? statusConfig.draft;
-                    return (
-                      <div key={p.id} className={`rounded-2xl border p-4 shadow-sm ${cfg.bg} ${cfg.border}`}>
-                        <div className="flex items-start justify-between gap-2 mb-3">
-                          <p className="text-sm font-bold text-neutral-900 leading-tight">{p.title}</p>
-                          <span className={`text-[10px] px-2.5 py-0.5 rounded-full shrink-0 font-semibold ${cfg.bg} ${cfg.text} border ${cfg.border}`}>{cfg.label}</span>
-                        </div>
-                        <div className="space-y-1.5 mb-4">
-                          {p.productionHouseName && (
-                            <p className="text-xs text-neutral-600"><span className="text-neutral-400 font-medium">House</span> · {p.productionHouseName}</p>
-                          )}
-                          {p.locationCity && (
-                            <p className="text-xs text-neutral-600"><span className="text-neutral-400 font-medium">Location</span> · {p.locationCity}</p>
-                          )}
-                        </div>
-                        <div className="flex gap-2">
-                          <Link to={`/dashboard/projects/${p.id}`} className="flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2.5 bg-[#3B5BDB] text-white text-xs font-semibold hover:bg-[#2f4ac2] shadow-sm shadow-[#3B5BDB]/20 transition-all">
-                            <FaEye className="w-3 h-3" /> View
-                          </Link>
-                          <Link to="/dashboard/search" className="flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2.5 bg-white border border-neutral-200/80 text-neutral-700 text-xs font-semibold hover:bg-neutral-50 hover:border-neutral-300 shadow-sm transition-all">
-                            <FaUsers className="w-3 h-3" /> Crew
-                          </Link>
-                        </div>
-                        <div className="flex gap-2 mt-2">
-                          <Link
-                            to="/dashboard/cancel-requests"
-                            className="flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2.5 bg-white border border-amber-200/80 text-amber-800 text-xs font-semibold hover:bg-amber-50 hover:border-amber-300 shadow-sm transition-all"
-                          >
-                            <FaBan className="w-3 h-3" /> Request cancellation
-                          </Link>
-                          <button
-                            type="button"
-                            onClick={() => panel && toggleDayChats(p.id, panel.dateIso)}
-                            className={`flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2.5 border text-xs font-semibold shadow-sm transition-all ${
-                              dayChatsForProject === p.id
-                                ? 'bg-[#EEF4FF] border-[#3B5BDB]/40 text-[#3B5BDB]'
-                                : 'bg-white border-neutral-200/80 text-neutral-700 hover:bg-neutral-50 hover:border-neutral-300'
-                            }`}
-                          >
-                            <FaMessage className="w-3 h-3" /> Chats
-                          </button>
-                        </div>
-                        {dayChatsForProject === p.id && (
-                          <div className="mt-3 rounded-xl border border-neutral-200/80 bg-white/90 p-3 max-h-48 overflow-y-auto">
-                            <p className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wider mb-2">
-                              Messages on {panel.dateIso} · {p.title}
-                            </p>
-                            {dayChatsLoading && (
-                              <div className="flex justify-center py-4">
-                                <span className="w-5 h-5 border-2 border-[#3B5BDB]/30 border-t-[#3B5BDB] rounded-full animate-spin" />
-                              </div>
-                            )}
-                            {dayChatsError && <p className="text-xs text-red-600">{dayChatsError}</p>}
-                            {!dayChatsLoading && !dayChatsError && dayChatsItems.length === 0 && (
-                              <p className="text-xs text-neutral-500">No project chats on this date.</p>
-                            )}
-                            {!dayChatsLoading && dayChatsItems.length > 0 && (
-                              <ul className="space-y-2">
-                                {dayChatsItems.map((m) => (
-                                  <li key={m.id} className="text-xs border-b border-neutral-100 last:border-0 pb-2 last:pb-0">
-                                    <div className="flex items-center justify-between gap-2 mb-0.5">
-                                      <span className="font-semibold text-neutral-800 truncate">{m.senderLabel}</span>
-                                      <span className="text-[10px] text-neutral-400 shrink-0 tabular-nums">{fmtChatTime(m.createdAt)}</span>
-                                    </div>
-                                    <p className="text-neutral-600 line-clamp-3 whitespace-pre-wrap break-words">
-                                      {m.content?.trim() || '(attachment or empty)'}
-                                    </p>
-                                  </li>
-                                ))}
-                              </ul>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+                <button
+                  type="button"
+                  onClick={closePanel}
+                  aria-label="Close panel"
+                  className="w-9 h-9 rounded-xl bg-white border border-neutral-200 flex items-center justify-center text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800 hover:border-neutral-300 shadow-sm transition-all shrink-0"
+                >
+                  <FaXmark className="text-sm" />
+                </button>
+              </div>
+              {/* Summary pills */}
+              <div className="relative flex flex-wrap items-center gap-2 mt-4">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-neutral-200 text-[11px] font-semibold text-neutral-700 shadow-sm">
+                  <FaFolder className="w-2.5 h-2.5 text-[#3B5BDB]" />
+                  {panel.projects.length} {panel.projects.length === 1 ? 'project' : 'projects'}
+                </span>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-neutral-200 text-[11px] font-semibold text-neutral-700 shadow-sm">
+                  <FaMessage className="w-2.5 h-2.5 text-[#7C3AED]" />
+                  {totalChats} {totalChats === 1 ? 'message' : 'messages'}
+                </span>
+              </div>
+            </div>
 
-                  {/* Cancelled projects — shown collapsed below */}
-                  {panel.projects.filter(p => p.status === 'cancelled').length > 0 && (
-                    <div>
-                      <p className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wider mb-2">Also on this date</p>
-                      <div className="space-y-2">
-                        {panel.projects.filter(p => p.status === 'cancelled').map((p) => (
-                          <Link key={p.id} to={`/dashboard/projects/${p.id}`}
-                            className="flex items-center justify-between gap-2 rounded-xl border border-neutral-200/60 px-3 py-2.5 bg-neutral-50/50 hover:border-[#3B5BDB]/30 hover:shadow-sm transition-all duration-150">
-                            <p className="text-xs font-medium text-neutral-500 truncate">{p.title}</p>
-                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#FEE2E2] text-[#B91C1C] font-semibold shrink-0">Cancelled</span>
-                          </Link>
-                        ))}
-                      </div>
-                    </div>
+            {/* Scroll body */}
+            <div className="flex-1 overflow-y-auto overscroll-contain">
+              {/* ── Projects section ─────────────────────────────────── */}
+              <section className="px-5 sm:px-6 pt-5 pb-2">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-[11px] font-bold text-neutral-500 uppercase tracking-wider flex items-center gap-2">
+                    <span className="w-1 h-3.5 rounded-full bg-[#3B5BDB]" />
+                    Projects
+                  </h4>
+                  {panel.projects.length > 0 && (
+                    <span className="text-[11px] font-semibold text-neutral-400 tabular-nums">{panel.projects.length}</span>
                   )}
                 </div>
-              )}
+
+                {panel.projects.length === 0 ? (
+                  <div className="text-center py-8 rounded-2xl border border-dashed border-neutral-200 bg-neutral-50/50">
+                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#EEF4FF] to-[#DBEAFE] flex items-center justify-center mx-auto mb-3 shadow-sm">
+                      <FaFolder className="text-[#3B5BDB] text-lg" />
+                    </div>
+                    <p className="text-sm font-bold text-neutral-900 mb-1">No project scheduled</p>
+                    <p className="text-xs text-neutral-500 mb-5 px-4">This date is available for production</p>
+                    <Link to="/dashboard/projects/new" className="rounded-xl inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-br from-[#3B5BDB] to-[#2f4ac2] text-white text-xs font-bold hover:shadow-lg hover:shadow-[#3B5BDB]/25 transition-all duration-200">
+                      <FaPlus className="w-3 h-3" /> Create Project
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {activeProjectsList.map((p) => {
+                      const cfg = statusConfig[p.status] ?? statusConfig.draft;
+                      return (
+                        <article key={p.id} className="group rounded-2xl border border-neutral-200/80 bg-white hover:border-[#3B5BDB]/30 hover:shadow-md transition-all overflow-hidden">
+                          {/* Accent bar */}
+                          <div className={`h-1 w-full ${cfg.dot}`} />
+                          <div className="p-4">
+                            <div className="flex items-start justify-between gap-2 mb-3">
+                              <div className="min-w-0 flex-1">
+                                <p className="text-sm font-bold text-neutral-900 leading-tight line-clamp-2">{p.title}</p>
+                              </div>
+                              <span className={`text-[10px] px-2 py-0.5 rounded-full shrink-0 font-semibold ${cfg.bg} ${cfg.text} border ${cfg.border}`}>{cfg.label}</span>
+                            </div>
+                            {(p.productionHouseName || p.locationCity) && (
+                              <dl className="space-y-1 mb-3">
+                                {p.productionHouseName && (
+                                  <div className="flex items-center gap-1.5 text-[11px]">
+                                    <dt className="text-neutral-400 font-semibold uppercase tracking-wide text-[9px] w-14 shrink-0">House</dt>
+                                    <dd className="text-neutral-700 font-medium truncate">{p.productionHouseName}</dd>
+                                  </div>
+                                )}
+                                {p.locationCity && (
+                                  <div className="flex items-center gap-1.5 text-[11px]">
+                                    <dt className="text-neutral-400 font-semibold uppercase tracking-wide text-[9px] w-14 shrink-0">Location</dt>
+                                    <dd className="text-neutral-700 font-medium truncate">{p.locationCity}</dd>
+                                  </div>
+                                )}
+                              </dl>
+                            )}
+                            <div className="grid grid-cols-3 gap-2">
+                              <Link to={`/dashboard/projects/${p.id}`} className="flex items-center justify-center gap-1 rounded-lg py-2 bg-[#3B5BDB] text-white text-[11px] font-semibold hover:bg-[#2f4ac2] shadow-sm transition-all">
+                                <FaEye className="w-2.5 h-2.5" /> View
+                              </Link>
+                              <Link to="/dashboard/search" className="flex items-center justify-center gap-1 rounded-lg py-2 bg-white border border-neutral-200 text-neutral-700 text-[11px] font-semibold hover:bg-neutral-50 hover:border-neutral-300 transition-all">
+                                <FaUsers className="w-2.5 h-2.5" /> Crew
+                              </Link>
+                              <Link
+                                to="/dashboard/cancel-requests"
+                                className="flex items-center justify-center gap-1 rounded-lg py-2 bg-white border border-amber-200 text-amber-700 text-[11px] font-semibold hover:bg-amber-50 hover:border-amber-300 transition-all"
+                              >
+                                <FaBan className="w-2.5 h-2.5" /> Cancel
+                              </Link>
+                            </div>
+                          </div>
+                        </article>
+                      );
+                    })}
+
+                    {cancelledProjectsList.length > 0 && (
+                      <div className="pt-1">
+                        <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-2 px-1">Cancelled ({cancelledProjectsList.length})</p>
+                        <div className="space-y-1.5">
+                          {cancelledProjectsList.map((p) => (
+                            <Link
+                              key={p.id}
+                              to={`/dashboard/projects/${p.id}`}
+                              className="flex items-center justify-between gap-2 rounded-xl border border-neutral-200/60 px-3 py-2 bg-neutral-50/70 hover:bg-white hover:border-[#3B5BDB]/30 transition-all"
+                            >
+                              <p className="text-xs font-medium text-neutral-500 truncate line-through decoration-neutral-300">{p.title}</p>
+                              <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-[#FEE2E2] text-[#B91C1C] font-semibold shrink-0 uppercase tracking-wide">Cancelled</span>
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </section>
+
+              {/* Divider */}
+              <div className="mx-5 sm:mx-6 my-4 border-t border-dashed border-neutral-200" />
+
+              {/* ── Chats section ────────────────────────────────────── */}
+              <section className="px-5 sm:px-6 pb-5">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-[11px] font-bold text-neutral-500 uppercase tracking-wider flex items-center gap-2">
+                    <span className="w-1 h-3.5 rounded-full bg-[#7C3AED]" />
+                    Chats on this day
+                  </h4>
+                  {totalChats > 0 && (
+                    <span className="text-[11px] font-semibold text-neutral-400 tabular-nums">{totalChats}</span>
+                  )}
+                </div>
+
+                {dateChatGroupsLoading && (
+                  <div className="flex flex-col items-center justify-center py-8 gap-2">
+                    <span className="w-6 h-6 border-2 border-[#3B5BDB]/20 border-t-[#3B5BDB] rounded-full animate-spin" />
+                    <span className="text-[11px] text-neutral-400 font-medium">Loading messages…</span>
+                  </div>
+                )}
+
+                {!dateChatGroupsLoading && dateChatGroupsError && (
+                  <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-3">
+                    <p className="text-xs text-red-700 font-medium">{dateChatGroupsError}</p>
+                  </div>
+                )}
+
+                {!dateChatGroupsLoading && !dateChatGroupsError && dateChatGroups.length === 0 && (
+                  <div className="text-center py-8 rounded-2xl border border-dashed border-neutral-200 bg-neutral-50/50">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#F3E8FF] to-[#EDE9FE] flex items-center justify-center mx-auto mb-2">
+                      <FaMessage className="text-[#7C3AED] text-sm" />
+                    </div>
+                    <p className="text-xs font-semibold text-neutral-700">No messages on this day</p>
+                    <p className="text-[11px] text-neutral-400 mt-0.5">Conversations will appear here</p>
+                  </div>
+                )}
+
+                {!dateChatGroupsLoading && !dateChatGroupsError && dateChatGroups.length > 0 && (
+                  <div className="space-y-2.5">
+                    {dateChatGroups.map((group) => {
+                      const isExpanded = expandedChatProject === group.projectId;
+                      // Build unique participants with aggregated stats
+                      const participantMap = new Map<string, { id: string; name: string; messageCount: number; lastAt: string; lastContent: string | null }>();
+                      for (const m of group.items) {
+                        const pid = m.otherParticipantId;
+                        if (!pid) continue;
+                        const existing = participantMap.get(pid);
+                        // Prefer name from a message where sender === that participant
+                        const candidateName = m.senderId === pid ? m.senderLabel : existing?.name;
+                        if (!existing) {
+                          participantMap.set(pid, {
+                            id: pid,
+                            name: candidateName ?? (m.senderId === pid ? m.senderLabel : '—'),
+                            messageCount: 1,
+                            lastAt: m.createdAt,
+                            lastContent: m.content,
+                          });
+                        } else {
+                          existing.messageCount += 1;
+                          if (candidateName) existing.name = candidateName;
+                          if (new Date(m.createdAt).getTime() > new Date(existing.lastAt).getTime()) {
+                            existing.lastAt = m.createdAt;
+                            existing.lastContent = m.content;
+                          }
+                        }
+                      }
+                      const participants = Array.from(participantMap.values()).sort(
+                        (a, b) => new Date(b.lastAt).getTime() - new Date(a.lastAt).getTime(),
+                      );
+                      return (
+                        <div key={group.projectId} className="rounded-2xl border border-neutral-200/80 bg-white overflow-hidden transition-all">
+                          <button
+                            type="button"
+                            onClick={() => setExpandedChatProject(isExpanded ? null : group.projectId)}
+                            aria-expanded={isExpanded}
+                            className={`w-full flex items-center gap-2.5 px-3.5 py-3 text-left transition-colors ${
+                              isExpanded
+                                ? 'bg-gradient-to-r from-[#EEF4FF] to-white border-b border-neutral-100'
+                                : 'bg-gradient-to-r from-[#F8FAFF] to-white hover:from-[#EEF4FF]'
+                            }`}
+                          >
+                            <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                              isExpanded ? 'bg-[#3B5BDB] text-white' : 'bg-[#EEF4FF] text-[#3B5BDB]'
+                            }`}>
+                              <FaFolder className="w-3 h-3" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-bold text-neutral-900 truncate">{group.projectTitle}</p>
+                              <p className="text-[10px] text-neutral-500 font-medium mt-0.5">
+                                <span className="inline-flex items-center gap-1">
+                                  <FaPeopleGroup className="w-2.5 h-2.5" /> {participants.length} {participants.length === 1 ? 'person' : 'people'}
+                                </span>
+                                <span className="mx-1.5 text-neutral-300">·</span>
+                                <span className="inline-flex items-center gap-1">
+                                  <FaMessage className="w-2.5 h-2.5" /> {group.items.length} {group.items.length === 1 ? 'msg' : 'msgs'}
+                                </span>
+                              </p>
+                            </div>
+                            <FaChevronRight
+                              className={`w-2.5 h-2.5 text-neutral-400 shrink-0 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+                            />
+                          </button>
+
+                          {isExpanded && (
+                            <div className="bg-white">
+                              {participants.length === 0 ? (
+                                <p className="px-4 py-4 text-[11px] text-neutral-400 text-center">No participants found.</p>
+                              ) : (
+                                <ul className="divide-y divide-neutral-100 max-h-72 overflow-y-auto">
+                                  {participants.map((person) => {
+                                    const initial = (person.name?.trim()?.[0] ?? '?').toUpperCase();
+                                    return (
+                                      <li key={person.id}>
+                                        <Link
+                                          to={`/dashboard/chat/${person.id}?projectId=${encodeURIComponent(group.projectId)}`}
+                                          className="flex items-center gap-3 px-3.5 py-3 hover:bg-[#F8FAFF] transition-colors group/person"
+                                        >
+                                          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#3B5BDB] to-[#5B9DF9] text-white text-xs font-extrabold flex items-center justify-center shrink-0 shadow-sm">
+                                            {initial}
+                                          </div>
+                                          <div className="flex-1 min-w-0">
+                                            <div className="flex items-center justify-between gap-2">
+                                              <p className="text-xs font-bold text-neutral-900 truncate">{person.name}</p>
+                                              <span className="text-[10px] text-neutral-400 tabular-nums font-medium shrink-0">
+                                                {fmtChatTime(person.lastAt)}
+                                              </span>
+                                            </div>
+                                            <div className="flex items-center justify-between gap-2 mt-0.5">
+                                              <p className="text-[11px] text-neutral-500 truncate leading-snug">
+                                                {person.lastContent?.trim() || <span className="italic text-neutral-400">(attachment)</span>}
+                                              </p>
+                                              <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1.5 rounded-full bg-[#EEF4FF] text-[#3B5BDB] text-[9px] font-extrabold tabular-nums shrink-0">
+                                                {person.messageCount}
+                                              </span>
+                                            </div>
+                                          </div>
+                                          <FaMessage className="w-3 h-3 text-neutral-300 group-hover/person:text-[#3B5BDB] shrink-0 transition-colors" />
+                                        </Link>
+                                      </li>
+                                    );
+                                  })}
+                                </ul>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </section>
             </div>
-            <div className="px-5 py-4 border-t border-neutral-100 space-y-3">
+
+            {/* Footer actions */}
+            <div className="px-5 sm:px-6 py-4 border-t border-neutral-100 bg-white space-y-2.5 shrink-0">
               <Link
                 to={`/dashboard/invoices?issuedOn=${panel.dateIso}`}
-                className="flex items-center justify-center gap-2 w-full rounded-xl py-2.5 bg-[#EEF4FF] text-[#3B5BDB] text-sm font-semibold border border-[#3B5BDB]/20 hover:bg-[#DBEAFE] transition-all"
+                className="flex items-center justify-center gap-2 w-full rounded-xl py-2.5 bg-[#EEF4FF] text-[#3B5BDB] text-xs font-bold border border-[#3B5BDB]/20 hover:bg-[#DBEAFE] transition-all"
               >
                 <FaFileInvoice className="w-3.5 h-3.5" /> Invoices issued on this date
               </Link>
               {panel.projects.length > 0 && (
-                <Link to="/dashboard/projects/new" className="flex items-center justify-center gap-2 w-full rounded-xl py-2.5 bg-gradient-to-r from-[#F4C430] to-[#E6B820] text-neutral-900 text-sm font-bold hover:shadow-md hover:shadow-amber-500/20 transition-all duration-200">
+                <Link to="/dashboard/projects/new" className="flex items-center justify-center gap-2 w-full rounded-xl py-2.5 bg-gradient-to-r from-[#F4C430] to-[#E6B820] text-neutral-900 text-xs font-bold hover:shadow-md hover:shadow-amber-500/20 transition-all duration-200">
                   <FaPlus className="w-3 h-3" /> New Project
                 </Link>
               )}
             </div>
           </aside>
         </>
-      )}
+        );
+      })()}
     </div>
   );
 }

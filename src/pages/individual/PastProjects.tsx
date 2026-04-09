@@ -166,7 +166,7 @@ export default function PastProjects() {
                           {!b.rateOffered && <div className="mb-3" />}
                           <div className="flex items-center gap-2">
                             <Link
-                              to={`/dashboard/chat/${b.requester.id}`}
+                              to={`/dashboard/chat/${b.requester.id}?projectId=${encodeURIComponent(b.project.id)}`}
                               className="flex-1 text-[11px] py-1.5 border border-neutral-200 text-neutral-600 rounded-xl hover:bg-neutral-50 text-center flex items-center justify-center gap-1 transition-colors"
                             >
                               <FaMessage className="w-2.5 h-2.5" /> Chat
