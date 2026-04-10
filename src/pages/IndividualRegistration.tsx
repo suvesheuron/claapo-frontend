@@ -252,7 +252,7 @@ export default function IndividualRegistration() {
           {fieldErrors.fullName && <p className="text-xs text-red-500 mt-1.5">{fieldErrors.fullName}</p>}
         </div>
 
-        {/* Phone + Primary Role */}
+        {/* Phone + Email */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-[13px] text-neutral-700 mb-1.5 font-semibold">
@@ -280,39 +280,39 @@ export default function IndividualRegistration() {
           </div>
           <div>
             <label className="block text-[13px] text-neutral-700 mb-1.5 font-semibold">
-              Primary role <span className="text-red-500">*</span>
+              Email address <span className="text-red-500">*</span>
             </label>
-            <select
-              value={primaryRole}
-              onChange={(e) => setPrimaryRole(e.target.value)}
-              onBlur={() => handleBlur('primaryRole')}
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              onBlur={() => handleBlur('email')}
+              placeholder="you@example.com"
               disabled={loading}
-              className={`${inputBase} ${borderClass('primaryRole')}`}
-            >
-              <option value="">Select role</option>
-              {REGISTRATION_INDIVIDUAL_DEPARTMENTS.map((r) => (
-                <option key={r} value={r}>{r}</option>
-              ))}
-            </select>
-            {fieldErrors.primaryRole && <p className="text-xs text-red-500 mt-1.5">{fieldErrors.primaryRole}</p>}
+              className={`${inputBase} ${borderClass('email')}`}
+            />
+            {fieldErrors.email && <p className="text-xs text-red-500 mt-1.5">{fieldErrors.email}</p>}
           </div>
         </div>
 
-        {/* Email */}
+        {/* Primary Role */}
         <div>
           <label className="block text-[13px] text-neutral-700 mb-1.5 font-semibold">
-            Email address <span className="text-red-500">*</span>
+            Primary role <span className="text-red-500">*</span>
           </label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            onBlur={() => handleBlur('email')}
-            placeholder="you@example.com"
+          <select
+            value={primaryRole}
+            onChange={(e) => setPrimaryRole(e.target.value)}
+            onBlur={() => handleBlur('primaryRole')}
             disabled={loading}
-            className={`${inputBase} ${borderClass('email')}`}
-          />
-          {fieldErrors.email && <p className="text-xs text-red-500 mt-1.5">{fieldErrors.email}</p>}
+            className={`${inputBase} ${borderClass('primaryRole')}`}
+          >
+            <option value="">Select role</option>
+            {REGISTRATION_INDIVIDUAL_DEPARTMENTS.map((r) => (
+              <option key={r} value={r}>{r}</option>
+            ))}
+          </select>
+          {fieldErrors.primaryRole && <p className="text-xs text-red-500 mt-1.5">{fieldErrors.primaryRole}</p>}
         </div>
 
         {/* Genre (multi) */}
@@ -350,7 +350,7 @@ export default function IndividualRegistration() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-[13px] text-neutral-700 mb-1.5 font-semibold">
-              Daily budget <span className="text-neutral-400 font-normal">(₹/day)</span>
+              Budget <span className="text-neutral-400 font-normal">(₹/day)</span>
             </label>
             <input
               type="text"
@@ -365,7 +365,7 @@ export default function IndividualRegistration() {
           </div>
           <div>
             <label className="block text-[13px] text-neutral-700 mb-1.5 font-semibold">
-              Location <span className="text-neutral-400 font-normal">(optional)</span>
+              Location <span className="text-red-500">*</span>
             </label>
             <input
               type="text"

@@ -38,6 +38,8 @@ interface ProfileData {
   instagramUrl: string | null;
   youtubeUrl: string | null;
   vimeoUrl: string | null;
+  linkedinUrl: string | null;
+  twitterUrl: string | null;
   isAvailable: boolean;
   panNumber: string | null;
   bankAccountName: string | null;
@@ -76,6 +78,8 @@ export default function IndividualProfile() {
   const [instagramUrl, setInstagramUrl] = useState('');
   const [youtubeUrl, setYoutubeUrl] = useState('');
   const [vimeoUrl, setVimeoUrl] = useState('');
+  const [linkedinUrl, setLinkedinUrl] = useState('');
+  const [twitterUrl, setTwitterUrl] = useState('');
   const [panNumber, setPanNumber] = useState('');
   const [bankAccountName, setBankAccountName] = useState('');
   const [bankAccountNumber, setBankAccountNumber] = useState('');
@@ -128,6 +132,8 @@ export default function IndividualProfile() {
     setInstagramUrl(p.instagramUrl ?? '');
     setYoutubeUrl(p.youtubeUrl ?? '');
     setVimeoUrl(p.vimeoUrl ?? '');
+    setLinkedinUrl(p.linkedinUrl ?? '');
+    setTwitterUrl(p.twitterUrl ?? '');
     setPanNumber(p.panNumber ?? '');
     setBankAccountName(p.bankAccountName ?? '');
     setBankAccountNumber(p.bankAccountNumber ?? '');
@@ -165,6 +171,8 @@ export default function IndividualProfile() {
         instagramUrl: instagramUrl.trim() || undefined,
         youtubeUrl: youtubeUrl.trim() || undefined,
         vimeoUrl: vimeoUrl.trim() || undefined,
+        linkedinUrl: linkedinUrl.trim() || undefined,
+        twitterUrl: twitterUrl.trim() || undefined,
         panNumber: panNumber.trim() || undefined,
         bankAccountName: bankAccountName.trim() || undefined,
         bankAccountNumber: bankAccountNumber.trim() || undefined,
@@ -199,6 +207,8 @@ export default function IndividualProfile() {
     instagramUrl,
     youtubeUrl,
     vimeoUrl,
+    linkedinUrl,
+    twitterUrl,
     panNumber,
     bankAccountName,
     bankAccountNumber,
@@ -427,11 +437,12 @@ export default function IndividualProfile() {
                           icon={<FaGlobe />}
                         >
                           <SocialLinks links={{
-                            website: null,
                             instagramUrl: instagramUrl || null,
                             imdbUrl: imdbUrl || null,
                             youtubeUrl: youtubeUrl || null,
                             vimeoUrl: vimeoUrl || null,
+                            linkedinUrl: linkedinUrl || null,
+                            twitterUrl: twitterUrl || null,
                           }} />
                         </ProfileSection>
 
@@ -588,13 +599,14 @@ export default function IndividualProfile() {
                           title="Social Links" 
                           icon={<FaGlobe />}
                         >
-                          <SocialLinks 
+                          <SocialLinks
                             links={{
-                              website: null,
                               instagramUrl,
                               imdbUrl,
                               youtubeUrl,
                               vimeoUrl,
+                              linkedinUrl,
+                              twitterUrl,
                             }}
                             editable
                             onChange={(field, value) => {
@@ -602,6 +614,8 @@ export default function IndividualProfile() {
                               if (field === 'imdbUrl') setImdbUrl(value);
                               if (field === 'youtubeUrl') setYoutubeUrl(value);
                               if (field === 'vimeoUrl') setVimeoUrl(value);
+                              if (field === 'linkedinUrl') setLinkedinUrl(value);
+                              if (field === 'twitterUrl') setTwitterUrl(value);
                             }}
                             disabled={saving}
                           />

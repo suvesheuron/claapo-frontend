@@ -1,5 +1,5 @@
 import React from 'react';
-import { FaGlobe, FaInstagram, FaYoutube, FaVimeoV, FaImdb } from 'react-icons/fa6';
+import { FaInstagram, FaYoutube, FaVimeoV, FaImdb, FaLinkedinIn, FaXTwitter } from 'react-icons/fa6';
 import { getCompletionStatus } from '../../utils/profileCompletion';
 
 interface ProfileSectionProps {
@@ -242,11 +242,12 @@ export function SkillTag({ skill, onRemove, className = '' }: SkillTagProps) {
 }
 
 interface SocialLinksData {
-  website?: string | null;
   instagramUrl?: string | null;
   imdbUrl?: string | null;
   youtubeUrl?: string | null;
   vimeoUrl?: string | null;
+  linkedinUrl?: string | null;
+  twitterUrl?: string | null;
 }
 
 interface SocialLinksProps {
@@ -260,18 +261,19 @@ interface SocialLinksProps {
  * Social links display/edit component
  */
 export function SocialLinks({ links, editable = false, onChange, disabled = false }: SocialLinksProps) {
-  const socialPlatforms = [
-    { key: 'website' as const, label: 'Website', Icon: FaGlobe, placeholder: 'https://yourwebsite.com' },
-    { key: 'instagramUrl' as const, label: 'Instagram', Icon: FaInstagram, placeholder: 'https://instagram.com/username' },
-    { key: 'youtubeUrl' as const, label: 'YouTube', Icon: FaYoutube, placeholder: 'https://youtube.com/@channel' },
-    { key: 'vimeoUrl' as const, label: 'Vimeo', Icon: FaVimeoV, placeholder: 'https://vimeo.com/username' },
-    { key: 'imdbUrl' as const, label: 'IMDb', Icon: FaImdb, placeholder: 'https://imdb.com/name/...' },
+  const socialPlatforms: { key: keyof SocialLinksData; label: string; Icon: React.ComponentType<{ className?: string }>; placeholder: string; color: string; bg: string }[] = [
+    { key: 'instagramUrl', label: 'Instagram', Icon: FaInstagram, placeholder: 'https://instagram.com/username', color: 'text-[#E4405F]', bg: 'bg-[#E4405F]/10' },
+    { key: 'youtubeUrl', label: 'YouTube', Icon: FaYoutube, placeholder: 'https://youtube.com/@channel', color: 'text-[#FF0000]', bg: 'bg-[#FF0000]/10' },
+    { key: 'vimeoUrl', label: 'Vimeo', Icon: FaVimeoV, placeholder: 'https://vimeo.com/username', color: 'text-[#1AB7EA]', bg: 'bg-[#1AB7EA]/10' },
+    { key: 'imdbUrl', label: 'IMDb', Icon: FaImdb, placeholder: 'https://imdb.com/name/...', color: 'text-[#F5C518]', bg: 'bg-[#F5C518]/10' },
+    { key: 'linkedinUrl', label: 'LinkedIn', Icon: FaLinkedinIn, placeholder: 'https://linkedin.com/in/username', color: 'text-[#0A66C2]', bg: 'bg-[#0A66C2]/10' },
+    { key: 'twitterUrl', label: 'X (Twitter)', Icon: FaXTwitter, placeholder: 'https://x.com/username', color: 'text-black', bg: 'bg-black/10' },
   ];
 
   if (editable) {
     return (
       <div className="space-y-3">
-        {socialPlatforms.map(({ key, label, Icon, placeholder }) => (
+        {socialPlatforms.map(({ key, label, Icon, placeholder, color }) => (
           <EditableField
             key={key}
             label={label}
@@ -280,7 +282,7 @@ export function SocialLinks({ links, editable = false, onChange, disabled = fals
             onChange={(value) => onChange?.(key, value)}
             placeholder={placeholder}
             disabled={disabled}
-            icon={<Icon className="w-4 h-4" />}
+            icon={<Icon className={`w-4 h-4 ${color}`} />}
           />
         ))}
       </div>
@@ -295,7 +297,7 @@ export function SocialLinks({ links, editable = false, onChange, disabled = fals
 
   return (
     <div className="flex flex-wrap gap-2">
-      {socialPlatforms.map(({ key, label, Icon }) => {
+      {socialPlatforms.map(({ key, label, Icon, color, bg }) => {
         const url = links[key] as string | null | undefined;
         if (!url) return null;
         return (
@@ -304,7 +306,7 @@ export function SocialLinks({ links, editable = false, onChange, disabled = fals
             href={url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-neutral-100 text-neutral-700 hover:bg-brand-primary hover:text-white transition-colors"
+            className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold ${bg} ${color} hover:opacity-80 transition-opacity`}
           >
             <Icon className="w-3.5 h-3.5" />
             <span>{label}</span>
