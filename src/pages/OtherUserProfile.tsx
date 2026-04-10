@@ -36,8 +36,7 @@ interface PublicProfileResponse {
     genres?: string[];
     locationCity?: string;
     locationState?: string;
-    dailyRateMin?: number;
-    dailyRateMax?: number;
+    dailyBudget?: number;
     vendorType?: string;
     gstNumber?: string;
     website?: string;
@@ -50,9 +49,8 @@ interface PublicProfileResponse {
   } | null;
 }
 
-function formatRate(min?: number | null, max?: number | null): string {
-  if (min != null && max != null) return `₹${min.toLocaleString()}–₹${max.toLocaleString()}/day`;
-  if (min != null) return `₹${min.toLocaleString()}/day`;
+function formatRate(paise?: number | null): string {
+  if (paise != null) return `₹${(paise / 100).toLocaleString()}/day`;
   return '—';
 }
 
@@ -279,10 +277,10 @@ export default function OtherUserProfile() {
                             {[p.locationCity, p.locationState].filter(Boolean).join(', ')}
                           </p>
                         )}
-                        {isIndividual && (p.dailyRateMin != null || p.dailyRateMax != null) && (
+                        {isIndividual && p.dailyBudget != null && (
                           <div className="inline-block mt-2 mb-3 bg-[#EEF4FF] border border-[#3B5BDB]/20 text-[#3B5BDB] px-3 py-1.5 rounded-lg">
                             <p className="text-sm font-bold">
-                              {formatRate(p.dailyRateMin ?? null, p.dailyRateMax ?? null)}
+                              {formatRate(p.dailyBudget)}
                             </p>
                           </div>
                         )}

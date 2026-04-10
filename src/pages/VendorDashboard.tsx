@@ -84,8 +84,7 @@ function cellStatusToSlotStatus(s: CellStatus | null | undefined): SlotStatus {
 interface EquipmentItem {
   id: string;
   name: string;
-  dailyRateMin?: number | null;
-  dailyRateMax?: number | null;
+  dailyBudget?: number | null;
 }
 
 interface IncomingBooking {
@@ -504,7 +503,7 @@ export default function VendorDashboard() {
                         {equipmentArray.slice(0, 3).map((item) => (
                           <Link key={item.id} to="/dashboard/equipment" className="block rounded-xl border border-neutral-200 p-2.5 bg-[#FAFAFA] hover:border-[#3B5BDB]/50 transition-colors">
                             <p className="text-xs font-semibold text-neutral-900 truncate">{item.name}</p>
-                            <p className="text-[10px] text-neutral-500">{item.dailyRateMin != null || item.dailyRateMax != null ? formatRateRange(item.dailyRateMin, item.dailyRateMax) : '—'}</p>
+                            <p className="text-[10px] text-neutral-500">{item.dailyBudget != null ? formatRateRange(item.dailyBudget) : '—'}</p>
                           </Link>
                         ))}
                         {equipmentArray.length > 3 && <p className="text-[10px] text-neutral-400">+{equipmentArray.length - 3} more</p>}

@@ -238,16 +238,15 @@ export default function BookingRequestModal({
     if (isOpen) refetchProjects();
   }, [isOpen, refetchProjects]);
 
-  const { data: vendorEquipment, loading: equipmentLoading } = useApiQuery<{ id: string; name: string; dailyRateMin?: number | null; dailyRateMax?: number | null; daily_rate_min?: number | null; daily_rate_max?: number | null }[] | { data?: unknown[]; items?: unknown[] }>(
+  const { data: vendorEquipment, loading: equipmentLoading } = useApiQuery<{ id: string; name: string; dailyBudget?: number | null; daily_budget?: number | null }[] | { data?: unknown[]; items?: unknown[] }>(
     isOpen && targetUserId && isVendor ? `/equipment/vendor/${targetUserId}` : null
   );
   const rawList = Array.isArray(vendorEquipment) ? vendorEquipment : (vendorEquipment as { data?: unknown[]; items?: unknown[] })?.data ?? (vendorEquipment as { items?: unknown[] })?.items ?? [];
   const equipmentList = (Array.isArray(rawList) ? rawList : []) as Record<string, unknown>[];
 
   const getPaise = (eq: Record<string, unknown>): number[] => {
-    const min = (eq.dailyRateMin ?? eq.daily_rate_min) as number | null | undefined;
-    const max = (eq.dailyRateMax ?? eq.daily_rate_max) as number | null | undefined;
-    return [min, max].filter((n): n is number => typeof n === 'number' && !Number.isNaN(n));
+    const budget = (eq.dailyBudget ?? eq.daily_budget) as number | null | undefined;
+    return [budget].filter((n): n is number => typeof n === 'number' && !Number.isNaN(n));
   };
 
   const vendorRateDisplay = (() => {
