@@ -295,15 +295,19 @@ export default function Invoice() {
                           <p className="text-sm font-semibold text-neutral-900">{invoice.fromName}</p>
                           {invoice.fromRole && <p className="text-sm text-neutral-600">{invoice.fromRole}</p>}
                           {invoice.fromCity && <p className="text-sm text-neutral-500">{invoice.fromCity}</p>}
-                          {invoice.issuerDetails?.gstNumber && <p className="text-xs text-neutral-500 mt-1">GST: {invoice.issuerDetails.gstNumber}</p>}
+                          {(invoice.issuerDetails?.gstNumber || invoice.issuerDetails?.panNumber) && (
+                            <div className="mt-1 space-y-0.5">
+                              {invoice.issuerDetails?.gstNumber && <p className="text-xs text-neutral-500">GST: {invoice.issuerDetails.gstNumber}</p>}
+                              {invoice.issuerDetails?.panNumber && <p className="text-xs text-neutral-500">PAN: {invoice.issuerDetails.panNumber}</p>}
+                            </div>
+                          )}
                           {invoice.issuerDetails?.address && (
                             <p className="text-xs text-neutral-600 mt-2 leading-relaxed whitespace-pre-wrap">{invoice.issuerDetails.address}</p>
                           )}
                           {(invoice.issuerDetails?.bankAccountName ||
                             invoice.issuerDetails?.bankAccountNumber ||
                             invoice.issuerDetails?.bankName ||
-                            invoice.issuerDetails?.ifscCode ||
-                            invoice.issuerDetails?.panNumber) && (
+                            invoice.issuerDetails?.ifscCode) && (
                             <div className="mt-3 pt-3 border-t border-neutral-200 space-y-1">
                               <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wide">Bank details</p>
                               {invoice.issuerDetails.bankName && (
@@ -318,9 +322,6 @@ export default function Invoice() {
                               {invoice.issuerDetails.ifscCode && (
                                 <p className="text-xs text-neutral-600 font-mono">IFSC {invoice.issuerDetails.ifscCode}</p>
                               )}
-                              {invoice.issuerDetails.panNumber && (
-                                <p className="text-xs text-neutral-600 mt-1">PAN: {invoice.issuerDetails.panNumber}</p>
-                              )}
                             </div>
                           )}
                         </div>
@@ -329,14 +330,14 @@ export default function Invoice() {
                           <p className="text-sm font-semibold text-neutral-900">{invoice.toName}</p>
                           {invoice.toCity && <p className="text-sm text-neutral-500">{invoice.toCity}</p>}
                           {invoice.recipientDetails?.gstNumber && <p className="text-xs text-neutral-500 mt-1">GST: {invoice.recipientDetails.gstNumber}</p>}
+                          {invoice.recipientDetails?.panNumber && <p className="text-xs text-neutral-500">PAN: {invoice.recipientDetails.panNumber}</p>}
                           {invoice.recipientDetails?.address && (
                             <p className="text-xs text-neutral-600 mt-2 leading-relaxed whitespace-pre-wrap">{invoice.recipientDetails.address}</p>
                           )}
                           {(invoice.recipientDetails?.bankAccountName ||
                             invoice.recipientDetails?.bankAccountNumber ||
                             invoice.recipientDetails?.bankName ||
-                            invoice.recipientDetails?.ifscCode ||
-                            invoice.recipientDetails?.panNumber) && (
+                            invoice.recipientDetails?.ifscCode) && (
                             <div className="mt-3 pt-3 border-t border-neutral-200 space-y-1">
                               <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wide">Bank details</p>
                               {invoice.recipientDetails.bankName && (
@@ -350,9 +351,6 @@ export default function Invoice() {
                               )}
                               {invoice.recipientDetails.ifscCode && (
                                 <p className="text-xs text-neutral-600 font-mono">IFSC {invoice.recipientDetails.ifscCode}</p>
-                              )}
-                              {invoice.recipientDetails.panNumber && (
-                                <p className="text-xs text-neutral-600 mt-1">PAN: {invoice.recipientDetails.panNumber}</p>
                               )}
                             </div>
                           )}

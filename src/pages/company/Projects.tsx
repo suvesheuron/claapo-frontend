@@ -19,6 +19,7 @@ interface Project {
   startDate: string;
   endDate: string;
   status: 'draft' | 'open' | 'active' | 'completed' | 'cancelled';
+  budget?: number | null;
   budgetMin?: number;
   budgetMax?: number;
   locationCity?: string;
@@ -176,7 +177,8 @@ export default function Projects() {
                     const displayStatus = statusMap[project.status];
                     const cfg = statusConfig[displayStatus];
                     const peopleCount = project._count?.bookings ?? 0;
-                    const rawBudget = project.budgetMax ?? project.budgetMin ?? 0;
+                    // Support both old budget field and new budgetMin/budgetMax fields
+                    const rawBudget = project.budgetMax ?? project.budgetMin ?? project.budget ?? 0;
                     const budget = formatBudgetCompact(rawBudget);
 
                     return (

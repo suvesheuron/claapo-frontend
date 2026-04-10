@@ -22,11 +22,12 @@ interface Project {
   endDate: string;
   shootDates?: string[];
   shootLocations?: string[];
-  budgetMin?: number | null;
-  budgetMax?: number | null;
+  budget?: number | null;
   /** Snake_case from API */
   budget_min?: number | null;
   budget_max?: number | null;
+  budgetMin?: number | null;
+  budgetMax?: number | null;
   locationCity?: string | null;
   roles?: Array<{ id: string; roleName: string; qty: number }>;
 }
@@ -34,9 +35,13 @@ interface Project {
 /** Total budget from project (supports camelCase or snake_case from API) */
 function getProjectTotalBudget(p: Project | null | undefined): number {
   if (!p) return 0;
+  // Check all possible budget field names
   const max = p.budgetMax ?? p.budget_max;
   const min = p.budgetMin ?? p.budget_min;
-  const num = (typeof max === 'number' && max > 0 ? max : undefined) ?? (typeof min === 'number' && min > 0 ? min : undefined);
+  const single = p.budget;
+  const num = (typeof max === 'number' && max > 0 ? max : undefined) ?? 
+              (typeof min === 'number' && min > 0 ? min : undefined) ?? 
+              (typeof single === 'number' && single > 0 ? single : undefined);
   return typeof num === 'number' ? num : 0;
 }
 
