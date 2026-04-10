@@ -39,14 +39,8 @@ function validateFullName(v: string): string | undefined {
 
 function validatePhone(v: string): string | undefined {
   const digits = v.replace(/\D/g, '');
-  const core =
-    digits.length === 12 && digits.startsWith('91')
-      ? digits.slice(2)
-      : digits.length === 11 && digits.startsWith('0')
-        ? digits.slice(1)
-        : digits;
-  if (!core) return 'Phone number is required.';
-  if (!PHONE_RE.test(core)) return 'Enter a valid 10-digit Indian mobile number.';
+  if (!digits) return 'Phone number is required.';
+  if (!PHONE_RE.test(digits)) return 'Enter a valid 10-digit Indian mobile number.';
   return undefined;
 }
 
@@ -61,7 +55,7 @@ function validateEmail(v: string): string | undefined {
   return undefined;
 }
 
-function validateDailyRate(v: string): string | undefined {
+function validateDailyBudget(v: string): string | undefined {
   if (!v.trim()) return undefined; // optional
   const n = Number(v.replace(/[^0-9.]/g, ''));
   if (isNaN(n) || n <= 0) return 'Must be a positive number.';
@@ -101,7 +95,7 @@ export default function IndividualRegistration() {
   const [primaryRole,     setPrimaryRole]     = useState('');
   const [email,           setEmail]           = useState('');
   const [selectedGenres,  setSelectedGenres]  = useState<string[]>([]);
-  const [dailyRate,       setDailyRate]       = useState('');
+  const [dailyBudget,     setDailyBudget]     = useState('');
   const [location,        setLocation]        = useState('');
   const [password,        setPassword]        = useState('');
   const [showPassword,    setShowPassword]    = useState(false);
@@ -128,12 +122,12 @@ export default function IndividualRegistration() {
         case 'phone':       err = validatePhone(phone);        break;
         case 'primaryRole': err = validatePrimaryRole(primaryRole); break;
         case 'email':       err = validateEmail(email);        break;
-        case 'dailyRate':   err = validateDailyRate(dailyRate); break;
+        case 'dailyBudget': err = validateDailyBudget(dailyBudget); break;
         case 'password':    err = validatePassword(password);  break;
       }
       setFieldErrors((prev) => ({ ...prev, [field]: err }));
     },
-    [fullName, phone, primaryRole, email, dailyRate, password],
+    [fullName, phone, primaryRole, email, dailyBudget, password],
   );
 
   /* validate all on submit */
@@ -143,14 +137,14 @@ export default function IndividualRegistration() {
       phone:       validatePhone(phone),
       primaryRole: validatePrimaryRole(primaryRole),
       email:       validateEmail(email),
-      dailyRate:   validateDailyRate(dailyRate),
+      dailyBudget: validateDailyBudget(dailyBudget),
       password:    validatePassword(password),
     };
     if (!termsAccepted) errs.terms = 'You must accept the terms.';
     setFieldErrors(errs);
     setTouched({
       fullName: true, phone: true, primaryRole: true,
-      email: true, dailyRate: true, password: true, terms: true,
+      email: true, dailyBudget: true, password: true, terms: true,
     });
     return !Object.values(errs).some(Boolean);
   };
@@ -182,7 +176,7 @@ export default function IndividualRegistration() {
       console.log('[DEV] OTP send response:', otpRes);
 
       const [locationCity = '', locationState = ''] = location.trim().split(',').map((s) => s.trim());
-      const rateRupees = parseInt(dailyRate.replace(/[^0-9]/g, ''), 10) || undefined;
+      const rateRupees = parseInt(dailyBudget.replace(/[^0-9]/g, ''), 10) || undefined;
       const dailyBudgetPaise = rateRupees != null ? rateRupees * 100 : undefined;
 
       navigate('/otp-verify', {
@@ -264,15 +258,24 @@ export default function IndividualRegistration() {
             <label className="block text-[13px] text-neutral-700 mb-1.5 font-semibold">
               Phone <span className="text-red-500">*</span>
             </label>
-            <input
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              onBlur={() => handleBlur('phone')}
-              placeholder="+91 98765 43210"
-              disabled={loading}
-              className={`${inputBase} ${borderClass('phone')}`}
-            />
+            <div className="flex items-center gap-0">
+              <span className="inline-flex items-center px-3 py-3 rounded-l-xl border border-r-0 border-neutral-300 bg-neutral-50 text-neutral-700 text-[15px] font-medium select-none h-[46px]">
+                +91
+              </span>
+              <input
+                type="tel"
+                value={phone}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                  setPhone(val);
+                }}
+                onBlur={() => handleBlur('phone')}
+                placeholder="98765 43210"
+                disabled={loading}
+                maxLength={10}
+                className={`${inputBase} rounded-l-none border-l-0 ${borderClass('phone')}`}
+              />
+            </div>
             {fieldErrors.phone && <p className="text-xs text-red-500 mt-1.5">{fieldErrors.phone}</p>}
           </div>
           <div>
@@ -343,22 +346,22 @@ export default function IndividualRegistration() {
           </div>
         </div>
 
-        {/* Daily rate + Location */}
+        {/* Daily budget + Location */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-[13px] text-neutral-700 mb-1.5 font-semibold">
-              Daily rate <span className="text-neutral-400 font-normal">(₹/day)</span>
+              Daily budget <span className="text-neutral-400 font-normal">(₹/day)</span>
             </label>
             <input
               type="text"
-              value={dailyRate}
-              onChange={(e) => setDailyRate(e.target.value)}
-              onBlur={() => handleBlur('dailyRate')}
+              value={dailyBudget}
+              onChange={(e) => setDailyBudget(e.target.value)}
+              onBlur={() => handleBlur('dailyBudget')}
               placeholder="e.g., 45000"
               disabled={loading}
-              className={`${inputBase} ${borderClass('dailyRate')}`}
+              className={`${inputBase} ${borderClass('dailyBudget')}`}
             />
-            {fieldErrors.dailyRate && <p className="text-xs text-red-500 mt-1.5">{fieldErrors.dailyRate}</p>}
+            {fieldErrors.dailyBudget && <p className="text-xs text-red-500 mt-1.5">{fieldErrors.dailyBudget}</p>}
           </div>
           <div>
             <label className="block text-[13px] text-neutral-700 mb-1.5 font-semibold">

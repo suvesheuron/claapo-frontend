@@ -55,6 +55,14 @@ const itemVariants = {
   visible: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 300, damping: 24 } }
 } satisfies Record<string, any>;
 
+function parseBudgetToPaise(input: string): number | null {
+  const normalized = input.trim();
+  if (!normalized) return null;
+  const value = Number(normalized);
+  if (!Number.isFinite(value) || value < 0) return null;
+  return Math.round(value * 100);
+}
+
 export default function SearchFilter() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -71,6 +79,8 @@ export default function SearchFilter() {
   const [skillFilter, setSkillFilter] = useState('');
   const [startDate,  setStartDate]  = useState('');
   const [endDate,    setEndDate]    = useState('');
+  const [budgetMin,  setBudgetMin]  = useState('');
+  const [budgetMax,  setBudgetMax]  = useState('');
   const [page,       setPage]       = useState(1);
 
   const [crewResults,   setCrewResults]   = useState<CrewResult[]>([]);
@@ -83,7 +93,17 @@ export default function SearchFilter() {
 
   useEffect(() => { document.title = 'Find Crew & Vendors – Claapo'; }, []);
 
-  const doSearch = useCallback(async (q: string, loc: string, skill: string, sDate: string, eDate: string, pg: number, type: SearchType) => {
+  const doSearch = useCallback(async (
+    q: string,
+    loc: string,
+    skill: string,
+    sDate: string,
+    eDate: string,
+    minBudgetInr: string,
+    maxBudgetInr: string,
+    pg: number,
+    type: SearchType,
+  ) => {
     setLoading(true);
     setError(null);
     try {
@@ -91,6 +111,19 @@ export default function SearchFilter() {
         page: String(pg),
         limit: String(PAGE_SIZE),
       };
+
+      const rateMinPaise = parseBudgetToPaise(minBudgetInr);
+      const rateMaxPaise = parseBudgetToPaise(maxBudgetInr);
+      if (rateMinPaise != null && rateMaxPaise != null && rateMinPaise > rateMaxPaise) {
+        setCrewResults([]);
+        setVendorResults([]);
+        setTotalPages(1);
+        setLoading(false);
+        setError('Budget min cannot be greater than budget max.');
+        return;
+      }
+      if (rateMinPaise != null) params.rateMin = String(rateMinPaise);
+      if (rateMaxPaise != null) params.rateMax = String(rateMaxPaise);
 
       if (sDate) params.startDate = new Date(sDate).toISOString();
       if (eDate) params.endDate = new Date(eDate).toISOString();
@@ -123,12 +156,27 @@ export default function SearchFilter() {
   }, []);
 
   // Debounced search on input change
-  const triggerSearch = useCallback((q: string, loc: string, skill: string, sDate: string, eDate: string, pg: number, type: SearchType) => {
+  const triggerSearch = useCallback((
+    q: string,
+    loc: string,
+    skill: string,
+    sDate: string,
+    eDate: string,
+    minBudgetInr: string,
+    maxBudgetInr: string,
+    pg: number,
+    type: SearchType,
+  ) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => doSearch(q, loc, skill, sDate, eDate, pg, type), 300);
+    debounceRef.current = setTimeout(
+      () => doSearch(q, loc, skill, sDate, eDate, minBudgetInr, maxBudgetInr, pg, type),
+      300,
+    );
   }, [doSearch]);
 
-  useEffect(() => { triggerSearch(query, location, skillFilter, startDate, endDate, page, searchType); }, [query, location, skillFilter, startDate, endDate, page, searchType, triggerSearch]);
+  useEffect(() => {
+    triggerSearch(query, location, skillFilter, startDate, endDate, budgetMin, budgetMax, page, searchType);
+  }, [query, location, skillFilter, startDate, endDate, budgetMin, budgetMax, page, searchType, triggerSearch]);
 
   const handleSendRequest = (user: SelectedUser) => { setSelectedUser(user); setIsModalOpen(true); };
   const openChatProjectModal = (target: ChatTarget) => {
@@ -142,7 +190,17 @@ export default function SearchFilter() {
     setChatTarget(null);
   };
 
-  const switchType = (type: SearchType) => { setSearchType(type); setPage(1); setQuery(''); setLocation(''); setSkillFilter(''); setStartDate(''); setEndDate(''); };
+  const switchType = (type: SearchType) => {
+    setSearchType(type);
+    setPage(1);
+    setQuery('');
+    setLocation('');
+    setSkillFilter('');
+    setStartDate('');
+    setEndDate('');
+    setBudgetMin('');
+    setBudgetMax('');
+  };
 
   const results = searchType === 'crew' ? (crewResults ?? []) : (vendorResults ?? []);
   const resultCount = Array.isArray(results) ? results.length : 0;
@@ -185,11 +243,11 @@ export default function SearchFilter() {
                   {/* Search input */}
                   <div className="flex-1 min-w-[180px]">
                     <label className="block text-[11px] font-bold text-neutral-500 mb-2 uppercase tracking-widest">
-                      {searchType === 'crew' ? 'Skill / Name' : 'Vendor Name'}
+                      {searchType === 'crew' ? ' Name' : 'Vendor Name'}
                     </label>
                     <div className="relative group">
                       <input type="text" value={query} onChange={(e) => { setQuery(e.target.value); setPage(1); }}
-                        placeholder={searchType === 'crew' ? 'e.g. Director, DOP…' : 'e.g. Camera House…'}
+                        placeholder={searchType === 'crew' ? 'Search by name' : 'Search by name'}
                         className="w-full pl-10 pr-4 py-3 border border-neutral-200 rounded-2xl text-sm bg-neutral-50 placeholder-neutral-400 focus:bg-white focus:outline-none focus:border-[#3B5BDB]/40 focus:ring-4 focus:ring-[#3B5BDB]/10 transition-all duration-300" />
                       <FaMagnifyingGlass className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 text-sm group-focus-within:text-[#3B5BDB] transition-colors" />
                     </div>
@@ -230,6 +288,32 @@ export default function SearchFilter() {
                     </div>
                   )}
 
+                  {/* Budget Min */}
+                  <div className="flex-1 min-w-[140px]">
+                    <label className="block text-[11px] font-bold text-neutral-500 mb-2 uppercase tracking-widest">Budget Min</label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={budgetMin}
+                      onChange={(e) => { setBudgetMin(e.target.value); setPage(1); }}
+                      placeholder="e.g. 15000"
+                      className="w-full px-4 py-3 border border-neutral-200 rounded-2xl text-sm bg-neutral-50 focus:bg-white focus:outline-none focus:border-[#3B5BDB]/40 focus:ring-4 focus:ring-[#3B5BDB]/10 transition-all duration-300"
+                    />
+                  </div>
+
+                  {/* Budget Max */}
+                  <div className="flex-1 min-w-[140px]">
+                    <label className="block text-[11px] font-bold text-neutral-500 mb-2 uppercase tracking-widest">Budget Max </label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={budgetMax}
+                      onChange={(e) => { setBudgetMax(e.target.value); setPage(1); }}
+                      placeholder="e.g. 40000"
+                      className="w-full px-4 py-3 border border-neutral-200 rounded-2xl text-sm bg-neutral-50 focus:bg-white focus:outline-none focus:border-[#3B5BDB]/40 focus:ring-4 focus:ring-[#3B5BDB]/10 transition-all duration-300"
+                    />
+                  </div>
+
                   {/* Start Date */}
                   <div className="flex-1 min-w-[140px]">
                     <label className="block text-[11px] font-bold text-neutral-500 mb-2 uppercase tracking-widest">Start Date</label>
@@ -244,7 +328,7 @@ export default function SearchFilter() {
                       className="w-full px-4 py-3 border border-neutral-200 rounded-2xl text-sm bg-neutral-50 focus:bg-white focus:outline-none focus:border-[#3B5BDB]/40 focus:ring-4 focus:ring-[#3B5BDB]/10 transition-all duration-300" />
                   </div>
 
-                  <button type="button" onClick={() => { setQuery(''); setLocation(''); setSkillFilter(''); setStartDate(''); setEndDate(''); setPage(1); }}
+                  <button type="button" onClick={() => { setQuery(''); setLocation(''); setSkillFilter(''); setStartDate(''); setEndDate(''); setBudgetMin(''); setBudgetMax(''); setPage(1); }}
                     className="px-6 py-3 rounded-2xl border border-neutral-200 text-sm font-semibold text-neutral-600 hover:text-neutral-900 hover:border-neutral-300 hover:bg-neutral-100 hover:shadow-sm transition-all duration-300 whitespace-nowrap">
                     Reset
                   </button>
