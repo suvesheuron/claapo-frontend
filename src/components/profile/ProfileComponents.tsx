@@ -248,6 +248,7 @@ interface SocialLinksData {
   vimeoUrl?: string | null;
   linkedinUrl?: string | null;
   twitterUrl?: string | null;
+  website?: string | null;
 }
 
 interface SocialLinksProps {

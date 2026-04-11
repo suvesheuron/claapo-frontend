@@ -14,7 +14,7 @@ import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
   FaXmark, FaCircleCheck, FaTriangleExclamation, FaChevronLeft, FaChevronRight,
-  FaCalendarDay, FaBriefcase, FaIndianRupeeSign, FaRegMessage, FaUser,
+  FaCalendarDay, FaBriefcase, FaIndianRupeeSign, FaRegMessage, FaUser, FaLocationDot, FaPlus,
 } from 'react-icons/fa6';
 import { api, ApiException } from '../services/api';
 import { useApiQuery } from '../hooks/useApiQuery';
@@ -25,11 +25,17 @@ interface Project {
   status: string;
   startDate: string;
   endDate: string;
+  shootLocations?: string[];
 }
 
 interface ProjectsResponse {
   items: Project[];
   meta?: { total: number; page: number; limit: number };
+}
+
+interface ShootDateLocation {
+  date: string;
+  location: string;
 }
 
 type BookingRequestModalProps = {
@@ -225,10 +231,12 @@ export default function BookingRequestModal({
   const [rateOffered, setRateOffered] = useState('');
   const [message, setMessage] = useState('');
   const [bookingDates, setBookingDates] = useState<string[]>([]);
+  const [shootDateLocations, setShootDateLocations] = useState<ShootDateLocation[]>([]);
   const [selectedEquipmentId, setSelectedEquipmentId] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
+  const [locationInputs, setLocationInputs] = useState<Record<string, string>>({});
 
   const { data: projectsData, loading: projectsLoading, error: projectsError, refetch: refetchProjects } = useApiQuery<ProjectsResponse>(
     isOpen ? '/projects?limit=50' : null
@@ -274,9 +282,11 @@ export default function BookingRequestModal({
       setRateOffered('');
       setMessage('');
       setBookingDates([]);
+      setShootDateLocations([]);
       setError(null);
       setSent(false);
       setSelectedEquipmentId('');
+      setLocationInputs({});
     }
   }, [isOpen]);
 
@@ -319,6 +329,16 @@ export default function BookingRequestModal({
       setError('Please pick at least one date you want to hire this person for.');
       return;
     }
+
+    // Validate that all dates have locations assigned
+    const datesWithoutLocation = bookingDates.filter(
+      (date) => !shootDateLocations.find((pair) => pair.date === date)
+    );
+    if (datesWithoutLocation.length > 0) {
+      setError('Please specify a location for each selected date.');
+      return;
+    }
+
     setError(null);
     setLoading(true);
 
@@ -330,6 +350,7 @@ export default function BookingRequestModal({
         rateOffered: rateOffered ? Math.round(parseFloat(rateOffered.replace(/[^0-9.]/g, '')) * 100) : undefined,
         message: message.trim() || undefined,
         shootDates: bookingDates,
+        shootDateLocations: shootDateLocations,
       });
       toast.success('Booking request sent!');
       setSent(true);
@@ -499,7 +520,7 @@ export default function BookingRequestModal({
                   Dates needed <span className="text-red-500">*</span>
                 </label>
                 <p className="text-[11px] text-neutral-500 mb-2 leading-snug">
-                  Click any day to add or remove it. Only the selected dates will be marked unavailable on their calendar.
+                  Click any day to add or remove it. After selecting dates, specify the location for each date.
                 </p>
 
                 {!projectId ? (
@@ -510,7 +531,11 @@ export default function BookingRequestModal({
                 ) : (
                   <MultiDatePicker
                     selected={bookingDates}
-                    onChange={setBookingDates}
+                    onChange={(dates) => {
+                      setBookingDates(dates);
+                      // Remove location entries for dates that were deselected
+                      setShootDateLocations((prev) => prev.filter((pair) => dates.includes(pair.date)));
+                    }}
                     minDate={projectStartIso}
                     maxDate={projectEndIso}
                     disabled={loading}
@@ -518,25 +543,95 @@ export default function BookingRequestModal({
                 )}
 
                 {bookingDates.length > 0 && (
-                  <div className="mt-3 rounded-xl bg-brand-primary/5 border border-brand-primary/20 p-3">
-                    <p className="text-[10px] font-bold text-brand-primary uppercase tracking-wider mb-2">
-                      Hiring for {bookingDates.length} {bookingDates.length === 1 ? 'day' : 'days'}
+                  <div className="mt-3 space-y-3">
+                    <p className="text-[10px] font-bold text-brand-primary uppercase tracking-wider">
+                      Selected Dates & Locations
                     </p>
-                    <ul className="flex flex-wrap gap-1.5">
-                      {bookingDates.map((d) => (
-                        <li key={d} className="inline-flex items-center gap-1.5 text-[11px] font-semibold bg-white text-brand-primary px-2.5 py-1 rounded-lg border border-brand-primary/30 shadow-sm">
-                          {formatDate(d)}
-                          <button
-                            type="button"
-                            className="text-neutral-400 hover:text-red-500 transition-colors"
-                            onClick={() => setBookingDates((prev) => prev.filter((x) => x !== d))}
-                            aria-label={`Remove ${d}`}
-                          >
-                            <FaXmark className="w-2.5 h-2.5" />
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
+                    <div className="space-y-2">
+                      {bookingDates.map((date) => {
+                        const existingPair = shootDateLocations.find((pair) => pair.date === date);
+                        const hasLocation = !!existingPair;
+                        const inputValue = locationInputs[date] || '';
+
+                        return (
+                          <div key={date} className="rounded-xl bg-white border border-neutral-200 p-3">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-semibold text-neutral-900">{formatDate(date)}</span>
+                                {hasLocation ? (
+                                  <span className="text-[9px] bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-full font-semibold border border-emerald-200">✓ Location set</span>
+                                ) : (
+                                  <span className="text-[9px] bg-amber-50 text-amber-600 px-2 py-0.5 rounded-full font-semibold border border-amber-200">⚠ Location needed</span>
+                                )}
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setBookingDates((prev) => prev.filter((x) => x !== date))}
+                                className="text-neutral-400 hover:text-red-500 transition-colors"
+                                aria-label={`Remove ${date}`}
+                              >
+                                <FaXmark className="w-3 h-3" />
+                              </button>
+                            </div>
+
+                            {hasLocation ? (
+                              <div className="flex items-center gap-2">
+                                <FaLocationDot className="w-3 h-3 text-brand-primary shrink-0" />
+                                <span className="text-xs text-neutral-700 font-medium flex-1">{existingPair.location}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setShootDateLocations((prev) => prev.filter((p) => p.date !== date));
+                                  }}
+                                  className="text-[10px] text-brand-primary font-semibold hover:underline"
+                                >
+                                  Change
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="flex gap-2">
+                                <input
+                                  type="text"
+                                  value={inputValue}
+                                  onChange={(e) => setLocationInputs((prev) => ({ ...prev, [date]: e.target.value }))}
+                                  placeholder="e.g., Mumbai, Film City"
+                                  className="flex-1 px-3 py-2 border border-neutral-300 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary"
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      e.preventDefault();
+                                      if (inputValue.trim()) {
+                                        setShootDateLocations((prev) => [
+                                          ...prev,
+                                          { date, location: inputValue.trim() },
+                                        ]);
+                                        setLocationInputs((prev) => ({ ...prev, [date]: '' }));
+                                      }
+                                    }
+                                  }}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (inputValue.trim()) {
+                                      setShootDateLocations((prev) => [
+                                        ...prev,
+                                        { date, location: inputValue.trim() },
+                                      ]);
+                                      setLocationInputs((prev) => ({ ...prev, [date]: '' }));
+                                    }
+                                  }}
+                                  disabled={!inputValue.trim()}
+                                  className="px-3 py-2 bg-brand-primary text-white rounded-lg text-xs font-semibold hover:bg-brand-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                                >
+                                  <FaPlus className="w-2.5 h-2.5" />
+                                  Add
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
               </div>
