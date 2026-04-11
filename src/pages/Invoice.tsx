@@ -316,13 +316,13 @@ export default function Invoice() {
                           {invoice.recipientDetails?.address && (
                             <p className="text-xs text-neutral-600 mt-1 leading-relaxed whitespace-pre-wrap">{invoice.recipientDetails.address}</p>
                           )}
-                          {(invoice.recipientDetails?.gstNumber || invoice.recipientDetails?.panNumber) && (
-                            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-0.5">
-                              {invoice.recipientDetails.gstNumber && (
-                                <p className="text-xs text-neutral-500"><span className="text-neutral-400">GST:</span> <span className="font-mono text-neutral-700">{invoice.recipientDetails.gstNumber}</span></p>
-                              )}
+                          {(invoice.recipientDetails?.panNumber || invoice.recipientDetails?.gstNumber) && (
+                            <div className="mt-2 space-y-0.5">
                               {invoice.recipientDetails.panNumber && (
-                                <p className="text-xs text-neutral-500"><span className="text-neutral-400">PAN:</span> <span className="font-mono text-neutral-700">{invoice.recipientDetails.panNumber}</span></p>
+                                <p className="text-xs text-neutral-500"><span className="text-neutral-400">PAN:&nbsp;</span><span className="font-mono text-neutral-700">{invoice.recipientDetails.panNumber}</span></p>
+                              )}
+                              {invoice.recipientDetails.gstNumber && (
+                                <p className="text-xs text-neutral-500"><span className="text-neutral-400">GST:&nbsp;</span><span className="font-mono text-neutral-700">{invoice.recipientDetails.gstNumber}</span></p>
                               )}
                             </div>
                           )}
@@ -448,13 +448,13 @@ export default function Invoice() {
                                 <p className="text-xs text-neutral-600">{invoice.issuerDetails.phone}</p>
                               )}
                             </div>
-                            {(invoice.issuerDetails?.gstNumber || invoice.issuerDetails?.panNumber) && (
-                              <div className="mt-2 flex flex-wrap gap-x-4 gap-y-0.5">
-                                {invoice.issuerDetails.gstNumber && (
-                                  <p className="text-xs text-neutral-500"><span className="text-neutral-400">GST:</span> <span className="font-mono text-neutral-700">{invoice.issuerDetails.gstNumber}</span></p>
-                                )}
+                            {(invoice.issuerDetails?.panNumber || invoice.issuerDetails?.gstNumber) && (
+                              <div className="mt-2 space-y-0.5">
                                 {invoice.issuerDetails.panNumber && (
-                                  <p className="text-xs text-neutral-500"><span className="text-neutral-400">PAN:</span> <span className="font-mono text-neutral-700">{invoice.issuerDetails.panNumber}</span></p>
+                                  <p className="text-xs text-neutral-500"><span className="text-neutral-400">PAN:&nbsp;</span><span className="font-mono text-neutral-700">{invoice.issuerDetails.panNumber}</span></p>
+                                )}
+                                {invoice.issuerDetails.gstNumber && (
+                                  <p className="text-xs text-neutral-500"><span className="text-neutral-400">GST:&nbsp;</span><span className="font-mono text-neutral-700">{invoice.issuerDetails.gstNumber}</span></p>
                                 )}
                               </div>
                             )}

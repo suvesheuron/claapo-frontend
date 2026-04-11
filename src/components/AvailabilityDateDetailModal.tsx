@@ -3,22 +3,12 @@ import { Link } from 'react-router-dom';
 import { FaXmark, FaMessage, FaFileInvoice, FaLocationDot, FaCalendarDay } from 'react-icons/fa6';
 import type { BookingWithDetails, SlotStatus } from '../types/availability';
 import { formatPaise } from '../utils/currency';
+import { SLOT_STATUS_LABEL, SLOT_STATUS_BADGE } from '../utils/slotStatusStyles';
 
 const DEFAULT_BLOCK_REASONS = ['Personal', 'Already booked externally', 'Not available', 'Traveling', 'Other'];
 
-const STATUS_LABELS: Record<SlotStatus, string> = {
-  available: 'Available',
-  booked: 'Booked',
-  past_work: 'Completed',
-  blocked: 'Blocked',
-};
-
-const STATUS_BADGE_STYLE: Record<SlotStatus, string> = {
-  available: 'bg-[#DCFCE7] text-[#15803D]',
-  booked: 'bg-[#DBEAFE] text-[#1D4ED8]',
-  past_work: 'bg-[#DBEAFE] text-[#1D4ED8]',
-  blocked: 'bg-[#FEE2E2] text-[#B91C1C]',
-};
+const STATUS_LABELS = SLOT_STATUS_LABEL;
+const STATUS_BADGE_STYLE = SLOT_STATUS_BADGE;
 
 function formatDateRange(dateStrings: string[]): string {
   if (!dateStrings?.length) return '';
@@ -157,7 +147,7 @@ export default function AvailabilityDateDetailModal({
               </span>
             </div>
           ) : (
-            <p className="text-sm text-neutral-600">Available (no booking/block set for this date)</p>
+            <p className="text-sm text-neutral-600">Available (no booking set for this date)</p>
           )}
 
           {booking && (
@@ -268,7 +258,7 @@ export default function AvailabilityDateDetailModal({
 
           {isCompany && !booking ? (
             <p className="text-xs text-neutral-500">
-              You can view this crew or vendor member&apos;s calendar. Blocking is available only on their account.
+              You can view this crew or vendor member&apos;s calendar. Marking dates as Unavailable is available only on their account.
             </p>
           ) : null}
 
@@ -279,7 +269,7 @@ export default function AvailabilityDateDetailModal({
               disabled={blocking}
               className="w-full rounded-xl py-3 bg-[#3B5BDB] text-white text-sm font-semibold hover:bg-[#2f4ac2] disabled:opacity-60"
             >
-              {blocking ? 'Saving…' : 'Mark as available'}
+              {blocking ? 'Saving…' : 'Mark as Available'}
             </button>
           )}
 
@@ -292,14 +282,14 @@ export default function AvailabilityDateDetailModal({
                 disabled={blocking}
                 className="w-full rounded-xl py-3 bg-neutral-100 text-neutral-800 text-sm font-semibold hover:bg-neutral-200 disabled:opacity-60"
               >
-                Block this date
+                Mark as Unavailable
               </button>
             </>
           )}
 
           {canMutate && effectiveStatus === 'available' && blockMode && !booking && (
             <div className="space-y-3">
-              <p className="text-sm font-bold text-neutral-900">Why are you blocking?</p>
+              <p className="text-sm font-bold text-neutral-900">Why are you marking this as Unavailable?</p>
               <div className="space-y-2">
                 {reasonList.map((r) => (
                   <label
@@ -335,7 +325,7 @@ export default function AvailabilityDateDetailModal({
                   onClick={handleConfirmBlock}
                   className="flex-1 rounded-xl py-2.5 bg-[#3B5BDB] text-white text-sm font-semibold disabled:opacity-50"
                 >
-                  {blocking ? 'Saving…' : 'Confirm block'}
+                  {blocking ? 'Saving…' : 'Confirm'}
                 </button>
                 <button
                   type="button"

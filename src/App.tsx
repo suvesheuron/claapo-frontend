@@ -5,6 +5,8 @@ import ProtectedRoute from './components/ProtectedRoute';
 import { useAuth, type BackendRole } from './contexts/AuthContext';
 import { useRole, type UserRole } from './contexts/RoleContext';
 import { ChatUnreadProvider } from './contexts/ChatUnreadContext';
+import { NavBadgesProvider } from './contexts/NavBadgesContext';
+import { SidebarProvider } from './contexts/SidebarContext';
 
 const LandingPage = lazy(() => import('./pages/LandingPage'));
 const UserTypeSelect = lazy(() => import('./pages/UserTypeSelect'));
@@ -124,6 +126,8 @@ export default function App() {
   return (
     <BrowserRouter>
       <ChatUnreadProvider>
+        <NavBadgesProvider>
+        <SidebarProvider>
         <ScrollToTop />
         <Toaster position="top-center" toastOptions={{ duration: 4000 }} />
         <AuthRoleSyncBridge />
@@ -188,6 +192,8 @@ export default function App() {
           <Route path="/admin/invoices" element={<ProtectedRoute allowedRoles={['admin']}><AdminInvoices /></ProtectedRoute>} />
           </Routes>
         </Suspense>
+        </SidebarProvider>
+        </NavBadgesProvider>
       </ChatUnreadProvider>
     </BrowserRouter>
   );

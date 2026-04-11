@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { FaXmark, FaMessage, FaFileInvoice, FaCalendarDay } from 'react-icons/fa6';
 import type { BookingWithDetails, SlotStatus } from '../types/availability';
 import { formatPaise } from '../utils/currency';
+import { SLOT_STATUS_LABEL, SLOT_STATUS_BADGE } from '../utils/slotStatusStyles';
 
 export interface VendorFallbackBookingRow {
   id: string;
@@ -16,19 +17,8 @@ export interface VendorFallbackBookingRow {
   equipmentLabel?: string | null;
 }
 
-const STATUS_LABELS: Record<SlotStatus, string> = {
-  available: 'Available',
-  booked: 'Booked',
-  past_work: 'Completed',
-  blocked: 'Blocked',
-};
-
-const BADGE: Record<SlotStatus, string> = {
-  available:            'bg-[#DCFCE7] text-[#15803D]',
-  booked:               'bg-[#DBEAFE] text-[#1D4ED8]',
-  past_work:            'bg-[#DBEAFE] text-[#1D4ED8]',
-  blocked:              'bg-[#FEE2E2] text-[#B91C1C]',
-};
+const STATUS_LABELS = SLOT_STATUS_LABEL;
+const BADGE = SLOT_STATUS_BADGE;
 
 interface VendorCalendarDayPanelProps {
   selectedDate: string | null;
@@ -182,7 +172,7 @@ export default function VendorCalendarDayPanel({
 
         {effectiveStatus === 'blocked' && slot?.notes && (
           <div className="text-xs">
-            <p className="font-semibold text-neutral-500 mb-1">Block note</p>
+            <p className="font-semibold text-neutral-500 mb-1">Reason</p>
             <p className="text-neutral-800 border border-neutral-200 rounded-lg p-2 bg-white">{slot.notes}</p>
           </div>
         )}
@@ -194,7 +184,7 @@ export default function VendorCalendarDayPanel({
             disabled={saving}
             className="w-full rounded-xl py-2.5 bg-[#3B5BDB] text-white text-xs font-semibold hover:bg-[#2f4ac2] disabled:opacity-60"
           >
-            {saving ? 'Saving…' : 'Mark date available'}
+            {saving ? 'Saving…' : 'Mark as Available'}
           </button>
         )}
 
@@ -207,7 +197,7 @@ export default function VendorCalendarDayPanel({
                 disabled={saving}
                 className="w-full rounded-xl py-2.5 bg-neutral-100 text-neutral-800 text-xs font-semibold hover:bg-neutral-200 disabled:opacity-60"
               >
-                Block this date
+                Mark as Unavailable
               </button>
             ) : (
               <div className="space-y-2">

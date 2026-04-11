@@ -176,6 +176,12 @@ img, video, svg {
   animation: fadeInUp 0.6s ease-out forwards;
 }
 
+/* ── Dropdown / popover fade-in (used by DashboardHeader menus) ───── */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+
 /* ── Stats count animation ────────────────────────────────────────── */
 @keyframes countUp {
   from { opacity: 0; transform: scale(0.8); }

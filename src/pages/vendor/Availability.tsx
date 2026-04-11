@@ -10,11 +10,19 @@ import { useApiQuery } from '../../hooks/useApiQuery';
 import { vendorNavLinks } from '../../navigation/dashboardNav';
 import type { BookingWithDetails, SlotStatus } from '../../types/availability';
 import { parseAvailabilityMonthResponse } from '../../utils/parseAvailabilityResponse';
+import { useChatUnread } from '../../contexts/ChatUnreadContext';
+import {
+  CELL_STYLE,
+  CELL_STATUS_LABEL,
+  LEGEND_SWATCHES,
+  toCellStatus,
+  type CellStatus as CellStatusKey,
+} from '../../utils/slotStatusStyles';
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const DAYS   = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-type CellStatus = 'available' | 'booked' | 'completed' | 'blocked' | null;
+type CellStatus = CellStatusKey | null;
 
 interface AvailabilitySlot {
   date: string;
@@ -39,13 +47,6 @@ interface CalendarCell {
   notes?: string;
 }
 
-function toFrontendStatus(s: string): CellStatus {
-  if (s === 'past_work') return 'completed';
-  if (s === 'blocked')   return 'blocked';
-  if (s === 'booked')    return 'booked';
-  return 'available';
-}
-
 function buildCalendar(
   year: number,
   month: number,
@@ -65,7 +66,7 @@ function buildCalendar(
     if (slot) {
       cells.push({
         d: day, muted: false,
-        status:    toFrontendStatus(slot.status),
+        status:    toCellStatus(slot.status),
         project:   slot.projectTitle ?? undefined,
         company:   slot.companyName  ?? undefined,
         payment:   slot.rateOffered  ? `₹${(slot.rateOffered / 100).toLocaleString('en-IN')}` : undefined,
@@ -82,12 +83,7 @@ function buildCalendar(
   return cells;
 }
 
-const cellStyle: Record<string, string> = {
-  available: 'bg-[#DCFCE7] border-[#86EFAC] text-[#15803D]',
-  booked:    'bg-[#FDE68A] border-[#F59E0B] text-[#92400E]',
-  completed: 'bg-[#93C5FD] border-[#3B82F6] text-[#1E3A8A]',
-  blocked:   'bg-[#FEE2E2] border-[#FECACA] text-[#B91C1C]',
-};
+const cellStyle = CELL_STYLE;
 
 const VENDOR_BLOCK_REASONS = ['Equipment maintenance', 'Unavailable for rental', 'Reserved for other use', 'Other'];
 
@@ -136,10 +132,12 @@ export default function VendorAvailability() {
   const [apiSlots,    setApiSlots]    = useState<Record<string, AvailabilitySlot>>({});
   const [bookingDetails, setBookingDetails] = useState<Record<string, BookingWithDetails>>({});
   const [slotsLoading, setSlotsLoading] = useState(false);
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [saving,      setSaving]      = useState(false);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [cancelReason, setCancelReason] = useState('');
   const [cancelBusy, setCancelBusy] = useState(false);
+  const { unreadByProject, unreadDateByProject } = useChatUnread();
 
   const displayDate = new Date(BASE_YEAR, BASE_MONTH + monthOffset, 1);
   const monthLabel  = MONTHS[displayDate.getMonth()];
@@ -170,7 +168,7 @@ export default function VendorAvailability() {
     } catch {
       setBookingDetails({});
     }
-    finally { setSlotsLoading(false); }
+    finally { setSlotsLoading(false); setHasLoadedOnce(true); }
   }, [yearLabel, monthIndex]);
 
   useEffect(() => { loadSlots(); }, [loadSlots]);
@@ -373,50 +371,90 @@ export default function VendorAvailability() {
                 </div>
 
                 {/* Calendar grid */}
+                {!hasLoadedOnce && slotsLoading ? (
+                  <div className="grid grid-cols-7 gap-1" aria-busy="true" aria-label="Loading calendar">
+                    {Array.from({ length: 42 }).map((_, i) => (
+                      <div
+                        key={i}
+                        className="min-h-[56px] sm:min-h-[64px] rounded-xl bg-gradient-to-br from-neutral-100 to-neutral-50 border border-neutral-100 animate-pulse"
+                        style={{ animationDelay: `${(i % 7) * 60}ms` }}
+                      />
+                    ))}
+                  </div>
+                ) : (
                 <div className="grid grid-cols-7 gap-1">
                   {calendarDays.map((cell, i) => {
                     const ds = !cell.muted ? getDateStr(cell.d) : '';
                     const isSelected = !!ds && detailDate === ds;
+                    const cellProjectId = ds ? bookingDetails[ds]?.projectId : undefined;
+                    const cellUnread = cellProjectId ? (unreadByProject[cellProjectId] ?? 0) : 0;
+                    const focusUnread = !cell.muted && cellProjectId
+                      && unreadDateByProject[cellProjectId] === ds
+                      ? cellUnread
+                      : 0;
+                    const secondaryUnread = !cell.muted && !focusUnread
+                      && cellProjectId
+                      && (unreadByProject[cellProjectId] ?? 0) > 0
+                      && unreadDateByProject[cellProjectId] !== ds;
                     return (
                       <div
                         key={i}
                         role={cell.muted ? undefined : 'button'}
                         tabIndex={cell.muted ? undefined : 0}
                         onClick={() => openDay(cell)}
-                        title={cell.notes ? `Blocked: ${cell.notes}` : cell.equipment ?? undefined}
+                        title={cell.notes ? `Unavailable: ${cell.notes}` : cell.equipment ?? undefined}
                         className={`
-                          rounded-xl border text-center p-1.5 min-h-[56px] sm:min-h-[64px] select-none flex flex-col items-center justify-center gap-0.5
+                          relative rounded-xl border text-center p-1.5 min-h-[56px] sm:min-h-[64px] select-none flex flex-col items-center justify-center gap-0.5
                           ${cell.muted
                             ? 'bg-white border-neutral-100 text-neutral-300 cursor-default'
                             : `${cellStyle[cell.status ?? 'available'] ?? cellStyle.available} cal-cell cursor-pointer`
                           }
                           ${isSelected ? 'ring-2 ring-[#3B5BDB] ring-offset-1' : ''}
+                          ${focusUnread ? 'ring-2 ring-[#F40F02]/70 ring-offset-1' : ''}
+                          ${secondaryUnread ? 'ring-1 ring-[#F40F02]/30' : ''}
                         `}
                       >
+                        {focusUnread > 0 && (
+                          <span
+                            className="absolute -top-1 -right-1 flex items-center justify-center"
+                            title={`${focusUnread} new message${focusUnread === 1 ? '' : 's'}`}
+                            aria-label={`${focusUnread} unread messages`}
+                          >
+                            <span className="absolute inline-flex h-4 w-4 rounded-full bg-[#F40F02] opacity-70 animate-ping" />
+                            <span className="relative inline-flex h-4 w-4 rounded-full bg-[#F40F02] text-white text-[8px] font-bold items-center justify-center shadow-md">
+                              {focusUnread > 9 ? '9+' : focusUnread}
+                            </span>
+                          </span>
+                        )}
+                        {secondaryUnread && (
+                          <span
+                            className="absolute top-1 right-1 flex items-center justify-center pointer-events-none"
+                            aria-hidden
+                          >
+                            <span className="absolute inline-flex h-1.5 w-1.5 rounded-full bg-[#F40F02] opacity-40 animate-ping" style={{ animationDuration: '2.4s' }} />
+                            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#F40F02]/70" />
+                          </span>
+                        )}
                         <span className="text-xs font-bold leading-none">{cell.d}</span>
                         {!cell.muted && cell.status && (
                           <span className="text-[9px] leading-tight truncate w-full font-medium opacity-80">
-                            {cell.status === 'available' && 'Free'}
-                            {cell.status === 'booked'    && (cell.project?.split(' ')[0] ?? 'Ongoing')}
-                            {cell.status === 'completed' && (cell.project?.split(' ')[0] ?? 'Done')}
-                            {cell.status === 'blocked'   && (cell.notes ? cell.notes.slice(0, 9) + (cell.notes.length > 9 ? '…' : '') : 'Unavailable')}
+                            {cell.status === 'available' && CELL_STATUS_LABEL.available}
+                            {cell.status === 'booked'    && (cell.project?.split(' ')[0] ?? CELL_STATUS_LABEL.booked)}
+                            {cell.status === 'completed' && (cell.project?.split(' ')[0] ?? CELL_STATUS_LABEL.completed)}
+                            {cell.status === 'blocked'   && (cell.notes ? cell.notes.slice(0, 9) + (cell.notes.length > 9 ? '…' : '') : CELL_STATUS_LABEL.blocked)}
                           </span>
                         )}
                       </div>
                     );
                   })}
                 </div>
+                )}
 
                 {/* Legend */}
                 <div className="flex flex-wrap gap-5 mt-5 pt-4 border-t border-neutral-100">
-                  {[
-                    { color: 'bg-[#22C55E]',   label: 'Available' },
-                    { color: 'bg-[#F59E0B]',   label: 'Ongoing' },
-                    { color: 'bg-[#3B82F6]',   label: 'Completed' },
-                    { color: 'bg-[#EF4444]', label: 'Unavailable' },
-                  ].map(({ color, label }) => (
-                    <div key={label} className="flex items-center gap-2">
-                      <div className={`w-3 h-3 rounded-full ${color}`} />
+                  {LEGEND_SWATCHES.map(({ key, swatch, label }) => (
+                    <div key={key} className="flex items-center gap-2">
+                      <div className={`w-4 h-4 rounded ${swatch}`} />
                       <span className="text-xs text-neutral-500">{label}</span>
                     </div>
                   ))}

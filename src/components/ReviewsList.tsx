@@ -1,16 +1,19 @@
+import { useEffect } from 'react';
 import { FaStar, FaTriangleExclamation } from 'react-icons/fa6';
 import { useApiQuery } from '../hooks/useApiQuery';
 import StarRating from './StarRating';
 
 interface Reviewer {
   id: string;
-  displayName: string;
+  individualProfile?: { displayName?: string | null } | null;
+  companyProfile?: { companyName?: string | null } | null;
+  vendorProfile?: { companyName?: string | null } | null;
 }
 
 interface Review {
   id: string;
   rating: number;
-  text: string;
+  text: string | null;
   createdAt: string;
   reviewer: Reviewer;
 }
@@ -21,14 +24,28 @@ interface ReviewsResponse {
 
 interface ReviewsListProps {
   userId: string;
+  /** Bump this value to force a refetch (e.g. after a new review is submitted). */
+  refreshKey?: number;
 }
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
-export default function ReviewsList({ userId }: ReviewsListProps) {
-  const { data, loading, error } = useApiQuery<ReviewsResponse>(`/reviews/user/${userId}`);
+function reviewerLabel(r: Reviewer): string {
+  return (
+    r.individualProfile?.displayName ??
+    r.companyProfile?.companyName ??
+    r.vendorProfile?.companyName ??
+    'Anonymous'
+  );
+}
+
+export default function ReviewsList({ userId, refreshKey = 0 }: ReviewsListProps) {
+  const { data, loading, error, refetch } = useApiQuery<ReviewsResponse>(`/reviews/user/${userId}`);
+  useEffect(() => {
+    if (refreshKey > 0) refetch();
+  }, [refreshKey, refetch]);
   const reviews = data?.items ?? [];
 
   const avgRating =
@@ -91,7 +108,7 @@ export default function ReviewsList({ userId }: ReviewsListProps) {
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-3">
               <StarRating rating={review.rating} size="sm" />
-              <span className="text-xs font-semibold text-neutral-700">{review.reviewer.displayName}</span>
+              <span className="text-xs font-semibold text-neutral-700">{reviewerLabel(review.reviewer)}</span>
             </div>
             <span className="text-[11px] text-neutral-400">{formatDate(review.createdAt)}</span>
           </div>

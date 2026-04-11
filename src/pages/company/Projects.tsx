@@ -1,6 +1,9 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FaPlus, FaEye, FaTriangleExclamation, FaBan, FaFolder, FaCalendar } from 'react-icons/fa6';
+import {
+  FaPlus, FaEye, FaTriangleExclamation, FaBan, FaFolder,
+  FaMagnifyingGlass, FaLocationDot, FaCalendarDays, FaUsers, FaIndianRupeeSign,
+} from 'react-icons/fa6';
 import DashboardHeader from '../../components/DashboardHeader';
 import DashboardSidebar from '../../components/DashboardSidebar';
 import AppFooter from '../../components/AppFooter';
@@ -8,7 +11,6 @@ import { useApiQuery } from '../../hooks/useApiQuery';
 import { formatBudgetCompact } from '../../utils/currency';
 import { api, ApiException } from '../../services/api';
 import toast from 'react-hot-toast';
-import { useState } from 'react';
 import { companyNavLinks } from '../../navigation/dashboardNav';
 
 interface ProjectRole { id: string; roleName: string; qty: number }
@@ -32,7 +34,8 @@ interface ProjectsResponse {
   meta: { page: number; limit: number; total: number };
 }
 
-type DisplayStatus = 'active' | 'planning' | 'in-progress' | 'completed' | 'cancelled';
+type DisplayStatus = 'active' | 'planning' | 'completed' | 'cancelled';
+type FilterKey = 'all' | DisplayStatus;
 
 const statusMap: Record<Project['status'], DisplayStatus> = {
   draft:     'planning',
@@ -42,12 +45,51 @@ const statusMap: Record<Project['status'], DisplayStatus> = {
   cancelled: 'cancelled',
 };
 
-const statusConfig: Record<DisplayStatus, { bg: string; text: string; label: string; accent: string }> = {
-  active:    { bg: 'bg-blue-50', text: 'text-blue-700', label: 'Active', accent: 'border-l-blue-500' },
-  planning:  { bg: 'bg-neutral-100', text: 'text-neutral-600', label: 'Planning', accent: 'border-l-neutral-400' },
-  'in-progress': { bg: 'bg-amber-50', text: 'text-amber-700', label: 'In Progress', accent: 'border-l-amber-500' },
-  completed: { bg: 'bg-emerald-50', text: 'text-emerald-700', label: 'Completed', accent: 'border-l-emerald-500' },
-  cancelled: { bg: 'bg-red-50', text: 'text-red-700', label: 'Cancelled', accent: 'border-l-red-400' },
+/**
+ * Restrained color system — 4 tones total:
+ *   • Blue (primary / active)
+ *   • Neutral (default / planning)
+ *   • Emerald (completed / success)
+ *   • Red (cancelled / danger)
+ *
+ * Each status uses the same card shell; only the left-border accent,
+ * the pill dot color, and the pill text color change.
+ */
+const statusConfig: Record<DisplayStatus, {
+  label: string;
+  pillBg: string;
+  pillText: string;
+  dot: string;
+  border: string;
+}> = {
+  active: {
+    label:    'Active',
+    pillBg:   'bg-blue-50',
+    pillText: 'text-[#3B5BDB]',
+    dot:      'bg-[#3B5BDB]',
+    border:   'border-l-[#3B5BDB]',
+  },
+  planning: {
+    label:    'Planning',
+    pillBg:   'bg-neutral-100',
+    pillText: 'text-neutral-600',
+    dot:      'bg-neutral-400',
+    border:   'border-l-neutral-300',
+  },
+  completed: {
+    label:    'Completed',
+    pillBg:   'bg-emerald-50',
+    pillText: 'text-emerald-700',
+    dot:      'bg-emerald-500',
+    border:   'border-l-emerald-500',
+  },
+  cancelled: {
+    label:    'Cancelled',
+    pillBg:   'bg-red-50',
+    pillText: 'text-red-600',
+    dot:      'bg-red-500',
+    border:   'border-l-red-400',
+  },
 };
 
 function formatDateRange(start: string, end: string): string {
@@ -66,10 +108,10 @@ export default function Projects() {
   const { data, loading, error, refetch } = useApiQuery<ProjectsResponse>('/projects?limit=50');
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [cancelActionError, setCancelActionError] = useState<string | null>(null);
+  const [filter, setFilter] = useState<FilterKey>('all');
+  const [query, setQuery] = useState('');
 
-  useEffect(() => {
-    document.title = 'Projects – Claapo';
-  }, []);
+  useEffect(() => { document.title = 'Projects – Claapo'; }, []);
 
   // Refetch periodically so people count and budget stay up to date
   useEffect(() => {
@@ -93,6 +135,40 @@ export default function Projects() {
 
   const projects = data?.items ?? [];
 
+  /* ─── Summary stats (computed, not fetched) ─── */
+  const stats = useMemo(() => {
+    let active = 0, planning = 0, completed = 0, cancelled = 0, totalBudget = 0;
+    for (const p of projects) {
+      const d = statusMap[p.status];
+      if (d === 'active')    active++;
+      if (d === 'planning')  planning++;
+      if (d === 'completed') completed++;
+      if (d === 'cancelled') cancelled++;
+      totalBudget += (p.budgetMax ?? p.budgetMin ?? p.budget ?? 0);
+    }
+    return { total: projects.length, active, planning, completed, cancelled, totalBudget };
+  }, [projects]);
+
+  /* ─── Filtered view ─── */
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return projects.filter((p) => {
+      if (filter !== 'all' && statusMap[p.status] !== filter) return false;
+      if (!q) return true;
+      return p.title.toLowerCase().includes(q)
+          || (p.locationCity ?? '').toLowerCase().includes(q);
+    });
+  }, [projects, filter, query]);
+
+  /* ─── Filter tab definitions ─── */
+  const tabs: { key: FilterKey; label: string; count: number }[] = [
+    { key: 'all',       label: 'All',       count: stats.total     },
+    { key: 'active',    label: 'Active',    count: stats.active    },
+    { key: 'planning',  label: 'Planning',  count: stats.planning  },
+    { key: 'completed', label: 'Completed', count: stats.completed },
+    { key: 'cancelled', label: 'Cancelled', count: stats.cancelled },
+  ];
+
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-[#F8F9FB] w-full">
       <DashboardHeader />
@@ -102,127 +178,246 @@ export default function Projects() {
 
         <main className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
           <div className="flex-1 min-h-0 overflow-auto">
-            <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-6 xl:px-8 py-6">
+            <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-7">
 
-              <div className="flex items-center justify-between mb-6">
+              {/* ═══════════ PAGE HEADER ═══════════ */}
+              <div className="flex flex-wrap items-start justify-between gap-4 mb-7">
                 <div>
-                  <div className="flex items-center gap-2.5 mb-1">
-                    <div className="w-1 h-6 rounded-full bg-[#3B5BDB]" />
-                    <h1 className="text-xl font-bold text-neutral-900 tracking-tight">Projects</h1>
+                  <div className="flex items-center gap-3 mb-1.5">
+                    <span className="w-1 h-7 rounded-full bg-[#3B5BDB]" />
+                    <h1 className="text-2xl font-bold text-neutral-900 tracking-tight">Projects</h1>
+                    {!loading && (
+                      <span className="inline-flex items-center h-6 px-2.5 rounded-full bg-neutral-100 text-[11px] font-semibold text-neutral-600 tabular-nums">
+                        {stats.total}
+                      </span>
+                    )}
                   </div>
-                  <p className="text-sm text-neutral-500 ml-3.5">Manage your production projects and team</p>
+                  <p className="text-sm text-neutral-500 ml-4">
+                    Manage your production projects, crew, and budgets.
+                  </p>
                 </div>
                 <Link
                   to="/dashboard/projects/new"
-                  className="rounded-xl px-5 py-2.5 bg-[#3B5BDB] text-white text-sm font-semibold hover:bg-[#2f4ac2] flex items-center gap-2 transition-all shadow-sm shadow-blue-500/20 hover:shadow-md hover:shadow-blue-500/25"
+                  className="inline-flex items-center gap-2 rounded-xl h-11 px-5 bg-[#3B5BDB] text-white text-sm font-semibold hover:bg-[#2f4ac2] transition-all shadow-sm shadow-[#3B5BDB]/25 hover:shadow-md hover:-translate-y-0.5"
                 >
                   <FaPlus className="w-3 h-3" />
-                  <span className="hidden sm:inline">New Project</span>
+                  New Project
                 </Link>
               </div>
 
-              {/* Error state */}
+              {/* ═══════════ STATS ROW ═══════════ */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                {[
+                  { label: 'Total',     value: stats.total,                     accent: 'bg-[#EEF4FF] text-[#3B5BDB]',  Icon: FaFolder        },
+                  { label: 'Active',    value: stats.active,                    accent: 'bg-[#EEF4FF] text-[#3B5BDB]',  Icon: FaCalendarDays  },
+                  { label: 'Completed', value: stats.completed,                 accent: 'bg-emerald-50 text-emerald-600', Icon: FaUsers       },
+                  { label: 'Total budget', value: formatBudgetCompact(stats.totalBudget), accent: 'bg-neutral-100 text-neutral-700', Icon: FaIndianRupeeSign },
+                ].map(({ label, value, accent, Icon }) => (
+                  <div key={label} className="bg-white border border-neutral-200/70 rounded-2xl px-4 py-4 shadow-sm">
+                    <div className="flex items-center justify-between">
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">{label}</p>
+                        <p className="text-xl font-bold text-neutral-900 tabular-nums mt-1 truncate">{value}</p>
+                      </div>
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${accent}`}>
+                        <Icon className="text-sm" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* ═══════════ TOOLBAR: TABS + SEARCH ═══════════ */}
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 mb-5">
+                {/* Filter tabs */}
+                <div className="flex items-center gap-1 bg-white border border-neutral-200/70 rounded-xl p-1 shadow-sm overflow-x-auto scrollbar-hide">
+                  {tabs.map((t) => {
+                    const active = filter === t.key;
+                    return (
+                      <button
+                        key={t.key}
+                        type="button"
+                        onClick={() => setFilter(t.key)}
+                        className={`inline-flex items-center gap-2 h-9 px-3.5 rounded-lg text-[12.5px] font-semibold whitespace-nowrap transition-all duration-150 ${
+                          active
+                            ? 'bg-[#3B5BDB] text-white shadow-sm shadow-[#3B5BDB]/20'
+                            : 'text-neutral-500 hover:text-neutral-800 hover:bg-neutral-100'
+                        }`}
+                      >
+                        {t.label}
+                        <span
+                          className={`inline-flex items-center justify-center min-w-[20px] h-[18px] px-1.5 rounded-full text-[10px] font-bold tabular-nums ${
+                            active ? 'bg-white/20 text-white' : 'bg-neutral-100 text-neutral-500'
+                          }`}
+                        >
+                          {t.count}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Search */}
+                <div className="relative lg:w-72">
+                  <FaMagnifyingGlass className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 text-xs pointer-events-none" />
+                  <input
+                    type="text"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="Search by title or city"
+                    className="w-full h-11 pl-9 pr-3 rounded-xl bg-white border border-neutral-200/70 shadow-sm text-sm text-neutral-700 placeholder:text-neutral-400 focus:outline-none focus:border-[#3B5BDB] focus:ring-4 focus:ring-[#3B5BDB]/10 transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* ═══════════ ERROR STATE ═══════════ */}
               {error && (
                 <div className="flex items-center gap-3 rounded-2xl bg-red-50 border border-red-200/80 p-4 mb-5">
-                  <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center shrink-0">
+                  <div className="w-9 h-9 rounded-lg bg-red-100 flex items-center justify-center shrink-0">
                     <FaTriangleExclamation className="text-red-500 text-xs" />
                   </div>
-                  <p className="text-sm text-red-700">{error}</p>
-                  <button onClick={refetch} className="ml-auto text-xs text-red-600 font-semibold hover:underline">Retry</button>
+                  <p className="text-sm text-red-700 flex-1">{error}</p>
+                  <button onClick={refetch} className="text-xs text-red-600 font-semibold hover:underline">Retry</button>
                 </div>
               )}
 
-              {/* Loading skeleton */}
+              {/* ═══════════ LOADING SKELETON ═══════════ */}
               {loading && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="rounded-2xl bg-white border border-neutral-200/80 p-5 animate-pulse shadow-sm">
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="w-9 h-9 bg-neutral-100 rounded-xl" />
-                        <div className="flex-1">
-                          <div className="h-4 bg-neutral-200 rounded-lg w-3/4 mb-2" />
-                          <div className="h-3 bg-neutral-100 rounded-lg w-1/2" />
+                  {[1, 2, 3, 4, 5, 6].map((i) => (
+                    <div key={i} className="rounded-2xl bg-white border border-neutral-200/70 p-5 animate-pulse shadow-sm">
+                      <div className="flex items-start gap-3 mb-4">
+                        <div className="w-10 h-10 bg-neutral-100 rounded-xl" />
+                        <div className="flex-1 space-y-2">
+                          <div className="h-4 bg-neutral-200 rounded w-3/4" />
+                          <div className="h-3 bg-neutral-100 rounded w-1/2" />
                         </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-2 mb-4">
-                        {[1, 2].map((j) => <div key={j} className="h-14 bg-neutral-50 rounded-xl border border-neutral-100" />)}
+                      <div className="flex gap-2 mb-4">
+                        <div className="h-12 bg-neutral-50 rounded-xl flex-1 border border-neutral-100" />
+                        <div className="h-12 bg-neutral-50 rounded-xl flex-1 border border-neutral-100" />
+                        <div className="h-12 bg-neutral-50 rounded-xl flex-1 border border-neutral-100" />
                       </div>
-                      <div className="h-9 bg-neutral-100 rounded-xl" />
+                      <div className="h-10 bg-neutral-100 rounded-xl" />
                     </div>
                   ))}
                 </div>
               )}
 
-              {/* Empty state */}
+              {/* ═══════════ EMPTY STATE ═══════════ */}
               {!loading && !error && projects.length === 0 && (
-                <div className="rounded-2xl bg-white border border-neutral-200/80 p-16 text-center shadow-sm">
-                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center mx-auto mb-5 border border-blue-100/60">
+                <div className="rounded-2xl bg-white border border-neutral-200/70 p-16 text-center shadow-sm">
+                  <div className="w-16 h-16 rounded-2xl bg-[#EEF4FF] flex items-center justify-center mx-auto mb-5">
                     <FaFolder className="text-[#3B5BDB] text-2xl" />
                   </div>
                   <h3 className="text-lg font-bold text-neutral-900 mb-2">No projects yet</h3>
-                  <p className="text-sm text-neutral-500 mb-6 max-w-xs mx-auto leading-relaxed">Create your first project to start managing productions and booking crew</p>
+                  <p className="text-sm text-neutral-500 mb-6 max-w-xs mx-auto leading-relaxed">
+                    Create your first project to start managing productions and booking crew.
+                  </p>
                   <Link
                     to="/dashboard/projects/new"
-                    className="inline-flex items-center gap-2 rounded-xl px-6 py-3 bg-[#3B5BDB] text-white text-sm font-bold hover:bg-[#2f4ac2] transition-all shadow-sm shadow-blue-500/20 hover:shadow-md"
+                    className="inline-flex items-center gap-2 rounded-xl px-6 py-3 bg-[#3B5BDB] text-white text-sm font-bold hover:bg-[#2f4ac2] transition-all shadow-sm shadow-[#3B5BDB]/25"
                   >
                     <FaPlus className="w-3 h-3" /> Create Project
                   </Link>
                 </div>
               )}
 
-              {/* Project cards */}
-              {!loading && projects.length > 0 && (
+              {/* ═══════════ NO-MATCH STATE (filter/search returned nothing) ═══════════ */}
+              {!loading && !error && projects.length > 0 && filtered.length === 0 && (
+                <div className="rounded-2xl bg-white border border-dashed border-neutral-200 p-12 text-center">
+                  <div className="w-12 h-12 rounded-2xl bg-neutral-100 flex items-center justify-center mx-auto mb-4">
+                    <FaMagnifyingGlass className="text-neutral-400 text-base" />
+                  </div>
+                  <p className="text-sm font-semibold text-neutral-700 mb-1">No projects match your filter</p>
+                  <p className="text-xs text-neutral-400 mb-4">Try a different search or tab.</p>
+                  <button
+                    type="button"
+                    onClick={() => { setFilter('all'); setQuery(''); }}
+                    className="text-xs text-[#3B5BDB] font-semibold hover:underline"
+                  >
+                    Clear filters
+                  </button>
+                </div>
+              )}
+
+              {/* ═══════════ PROJECT CARDS ═══════════ */}
+              {!loading && filtered.length > 0 && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {projects.map((project) => {
+                  {filtered.map((project) => {
                     const displayStatus = statusMap[project.status];
                     const cfg = statusConfig[displayStatus];
                     const peopleCount = project._count?.bookings ?? 0;
-                    // Support both old budget field and new budgetMin/budgetMax fields
+                    const roleCount = project.roles?.length ?? 0;
                     const rawBudget = project.budgetMax ?? project.budgetMin ?? project.budget ?? 0;
                     const budget = formatBudgetCompact(rawBudget);
+                    const cancellable = project.status !== 'completed' && project.status !== 'cancelled';
 
                     return (
                       <div
                         key={project.id}
-                        className={`rounded-2xl bg-white border border-neutral-200/80 border-l-[3px] ${cfg.accent} p-5 hover:shadow-md hover:border-neutral-300/80 transition-all duration-200 flex flex-col shadow-sm group`}
+                        className={`group relative rounded-2xl bg-white border border-neutral-200/70 border-l-[3px] ${cfg.border} p-5 flex flex-col shadow-sm hover:shadow-lg hover:-translate-y-0.5 hover:border-neutral-300 transition-all duration-200`}
                       >
-                        <div className="flex items-start justify-between gap-2 mb-4">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2.5 mb-1.5">
-                              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center shrink-0 border border-blue-100/40">
-                                <FaCalendar className="text-[#3B5BDB] text-xs" />
-                              </div>
-                              <h3 className="text-sm font-bold text-neutral-900 truncate group-hover:text-[#3B5BDB] transition-colors">{project.title}</h3>
+                        {/* Header: icon + title + status pill */}
+                        <div className="flex items-start justify-between gap-3 mb-4">
+                          <div className="flex items-start gap-3 min-w-0 flex-1">
+                            <div className="w-10 h-10 rounded-xl bg-[#EEF4FF] flex items-center justify-center shrink-0">
+                              <FaFolder className="text-[#3B5BDB] text-sm" />
                             </div>
-                            <p className="text-xs text-neutral-400 pl-[42px]">{formatDateRange(project.startDate, project.endDate)}</p>
-                            {project.locationCity && (
-                              <p className="text-xs text-neutral-400 pl-[42px] mt-0.5">{project.locationCity}</p>
-                            )}
+                            <div className="min-w-0 flex-1">
+                              <h3 className="text-[14px] font-bold text-neutral-900 truncate group-hover:text-[#3B5BDB] transition-colors">
+                                {project.title}
+                              </h3>
+                              <div className="flex items-center gap-1 mt-1 text-[11px] text-neutral-500 truncate">
+                                <FaCalendarDays className="text-neutral-300 text-[10px] shrink-0" />
+                                <span className="truncate">{formatDateRange(project.startDate, project.endDate)}</span>
+                              </div>
+                              {project.locationCity && (
+                                <div className="flex items-center gap-1 mt-0.5 text-[11px] text-neutral-400 truncate">
+                                  <FaLocationDot className="text-neutral-300 text-[10px] shrink-0" />
+                                  <span className="truncate">{project.locationCity}</span>
+                                </div>
+                              )}
+                            </div>
                           </div>
-                          <span className={`text-[11px] px-2.5 py-1 rounded-full font-semibold shrink-0 ${cfg.bg} ${cfg.text}`}>
+                          <span className={`inline-flex items-center gap-1.5 h-6 px-2.5 rounded-full text-[10.5px] font-bold tracking-wide shrink-0 ${cfg.pillBg} ${cfg.pillText}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
                             {cfg.label}
                           </span>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-2 mb-4">
-                          <div className="rounded-xl bg-neutral-50/80 border border-neutral-100 p-3 text-center">
+                        {/* Stats strip — 3 neutral tiles */}
+                        <div className="grid grid-cols-3 gap-2 mb-4">
+                          <div className="rounded-xl bg-neutral-50 border border-neutral-100 px-2 py-2.5 text-center">
                             <p className="text-sm font-bold text-neutral-900 tabular-nums">{peopleCount}</p>
-                            <p className="text-[10px] text-neutral-400 font-medium mt-0.5 uppercase tracking-wide">People</p>
+                            <p className="text-[9.5px] text-neutral-400 font-semibold mt-0.5 uppercase tracking-wider">People</p>
                           </div>
-                          <div className="rounded-xl bg-neutral-50/80 border border-neutral-100 p-3 text-center">
-                            <p className="text-sm font-bold text-neutral-900 truncate tabular-nums">{budget}</p>
-                            <p className="text-[10px] text-neutral-400 font-medium mt-0.5 uppercase tracking-wide">Budget</p>
+                          <div className="rounded-xl bg-neutral-50 border border-neutral-100 px-2 py-2.5 text-center">
+                            <p className="text-sm font-bold text-neutral-900 tabular-nums">{roleCount}</p>
+                            <p className="text-[9.5px] text-neutral-400 font-semibold mt-0.5 uppercase tracking-wider">Roles</p>
+                          </div>
+                          <div className="rounded-xl bg-neutral-50 border border-neutral-100 px-2 py-2.5 text-center min-w-0">
+                            <p className="text-sm font-bold text-neutral-900 tabular-nums truncate">{budget}</p>
+                            <p className="text-[9.5px] text-neutral-400 font-semibold mt-0.5 uppercase tracking-wider">Budget</p>
                           </div>
                         </div>
 
+                        {/* Actions */}
                         <div className="flex items-center gap-2 mt-auto">
-                          <Link to={`/dashboard/projects/${project.id}`} className="flex-1 rounded-xl py-2.5 border border-neutral-200 text-neutral-600 text-xs font-semibold text-center hover:bg-neutral-50 hover:border-neutral-300 flex items-center justify-center gap-1.5 transition-all">
-                            <FaEye className="w-3 h-3" /> View
+                          <Link
+                            to={`/dashboard/projects/${project.id}`}
+                            className="flex-1 inline-flex items-center justify-center gap-1.5 h-10 rounded-xl bg-[#3B5BDB] text-white text-[12.5px] font-semibold hover:bg-[#2f4ac2] transition-all shadow-sm shadow-[#3B5BDB]/20"
+                          >
+                            <FaEye className="w-3 h-3" /> View details
                           </Link>
-                          {project.status !== 'completed' && project.status !== 'cancelled' && (
-                            <button onClick={() => { setCancellingId(project.id); setCancelActionError(null); }}
-                              className="rounded-xl px-3.5 py-2.5 bg-red-50 text-red-500 border border-red-200/60 text-xs font-semibold hover:bg-red-100 hover:text-red-600 flex items-center gap-1.5 transition-all">
-                              <FaBan className="w-3 h-3" />
+                          {cancellable && (
+                            <button
+                              type="button"
+                              aria-label="Cancel project"
+                              onClick={() => { setCancellingId(project.id); setCancelActionError(null); }}
+                              className="w-10 h-10 rounded-xl border border-neutral-200 text-neutral-400 hover:text-red-600 hover:border-red-200 hover:bg-red-50 transition-all flex items-center justify-center"
+                            >
+                              <FaBan className="w-3.5 h-3.5" />
                             </button>
                           )}
                         </div>
@@ -239,16 +434,16 @@ export default function Projects() {
         </main>
       </div>
 
-      {/* Cancel Project Modal */}
+      {/* ═══════════ CANCEL MODAL ═══════════ */}
       {cancellingId && (
         <>
           <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40" onClick={() => setCancellingId(null)} />
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl w-full max-w-sm p-6 border border-neutral-200/60">
-              <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center mb-4 border border-red-100">
-                <FaBan className="text-red-500 text-sm" />
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 border border-neutral-200/60">
+              <div className="w-11 h-11 rounded-xl bg-red-50 flex items-center justify-center mb-4 border border-red-100">
+                <FaBan className="text-red-500 text-base" />
               </div>
-              <h2 className="text-base font-bold text-neutral-900 mb-2">Cancel Project?</h2>
+              <h2 className="text-base font-bold text-neutral-900 mb-2">Cancel project?</h2>
               <p className="text-sm text-neutral-500 mb-5 leading-relaxed">
                 This will cancel the project and notify all booked crew and vendors. This action cannot be undone.
               </p>
@@ -259,9 +454,19 @@ export default function Projects() {
                 </div>
               )}
               <div className="flex gap-3">
-                <button type="button" onClick={() => setCancellingId(null)} className="flex-1 rounded-xl py-2.5 border border-neutral-200 text-neutral-600 text-sm font-medium hover:bg-neutral-50 hover:border-neutral-300 transition-all">Keep Project</button>
-                <button type="button" onClick={() => handleCancel(cancellingId)} className="flex-1 rounded-xl py-2.5 bg-red-500 text-white text-sm font-semibold hover:bg-red-600 transition-all shadow-sm shadow-red-500/20 flex items-center justify-center gap-1.5">
-                  <FaBan className="w-3 h-3" /> Cancel
+                <button
+                  type="button"
+                  onClick={() => setCancellingId(null)}
+                  className="flex-1 rounded-xl h-11 border border-neutral-200 text-neutral-700 text-sm font-semibold hover:bg-neutral-50 hover:border-neutral-300 transition-all"
+                >
+                  Keep project
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleCancel(cancellingId)}
+                  className="flex-1 rounded-xl h-11 bg-red-500 text-white text-sm font-semibold hover:bg-red-600 transition-all shadow-sm shadow-red-500/25 flex items-center justify-center gap-1.5"
+                >
+                  <FaBan className="w-3 h-3" /> Cancel project
                 </button>
               </div>
             </div>

@@ -13,6 +13,7 @@ import { individualNavLinks } from '../navigation/dashboardNav';
 import toast from 'react-hot-toast';
 import type { BookingWithDetails, SlotStatus } from '../types/availability';
 import { parseAvailabilityMonthResponse } from '../utils/parseAvailabilityResponse';
+import { CELL_STYLE_COMPACT, type CellStatus as CellStatusKey } from '../utils/slotStatusStyles';
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -21,7 +22,7 @@ const today = new Date();
 const BASE_YEAR = today.getFullYear();
 const BASE_MONTH = today.getMonth();
 
-type CellStatus = 'available' | 'booked' | 'completed' | 'blocked' | null;
+type CellStatus = CellStatusKey | null;
 
 interface CalendarCell { d: number; muted: boolean; status: CellStatus; project?: string; company?: string; }
 
@@ -79,12 +80,7 @@ function buildCalendar(monthOffset: number, bookingsByDay?: Record<string, { sta
   return cells;
 }
 
-const cellStyle: Record<string, string> = {
-  available: 'bg-[#DCFCE7] border-[#86EFAC] text-[#15803D]',
-  booked:    'bg-[#DBEAFE] border-[#93C5FD] text-[#1D4ED8]',
-  completed: 'bg-[#DBEAFE] border-[#93C5FD] text-[#1D4ED8]',
-  blocked:   'bg-[#FEE2E2] border-[#FECACA] text-[#B91C1C]',
-};
+const cellStyle = CELL_STYLE_COMPACT;
 
 function cellStatusToSlotStatus(s: CellStatus | null | undefined): SlotStatus {
   if (!s) return 'available';
@@ -387,10 +383,10 @@ export default function IndividualDashboard() {
                           {cell.status && !cell.muted && cell.status !== 'available' && (
                             <span className="text-[8px] sm:text-[9px] font-medium leading-tight truncate w-full opacity-80 px-0.5">
                               {cell.status === 'blocked'
-                                ? 'Blocked'
+                                ? 'Unavailable'
                                 : cell.status === 'booked'
-                                  ? (cell.project?.split(/\s|,/).slice(0, 2).join(' ') || 'Booked')
-                                  : (cell.project?.split(/\s|,/).slice(0, 2).join(' ') || 'Done')}
+                                  ? (cell.project?.split(/\s|,/).slice(0, 2).join(' ') || 'Ongoing')
+                                  : (cell.project?.split(/\s|,/).slice(0, 2).join(' ') || 'Completed')}
                             </span>
                           )}
                         </button>
@@ -402,9 +398,9 @@ export default function IndividualDashboard() {
                       )}
                       {[
                         { color: 'bg-[#22C55E]', label: 'Available' },
-                        { color: 'bg-[#3B82F6]', label: 'Booked' },
-                        { color: 'bg-[#3B82F6]', label: 'Completed' },
-                        { color: 'bg-[#EF4444]', label: 'Blocked' },
+                        { color: 'bg-[#D97706]', label: 'Ongoing' },
+                        { color: 'bg-[#1D4ED8]', label: 'Completed' },
+                        { color: 'bg-[#DC2626]', label: 'Unavailable' },
                       ].map(({ color, label }) => (
                         <div key={label} className="flex items-center gap-2">
                           <div className={`w-2.5 h-2.5 rounded-full ${color}`} />

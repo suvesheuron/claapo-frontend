@@ -7,6 +7,7 @@ import DashboardSidebar from '../components/DashboardSidebar';
 import AppFooter from '../components/AppFooter';
 import RoleIndicator from '../components/RoleIndicator';
 import { useApiQuery } from '../hooks/useApiQuery';
+import { useChatUnread } from '../contexts/ChatUnreadContext';
 import { companyNavLinks } from '../navigation/dashboardNav';
 import { api, ApiException } from '../services/api';
 
@@ -14,12 +15,11 @@ const MONTHS = ['January','February','March','April','May','June','July','August
 const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
 const statusConfig = {
-  draft:       { bg: 'bg-[#F3F4F6]', border: 'border-neutral-200', text: 'text-neutral-600', dot: 'bg-neutral-400', label: 'Draft' },
-  open:        { bg: 'bg-[#BFDBFE]', border: 'border-[#60A5FA]', text: 'text-[#1E40AF]', dot: 'bg-[#3B82F6]', label: 'Open' },
-  active:      { bg: 'bg-[#FDE68A]', border: 'border-[#F59E0B]', text: 'text-[#92400E]', dot: 'bg-[#F59E0B]', label: 'Ongoing' },
-  in_progress: { bg: 'bg-[#FDE68A]', border: 'border-[#F59E0B]', text: 'text-[#92400E]', dot: 'bg-[#F59E0B]', label: 'Ongoing' },
-  completed:   { bg: 'bg-[#93C5FD]', border: 'border-[#3B82F6]', text: 'text-[#1E3A8A]', dot: 'bg-[#2563EB]', label: 'Completed' },
-  cancelled:   { bg: 'bg-[#FEE2E2]', border: 'border-[#FCA5A5]', text: 'text-[#B91C1C]', dot: 'bg-red-400', label: 'Cancelled' },
+  draft:     { bg: 'bg-[#F3F4F6]', border: 'border-neutral-200', text: 'text-neutral-600', dot: 'bg-neutral-400', label: 'Draft' },
+  open:      { bg: 'bg-[#DCFCE7]', border: 'border-[#86EFAC]', text: 'text-[#15803D]', dot: 'bg-[#16A34A]', label: 'Open' },
+  active:    { bg: 'bg-[#FCD34D]', border: 'border-[#D97706]', text: 'text-[#78350F]', dot: 'bg-[#D97706]', label: 'Ongoing' },
+  completed: { bg: 'bg-[#60A5FA]', border: 'border-[#1D4ED8]', text: 'text-[#0F1F4D]', dot: 'bg-[#1D4ED8]', label: 'Completed' },
+  cancelled: { bg: 'bg-[#FCA5A5]', border: 'border-[#DC2626]', text: 'text-[#7F1D1D]', dot: 'bg-[#DC2626]', label: 'Cancelled' },
 } as const;
 
 interface Project {
@@ -35,8 +35,8 @@ interface Project {
 }
 interface ProjectsApiResponse { items: Project[]; meta: { total: number } }
 
-// Priority order for calendar display: active/open > draft > completed > cancelled
-const STATUS_PRIORITY: Record<string, number> = { active: 0, open: 1, in_progress: 2, draft: 3, completed: 4, cancelled: 5 };
+// Priority order for calendar display: active > open > draft > completed > cancelled
+const STATUS_PRIORITY: Record<string, number> = { active: 0, open: 1, draft: 2, completed: 3, cancelled: 4 };
 
 interface CalendarCell { d: number; muted: boolean; projects: Project[] }
 interface PanelData { date: number; month: string; year: number; projects: Project[]; dateIso: string }
@@ -138,6 +138,7 @@ export default function CompanyDashboard() {
 
   const { data: projectsData, loading } = useApiQuery<ProjectsApiResponse>('/projects?limit=100');
   const projects = projectsData?.items ?? [];
+  const { unreadByProject, unreadDateByProject } = useChatUnread();
 
   const displayDate = new Date(calendarYear, calendarMonth, 1);
   const monthLabel = MONTHS[displayDate.getMonth()];
@@ -159,7 +160,7 @@ export default function CompanyDashboard() {
     [calendarYear, calendarMonth, projects]
   );
 
-  const activeProjects = projects.filter(p => p.status === 'active' || p.status === 'in_progress' || p.status === 'open').length;
+  const activeProjects = projects.filter(p => p.status === 'active' || p.status === 'open').length;
   const crewHired = projects.reduce((acc, p) => acc + (p._count?.bookings ?? 0), 0);
 
   const isToday = (cell: CalendarCell) => {
@@ -404,35 +405,82 @@ export default function CompanyDashboard() {
                         <div key={day} className="text-center text-[11px] font-semibold text-neutral-400 py-1.5 uppercase tracking-wide">{day}</div>
                       ))}
                     </div>
-                    <div className="grid grid-cols-7 gap-1">
-                      {calendarDays.map((cell, i) => {
-                        if (cell.muted && cell.d === 0) {
-                          return <div key={i} className="min-h-[44px] sm:min-h-[54px]" aria-hidden />;
-                        }
-                        // Primary project is the highest-priority non-cancelled project; fall back to first
-                        const primary = cell.projects.find(p => p.status !== 'cancelled') ?? cell.projects[0] ?? null;
-                        const cfg = primary ? (statusConfig[primary.status] ?? statusConfig.draft) : null;
-                        const hasMultiple = cell.projects.length > 1;
-                        const todayCell = isToday(cell);
-                        return (
-                          <button key={i} type="button" onClick={() => openPanel(cell)} disabled={cell.muted} className={`cal-cell rounded-xl border text-center p-1 sm:p-1.5 min-h-[44px] sm:min-h-[54px] flex flex-col items-center justify-center gap-0.5 relative transition-all duration-150 ${
-                            cell.muted ? 'bg-neutral-50/50 border-transparent text-neutral-300 cursor-default' :
-                            cfg ? `${cfg.bg} ${cfg.border} ${cfg.text} cursor-pointer hover:shadow-sm hover:brightness-[0.97]` : 'bg-white border-neutral-200/60 text-neutral-600 hover:bg-neutral-50 hover:border-neutral-300 cursor-pointer'
-                          } ${todayCell && !cfg ? 'ring-2 ring-[#3B5BDB]/30 border-[#3B5BDB]/40 bg-[#EEF4FF]/40' : ''} ${todayCell && cfg ? 'ring-2 ring-[#3B5BDB]/40 ring-offset-1' : ''} ${panel?.date === cell.d && !cell.muted ? 'ring-2 ring-[#3B5BDB] ring-offset-1' : ''}`}>
-                            <span className={`text-[11px] sm:text-xs font-semibold leading-none ${todayCell ? 'text-[#3B5BDB]' : ''}`}>{cell.d}</span>
-                            {primary && !cell.muted && (
-                              <span className="text-[8px] sm:text-[9px] font-medium leading-tight truncate w-full opacity-80">{primary.title}</span>
-                            )}
-                            {hasMultiple && !cell.muted && (
-                              <span className="absolute top-0.5 right-0.5 w-3.5 h-3.5 rounded-full bg-[#3B5BDB] text-white text-[7px] font-bold flex items-center justify-center leading-none shadow-sm">{cell.projects.length}</span>
-                            )}
-                            {todayCell && !cfg && (
-                              <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#3B5BDB]" />
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
+                    {loading ? (
+                      <div className="grid grid-cols-7 gap-1" aria-busy="true" aria-label="Loading calendar">
+                        {Array.from({ length: 42 }).map((_, i) => (
+                          <div
+                            key={i}
+                            className="min-h-[44px] sm:min-h-[54px] rounded-xl bg-gradient-to-br from-neutral-100 to-neutral-50 border border-neutral-100 animate-pulse"
+                            style={{ animationDelay: `${(i % 7) * 60}ms` }}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-7 gap-1">
+                        {calendarDays.map((cell, i) => {
+                          if (cell.muted && cell.d === 0) {
+                            return <div key={i} className="min-h-[44px] sm:min-h-[54px]" aria-hidden />;
+                          }
+                          // Primary project is the highest-priority non-cancelled project; fall back to first
+                          const primary = cell.projects.find(p => p.status !== 'cancelled') ?? cell.projects[0] ?? null;
+                          const cfg = primary ? (statusConfig[primary.status] ?? statusConfig.draft) : null;
+                          const hasMultiple = cell.projects.length > 1;
+                          const todayCell = isToday(cell);
+                          const cellDateStr = `${displayDate.getFullYear()}-${String(displayDate.getMonth() + 1).padStart(2, '0')}-${String(cell.d).padStart(2, '0')}`;
+                          // A cell has FOCUS unread when this exact date is the date a new
+                          // message arrived for one of the cell's projects.
+                          const focusUnread = cell.muted
+                            ? 0
+                            : cell.projects.reduce(
+                                (acc, p) => acc + ((unreadDateByProject[p.id] === cellDateStr) ? (unreadByProject[p.id] ?? 0) : 0),
+                                0,
+                              );
+                          // A cell has SECONDARY unread when one of its projects has unread
+                          // messages but the message arrived on a DIFFERENT date than this cell.
+                          const secondaryUnread = !cell.muted && focusUnread === 0 && cell.projects.some(
+                            (p) => (unreadByProject[p.id] ?? 0) > 0 && unreadDateByProject[p.id] !== cellDateStr,
+                          );
+                          return (
+                            <button key={i} type="button" onClick={() => openPanel(cell)} disabled={cell.muted} className={`cal-cell rounded-xl border text-center p-1 sm:p-1.5 min-h-[44px] sm:min-h-[54px] flex flex-col items-center justify-center gap-0.5 relative transition-all duration-150 ${
+                              cell.muted ? 'bg-neutral-50/50 border-transparent text-neutral-300 cursor-default' :
+                              cfg ? `${cfg.bg} ${cfg.border} ${cfg.text} cursor-pointer hover:shadow-sm hover:brightness-[0.97]` : 'bg-white border-neutral-200/60 text-neutral-600 hover:bg-neutral-50 hover:border-neutral-300 cursor-pointer'
+                            } ${todayCell && !cfg ? 'ring-2 ring-[#3B5BDB]/30 border-[#3B5BDB]/40 bg-[#EEF4FF]/40' : ''} ${todayCell && cfg ? 'ring-2 ring-[#3B5BDB]/40 ring-offset-1' : ''} ${panel?.date === cell.d && !cell.muted ? 'ring-2 ring-[#3B5BDB] ring-offset-1' : ''} ${focusUnread ? 'ring-2 ring-[#F40F02]/70 ring-offset-1' : ''} ${secondaryUnread ? 'ring-1 ring-[#F40F02]/30' : ''}`}>
+                              <span className={`text-[11px] sm:text-xs font-semibold leading-none ${todayCell ? 'text-[#3B5BDB]' : ''}`}>{cell.d}</span>
+                              {primary && !cell.muted && (
+                                <span className="text-[8px] sm:text-[9px] font-medium leading-tight truncate w-full opacity-80">{primary.title}</span>
+                              )}
+                              {focusUnread > 0 && (
+                                <span
+                                  className="absolute -top-1 -right-1 flex items-center justify-center"
+                                  title={`${focusUnread} new message${focusUnread === 1 ? '' : 's'}`}
+                                  aria-label={`${focusUnread} unread messages`}
+                                >
+                                  <span className="absolute inline-flex h-4 w-4 rounded-full bg-[#F40F02] opacity-70 animate-ping" />
+                                  <span className="relative inline-flex h-4 w-4 rounded-full bg-[#F40F02] text-white text-[8px] font-bold items-center justify-center shadow-md">
+                                    {focusUnread > 9 ? '9+' : focusUnread}
+                                  </span>
+                                </span>
+                              )}
+                              {secondaryUnread && (
+                                <span
+                                  className="absolute top-1 right-1 flex items-center justify-center pointer-events-none"
+                                  aria-hidden
+                                >
+                                  <span className="absolute inline-flex h-1.5 w-1.5 rounded-full bg-[#F40F02] opacity-40 animate-ping" style={{ animationDuration: '2.4s' }} />
+                                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#F40F02]/70" />
+                                </span>
+                              )}
+                              {hasMultiple && !cell.muted && !focusUnread && !secondaryUnread && (
+                                <span className="absolute top-0.5 right-0.5 w-3.5 h-3.5 rounded-full bg-[#3B5BDB] text-white text-[7px] font-bold flex items-center justify-center leading-none shadow-sm">{cell.projects.length}</span>
+                              )}
+                              {todayCell && !cfg && (
+                                <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#3B5BDB]" />
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
                     <div className="flex flex-wrap gap-x-5 gap-y-1.5 mt-4 pt-4 border-t border-neutral-100">
                       {Object.entries(statusConfig).map(([key, val]) => (
                         <div key={key} className="flex items-center gap-2">
@@ -443,7 +491,7 @@ export default function CompanyDashboard() {
                     </div>
                   </div>
 
-                  {/* Stats — below calendar as per PRD layout */}
+                  {/* Stats — below calendar */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {loading ? (
                       <>
@@ -452,37 +500,37 @@ export default function CompanyDashboard() {
                     ) : (
                       <>
                         <div className="rounded-3xl bg-white shadow-soft border border-neutral-100 p-5 flex items-center gap-5 hover:shadow-float transition-shadow group">
-                          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#EEF4FF] to-white border border-[#3B5BDB]/10 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                            <FaFolder className="text-[#3B5BDB] text-xl" />
+                          <div className="w-14 h-14 rounded-2xl bg-[#FCD34D]/15 border border-[#D97706]/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                            <FaFolder className="text-[#D97706] text-xl" />
                           </div>
-                          <div>
-                            <p className="text-xs uppercase tracking-widest text-neutral-500 font-bold">Active Projects</p>
-                            <p className="text-3xl font-extrabold mt-1 text-neutral-900">{activeProjects}</p>
+                          <div className="min-w-0">
+                            <p className="text-[11px] uppercase tracking-widest text-neutral-500 font-bold">Active Projects</p>
+                            <p className="text-3xl font-extrabold mt-1 text-neutral-900 tabular-nums">{activeProjects}</p>
                           </div>
                         </div>
                         <div className="rounded-3xl bg-white shadow-soft border border-neutral-100 p-5 flex items-center gap-5 hover:shadow-float transition-shadow group">
-                          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#ECFDF5] to-white border border-emerald-500/10 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                            <FaUsers className="text-emerald-500 text-xl" />
+                          <div className="w-14 h-14 rounded-2xl bg-[#DCFCE7] border border-[#86EFAC] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                            <FaUsers className="text-[#15803D] text-xl" />
                           </div>
-                          <div>
-                            <p className="text-xs uppercase tracking-widest text-neutral-500 font-bold">Crew Hired</p>
-                            <p className="text-3xl font-extrabold mt-1 text-neutral-900">{crewHired}</p>
+                          <div className="min-w-0">
+                            <p className="text-[11px] uppercase tracking-widest text-neutral-500 font-bold">Crew Hired</p>
+                            <p className="text-3xl font-extrabold mt-1 text-neutral-900 tabular-nums">{crewHired}</p>
                           </div>
                         </div>
                       </>
                     )}
                   </div>
 
-                  {/* Quick links — Requests, Chat, Notifications */}
+                  {/* Quick links — Requests, Chats, Notifications */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     {[
-                      { label: 'Requests', icon: FaUsers, to: '/dashboard/projects', desc: 'Booking requests', color: 'from-[#3B5BDB] to-[#5B9DF9]' },
-                      { label: 'Chats',    icon: FaMessage, to: '/dashboard/conversations', desc: 'Open conversations', color: 'from-[#7C3AED] to-[#A78BFA]' },
-                      { label: 'Notifications', icon: FaFolder, to: '/dashboard/projects', desc: 'Project updates', color: 'from-[#EA580C] to-[#FB923C]' },
-                    ].map(({ label, icon: Icon, to, desc, color }) => (
-                      <Link key={label} to={to} className="rounded-3xl bg-white border border-neutral-100 shadow-soft p-5 hover:shadow-float hover:-translate-y-1 transition-all duration-300 group">
-                        <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${color} flex items-center justify-center mb-4 shadow-sm group-hover:scale-110 transition-transform`}>
-                          <Icon className="text-white text-lg" />
+                      { label: 'Requests', icon: FaUsers, to: '/dashboard/projects', desc: 'Booking requests' },
+                      { label: 'Chats', icon: FaMessage, to: '/dashboard/conversations', desc: 'Open conversations' },
+                      { label: 'Notifications', icon: FaFolder, to: '/dashboard/projects', desc: 'Project updates' },
+                    ].map(({ label, icon: Icon, to, desc }) => (
+                      <Link key={label} to={to} className="rounded-3xl bg-white border border-neutral-100 shadow-soft p-5 hover:shadow-float hover:border-[#3B5BDB]/20 hover:-translate-y-0.5 transition-all duration-200 group">
+                        <div className="w-12 h-12 rounded-2xl bg-[#EEF4FF] border border-[#3B5BDB]/15 flex items-center justify-center mb-4 group-hover:bg-[#3B5BDB] group-hover:border-[#3B5BDB] transition-colors">
+                          <Icon className="text-[#3B5BDB] text-lg group-hover:text-white transition-colors" />
                         </div>
                         <p className="text-base font-bold text-neutral-900">{label}</p>
                         <p className="text-xs text-neutral-500 mt-1">{desc}</p>
@@ -532,8 +580,8 @@ export default function CompanyDashboard() {
 
                   <div className="rounded-3xl bg-white shadow-soft border border-neutral-100 p-6">
                     <h3 className="text-base font-bold text-neutral-900 mb-4 flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#FEF9E6] to-[#FDE68A]/40 flex items-center justify-center">
-                        <FaPlus className="w-3.5 h-3.5 text-[#92400E]" />
+                      <div className="w-8 h-8 rounded-xl bg-[#EEF4FF] border border-[#3B5BDB]/15 flex items-center justify-center">
+                        <FaPlus className="w-3.5 h-3.5 text-[#3B5BDB]" />
                       </div>
                       <span>Quick Actions</span>
                     </h3>

@@ -1,9 +1,8 @@
 import { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { FaTriangleExclamation, FaMagnifyingGlass, FaMessage, FaEllipsisVertical, FaCheck } from 'react-icons/fa6';
+import { FaTriangleExclamation, FaMagnifyingGlass, FaMessage, FaCheck } from 'react-icons/fa6';
 import DashboardHeader from '../components/DashboardHeader';
 import DashboardSidebar from '../components/DashboardSidebar';
-import AppFooter from '../components/AppFooter';
 import Avatar from '../components/Avatar';
 import { useApiQuery } from '../hooks/useApiQuery';
 import { useRole } from '../contexts/RoleContext';
@@ -75,173 +74,204 @@ export default function Conversations() {
     return name.includes(q) || proj.includes(q);
   });
 
+  const totalUnread = conversations.reduce((sum, c) => sum + (c.unreadCount ?? 0), 0);
+
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-gradient-to-br from-[#EEF2FF]/80 via-[#F8F9FB] to-[#F0F4FA] w-full">
+    <div className="h-screen flex flex-col overflow-hidden bg-[#F8F9FB] w-full">
       <DashboardHeader />
       <div className="flex-1 flex min-h-0 overflow-hidden">
         <DashboardSidebar links={navLinks} />
         <main className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
-          <div className="flex-1 min-h-0 overflow-auto">
-            <div className="max-w-5xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
+          {/* ── Single-section conversations shell ── */}
+          <div className="flex-1 flex flex-col min-h-0 min-w-0">
 
-              {/* Main chat shell — larger card, stronger depth */}
-              <div className="rounded-2xl sm:rounded-3xl overflow-hidden shadow-[0_25px_50px_-12px_rgba(59,91,219,0.18)] border border-neutral-200/80 bg-white min-h-[min(72vh,calc(100vh-10rem))] flex flex-col">
-                <div className="px-5 sm:px-8 py-5 sm:py-6 flex items-center justify-between bg-gradient-to-r from-[#2f4ac2] via-[#3B5BDB] to-[#4f6ee8] relative overflow-hidden">
-                  <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_120%_at_100%_-20%,rgba(255,255,255,0.12),transparent)] pointer-events-none" />
-                  <div className="relative">
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-white/70 mb-0.5">Messages</p>
-                    <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">Chats</h1>
+            {/* ── Sticky header: title + search + filters ── */}
+            <header className="shrink-0 bg-white border-b border-neutral-200/80">
+              <div className="max-w-5xl mx-auto px-5 sm:px-8 pt-7 pb-5">
+                <div className="flex items-end justify-between gap-4 mb-5 flex-wrap">
+                  <div>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-neutral-900 tracking-tight">Messages</h1>
+                    <p className="text-sm text-neutral-500 mt-1">
+                      {loading
+                        ? 'Loading your conversations…'
+                        : conversations.length === 0
+                          ? 'No conversations yet — start a chat from any project.'
+                          : (
+                            <>
+                              {conversations.length} {conversations.length === 1 ? 'conversation' : 'conversations'}
+                              {totalUnread > 0 && (
+                                <>
+                                  {' · '}
+                                  <span className="text-[#F40F02] font-semibold">{totalUnread} unread</span>
+                                </>
+                              )}
+                            </>
+                          )}
+                    </p>
                   </div>
-                  <div className="relative flex items-center gap-1">
-                    <button type="button" className="p-2.5 hover:bg-white/15 rounded-xl transition-colors" aria-label="More options">
-                      <FaEllipsisVertical className="w-5 h-5 text-white" />
-                    </button>
-                  </div>
+                  {totalUnread > 0 && (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#F40F02]/10 text-[#F40F02] text-xs font-bold border border-[#F40F02]/20">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#F40F02] animate-pulse" />
+                      {totalUnread > 99 ? '99+' : totalUnread} new
+                    </span>
+                  )}
                 </div>
 
-                {/* Search bar */}
-                <div className="px-4 sm:px-8 py-4 bg-white/90 border-b border-neutral-100">
-                  <div className="relative max-w-3xl">
+                {/* Search + filters row */}
+                <div className="flex items-center gap-3 flex-wrap">
+                  <div className="relative flex-1 min-w-[240px]">
                     <FaMagnifyingGlass className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
                     <input
                       type="text"
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
-                      placeholder="Search conversations or project name…"
-                      className="w-full rounded-xl pl-11 pr-4 py-3.5 text-[15px] bg-neutral-100/90 text-neutral-900 placeholder-neutral-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-[#3B5BDB]/25 focus:border border-transparent border transition-all"
+                      placeholder="Search by name or project…"
+                      className="w-full rounded-xl pl-11 pr-4 py-3 text-sm bg-neutral-100/80 text-neutral-900 placeholder-neutral-400 border border-transparent focus:outline-none focus:bg-white focus:ring-2 focus:ring-[#3B5BDB]/20 focus:border-[#3B5BDB]/30 transition-all"
                     />
                   </div>
-                </div>
-
-                {/* Filter pills */}
-                <div className="px-4 sm:px-8 py-3 bg-white border-b border-neutral-100 flex items-center gap-2 flex-wrap">
-                  {(['all', 'unread'] as Filter[]).map((f) => (
-                    <button
-                      key={f}
-                      type="button"
-                      onClick={() => setFilter(f)}
-                      className={`px-4 py-2 text-sm font-semibold rounded-full capitalize transition-all ${
-                        filter === f
-                          ? 'bg-[#3B5BDB] text-white shadow-md shadow-[#3B5BDB]/25'
-                          : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200/80'
-                      }`}
-                    >
-                      {f}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Error */}
-                {error && (
-                  <div className="flex items-center gap-3 bg-red-50 border-b border-red-100 px-4 sm:px-8 py-4">
-                    <FaTriangleExclamation className="text-red-500 shrink-0 w-5 h-5" />
-                    <p className="text-sm text-red-700">{error}</p>
+                  <div className="flex items-center gap-1.5 p-1 rounded-xl bg-neutral-100/80 border border-neutral-200/60">
+                    {(['all', 'unread'] as Filter[]).map((f) => (
+                      <button
+                        key={f}
+                        type="button"
+                        onClick={() => setFilter(f)}
+                        className={`px-4 py-2 text-xs font-semibold rounded-lg capitalize transition-all ${
+                          filter === f
+                            ? 'bg-white text-[#3B5BDB] shadow-sm'
+                            : 'text-neutral-600 hover:text-neutral-900'
+                        }`}
+                      >
+                        {f === 'unread' && totalUnread > 0 ? `${f} (${totalUnread})` : f}
+                      </button>
+                    ))}
                   </div>
-                )}
+                </div>
+              </div>
+            </header>
 
-                {/* Conversation list */}
-                <div className="bg-white flex-1 flex flex-col min-h-0">
-                  {loading ? (
-                    <div className="divide-y divide-neutral-100">
-                      {[1, 2, 3, 4, 5, 6].map((i) => (
-                        <div key={i} className="px-4 sm:px-8 py-5 flex gap-4 animate-pulse">
-                          <div className="w-14 h-14 rounded-2xl bg-neutral-100 shrink-0" />
-                          <div className="flex-1 space-y-3 py-1">
-                            <div className="h-4 bg-neutral-100 rounded-lg w-2/5" />
-                            <div className="h-3 bg-neutral-50 rounded-lg w-4/5" />
-                          </div>
+            {/* Error */}
+            {error && (
+              <div className="shrink-0 bg-red-50 border-b border-red-100">
+                <div className="max-w-5xl mx-auto px-5 sm:px-8 py-3 flex items-center gap-3">
+                  <FaTriangleExclamation className="text-red-500 shrink-0 w-4 h-4" />
+                  <p className="text-sm text-red-700">{error}</p>
+                </div>
+              </div>
+            )}
+
+            {/* ── Scrollable conversation list ── */}
+            <div className="flex-1 min-h-0 overflow-y-auto">
+              <div className="max-w-5xl mx-auto px-5 sm:px-8 py-4">
+                {loading ? (
+                  <div className="space-y-2">
+                    {[1, 2, 3, 4, 5, 6].map((i) => (
+                      <div
+                        key={i}
+                        className="rounded-2xl bg-white border border-neutral-200/80 px-5 py-4 flex gap-4 animate-pulse"
+                        style={{ animationDelay: `${i * 50}ms` }}
+                      >
+                        <div className="w-14 h-14 rounded-full bg-neutral-100 shrink-0" />
+                        <div className="flex-1 space-y-2.5 py-1">
+                          <div className="h-4 bg-neutral-100 rounded-lg w-1/3" />
+                          <div className="h-3 bg-neutral-50 rounded-lg w-3/5" />
+                          <div className="h-3 bg-neutral-50 rounded-lg w-4/5" />
                         </div>
-                      ))}
-                    </div>
-                  ) : filtered.length === 0 ? (
-                    <div className="py-20 sm:py-24 text-center px-6 flex-1 flex flex-col items-center justify-center">
-                      <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-[#EEF2FF] to-[#DBEAFE] flex items-center justify-center mx-auto mb-6 shadow-inner border border-white/80">
-                        <FaMessage className="text-[#3B5BDB] text-3xl" />
                       </div>
-                      <p className="text-lg font-bold text-neutral-900 mb-2">
-                        {filter === 'unread' ? 'No unread chats' : 'No conversations yet'}
-                      </p>
-                      <p className="text-sm text-neutral-500 max-w-md mx-auto leading-relaxed">
-                        {filter === 'unread'
-                          ? "You're all caught up."
-                          : 'Open a project or booking to start chatting with companies, crew, or vendors.'}
-                      </p>
+                    ))}
+                  </div>
+                ) : filtered.length === 0 ? (
+                  <div className="rounded-3xl bg-white border border-neutral-200/80 py-20 text-center px-6 flex flex-col items-center justify-center mt-4">
+                    <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-[#EEF4FF] to-[#DBEAFE] flex items-center justify-center mx-auto mb-5 border border-[#3B5BDB]/10 shadow-sm">
+                      <FaMessage className="text-[#3B5BDB] text-2xl" />
                     </div>
-                  ) : (
-                    <div className="divide-y divide-neutral-100 flex-1 overflow-auto">
-                      {filtered.map((conv) => {
-                        const other = conv.otherParticipant ?? conv.otherUser;
-                        if (!other?.id) return null;
-                        const lastMsgTime = conv.lastMessage?.createdAt ?? conv.lastMessageAt ?? null;
-                        const lastMsgText = conv.lastMessage?.content ?? null;
-                        const hasUnread = (conv.unreadCount ?? 0) > 0;
-                        const chatHref = conv.project?.id
-                          ? `/dashboard/chat/${other.id}?projectId=${encodeURIComponent(conv.project.id)}`
-                          : `/dashboard/chat/${other.id}`;
-                        return (
+                    <p className="text-lg font-bold text-neutral-900 mb-1.5">
+                      {filter === 'unread' ? "You're all caught up" : search.trim() ? 'No matches found' : 'No conversations yet'}
+                    </p>
+                    <p className="text-sm text-neutral-500 max-w-md mx-auto leading-relaxed">
+                      {filter === 'unread'
+                        ? 'Every message has been read. Nothing new on your plate right now.'
+                        : search.trim()
+                          ? 'Try a different name or project title.'
+                          : 'Open a project or send a booking request to start chatting with crew, vendors, or production companies.'}
+                    </p>
+                  </div>
+                ) : (
+                  <ul className="space-y-2">
+                    {filtered.map((conv) => {
+                      const other = conv.otherParticipant ?? conv.otherUser;
+                      if (!other?.id) return null;
+                      const lastMsgTime = conv.lastMessage?.createdAt ?? conv.lastMessageAt ?? null;
+                      const lastMsgText = conv.lastMessage?.content ?? null;
+                      const hasUnread = (conv.unreadCount ?? 0) > 0;
+                      const chatHref = conv.project?.id
+                        ? `/dashboard/chat/${other.id}?projectId=${encodeURIComponent(conv.project.id)}`
+                        : `/dashboard/chat/${other.id}`;
+                      return (
+                        <li key={conv.id}>
                           <Link
-                            key={conv.id}
                             to={chatHref}
-                            className="flex items-start gap-4 px-4 sm:px-8 py-4 sm:py-5 hover:bg-[#F8FAFC] active:bg-[#F1F5F9] transition-colors group"
+                            className={`relative flex items-start gap-4 px-5 py-4 rounded-2xl border transition-all group overflow-hidden ${
+                              hasUnread
+                                ? 'bg-white border-[#3B5BDB]/25 shadow-sm shadow-[#3B5BDB]/10 hover:shadow-md hover:border-[#3B5BDB]/40'
+                                : 'bg-white border-neutral-200/80 hover:border-[#3B5BDB]/30 hover:shadow-sm'
+                            }`}
                           >
-                            <div className="relative shrink-0 pt-0.5">
+                            {hasUnread && (
+                              <span className="absolute left-0 top-0 bottom-0 w-1 bg-[#3B5BDB]" aria-hidden />
+                            )}
+                            <div className="relative shrink-0">
                               <Avatar src={other.avatarUrl} name={getName(other)} size="lg" />
+                              {hasUnread && (
+                                <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center">
+                                  <span className="absolute inline-flex w-3.5 h-3.5 rounded-full bg-[#F40F02] opacity-60 animate-ping" />
+                                  <span className="relative inline-flex w-3.5 h-3.5 rounded-full bg-[#F40F02] border-2 border-white" />
+                                </span>
+                              )}
                             </div>
-
-                            <div className="flex-1 min-w-0 py-0.5">
-                              <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between gap-3 mb-1">
                                 <div className="min-w-0">
-                                  <p
-                                    className={`text-base sm:text-[17px] truncate leading-snug ${
-                                      hasUnread ? 'font-bold text-neutral-900' : 'font-semibold text-neutral-800 group-hover:text-[#3B5BDB]'
-                                    }`}
-                                  >
+                                  <p className={`text-base truncate leading-snug ${hasUnread ? 'font-bold text-neutral-900' : 'font-semibold text-neutral-800 group-hover:text-[#3B5BDB]'}`}>
                                     {getName(other)}
                                   </p>
                                   {conv.project?.title && (
-                                    <p className="text-xs text-neutral-400 truncate mt-0.5 font-medium">{conv.project.title}</p>
+                                    <div className="inline-flex items-center gap-1.5 mt-1 px-2 py-0.5 rounded-md bg-[#EEF4FF] border border-[#3B5BDB]/10">
+                                      <span className="w-1 h-1 rounded-full bg-[#3B5BDB]" />
+                                      <span className="text-[11px] font-semibold text-[#3B5BDB] truncate max-w-[200px]">{conv.project.title}</span>
+                                    </div>
                                   )}
                                 </div>
-                                {lastMsgTime && (
-                                  <span
-                                    className={`text-xs shrink-0 tabular-nums mt-0.5 ${
-                                      hasUnread ? 'text-[#3B5BDB] font-bold' : 'text-neutral-400'
-                                    }`}
-                                  >
-                                    {timeSince(lastMsgTime)}
-                                  </span>
-                                )}
+                                <div className="flex flex-col items-end gap-1.5 shrink-0">
+                                  {lastMsgTime && (
+                                    <span className={`text-[11px] tabular-nums ${hasUnread ? 'text-[#3B5BDB] font-bold' : 'text-neutral-400 font-medium'}`}>
+                                      {timeSince(lastMsgTime)}
+                                    </span>
+                                  )}
+                                  {hasUnread && (
+                                    <span className="min-w-[22px] h-[22px] px-2 rounded-full bg-[#3B5BDB] text-white text-[11px] font-bold flex items-center justify-center shadow-sm shadow-[#3B5BDB]/30">
+                                      {(conv.unreadCount ?? 0) > 99 ? '99+' : conv.unreadCount}
+                                    </span>
+                                  )}
+                                </div>
                               </div>
-                              <div className="flex items-center justify-between gap-3 mt-2">
-                                <div className="flex items-center gap-2 min-w-0">
-                                  {!hasUnread && lastMsgText && (
-                                    <FaCheck className="w-3.5 h-3.5 text-[#3B5BDB] shrink-0 opacity-80" />
-                                  )}
-                                  <p
-                                    className={`text-sm sm:text-[15px] truncate leading-snug ${
-                                      hasUnread ? 'text-neutral-900 font-medium' : 'text-neutral-500'
-                                    }`}
-                                  >
-                                    {lastMsgText ?? (conv.project ? `Project: ${conv.project.title}` : 'No messages yet')}
-                                  </p>
-                                </div>
-                                {hasUnread && (
-                                  <span className="min-w-[1.5rem] h-6 px-1.5 rounded-full bg-[#3B5BDB] text-white text-xs font-bold flex items-center justify-center shrink-0">
-                                    {conv.unreadCount}
-                                  </span>
+                              <div className="flex items-center gap-2 min-w-0 mt-1.5">
+                                {!hasUnread && lastMsgText && (
+                                  <FaCheck className="w-3 h-3 text-[#3B5BDB] shrink-0 opacity-70" />
                                 )}
+                                <p className={`text-sm truncate leading-snug ${hasUnread ? 'text-neutral-800 font-medium' : 'text-neutral-500'}`}>
+                                  {lastMsgText ?? (conv.project ? 'Tap to start the conversation' : 'No messages yet')}
+                                </p>
                               </div>
                             </div>
                           </Link>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
               </div>
             </div>
           </div>
-          <AppFooter />
         </main>
       </div>
     </div>

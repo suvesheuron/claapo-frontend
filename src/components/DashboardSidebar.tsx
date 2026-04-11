@@ -1,33 +1,78 @@
 import { Link, useLocation } from 'react-router-dom';
-import type { ComponentType, SVGProps } from 'react';
+import { useMemo, type ComponentType, type SVGProps } from 'react';
+import { FaXmark } from 'react-icons/fa6';
 import { useChatUnread } from '../contexts/ChatUnreadContext';
+import { useNavBadges } from '../contexts/NavBadgesContext';
+import { useSidebar } from '../contexts/SidebarContext';
+
+/** Declarative badge source for a nav item. The sidebar resolves the
+ *  actual count at render time from the matching context. */
+export type NavBadgeKey = 'chat' | 'cancelRequests' | 'projectRequests';
 
 export interface NavItem {
   icon: ComponentType<SVGProps<SVGSVGElement> & { className?: string }>;
   label: string;
   to: string;
   section?: string;
+  badgeKey?: NavBadgeKey;
 }
 
 interface Props {
   links: NavItem[];
 }
 
-const CHAT_PATH = '/dashboard/conversations';
+/**
+ * Longest-prefix-match active selection.
+ *
+ * Rules:
+ *  • `/dashboard` only highlights on an exact match — otherwise every
+ *    subpage would also light it up.
+ *  • Any other link matches when the current pathname equals `to` or
+ *    starts with `to + '/'`.
+ *  • If multiple links match, the longest (most specific) wins — so
+ *    `/dashboard/projects/42` highlights "Projects", not "Dashboard".
+ */
+function useActiveNav(links: NavItem[], pathname: string): string | null {
+  return useMemo(() => {
+    let bestTo: string | null = null;
+    let bestLen = -1;
+    for (const item of links) {
+      const to = item.to;
+      let len = -1;
+      if (to === '/dashboard') {
+        if (pathname === '/dashboard') len = to.length;
+      } else if (pathname === to || pathname.startsWith(to + '/')) {
+        len = to.length;
+      }
+      if (len > bestLen) {
+        bestLen = len;
+        bestTo = to;
+      }
+    }
+    return bestTo;
+  }, [links, pathname]);
+}
 
 export default function DashboardSidebar({ links }: Props) {
   const { pathname } = useLocation();
   const { totalUnread } = useChatUnread();
+  const { cancelRequestsCount, projectRequestsCount } = useNavBadges();
+  const { open: drawerOpen, closeSidebar } = useSidebar();
+  const activeTo = useActiveNav(links, pathname);
 
-  const isActive = (to: string) => {
-    if (to === '/dashboard') return pathname === '/dashboard';
-    return pathname === to || pathname.startsWith(to + '/');
+  /** Map a NavItem's badge key to its live count. Returns 0 when no key is set. */
+  const resolveBadge = (key?: NavBadgeKey): number => {
+    switch (key) {
+      case 'chat':            return totalUnread;
+      case 'cancelRequests':  return cancelRequestsCount;
+      case 'projectRequests': return projectRequestsCount;
+      default:                return 0;
+    }
   };
 
   // Group links by section, preserving order
   const sections: { label: string | null; items: NavItem[] }[] = [];
   let currentSection: string | null | undefined = undefined;
-
   for (const item of links) {
     const sec = item.section ?? null;
     if (sec !== currentSection) {
@@ -38,43 +83,58 @@ export default function DashboardSidebar({ links }: Props) {
     }
   }
 
-  return (
-    <aside className="hidden lg:flex lg:flex-col w-56 xl:w-60 shrink-0 bg-white/60 backdrop-blur-xl border-r border-neutral-100/80 overflow-hidden relative z-20">
-      <nav className="flex-1 overflow-y-auto px-4 pt-6 pb-6 scrollbar-hide">
+  /* Shared nav body used by both desktop (static) and mobile (drawer). */
+  const navBody = (
+    <>
+      <nav className="flex-1 overflow-y-auto px-3 pt-5 pb-6 scrollbar-hide">
         {sections.map((section, sIdx) => (
-          <div key={sIdx} className={sIdx > 0 ? 'mt-8' : ''}>
+          <div key={sIdx} className={sIdx > 0 ? 'mt-6' : ''}>
             {section.label && (
-              <div className="px-3 mb-2.5 text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-400 select-none">
-                {section.label}
+              <div className="flex items-center gap-2 px-3 mb-2">
+                <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-neutral-400 select-none">
+                  {section.label}
+                </span>
+                <div className="flex-1 h-px bg-neutral-100" />
               </div>
             )}
-            <div className="space-y-1">
+            <div className="space-y-0.5">
               {section.items.map((item) => {
-                const active = isActive(item.to);
-                const showChatBadge = item.to === CHAT_PATH && totalUnread > 0;
+                const active = activeTo === item.to;
+                const badgeCount = resolveBadge(item.badgeKey);
+                const showBadge = badgeCount > 0;
                 return (
                   <Link
                     key={item.to}
                     to={item.to}
-                    className={`group relative flex items-center gap-3.5 px-3.5 py-2.5 rounded-2xl text-[13px] font-bold transition-all duration-300 ${
+                    aria-current={active ? 'page' : undefined}
+                    onClick={closeSidebar}
+                    className={`group relative flex items-center gap-3 h-10 px-3 rounded-xl text-[13px] font-semibold transition-all duration-200 ${
                       active
-                        ? 'bg-gradient-to-r from-[#EEF4FF] border border-[#3B5BDB]/10 to-transparent text-[#3B5BDB]'
-                        : 'text-neutral-500 hover:bg-neutral-50 border border-transparent hover:text-neutral-900'
+                        ? 'bg-[#EEF4FF] text-[#3B5BDB] shadow-sm shadow-[#3B5BDB]/10'
+                        : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-800'
                     }`}
                   >
-                    {/* Left accent bar for active state */}
-                    {active && (
-                      <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-[#3B5BDB]" />
-                    )}
-                    <item.icon
-                      className={`w-[15px] h-[15px] shrink-0 transition-colors duration-150 ${
-                        active ? 'text-[#3B5BDB]' : 'text-neutral-400 group-hover:text-neutral-500'
+                    {/* Left accent bar — only on active */}
+                    <span
+                      aria-hidden
+                      className={`absolute left-0 top-1/2 -translate-y-1/2 w-[3px] rounded-r-full transition-all duration-200 ${
+                        active ? 'h-5 bg-[#3B5BDB]' : 'h-0 bg-transparent'
                       }`}
                     />
+                    <span
+                      className={`inline-flex items-center justify-center w-5 h-5 shrink-0 transition-colors duration-150 ${
+                        active ? 'text-[#3B5BDB]' : 'text-neutral-400 group-hover:text-neutral-600'
+                      }`}
+                    >
+                      <item.icon className="w-[16px] h-[16px]" />
+                    </span>
                     <span className="flex-1 truncate">{item.label}</span>
-                    {showChatBadge && (
-                      <span className="min-w-[18px] h-[18px] rounded-full bg-[#F40F02] text-white text-[10px] font-bold flex items-center justify-center px-1.5">
-                        {totalUnread > 99 ? '99+' : totalUnread}
+                    {showBadge && (
+                      <span
+                        aria-label={`${badgeCount} pending`}
+                        className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-[#F40F02] text-white text-[10px] font-bold tabular-nums shadow-sm shadow-red-500/30"
+                      >
+                        {badgeCount > 99 ? '99+' : badgeCount}
                       </span>
                     )}
                   </Link>
@@ -85,10 +145,67 @@ export default function DashboardSidebar({ links }: Props) {
         ))}
       </nav>
 
-      {/* Bottom subtle area */}
-      <div className="px-4 py-3 border-t border-neutral-200/50">
-        <p className="text-[10px] text-neutral-400 tracking-wide">v1.0 &middot; Claapo</p>
+      {/* Footer */}
+      <div className="px-5 py-3 border-t border-neutral-100 flex items-center justify-between">
+        <p className="text-[10px] font-semibold text-neutral-400 tracking-wide">v1.0 &middot; Claapo</p>
+        <span className="inline-flex items-center gap-1 text-[10px] text-neutral-400">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+          Online
+        </span>
       </div>
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* ════════ DESKTOP: static aside, part of the flex row ════════ */}
+      <aside
+        className="hidden lg:flex lg:flex-col w-56 xl:w-60 shrink-0 bg-white/70 backdrop-blur-xl border-r border-neutral-100 overflow-hidden relative z-20"
+      >
+        {navBody}
+      </aside>
+
+      {/* ════════ MOBILE: slide-in drawer + backdrop ════════ */}
+      {/* Backdrop */}
+      <div
+        onClick={closeSidebar}
+        aria-hidden={!drawerOpen}
+        className={`lg:hidden fixed inset-0 z-40 bg-neutral-900/50 backdrop-blur-sm transition-opacity duration-300 ${
+          drawerOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        }`}
+      />
+      {/* Drawer */}
+      <aside
+        id="dashboard-sidebar"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Navigation menu"
+        className={`lg:hidden fixed top-0 left-0 bottom-0 z-50 w-[280px] max-w-[82vw] bg-white border-r border-neutral-100 shadow-2xl shadow-neutral-900/20 flex flex-col transform transition-transform duration-300 ease-out ${
+          drawerOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        {/* Drawer header: logo + close */}
+        <div className="h-16 shrink-0 flex items-center justify-between px-5 border-b border-neutral-100">
+          <Link to="/dashboard" onClick={closeSidebar} className="flex items-center">
+            <img
+              src="/claapo-logo.svg"
+              alt="Claapo"
+              className="h-[18px] w-auto max-w-[104px] object-contain object-left select-none"
+              draggable={false}
+            />
+          </Link>
+          <button
+            type="button"
+            onClick={closeSidebar}
+            aria-label="Close menu"
+            className="w-9 h-9 rounded-lg flex items-center justify-center text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800 active:scale-95 transition-all duration-150"
+          >
+            <FaXmark className="w-[18px] h-[18px]" />
+          </button>
+        </div>
+
+        {navBody}
+      </aside>
+    </>
   );
 }

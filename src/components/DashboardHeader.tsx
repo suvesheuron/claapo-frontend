@@ -1,8 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaBell, FaChevronDown, FaRightFromBracket, FaCircle, FaUser, FaCalendarDays, FaFileInvoice, FaCircleQuestion } from 'react-icons/fa6';
+import {
+  FaBell, FaChevronDown, FaRightFromBracket, FaCircle,
+  FaUser, FaCalendarDays, FaFileInvoice, FaCircleQuestion,
+  FaRegBell, FaBars,
+} from 'react-icons/fa6';
 import Avatar from './Avatar';
 import { useAuth } from '../contexts/AuthContext';
+import { useSidebar } from '../contexts/SidebarContext';
 import { useApiQuery } from '../hooks/useApiQuery';
 import { api } from '../services/api';
 
@@ -35,6 +40,13 @@ function timeAgo(iso: string): string {
   return 'Earlier';
 }
 
+const ROLE_LABELS: Record<string, { label: string; bg: string; text: string }> = {
+  company:    { label: 'Company',    bg: 'bg-blue-50',    text: 'text-[#3B5BDB]'    },
+  individual: { label: 'Individual', bg: 'bg-emerald-50', text: 'text-emerald-700'  },
+  vendor:     { label: 'Vendor',     bg: 'bg-purple-50',  text: 'text-purple-700'   },
+  admin:      { label: 'Admin',      bg: 'bg-amber-50',   text: 'text-amber-700'    },
+};
+
 export default function DashboardHeader({ userName: propUserName, userAvatar: propUserAvatar }: DashboardHeaderProps) {
   const [notifOpen, setNotifOpen] = useState(false);
   const [userOpen, setUserOpen]   = useState(false);
@@ -42,6 +54,7 @@ export default function DashboardHeader({ userName: propUserName, userAvatar: pr
   const userRef  = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const { user, logout, isAuthenticated } = useAuth();
+  const { open: sidebarOpen, toggleSidebar } = useSidebar();
 
   const profilePath =
     user?.role === 'company' ? '/dashboard/company-profile' : user?.role === 'vendor' ? '/dashboard/vendor-profile' : '/dashboard/profile';
@@ -63,6 +76,7 @@ export default function DashboardHeader({ userName: propUserName, userAvatar: pr
 
   const displayName = propUserName ?? profile?.companyName ?? profile?.displayName ?? user?.email?.split('@')[0] ?? 'Account';
   const userAvatar = propUserAvatar ?? profile?.avatarUrl ?? undefined;
+  const roleInfo = user?.role ? ROLE_LABELS[user.role] : undefined;
 
   useEffect(() => {
     function handle(e: MouseEvent) {
@@ -88,67 +102,104 @@ export default function DashboardHeader({ userName: propUserName, userAvatar: pr
     navigate('/login');
   };
 
+  /* Shared classes for consistent 40x40 icon buttons */
+  const iconBtn =
+    'relative w-10 h-10 rounded-xl flex items-center justify-center text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800 active:scale-95 transition-all duration-150';
+
   return (
-    <header className="h-[64px] bg-white/80 backdrop-blur-xl shrink-0 flex items-stretch overflow-visible z-30 relative shadow-sm border-b border-neutral-100">
-      {/* Desktop logo area aligned with sidebar */}
+    <header className="h-16 bg-white/85 backdrop-blur-xl shrink-0 flex items-stretch overflow-visible z-30 relative border-b border-neutral-100 shadow-[0_1px_0_0_rgba(15,23,42,0.02)]">
+      {/* ════════ LOGO (aligned with sidebar on desktop) ════════ */}
       <Link
         to="/dashboard"
-        className="hidden lg:flex items-center justify-center gap-2 w-56 xl:w-60 shrink-0 px-4 border-r border-neutral-100/80 hover:bg-[#F8FAFC] transition-colors duration-150 self-stretch min-h-0"
+        aria-label="Claapo — Dashboard"
+        className="hidden lg:flex items-center w-56 xl:w-50 shrink-0 px-5 border-r border-neutral-100 self-stretch group"
       >
-        <img src="/claapo-logo.svg" alt="Claapo" className="max-h-7 w-auto max-w-[140px] object-contain object-center" />
+        <img
+          src="/claapo-logo.svg"
+          alt="Claapo"
+          className="h-[18px] w-auto max-w-[90px] object-contain object-left select-none transition-transform duration-200 group-hover:-translate-x-0.5"
+          draggable={false}
+        />
       </Link>
 
-      {/* Mobile logo */}
-      <Link to="/dashboard" className="lg:hidden flex items-center px-4 shrink-0 self-stretch">
-        <img src="/claapo-logo.svg" alt="Claapo" className="max-h-7 w-auto max-w-[128px] object-contain" />
-      </Link>
+      {/* ════════ MOBILE: HAMBURGER + LOGO ════════ */}
+      <div className="lg:hidden flex items-center gap-2 pl-3 pr-2 shrink-0 self-stretch">
+        <button
+          type="button"
+          onClick={toggleSidebar}
+          aria-label="Toggle navigation menu"
+          aria-expanded={sidebarOpen}
+          aria-controls="dashboard-sidebar"
+          className={iconBtn}
+        >
+          <FaBars className="w-[18px] h-[18px]" />
+        </button>
+        <Link to="/dashboard" className="flex items-center self-stretch pl-1 pr-2">
+          <img
+            src="/claapo-logo.svg"
+            alt="Claapo"
+            className="h-[18px] w-auto max-w-[96px] object-contain object-left select-none"
+            draggable={false}
+          />
+        </Link>
+      </div>
 
-      <div className="flex-1 flex items-center justify-end gap-1.5 sm:gap-2.5 px-4 sm:px-6 lg:px-5 min-w-0">
+      <div className="flex-1 flex items-center justify-end gap-1 sm:gap-1.5 px-4 sm:px-5 min-w-0">
 
-        {/* Notifications */}
+        {/* ════════ NOTIFICATIONS ════════ */}
         <div ref={notifRef} className="relative">
           <button
             type="button"
             onClick={() => { setNotifOpen((v) => !v); setUserOpen(false); }}
-            className="relative w-9 h-9 rounded-lg flex items-center justify-center text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600 transition-all duration-150"
-            aria-label="Notifications"
+            className={`${iconBtn} ${notifOpen ? 'bg-neutral-100 text-neutral-800' : ''}`}
+            aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
           >
-            <FaBell className="w-4 h-4" />
+            {notifOpen ? <FaBell className="w-[18px] h-[18px]" /> : <FaRegBell className="w-[18px] h-[18px]" />}
             {unreadCount > 0 && (
-              <span className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-[#F40F02] ring-2 ring-white" />
+              <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-[#F40F02] text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-white shadow-sm">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
             )}
           </button>
 
           {notifOpen && (
-            <div className="absolute right-0 top-[calc(100%+8px)] w-[340px] bg-white rounded-xl border border-neutral-200/80 shadow-lg shadow-neutral-900/[0.08] overflow-hidden z-50">
-              <div className="flex items-center justify-between px-4 py-3.5 border-b border-neutral-100">
+            <div className="absolute right-0 top-[calc(100%+10px)] w-[360px] bg-white rounded-2xl border border-neutral-200/80 shadow-xl shadow-neutral-900/10 overflow-hidden z-50 animate-[fadeIn_150ms_ease-out]">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100">
                 <div className="flex items-center gap-2.5">
-                  <span className="text-[13px] font-semibold text-neutral-900">Notifications</span>
+                  <span className="text-sm font-bold text-neutral-900">Notifications</span>
                   {unreadCount > 0 && (
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 bg-[#F40F02] text-white rounded-full leading-none">{unreadCount}</span>
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 bg-[#F40F02] text-white rounded-full leading-none">{unreadCount} new</span>
                   )}
                 </div>
                 {unreadCount > 0 && (
-                  <button type="button" onClick={markAllRead} className="text-[11px] text-[#3B5BDB] hover:text-[#2B4BC9] font-medium transition-colors">
+                  <button type="button" onClick={markAllRead} className="text-[11px] text-[#3B5BDB] hover:text-[#2B4BC9] font-semibold transition-colors">
                     Mark all read
                   </button>
                 )}
               </div>
 
-              <div className="max-h-80 overflow-y-auto divide-y divide-neutral-100/80">
+              <div className="max-h-[360px] overflow-y-auto divide-y divide-neutral-100">
                 {notifications.length === 0 ? (
-                  <div className="px-4 py-8 text-center text-xs text-neutral-400">No notifications yet</div>
+                  <div className="px-6 py-12 text-center">
+                    <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-neutral-100 flex items-center justify-center">
+                      <FaRegBell className="text-neutral-400 text-lg" />
+                    </div>
+                    <p className="text-sm font-semibold text-neutral-600">You're all caught up</p>
+                    <p className="text-xs text-neutral-400 mt-1">New notifications will appear here</p>
+                  </div>
                 ) : (
                   notifications.map((n) => (
                     <div
                       key={n.id}
-                      className={`flex gap-3 px-4 py-3.5 transition-all duration-150 cursor-default hover:bg-neutral-50 ${!n.readAt ? 'bg-[#F8FAFF]' : 'bg-white'}`}
+                      className={`flex gap-3 px-5 py-3.5 transition-all duration-150 cursor-default hover:bg-neutral-50 ${!n.readAt ? 'bg-[#F8FAFF]' : 'bg-white'}`}
                     >
-                      <div className="shrink-0 mt-1">
-                        {!n.readAt ? <FaCircle className="text-[#3B5BDB] text-[7px]" /> : <FaCircle className="text-neutral-200 text-[7px]" />}
+                      <div className="shrink-0 mt-1.5">
+                        {!n.readAt
+                          ? <FaCircle className="text-[#3B5BDB] text-[8px]" />
+                          : <FaCircle className="text-neutral-200 text-[8px]" />}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className={`text-[12px] font-semibold truncate leading-snug ${!n.readAt ? 'text-neutral-900' : 'text-neutral-600'}`}>{n.title}</p>
+                        <p className={`text-[12.5px] font-semibold truncate leading-snug ${!n.readAt ? 'text-neutral-900' : 'text-neutral-600'}`}>{n.title}</p>
                         <p className="text-[11px] text-neutral-500 leading-relaxed mt-0.5 line-clamp-2">{n.body}</p>
                         <p className="text-[10px] text-neutral-400 mt-1.5 font-medium">{timeAgo(n.createdAt)}</p>
                       </div>
@@ -157,8 +208,12 @@ export default function DashboardHeader({ userName: propUserName, userAvatar: pr
                 )}
               </div>
 
-              <div className="px-4 py-2.5 border-t border-neutral-100 text-center bg-neutral-50/50">
-                <button type="button" className="text-xs text-neutral-500 font-medium hover:text-neutral-700 transition-colors" onClick={() => setNotifOpen(false)}>
+              <div className="px-5 py-3 border-t border-neutral-100 bg-neutral-50/70 text-center">
+                <button
+                  type="button"
+                  className="text-xs font-semibold text-neutral-500 hover:text-neutral-800 transition-colors"
+                  onClick={() => setNotifOpen(false)}
+                >
                   Close
                 </button>
               </div>
@@ -167,74 +222,123 @@ export default function DashboardHeader({ userName: propUserName, userAvatar: pr
         </div>
 
         {/* Separator */}
-        <div className="hidden sm:block w-px h-6 bg-neutral-200/70 mx-0.5" />
+        <div className="hidden sm:block w-px h-6 bg-neutral-200 mx-1" />
 
-        {/* User menu */}
+        {/* ════════ USER MENU ════════ */}
         <div ref={userRef} className="relative">
           <button
             type="button"
             onClick={() => { setUserOpen((v) => !v); setNotifOpen(false); }}
-            className={`flex items-center gap-2 pl-2 pr-2.5 py-1.5 rounded-lg transition-all duration-150 min-w-0 ${
-              userOpen ? 'bg-neutral-100 shadow-sm' : 'hover:bg-neutral-100'
+            aria-expanded={userOpen}
+            aria-haspopup="menu"
+            className={`flex items-center gap-2.5 h-10 pl-1.5 pr-3 rounded-xl border transition-all duration-150 min-w-0 ${
+              userOpen
+                ? 'bg-neutral-100 border-neutral-200 shadow-sm'
+                : 'bg-transparent border-transparent hover:bg-neutral-100 hover:border-neutral-200/70'
             }`}
           >
-            <Avatar src={userAvatar} name={displayName} size="sm" />
-            <span className="text-[13px] font-medium text-neutral-700 hidden md:inline truncate max-w-[140px] lg:max-w-[180px]">
-              {displayName}
-            </span>
-            {!isMainUser && (
-              <span className="hidden sm:inline text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200/60 shrink-0">Sub-User</span>
-            )}
-            <FaChevronDown className={`w-2.5 h-2.5 text-neutral-400 hidden md:inline shrink-0 transition-transform duration-200 ${userOpen ? 'rotate-180' : ''}`} />
+            <div className="relative shrink-0">
+              <Avatar src={userAvatar} name={displayName} size="sm" />
+              <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white" />
+            </div>
+            <div className="hidden md:flex flex-col items-start leading-tight min-w-0 max-w-[160px] lg:max-w-[200px]">
+              <span className="text-[13px] font-semibold text-neutral-800 truncate max-w-full">{displayName}</span>
+              {roleInfo && (
+                <span className="text-[10px] font-medium text-neutral-400 truncate max-w-full">
+                  {roleInfo.label}{!isMainUser ? ' · Sub-User' : ''}
+                </span>
+              )}
+            </div>
+            <FaChevronDown className={`w-3 h-3 text-neutral-400 hidden md:inline shrink-0 transition-transform duration-200 ${userOpen ? 'rotate-180' : ''}`} />
           </button>
 
           {userOpen && (
-            <div className="absolute right-0 top-[calc(100%+8px)] w-56 bg-white rounded-xl border border-neutral-200/80 shadow-lg shadow-neutral-900/[0.08] overflow-hidden z-50">
-              <div className="px-4 py-3.5 border-b border-neutral-100 bg-neutral-50/50">
-                <p className="text-[13px] font-semibold text-neutral-900 truncate">{displayName}</p>
-                <p className="text-[11px] text-neutral-400 truncate mt-0.5">{user?.email ?? ''}</p>
+            <div className="absolute right-0 top-[calc(100%+10px)] w-64 bg-white rounded-2xl border border-neutral-200/80 shadow-xl shadow-neutral-900/10 overflow-hidden z-50 animate-[fadeIn_150ms_ease-out]">
+              {/* Gradient header with avatar + role */}
+              <div className="px-5 pt-5 pb-4 bg-gradient-to-br from-[#EEF4FF] via-[#F8FAFF] to-white border-b border-neutral-100">
+                <div className="flex items-center gap-3">
+                  <div className="relative shrink-0">
+                    <Avatar src={userAvatar} name={displayName} size="md" />
+                    <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 ring-2 ring-white" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[13px] font-bold text-neutral-900 truncate">{displayName}</p>
+                    <p className="text-[11px] text-neutral-500 truncate">{user?.email ?? ''}</p>
+                  </div>
+                </div>
+                {roleInfo && (
+                  <div className="flex items-center gap-1.5 mt-3">
+                    <span className={`inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full ${roleInfo.bg} ${roleInfo.text}`}>
+                      {roleInfo.label}
+                    </span>
+                    {!isMainUser && (
+                      <span className="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700">
+                        Sub-User
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
-              <div className="p-1.5 space-y-0.5">
+
+              <div className="p-1.5" role="menu">
                 <Link
                   to={profilePath}
                   onClick={() => setUserOpen(false)}
-                  className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-[13px] text-neutral-700 hover:bg-neutral-100 transition-all duration-150 font-medium"
+                  role="menuitem"
+                  className="w-full flex items-center gap-3 h-10 px-3 rounded-lg text-[13px] text-neutral-700 hover:bg-neutral-100 transition-all duration-150 font-medium"
                 >
-                  <FaUser className="w-3.5 h-3.5 text-neutral-400" />
+                  <span className="inline-flex items-center justify-center w-5 h-5 text-neutral-400">
+                    <FaUser className="w-[15px] h-[15px]" />
+                  </span>
                   My profile
                 </Link>
                 <Link
                   to={schedulePath}
                   onClick={() => setUserOpen(false)}
-                  className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-[13px] text-neutral-700 hover:bg-neutral-100 transition-all duration-150 font-medium"
+                  role="menuitem"
+                  className="w-full flex items-center gap-3 h-10 px-3 rounded-lg text-[13px] text-neutral-700 hover:bg-neutral-100 transition-all duration-150 font-medium"
                 >
-                  <FaCalendarDays className="w-3.5 h-3.5 text-neutral-400" />
+                  <span className="inline-flex items-center justify-center w-5 h-5 text-neutral-400">
+                    <FaCalendarDays className="w-[15px] h-[15px]" />
+                  </span>
                   Schedule
                 </Link>
                 {user?.role !== 'admin' && (
                   <Link
                     to="/dashboard/invoices"
                     onClick={() => setUserOpen(false)}
-                    className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-[13px] text-neutral-700 hover:bg-neutral-100 transition-all duration-150 font-medium"
+                    role="menuitem"
+                    className="w-full flex items-center gap-3 h-10 px-3 rounded-lg text-[13px] text-neutral-700 hover:bg-neutral-100 transition-all duration-150 font-medium"
                   >
-                    <FaFileInvoice className="w-3.5 h-3.5 text-neutral-400" />
+                    <span className="inline-flex items-center justify-center w-5 h-5 text-neutral-400">
+                      <FaFileInvoice className="w-[15px] h-[15px]" />
+                    </span>
                     Invoices
                   </Link>
                 )}
                 <Link
                   to="/about"
                   onClick={() => setUserOpen(false)}
-                  className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-[13px] text-neutral-700 hover:bg-neutral-100 transition-all duration-150 font-medium"
+                  role="menuitem"
+                  className="w-full flex items-center gap-3 h-10 px-3 rounded-lg text-[13px] text-neutral-700 hover:bg-neutral-100 transition-all duration-150 font-medium"
                 >
-                  <FaCircleQuestion className="w-3.5 h-3.5 text-neutral-400" />
-                  Help
+                  <span className="inline-flex items-center justify-center w-5 h-5 text-neutral-400">
+                    <FaCircleQuestion className="w-[15px] h-[15px]" />
+                  </span>
+                  Help &amp; support
                 </Link>
+
+                <div className="h-px bg-neutral-100 my-1.5 mx-1" />
+
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-[13px] text-red-600 hover:bg-red-50 transition-all duration-150 font-medium"
+                  role="menuitem"
+                  className="w-full flex items-center gap-3 h-10 px-3 rounded-lg text-[13px] text-red-600 hover:bg-red-50 transition-all duration-150 font-medium"
                 >
-                  <FaRightFromBracket className="w-3.5 h-3.5" />
+                  <span className="inline-flex items-center justify-center w-5 h-5">
+                    <FaRightFromBracket className="w-[15px] h-[15px]" />
+                  </span>
                   Log out
                 </button>
               </div>

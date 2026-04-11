@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useParams, Link } from 'react-router-dom';
-import { FaArrowLeft, FaLocationDot, FaUpRightFromSquare, FaCalendarDays, FaTriangleExclamation, FaVideo, FaLink, FaChevronLeft, FaChevronRight, FaBan, FaCircleCheck, FaCalendarCheck } from 'react-icons/fa6';
+import { FaArrowLeft, FaLocationDot, FaUpRightFromSquare, FaCalendarDays, FaTriangleExclamation, FaVideo, FaLink, FaChevronLeft, FaChevronRight, FaBan, FaCircleCheck, FaCalendarCheck, FaGlobe, FaInstagram, FaYoutube, FaVimeoV, FaImdb, FaLinkedinIn, FaXTwitter } from 'react-icons/fa6';
+import toast from 'react-hot-toast';
 import DashboardHeader from '../components/DashboardHeader';
 import DashboardSidebar from '../components/DashboardSidebar';
 import AppFooter from '../components/AppFooter';
 import Avatar from '../components/Avatar';
 import ReviewsList from '../components/ReviewsList';
+import LeaveReviewSection from '../components/LeaveReviewSection';
 import AvailabilityDateDetailModal from '../components/AvailabilityDateDetailModal';
 import { api, ApiException } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 import { companyNavLinks } from '../navigation/dashboardNav';
 import type { BookingWithDetails, SlotStatus } from '../types/availability';
 import { parseAvailabilityMonthResponse } from '../utils/parseAvailabilityResponse';
@@ -100,9 +103,11 @@ const itemVariants = {
 
 export default function OtherUserProfile() {
   const { userId } = useParams<{ userId: string }>();
+  const { user: viewer } = useAuth();
   const [profile, setProfile] = useState<PublicProfileResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [reviewsRefreshKey, setReviewsRefreshKey] = useState(0);
 
   const [calYear, setCalYear] = useState(new Date().getFullYear());
   const [calMonth, setCalMonth] = useState(new Date().getMonth());
@@ -321,70 +326,75 @@ export default function OtherUserProfile() {
                     </motion.div>
                   )}
 
-                  {(isIndividual || isVendor) &&
-                    (p.website || p.instagramUrl || p.youtubeUrl || p.vimeoUrl || p.imdbUrl) && (
-                    <motion.div variants={itemVariants} className="rounded-3xl bg-white shadow-soft border border-neutral-100 p-6 sm:p-8">
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-                        <h2 className="text-base font-bold text-neutral-900 flex items-center gap-2">
-                          <span className="w-1 h-5 rounded-full bg-[#F4C430]" /> Social & links
-                        </h2>
-                        {profileShareUrl && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              void navigator.clipboard.writeText(profileShareUrl);
-                            }}
-                            className="inline-flex items-center justify-center gap-2 text-xs font-semibold text-[#3B5BDB] border border-[#3B5BDB]/30 rounded-xl px-3 py-2 hover:bg-[#EEF4FF] transition-colors"
-                          >
-                            <FaLink className="w-3.5 h-3.5" />
-                            Copy profile link
-                          </button>
-                        )}
-                      </div>
-                      <ul className="space-y-2 text-sm">
-                        {p.website && (
-                          <li>
-                            <span className="text-neutral-500 text-xs font-medium mr-2">Website</span>
-                            <a href={p.website} target="_blank" rel="noreferrer" className="text-[#3B5BDB] hover:underline break-all">
-                              {p.website}
-                            </a>
-                          </li>
-                        )}
-                        {p.instagramUrl && (
-                          <li>
-                            <span className="text-neutral-500 text-xs font-medium mr-2">Instagram</span>
-                            <a href={p.instagramUrl} target="_blank" rel="noreferrer" className="text-[#3B5BDB] hover:underline break-all">
-                              {p.instagramUrl}
-                            </a>
-                          </li>
-                        )}
-                        {p.youtubeUrl && (
-                          <li>
-                            <span className="text-neutral-500 text-xs font-medium mr-2">YouTube</span>
-                            <a href={p.youtubeUrl} target="_blank" rel="noreferrer" className="text-[#3B5BDB] hover:underline break-all">
-                              {p.youtubeUrl}
-                            </a>
-                          </li>
-                        )}
-                        {p.vimeoUrl && (
-                          <li>
-                            <span className="text-neutral-500 text-xs font-medium mr-2">Vimeo</span>
-                            <a href={p.vimeoUrl} target="_blank" rel="noreferrer" className="text-[#3B5BDB] hover:underline break-all">
-                              {p.vimeoUrl}
-                            </a>
-                          </li>
-                        )}
-                        {p.imdbUrl && (
-                          <li>
-                            <span className="text-neutral-500 text-xs font-medium mr-2">IMDb</span>
-                            <a href={p.imdbUrl} target="_blank" rel="noreferrer" className="text-[#3B5BDB] hover:underline break-all">
-                              {p.imdbUrl}
-                            </a>
-                          </li>
-                        )}
-                      </ul>
-                    </motion.div>
-                  )}
+                  {(isIndividual || isVendor) && (() => {
+                    const platforms: Array<{ key: string; label: string; url: string | undefined; Icon: typeof FaGlobe; color: string; bg: string; border: string }> = [
+                      { key: 'website',   label: 'Website',     url: p.website,      Icon: FaGlobe,      color: 'text-[#3B5BDB]', bg: 'bg-[#3B5BDB]/10', border: 'border-[#3B5BDB]/20' },
+                      { key: 'instagram', label: 'Instagram',   url: p.instagramUrl, Icon: FaInstagram,  color: 'text-[#E4405F]', bg: 'bg-[#E4405F]/10', border: 'border-[#E4405F]/20' },
+                      { key: 'youtube',   label: 'YouTube',     url: p.youtubeUrl,   Icon: FaYoutube,    color: 'text-[#FF0000]', bg: 'bg-[#FF0000]/10', border: 'border-[#FF0000]/20' },
+                      { key: 'vimeo',     label: 'Vimeo',       url: p.vimeoUrl,     Icon: FaVimeoV,     color: 'text-[#1AB7EA]', bg: 'bg-[#1AB7EA]/10', border: 'border-[#1AB7EA]/20' },
+                      { key: 'imdb',      label: 'IMDb',        url: p.imdbUrl,      Icon: FaImdb,       color: 'text-[#B58A00]', bg: 'bg-[#F5C518]/15', border: 'border-[#F5C518]/30' },
+                      { key: 'linkedin',  label: 'LinkedIn',    url: (p as { linkedinUrl?: string }).linkedinUrl, Icon: FaLinkedinIn, color: 'text-[#0A66C2]', bg: 'bg-[#0A66C2]/10', border: 'border-[#0A66C2]/20' },
+                      { key: 'twitter',   label: 'X (Twitter)', url: (p as { twitterUrl?: string }).twitterUrl,   Icon: FaXTwitter,   color: 'text-neutral-900', bg: 'bg-neutral-100', border: 'border-neutral-200' },
+                    ];
+                    const visible = platforms.filter((pl) => !!pl.url);
+                    if (visible.length === 0) return null;
+                    const handleOpen = (url: string) => window.open(url, '_blank', 'noopener,noreferrer');
+                    const handleCopy = async (e: React.MouseEvent, url: string, label: string) => {
+                      e.preventDefault();
+                      try {
+                        await navigator.clipboard.writeText(url);
+                        toast.success(`${label} link copied`);
+                      } catch {
+                        toast.error('Could not copy link');
+                      }
+                    };
+                    return (
+                      <motion.div variants={itemVariants} className="rounded-3xl bg-white shadow-soft border border-neutral-100 p-6 sm:p-8">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
+                          <div>
+                            <h2 className="text-base font-bold text-neutral-900 flex items-center gap-2">
+                              <span className="w-1 h-5 rounded-full bg-[#3B5BDB]" /> Social & Links
+                            </h2>
+                            <p className="text-[11px] text-neutral-400 mt-1.5 ml-3">Left-click to open · Right-click to copy</p>
+                          </div>
+                          {profileShareUrl && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                void navigator.clipboard.writeText(profileShareUrl);
+                                toast.success('Profile link copied');
+                              }}
+                              className="inline-flex items-center justify-center gap-2 text-xs font-semibold text-[#3B5BDB] border border-[#3B5BDB]/30 rounded-xl px-3 py-2 hover:bg-[#EEF4FF] transition-colors"
+                            >
+                              <FaLink className="w-3.5 h-3.5" />
+                              Copy profile link
+                            </button>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                          {visible.map(({ key, label, url, Icon, color, bg, border }) => (
+                            <button
+                              key={key}
+                              type="button"
+                              onClick={() => handleOpen(url!)}
+                              onContextMenu={(e) => handleCopy(e, url!, label)}
+                              title={`Left-click to open ${label} · Right-click to copy link`}
+                              className={`group relative flex items-center gap-3 px-3.5 py-3 rounded-2xl border ${border} ${bg} hover:shadow-sm hover:-translate-y-0.5 transition-all duration-150 text-left`}
+                            >
+                              <div className="w-9 h-9 rounded-xl bg-white border border-neutral-200/60 flex items-center justify-center shrink-0 shadow-sm">
+                                <Icon className={`w-4 h-4 ${color}`} />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-[11px] uppercase tracking-wider text-neutral-400 font-semibold leading-none">Visit</p>
+                                <p className={`text-sm font-bold ${color} truncate leading-tight mt-1`}>{label}</p>
+                              </div>
+                              <FaUpRightFromSquare className={`w-3 h-3 ${color} opacity-0 group-hover:opacity-60 absolute top-2 right-2 transition-opacity`} />
+                            </button>
+                          ))}
+                        </div>
+                      </motion.div>
+                    );
+                  })()}
 
                   {isVendor && (
                     <motion.div variants={itemVariants} className="rounded-3xl bg-white shadow-soft border border-neutral-100 p-6 sm:p-8">
@@ -489,7 +499,7 @@ export default function OtherUserProfile() {
                       <span className="inline-flex items-center gap-1.5 rounded-full bg-white border border-[#93C5FD] px-2.5 py-1 text-[11px] font-bold text-[#1D4ED8] shadow-sm">
                         <FaCalendarCheck className="w-2.5 h-2.5" /> {calStats.booked} booked
                       </span>
-                      <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[#FEE2E2] to-[#FECACA] border border-[#F87171] px-2.5 py-1 text-[11px] font-extrabold text-[#991B1B] shadow-sm">
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-[#FCA5A5] border border-[#DC2626] px-2.5 py-1 text-[11px] font-extrabold text-[#7F1D1D] shadow-sm">
                         <FaBan className="w-2.5 h-2.5" /> {calStats.blocked} unavailable
                       </span>
                       {calLoading && (
@@ -528,20 +538,29 @@ export default function OtherUserProfile() {
                                   const { day, dateKey, status, hasBooking, isToday } = cell;
                                   const isBlocked = status === 'blocked';
                                   const base =
-                                    'relative h-9 rounded-md text-[11px] font-semibold flex items-center justify-center cursor-pointer border border-transparent hover:ring-2 hover:ring-[#3B5BDB]/25 transition-all overflow-hidden';
+                                    'relative h-9 rounded-md text-[11px] font-semibold flex items-center justify-center border transition-all overflow-hidden';
+                                  const interactivity = isBlocked
+                                    ? 'cursor-not-allowed'
+                                    : 'cursor-pointer hover:ring-2 hover:ring-[#3B5BDB]/25';
                                   let bg = 'bg-neutral-50 text-neutral-700 border-neutral-100';
-                                  if (status === 'available') bg = 'bg-[#DCFCE7] text-[#15803D] border-[#86EFAC] hover:bg-[#BBF7D0]';
-                                  else if (status === 'booked' || status === 'past_work') bg = 'bg-[#DBEAFE] text-[#1D4ED8] border-[#93C5FD] hover:bg-[#BFDBFE]';
-                                  else if (isBlocked) bg = 'bg-gradient-to-br from-[#FEE2E2] to-[#FECACA] text-[#991B1B] border-[#F87171] shadow-sm shadow-red-200/40 hover:from-[#FECACA] hover:to-[#FCA5A5]';
+                                  if (status === 'available')      bg = 'bg-[#DCFCE7] text-[#15803D] border-[#86EFAC] hover:bg-[#BBF7D0]';
+                                  else if (status === 'booked')    bg = 'bg-[#FCD34D] text-[#78350F] border-[#D97706] hover:bg-[#FBBF24]';
+                                  else if (status === 'past_work') bg = 'bg-[#60A5FA] text-[#0F1F4D] border-[#1D4ED8] hover:bg-[#3B82F6]';
+                                  else if (isBlocked)              bg = 'bg-[#FCA5A5] text-[#7F1D1D] border-[#DC2626]';
                                   const todayRing = isToday ? 'ring-2 ring-[#3B5BDB]/50 ring-offset-1' : '';
                                   return (
                                     <button
                                       key={key}
                                       type="button"
-                                      title={isBlocked ? 'Not available' : undefined}
-                                      aria-label={isBlocked ? `${dateKey} — not available` : dateKey}
-                                      className={`${base} ${bg} ${todayRing}`}
-                                      onClick={() => setDetailDate(dateKey)}
+                                      title={isBlocked ? 'Unavailable' : undefined}
+                                      aria-label={isBlocked ? `${dateKey} — unavailable` : dateKey}
+                                      aria-disabled={isBlocked || undefined}
+                                      tabIndex={isBlocked ? -1 : 0}
+                                      className={`${base} ${interactivity} ${bg} ${todayRing}`}
+                                      onClick={() => {
+                                        if (isBlocked) return;
+                                        setDetailDate(dateKey);
+                                      }}
                                     >
                                       {isBlocked && (
                                         <span
@@ -549,12 +568,12 @@ export default function OtherUserProfile() {
                                           className="absolute inset-0 pointer-events-none opacity-30"
                                           style={{
                                             backgroundImage:
-                                              'repeating-linear-gradient(45deg, rgba(185,28,28,0.22) 0 3px, transparent 3px 6px)',
+                                              'repeating-linear-gradient(45deg, rgba(127,29,29,0.30) 0 3px, transparent 3px 6px)',
                                           }}
                                         />
                                       )}
                                       <span className="relative flex flex-col items-center gap-0.5">
-                                        <span className={isBlocked ? 'line-through decoration-[1.5px] decoration-[#991B1B]/60' : ''}>{day}</span>
+                                        <span className={isBlocked ? 'line-through decoration-[1.5px] decoration-[#7F1D1D]/70' : ''}>{day}</span>
                                         {hasBooking ? (
                                           <span className="w-1 h-1 rounded-full bg-[#3B5BDB]" />
                                         ) : null}
@@ -577,12 +596,16 @@ export default function OtherUserProfile() {
                             Available
                           </div>
                           <div className="flex items-center gap-1">
-                            <span className="w-3 h-3 rounded-sm bg-[#DBEAFE] border border-[#93C5FD]" />
-                            Booked / completed
+                            <span className="w-3 h-3 rounded-sm bg-[#FCD34D] border border-[#D97706]" />
+                            Ongoing
                           </div>
                           <div className="flex items-center gap-1">
-                            <span className="w-3 h-3 rounded-sm bg-gradient-to-br from-[#FEE2E2] to-[#FECACA] border border-[#F87171]" />
-                            Not available
+                            <span className="w-3 h-3 rounded-sm bg-[#60A5FA] border border-[#1D4ED8]" />
+                            Completed
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span className="w-3 h-3 rounded-sm bg-[#FCA5A5] border border-[#DC2626]" />
+                            Unavailable
                           </div>
                         </div>
                       </>
@@ -604,8 +627,19 @@ export default function OtherUserProfile() {
 
               {/* Reviews section */}
               {profile && (
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="mt-8">
-                  <ReviewsList userId={profile.id} />
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="mt-8 space-y-4">
+                  <div className="flex items-center gap-3 mb-2">
+                    <span className="w-1 h-5 rounded-full bg-[#3B5BDB]" />
+                    <h2 className="text-base font-bold text-neutral-900">Ratings & Reviews</h2>
+                  </div>
+                  {viewer?.role === 'company' && (isIndividual || isVendor) && (
+                    <LeaveReviewSection
+                      targetUserId={profile.id}
+                      targetName={title}
+                      onSubmitted={() => setReviewsRefreshKey((k) => k + 1)}
+                    />
+                  )}
+                  <ReviewsList userId={profile.id} refreshKey={reviewsRefreshKey} />
                 </motion.div>
               )}
             </div>

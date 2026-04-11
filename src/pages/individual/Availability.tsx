@@ -9,11 +9,19 @@ import toast from 'react-hot-toast';
 import { individualNavLinks } from '../../navigation/dashboardNav';
 import type { BookingWithDetails } from '../../types/availability';
 import { parseAvailabilityMonthResponse } from '../../utils/parseAvailabilityResponse';
+import { useChatUnread } from '../../contexts/ChatUnreadContext';
+import {
+  CELL_STYLE,
+  CELL_STATUS_LABEL,
+  LEGEND_SWATCHES,
+  toCellStatus,
+  type CellStatus as CellStatusKey,
+} from '../../utils/slotStatusStyles';
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-type CellStatus = 'available' | 'booked' | 'completed' | 'blocked' | null;
+type CellStatus = CellStatusKey | null;
 
 interface AvailabilitySlot {
   date: string;
@@ -38,13 +46,6 @@ interface CalendarCell {
   notes?: string;
 }
 
-function toFrontendStatus(status: string): CellStatus {
-  if (status === 'past_work') return 'completed';
-  if (status === 'blocked')   return 'blocked';
-  if (status === 'booked')    return 'booked';
-  return 'available';
-}
-
 function buildCalendar(
   year: number,
   month: number,
@@ -64,7 +65,7 @@ function buildCalendar(
       cells.push({
         d: day,
         muted: false,
-        status: toFrontendStatus(slot.status),
+        status: toCellStatus(slot.status),
         project:  slot.projectTitle ?? undefined,
         company:  slot.companyName  ?? undefined,
         role:     slot.roleName     ?? undefined,
@@ -82,12 +83,7 @@ function buildCalendar(
   return cells;
 }
 
-const cellStyle: Record<string, string> = {
-  available: 'bg-[#DCFCE7] border-[#86EFAC] text-[#15803D] hover:bg-[#BBF7D0]',
-  booked:    'bg-[#FDE68A] border-[#F59E0B] text-[#92400E] hover:bg-[#FCD34D]',
-  completed: 'bg-[#93C5FD] border-[#3B82F6] text-[#1E3A8A] hover:bg-[#60A5FA]',
-  blocked:   'bg-gradient-to-br from-[#FEE2E2] to-[#FECACA] border-[#F87171] text-[#991B1B] hover:from-[#FECACA] hover:to-[#FCA5A5] shadow-sm shadow-red-200/40',
-};
+const cellStyle = CELL_STYLE;
 
 export default function IndividualAvailability() {
   useEffect(() => { document.title = 'Availability – Claapo'; }, []);
@@ -101,7 +97,9 @@ export default function IndividualAvailability() {
   const [apiSlots, setApiSlots] = useState<Record<string, AvailabilitySlot>>({});
   const [bookingDetails, setBookingDetails] = useState<Record<string, BookingWithDetails>>({});
   const [slotsLoading, setSlotsLoading] = useState(false);
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [saving, setSaving] = useState(false);
+  const { unreadByProject, unreadDateByProject } = useChatUnread();
 
   const displayDate = new Date(BASE_YEAR, BASE_MONTH + monthOffset, 1);
   const displayYear = displayDate.getFullYear();
@@ -135,6 +133,7 @@ export default function IndividualAvailability() {
       setBookingDetails({});
     } finally {
       setSlotsLoading(false);
+      setHasLoadedOnce(true);
     }
   }, [displayYear, displayMonth]);
 
@@ -275,10 +274,31 @@ export default function IndividualAvailability() {
                 </div>
 
                 {/* Calendar grid — larger cells */}
+                {!hasLoadedOnce && slotsLoading ? (
+                  <div className="grid grid-cols-7 gap-1" aria-busy="true" aria-label="Loading calendar">
+                    {Array.from({ length: 42 }).map((_, i) => (
+                      <div
+                        key={i}
+                        className="min-h-[56px] sm:min-h-[64px] rounded-xl bg-gradient-to-br from-neutral-100 to-neutral-50 border border-neutral-100 animate-pulse"
+                        style={{ animationDelay: `${(i % 7) * 60}ms` }}
+                      />
+                    ))}
+                  </div>
+                ) : (
                 <div className="grid grid-cols-7 gap-1">
                   {calendarDays.map((cell, i) => {
                     const dateStr = !cell.muted ? getDateStr(cell.d) : '';
                     const isSelected = !!dateStr && detailDate === dateStr;
+                    const cellProjectId = dateStr ? bookingDetails[dateStr]?.projectId : undefined;
+                    const cellUnread = cellProjectId ? (unreadByProject[cellProjectId] ?? 0) : 0;
+                    const focusUnread = !cell.muted && cellProjectId
+                      && unreadDateByProject[cellProjectId] === dateStr
+                      ? cellUnread
+                      : 0;
+                    const secondaryUnread = !cell.muted && !focusUnread
+                      && cellProjectId
+                      && (unreadByProject[cellProjectId] ?? 0) > 0
+                      && unreadDateByProject[cellProjectId] !== dateStr;
                     return (
                       <div
                         key={i}
@@ -299,8 +319,31 @@ export default function IndividualAvailability() {
                             : `${cellStyle[cell.status ?? 'available'] ?? cellStyle.available} cal-cell cursor-pointer`
                           }
                           ${isSelected ? 'ring-2 ring-[#3B5BDB] ring-offset-1' : ''}
+                          ${focusUnread ? 'ring-2 ring-[#F40F02]/70 ring-offset-1' : ''}
+                          ${secondaryUnread ? 'ring-1 ring-[#F40F02]/30' : ''}
                         `}
                       >
+                        {focusUnread > 0 && (
+                          <span
+                            className="absolute -top-1 -right-1 flex items-center justify-center"
+                            title={`${focusUnread} new message${focusUnread === 1 ? '' : 's'}`}
+                            aria-label={`${focusUnread} unread messages`}
+                          >
+                            <span className="absolute inline-flex h-4 w-4 rounded-full bg-[#F40F02] opacity-70 animate-ping" />
+                            <span className="relative inline-flex h-4 w-4 rounded-full bg-[#F40F02] text-white text-[8px] font-bold items-center justify-center shadow-md">
+                              {focusUnread > 9 ? '9+' : focusUnread}
+                            </span>
+                          </span>
+                        )}
+                        {secondaryUnread && (
+                          <span
+                            className="absolute top-1 right-1 flex items-center justify-center pointer-events-none"
+                            aria-hidden
+                          >
+                            <span className="absolute inline-flex h-1.5 w-1.5 rounded-full bg-[#F40F02] opacity-40 animate-ping" style={{ animationDuration: '2.4s' }} />
+                            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#F40F02]/70" />
+                          </span>
+                        )}
                         {/* Diagonal stripe overlay for blocked cells */}
                         {!cell.muted && cell.status === 'blocked' && (
                           <span
@@ -320,27 +363,23 @@ export default function IndividualAvailability() {
                         <span className={`relative text-xs font-bold leading-none ${cell.status === 'blocked' ? 'line-through decoration-[1.5px] decoration-[#991B1B]/60' : ''}`}>{cell.d}</span>
                         {!cell.muted && cell.status && (
                           <span className="relative text-[9px] leading-tight truncate w-full font-semibold opacity-90">
-                            {cell.status === 'available' && 'Free'}
-                            {cell.status === 'booked' && (cell.project?.split(' ')[0] ?? 'Ongoing')}
-                            {cell.status === 'completed' && (cell.project?.split(' ')[0] ?? 'Done')}
-                            {cell.status === 'blocked' && (cell.notes ? cell.notes.slice(0, 9) + (cell.notes.length > 9 ? '…' : '') : 'Unavailable')}
+                            {cell.status === 'available' && CELL_STATUS_LABEL.available}
+                            {cell.status === 'booked' && (cell.project?.split(' ')[0] ?? CELL_STATUS_LABEL.booked)}
+                            {cell.status === 'completed' && (cell.project?.split(' ')[0] ?? CELL_STATUS_LABEL.completed)}
+                            {cell.status === 'blocked' && (cell.notes ? cell.notes.slice(0, 9) + (cell.notes.length > 9 ? '…' : '') : CELL_STATUS_LABEL.blocked)}
                           </span>
                         )}
                       </div>
                     );
                   })}
                 </div>
+                )}
 
                 {/* Legend */}
                 <div className="flex flex-wrap gap-x-5 gap-y-2 mt-5 pt-4 border-t border-neutral-100">
-                  {[
-                    { swatch: 'bg-[#DCFCE7] border-[#86EFAC]', label: 'Available' },
-                    { swatch: 'bg-[#FDE68A] border-[#F59E0B]', label: 'Ongoing' },
-                    { swatch: 'bg-[#93C5FD] border-[#3B82F6]', label: 'Completed' },
-                    { swatch: 'bg-gradient-to-br from-[#FEE2E2] to-[#FECACA] border-[#F87171]', label: 'Unavailable' },
-                  ].map(({ swatch, label }) => (
-                    <div key={label} className="flex items-center gap-2">
-                      <div className={`w-4 h-4 rounded border ${swatch}`} />
+                  {LEGEND_SWATCHES.map(({ key, swatch, label }) => (
+                    <div key={key} className="flex items-center gap-2">
+                      <div className={`w-4 h-4 rounded ${swatch}`} />
                       <span className="text-xs font-medium text-neutral-600">{label}</span>
                     </div>
                   ))}

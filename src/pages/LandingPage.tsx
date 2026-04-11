@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useEffect, useRef, useState } from 'react';
 import {
-  FaVideo, FaUsers, FaTruck, FaCircleCheck,
+  FaVideo, FaUsers, FaTruck,
   FaArrowRight, FaMagnifyingGlass, FaCalendarCheck,
   FaCheck, FaPlay, FaLock, FaLayerGroup,
   FaComments, FaFileInvoiceDollar, FaBolt, FaShieldHalved,
@@ -47,25 +47,29 @@ function useCounter(end: number, visible: boolean, duration = 1600) {
 /* ── Data ── */
 const testimonials = [
   {
-    quote: '"The 3D visualization of my schedule is a game changer. I can finally see my entire month\'s workload at a glance."',
-    name: 'Priya Sharma', role: 'Executive Producer', initials: 'PS', color: 'bg-purple-500',
+    quote: '"Claapo reduced our pre-production time by 40%. Centralised hiring, real availability, and no more WhatsApp chaos."',
+    name: 'Priya Sharma', role: 'Executive Producer · Production House', category: 'Company',
+    initials: 'PS', color: 'bg-blue-500',
   },
   {
-    quote: '"Claapo reduced our pre-production time by 40%. No more WhatsApp chaos."',
-    name: 'Rahul Verma', role: 'Line Producer', initials: 'RV', color: 'bg-blue-500',
+    quote: '"The invoicing feature alone saves me hours every week. Bookings, chats, and GST invoices — all in one place."',
+    name: 'Sneha Kapoor', role: 'Freelance DOP · Individual', category: 'Individual',
+    initials: 'SK', color: 'bg-emerald-500',
   },
   {
     quote: '"Finally, a platform that understands how equipment rentals actually work. The inventory tracking is superb."',
-    name: 'Amit Patel', role: 'Rental House Owner', initials: 'AP', color: 'bg-emerald-500',
+    name: 'Amit Patel', role: 'Rental House Owner · Vendor', category: 'Vendor',
+    initials: 'AP', color: 'bg-purple-500',
   },
   {
-    quote: '"The invoicing feature alone saves me hours every week. No more chasing payments over email."',
-    name: 'Sneha Kapoor', role: 'Freelance DOP', initials: 'SK', color: 'bg-amber-500',
+    quote: '"I get discovered by top agencies, manage my calendar, and get paid faster. Claapo changed the way I freelance."',
+    name: 'Rahul Verma', role: 'Freelance Editor · Individual', category: 'Individual',
+    initials: 'RV', color: 'bg-amber-500',
   },
 ];
 
-const avatarColors = ['bg-purple-500', 'bg-blue-500', 'bg-emerald-500'];
-const avatarInitials = ['PS', 'RV', 'AP'];
+const avatarColors = ['bg-blue-500', 'bg-emerald-500', 'bg-purple-500'];
+const avatarInitials = ['Co', 'In', 'Vd'];
 
 const faqs = [
   { q: 'Is Claapo free for freelancers?', a: 'Yes! Freelancers can create a profile, manage their availability calendar, and respond to booking requests completely free of charge. Premium features like priority listing and advanced analytics are available with optional paid plans.' },
@@ -78,7 +82,7 @@ const faqs = [
 
 
 export default function LandingPage() {
-  useEffect(() => { document.title = 'Claapo \u2013 Run Film Productions Without the Chaos'; }, []);
+  useEffect(() => { document.title = 'Claapo \u2013 Where Companies, Individuals & Vendors Meet'; }, []);
 
   const hero      = useInView(0.05);
   const trusted   = useInView(0.1);
@@ -93,11 +97,11 @@ export default function LandingPage() {
   const faqRef    = useInView();
   const ctaRef    = useInView();
 
-  /* Stats counters */
-  const statProjects   = useCounter(500, stats.visible);
-  const statCrew       = useCounter(2000, stats.visible);
-  const statBookings   = useCounter(10000, stats.visible);
-  const statCities     = useCounter(15, stats.visible);
+  /* Stats counters — one per category, plus platform activity */
+  const statCompanies   = useCounter(500, stats.visible);
+  const statIndividuals = useCounter(2000, stats.visible);
+  const statVendors     = useCounter(800, stats.visible);
+  const statBookings    = useCounter(10000, stats.visible);
 
   /* FAQ state */
   const [openFaq, setOpenFaq] = useState<number | null>(0);
@@ -124,17 +128,18 @@ export default function LandingPage() {
             <div className="max-w-xl">
               <div className="inline-flex items-center gap-2 bg-white/60 backdrop-blur rounded-full px-4 py-1.5 mb-6 border border-white/80">
                 <FaBolt className="text-amber-500 text-xs" />
-                <span className="text-xs font-semibold text-slate-700">India's #1 Film Production Platform</span>
+                <span className="text-xs font-semibold text-slate-700">India's Complete Film &amp; Media Ecosystem</span>
               </div>
               <h1 className="text-5xl lg:text-[60px] font-extrabold text-[#0f172a] leading-[1.08] mb-6 tracking-tight">
-                Run Film<br />
-                Productions<br />
-                <span className="text-[#3B5BDB]">Without</span><br />
-                the Chaos.
+                One Platform.<br />
+                Companies.<br />
+                Individuals.<br />
+                <span className="text-[#3B5BDB]">Vendors.</span>
               </h1>
-              <p className="text-[15px] text-slate-500 leading-relaxed mb-9 max-w-[420px]">
-                Hire verified crew, book vendors, manage schedules, and track projects &mdash;
-                an all-in-one platform built for modern film &amp; advertising teams.
+              <p className="text-[15px] text-slate-500 leading-relaxed mb-9 max-w-[440px]">
+                Whether you run a production house, freelance on set, or rent out gear &mdash;
+                Claapo is the single platform where every side of the industry connects,
+                collaborates, and gets paid.
               </p>
 
               <div className="flex flex-wrap gap-3 mb-9">
@@ -142,7 +147,7 @@ export default function LandingPage() {
                   to="/register"
                   className="inline-flex items-center justify-center rounded-xl bg-[#3B5BDB] text-white px-7 py-3.5 text-sm font-bold hover:bg-[#2f4ac2] transition-all shadow-xl shadow-[#3B5BDB]/30 hover:-translate-y-0.5"
                 >
-                  Start for Free <FaArrowRight className="ml-2 text-xs" />
+                  Join Claapo &mdash; Free <FaArrowRight className="ml-2 text-xs" />
                 </Link>
                 <Link
                   to="/dashboard"
@@ -155,19 +160,19 @@ export default function LandingPage() {
                 </Link>
               </div>
 
-              {/* Social proof */}
+              {/* Social proof — three categories */}
               <div className="flex items-center gap-3">
                 <div className="flex -space-x-2">
                   {avatarInitials.map((init, i) => (
-                    <div key={i} className={`w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-[10px] font-bold text-white shadow-sm ${avatarColors[i]}`}>
+                    <div key={i} className={`w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-[9px] font-bold text-white shadow-sm ${avatarColors[i]}`}>
                       {init}
                     </div>
                   ))}
-                  <div className="w-8 h-8 rounded-full border-2 border-white bg-[#3B5BDB] flex items-center justify-center text-[9px] font-bold text-white shadow-sm">+2k</div>
+                  <div className="w-8 h-8 rounded-full border-2 border-white bg-[#3B5BDB] flex items-center justify-center text-[9px] font-bold text-white shadow-sm">+3k</div>
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-slate-700">2,000+ Professionals</p>
-                  <p className="text-xs text-slate-400">in Mumbai, Delhi &amp; Bangalore</p>
+                  <p className="text-sm font-semibold text-slate-700">3,000+ Companies, Individuals &amp; Vendors</p>
+                  <p className="text-xs text-slate-400">across 15+ cities in India</p>
                 </div>
               </div>
             </div>
@@ -190,9 +195,9 @@ export default function LandingPage() {
          ══════════════════════════════════════════════════════ */}
       <section ref={trusted.ref} className="py-10 border-b border-slate-200/60" style={{ background: '#f0f6fd' }}>
         <div className={`max-w-5xl mx-auto px-6 transition-all duration-700 ${trusted.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-          <p className="text-center text-xs font-semibold text-slate-400 tracking-[0.15em] uppercase mb-8">Trusted by production teams across India</p>
+          <p className="text-center text-xs font-semibold text-slate-400 tracking-[0.15em] uppercase mb-8">Trusted by companies, individuals &amp; vendors across India</p>
           <div className="flex flex-wrap items-center justify-center gap-x-12 gap-y-4">
-            {['Ad Agencies', 'Film Studios', 'OTT Platforms', 'Independent Producers', 'Music Video Teams'].map((name) => (
+            {['Production Houses', 'Freelance Crew', 'Equipment Vendors', 'Rental Houses', 'Independent Artists'].map((name) => (
               <div key={name} className="flex items-center gap-2 text-slate-300">
                 <FaStar className="text-xs" />
                 <span className="text-sm font-semibold tracking-wide">{name}</span>
@@ -209,10 +214,10 @@ export default function LandingPage() {
         <div className={`max-w-5xl mx-auto px-6 transition-all duration-700 ${stats.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`}>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {[
-              { value: `${statCrew.toLocaleString()}+`, label: 'Verified Professionals' },
-              { value: `${statProjects}+`, label: 'Projects Managed' },
+              { value: `${statCompanies}+`, label: 'Companies' },
+              { value: `${statIndividuals.toLocaleString()}+`, label: 'Individuals' },
+              { value: `${statVendors}+`, label: 'Vendors' },
               { value: `${statBookings.toLocaleString()}+`, label: 'Bookings Completed' },
-              { value: `${statCities}+`, label: 'Cities Covered' },
             ].map((s) => (
               <div key={s.label} className="bg-white rounded-2xl p-6 text-center shadow-sm border border-slate-100">
                 <p className="text-3xl sm:text-4xl font-extrabold text-[#3B5BDB] mb-1">{s.value}</p>
@@ -230,80 +235,86 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto px-6">
           <div className={`text-center mb-14 transition-all duration-700 ${ecosystem.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`}>
             <p className="text-xs font-bold tracking-[0.2em] text-[#3B5BDB] uppercase mb-3">The Ecosystem</p>
-            <h2 className="text-3xl sm:text-4xl font-bold text-[#0f172a] mb-4">Built for the entire crew.</h2>
-            <p className="text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
-              Whether you're behind the camera, running the production, or supplying the gear &mdash; Claapo connects every stakeholder.
+            <h2 className="text-3xl sm:text-4xl font-bold text-[#0f172a] mb-4">One platform. Three sides. Equal footing.</h2>
+            <p className="text-sm text-slate-500 max-w-xl mx-auto leading-relaxed">
+              Claapo treats every side of the industry as a first-class citizen &mdash;
+              whether you're a <span className="font-semibold text-slate-700">Company</span> hiring crew,
+              an <span className="font-semibold text-slate-700">Individual</span> offering your craft,
+              or a <span className="font-semibold text-slate-700">Vendor</span> renting out gear.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {/* Freelancers */}
-            <div className={`bg-white rounded-2xl shadow-sm border border-slate-100 p-8 flex flex-col transition-all duration-700 ${ecosystem.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`} style={{ transitionDelay: '0ms' }}>
-              <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center mb-6">
-                <FaUsers className="text-[#3B5BDB] text-lg" />
+            {/* Companies */}
+            <div className={`group bg-white rounded-2xl shadow-sm border border-slate-100 p-8 flex flex-col transition-all duration-700 hover:shadow-lg hover:-translate-y-1 ${ecosystem.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`} style={{ transitionDelay: '0ms' }}>
+              <div className="w-12 h-12 rounded-2xl bg-blue-100 flex items-center justify-center mb-6">
+                <FaVideo className="text-[#3B5BDB] text-lg" />
               </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-2">Freelancers</h3>
+              <span className="text-[10px] font-bold tracking-[0.18em] uppercase text-[#3B5BDB] mb-1">For Companies</span>
+              <h3 className="text-xl font-bold text-slate-900 mb-2">Production Houses</h3>
+              <p className="text-sm text-slate-500 leading-relaxed mb-6">Centralize hiring, manage projects end-to-end, and collaborate with your team.</p>
+              <ul className="space-y-2.5 mb-8 flex-1">
+                {['Verified Crew & Vendor Database', 'Project & Budget Management', 'Team Collaboration & Sub-users', 'Real-time Availability Checks', 'Integrated Payments'].map(item => (
+                  <li key={item} className="flex items-center gap-2.5">
+                    <FaCheck className="text-[#3B5BDB] text-[11px] shrink-0" />
+                    <span className="text-sm text-slate-600">{item}</span>
+                  </li>
+                ))}
+              </ul>
+              <Link to="/register/company" className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#3B5BDB] hover:underline mt-auto">
+                Join as Company <FaArrowRight className="text-xs" />
+              </Link>
+            </div>
+
+            {/* Individuals */}
+            <div className={`group bg-white rounded-2xl shadow-sm border border-slate-100 p-8 flex flex-col transition-all duration-700 hover:shadow-lg hover:-translate-y-1 ${ecosystem.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`} style={{ transitionDelay: '100ms' }}>
+              <div className="w-12 h-12 rounded-2xl bg-emerald-100 flex items-center justify-center mb-6">
+                <FaUsers className="text-emerald-600 text-lg" />
+              </div>
+              <span className="text-[10px] font-bold tracking-[0.18em] uppercase text-emerald-600 mb-1">For Individuals</span>
+              <h3 className="text-xl font-bold text-slate-900 mb-2">Freelance Crew</h3>
               <p className="text-sm text-slate-500 leading-relaxed mb-6">Get discovered by top agencies, manage your schedule, and get paid faster.</p>
               <ul className="space-y-2.5 mb-8 flex-1">
                 {['Live Availability Calendar', 'Professional Profile & Showreel', 'One-click Invoicing with GST', 'Booking Notifications', 'Past Work Portfolio'].map(item => (
                   <li key={item} className="flex items-center gap-2.5">
-                    <FaCheck className="text-[#3B5BDB] text-[11px] shrink-0" />
+                    <FaCheck className="text-emerald-600 text-[11px] shrink-0" />
                     <span className="text-sm text-slate-600">{item}</span>
                   </li>
                 ))}
               </ul>
-              <Link to="/register/individual" className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#3B5BDB] hover:underline mt-auto">
-                Join as Freelancer <FaArrowRight className="text-xs" />
-              </Link>
-            </div>
-
-            {/* Production Houses */}
-            <div className={`bg-[#3B5BDB] rounded-2xl shadow-xl p-8 flex flex-col transition-all duration-700 ${ecosystem.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`} style={{ transitionDelay: '100ms' }}>
-              <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center mb-6">
-                <FaVideo className="text-white text-lg" />
-              </div>
-              <h3 className="text-xl font-bold text-white mb-2">Production Houses</h3>
-              <p className="text-sm text-blue-100 leading-relaxed mb-6">Centralize hiring, manage projects end-to-end, and collaborate with your team.</p>
-              <ul className="space-y-2.5 mb-8 flex-1">
-                {['Verified Crew Database', 'Project & Budget Management', 'Team Collaboration & Sub-users', 'Real-time Availability Checks', 'Integrated Payments'].map(item => (
-                  <li key={item} className="flex items-center gap-2.5">
-                    <FaCircleCheck className="text-white text-[11px] shrink-0" />
-                    <span className="text-sm text-blue-100">{item}</span>
-                  </li>
-                ))}
-              </ul>
-              <Link to="/register/company" className="inline-flex items-center gap-1.5 text-sm font-semibold text-white hover:text-blue-100 transition-colors mt-auto">
-                Get Company Access <FaArrowRight className="text-xs" />
+              <Link to="/register/individual" className="inline-flex items-center gap-1.5 text-sm font-semibold text-emerald-600 hover:underline mt-auto">
+                Join as Individual <FaArrowRight className="text-xs" />
               </Link>
             </div>
 
             {/* Vendors */}
-            <div className={`bg-white rounded-2xl shadow-sm border border-slate-100 p-8 flex flex-col transition-all duration-700 ${ecosystem.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`} style={{ transitionDelay: '200ms' }}>
-              <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center mb-6">
-                <FaTruck className="text-[#3B5BDB] text-lg" />
+            <div className={`group bg-white rounded-2xl shadow-sm border border-slate-100 p-8 flex flex-col transition-all duration-700 hover:shadow-lg hover:-translate-y-1 ${ecosystem.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`} style={{ transitionDelay: '200ms' }}>
+              <div className="w-12 h-12 rounded-2xl bg-purple-100 flex items-center justify-center mb-6">
+                <FaTruck className="text-purple-600 text-lg" />
               </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-2">Vendors</h3>
+              <span className="text-[10px] font-bold tracking-[0.18em] uppercase text-purple-600 mb-1">For Vendors</span>
+              <h3 className="text-xl font-bold text-slate-900 mb-2">Equipment &amp; Rentals</h3>
               <p className="text-sm text-slate-500 leading-relaxed mb-6">List equipment, manage rental calendars, and receive direct booking requests.</p>
               <ul className="space-y-2.5 mb-8 flex-1">
                 {['Equipment Inventory Management', 'Rental Calendar & Scheduling', 'Direct Quote Requests', 'GST Verified Badges', 'Multi-city Availability'].map(item => (
                   <li key={item} className="flex items-center gap-2.5">
-                    <FaCheck className="text-[#3B5BDB] text-[11px] shrink-0" />
+                    <FaCheck className="text-purple-600 text-[11px] shrink-0" />
                     <span className="text-sm text-slate-600">{item}</span>
                   </li>
                 ))}
               </ul>
-              <Link to="/register/vendor" className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#3B5BDB] hover:underline mt-auto">
-                List Equipment <FaArrowRight className="text-xs" />
+              <Link to="/register/vendor" className="inline-flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:underline mt-auto">
+                Join as Vendor <FaArrowRight className="text-xs" />
               </Link>
             </div>
           </div>
 
-          {/* Mid-section CTA */}
+          {/* Mid-section CTA — equal three-way entry */}
           <div className={`mt-12 text-center transition-all duration-700 ${ecosystem.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`} style={{ transitionDelay: '300ms' }}>
             <Link to="/register" className="inline-flex items-center gap-2 rounded-xl bg-[#3B5BDB] text-white px-8 py-3.5 text-sm font-bold hover:bg-[#2f4ac2] transition-all shadow-lg shadow-[#3B5BDB]/20 hover:-translate-y-0.5">
-              Get Started for Free <FaArrowRight className="text-xs" />
+              Choose Your Path <FaArrowRight className="text-xs" />
             </Link>
-            <p className="text-xs text-slate-400 mt-3">No credit card required</p>
+            <p className="text-xs text-slate-400 mt-3">Free to join &mdash; no credit card required</p>
           </div>
         </div>
       </section>
@@ -315,9 +326,10 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-20">
             <p className="text-xs font-bold tracking-[0.2em] text-[#3B5BDB] uppercase mb-3">Features</p>
-            <h2 className="text-3xl sm:text-4xl font-bold text-[#0f172a] mb-4">Everything you need to run productions</h2>
+            <h2 className="text-3xl sm:text-4xl font-bold text-[#0f172a] mb-4">Everything every side of the industry needs</h2>
             <p className="text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
-              From discovering talent to processing payments &mdash; every step of your production workflow, streamlined.
+              Tools built for Companies, Individuals, and Vendors alike &mdash;
+              discovery, bookings, calendars, chat, and payments in one place.
             </p>
           </div>
 
@@ -600,15 +612,15 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto px-6">
           <div className={`text-center mb-16 transition-all duration-700 ${hiw.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`}>
             <p className="text-xs font-bold tracking-[0.2em] text-[#3B5BDB] uppercase mb-3">How It Works</p>
-            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-3">Three simple steps to your next production</h2>
-            <p className="text-sm text-slate-500 max-w-md mx-auto">Get from brief to booked in minutes, not days.</p>
+            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-3">Three steps. For every side of the industry.</h2>
+            <p className="text-sm text-slate-500 max-w-md mx-auto">Whether you're a Company, an Individual, or a Vendor &mdash; the flow is the same.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
-              { num: '1', Icon: FaMagnifyingGlass, title: 'Search', desc: 'Filter by role, location, equipment, and dates to find the perfect match.', color: 'bg-emerald-50', iconColor: 'text-emerald-600' },
-              { num: '2', Icon: FaCalendarCheck,   title: 'Book',   desc: 'Send booking requests directly. Negotiate rates and lock dates instantly.', color: 'bg-blue-50', iconColor: 'text-[#3B5BDB]' },
-              { num: '3', Icon: FaLock,            title: 'Manage', desc: 'Track projects, chat with crew, generate invoices, and handle payments.', color: 'bg-purple-50', iconColor: 'text-purple-600' },
+              { num: '1', Icon: FaUsers,         title: 'Join',        desc: 'Sign up as a Company, Individual, or Vendor — free to start, no credit card required.', color: 'bg-blue-50', iconColor: 'text-[#3B5BDB]' },
+              { num: '2', Icon: FaMagnifyingGlass, title: 'Discover',  desc: 'Companies find crew & gear. Individuals find projects. Vendors find bookings.', color: 'bg-emerald-50', iconColor: 'text-emerald-600' },
+              { num: '3', Icon: FaFileInvoiceDollar, title: 'Collaborate', desc: 'Chat, confirm bookings, track schedules, and get paid — all in one place.', color: 'bg-purple-50', iconColor: 'text-purple-600' },
             ].map((step, idx) => (
               <div key={step.title} className={`flex flex-col items-center text-center transition-all duration-700 ${hiw.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`} style={{ transitionDelay: `${idx * 120}ms` }}>
                 <div className={`w-16 h-16 rounded-full ${step.color} shadow-md flex items-center justify-center mb-5`}>
@@ -636,28 +648,35 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto px-6">
           <div className={`text-center mb-14 transition-all duration-700 ${reviews.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`}>
             <p className="text-xs font-bold tracking-[0.2em] text-[#3B5BDB] uppercase mb-3">Testimonials</p>
-            <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-3">Trusted by the best in the business</h2>
-            <p className="text-sm text-slate-500">Here's what production professionals are saying.</p>
+            <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-3">Loved by all three sides of the industry</h2>
+            <p className="text-sm text-slate-500">Stories from Companies, Individuals, and Vendors on Claapo.</p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {testimonials.map((t, idx) => (
-              <div key={t.name} className={`relative pt-5 pl-5 transition-all duration-700 ${reviews.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`} style={{ transitionDelay: `${idx * 100}ms` }}>
-                <div className="absolute top-0 left-0 z-10 w-10 h-10 rounded-full bg-[#3B5BDB] flex items-center justify-center shadow-lg">
-                  <span className="text-white font-bold text-xl leading-none" style={{ marginTop: '-1px' }}>&ldquo;</span>
-                </div>
-                <div className="bg-white rounded-2xl shadow-md border border-slate-100 p-7 flex flex-col h-full">
-                  <p className="text-sm text-slate-600 leading-relaxed mb-7 flex-1 mt-1 italic">{t.quote}</p>
-                  <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-full ${t.color} flex items-center justify-center text-white text-xs font-bold shrink-0 shadow-sm`}>{t.initials}</div>
-                    <div>
-                      <p className="text-sm font-semibold text-slate-900">{t.name}</p>
-                      <p className="text-xs text-slate-400">{t.role}</p>
+            {testimonials.map((t, idx) => {
+              const badgeStyle =
+                t.category === 'Company'    ? 'bg-blue-100 text-[#3B5BDB]' :
+                t.category === 'Individual' ? 'bg-emerald-100 text-emerald-700' :
+                                               'bg-purple-100 text-purple-700';
+              return (
+                <div key={t.name} className={`relative pt-5 pl-5 transition-all duration-700 ${reviews.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`} style={{ transitionDelay: `${idx * 100}ms` }}>
+                  <div className="absolute top-0 left-0 z-10 w-10 h-10 rounded-full bg-[#3B5BDB] flex items-center justify-center shadow-lg">
+                    <span className="text-white font-bold text-xl leading-none" style={{ marginTop: '-1px' }}>&ldquo;</span>
+                  </div>
+                  <div className="bg-white rounded-2xl shadow-md border border-slate-100 p-7 flex flex-col h-full">
+                    <span className={`self-start text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full mb-3 ${badgeStyle}`}>{t.category}</span>
+                    <p className="text-sm text-slate-600 leading-relaxed mb-7 flex-1 italic">{t.quote}</p>
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-full ${t.color} flex items-center justify-center text-white text-xs font-bold shrink-0 shadow-sm`}>{t.initials}</div>
+                      <div>
+                        <p className="text-sm font-semibold text-slate-900">{t.name}</p>
+                        <p className="text-xs text-slate-400">{t.role}</p>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
@@ -708,21 +727,30 @@ export default function LandingPage() {
         <div className="max-w-3xl mx-auto px-6">
           <div className={`rounded-3xl p-14 text-center transition-all duration-700 ${ctaRef.visible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`} style={{ background: 'linear-gradient(135deg, #3B5BDB 0%, #4B6CF7 100%)' }}>
             <h2 className="text-3xl font-bold text-white mb-4 leading-snug">
-              Ready to streamline<br />your production?
+              Pick your side.<br />Start in seconds.
             </h2>
             <p className="text-sm text-blue-100 mb-9 leading-relaxed">
-              Join thousands of professionals who are hiring smarter, not harder.<br />
-              Start your free account today.
+              Join thousands of Companies, Individuals, and Vendors<br />
+              already collaborating on Claapo.
             </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center mb-5">
-              <Link to="/register" className="inline-flex justify-center items-center rounded-xl bg-white text-[#3B5BDB] px-8 py-3.5 text-sm font-bold hover:bg-blue-50 transition-all hover:-translate-y-0.5 shadow-md">
-                Get Started for Free
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5 max-w-xl mx-auto">
+              <Link to="/register/company" className="inline-flex flex-col justify-center items-center rounded-xl bg-white text-[#3B5BDB] px-4 py-4 text-sm font-bold hover:bg-blue-50 transition-all hover:-translate-y-0.5 shadow-md">
+                <FaVideo className="mb-1.5 text-base" />
+                Join as Company
               </Link>
-              <Link to="/contact" className="inline-flex justify-center items-center rounded-xl border-2 border-white/40 text-white px-8 py-3.5 text-sm font-bold hover:bg-white/10 transition-all">
-                Talk to Sales
+              <Link to="/register/individual" className="inline-flex flex-col justify-center items-center rounded-xl bg-white text-[#3B5BDB] px-4 py-4 text-sm font-bold hover:bg-blue-50 transition-all hover:-translate-y-0.5 shadow-md">
+                <FaUsers className="mb-1.5 text-base" />
+                Join as Individual
+              </Link>
+              <Link to="/register/vendor" className="inline-flex flex-col justify-center items-center rounded-xl bg-white text-[#3B5BDB] px-4 py-4 text-sm font-bold hover:bg-blue-50 transition-all hover:-translate-y-0.5 shadow-md">
+                <FaTruck className="mb-1.5 text-base" />
+                Join as Vendor
               </Link>
             </div>
-            <p className="text-xs text-blue-200">No credit card required for freelancers.</p>
+            <Link to="/contact" className="text-xs text-blue-100 hover:text-white underline underline-offset-2">
+              Or talk to our team
+            </Link>
+            <p className="text-xs text-blue-200 mt-4">Free to join &mdash; no credit card required.</p>
           </div>
         </div>
       </section>

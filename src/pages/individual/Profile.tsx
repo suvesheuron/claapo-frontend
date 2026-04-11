@@ -43,6 +43,7 @@ interface ProfileData {
   twitterUrl: string | null;
   isAvailable: boolean;
   panNumber: string | null;
+  gstNumber: string | null;
   bankAccountName: string | null;
   bankAccountNumber: string | null;
   ifscCode: string | null;
@@ -83,6 +84,7 @@ export default function IndividualProfile() {
   const [linkedinUrl, setLinkedinUrl] = useState('');
   const [twitterUrl, setTwitterUrl] = useState('');
   const [panNumber, setPanNumber] = useState('');
+  const [gstNumber, setGstNumber] = useState('');
   const [bankAccountName, setBankAccountName] = useState('');
   const [bankAccountNumber, setBankAccountNumber] = useState('');
   const [ifscCode, setIfscCode] = useState('');
@@ -138,6 +140,7 @@ export default function IndividualProfile() {
     setLinkedinUrl(p.linkedinUrl ?? '');
     setTwitterUrl(p.twitterUrl ?? '');
     setPanNumber(p.panNumber ?? '');
+    setGstNumber(p.gstNumber ?? '');
     setBankAccountName(p.bankAccountName ?? '');
     setBankAccountNumber(p.bankAccountNumber ?? '');
     setIfscCode(p.ifscCode ?? '');
@@ -178,6 +181,7 @@ export default function IndividualProfile() {
         linkedinUrl: linkedinUrl.trim() || undefined,
         twitterUrl: twitterUrl.trim() || undefined,
         panNumber: panNumber.trim() || undefined,
+        gstNumber: gstNumber.trim() || undefined,
         bankAccountName: bankAccountName.trim() || undefined,
         bankAccountNumber: bankAccountNumber.trim() || undefined,
         ifscCode: ifscCode.trim() || undefined,
@@ -215,6 +219,7 @@ export default function IndividualProfile() {
     linkedinUrl,
     twitterUrl,
     panNumber,
+    gstNumber,
     bankAccountName,
     bankAccountNumber,
     ifscCode,
@@ -460,6 +465,7 @@ export default function IndividualProfile() {
                         >
                           <div className="space-y-1 divide-y divide-neutral-50">
                             <InfoRow label="PAN Number" value={panNumber || '—'} icon={<FaIdCard />} copyable />
+                            <InfoRow label="GST Number" value={gstNumber || '—'} icon={<FaIdCard />} copyable />
                             <InfoRow label="Bank Name" value={bankName || '—'} icon={<FaBuilding />} />
                             <InfoRow label="Account Name" value={bankAccountName || '—'} />
                             <InfoRow label="Account Number" value={bankAccountNumber || '—'} copyable />
@@ -643,6 +649,15 @@ export default function IndividualProfile() {
                               disabled={saving}
                               icon={<FaIdCard />}
                               helpText="10-character PAN"
+                            />
+                            <EditableField
+                              label="GST Number (Optional)"
+                              value={gstNumber}
+                              onChange={setGstNumber}
+                              placeholder="e.g. 27ABCDE1234F1Z5"
+                              disabled={saving}
+                              icon={<FaIdCard />}
+                              helpText="15-character GSTIN — leave blank if not registered"
                             />
                             <EditableField
                               label="Bank Name"

@@ -544,42 +544,56 @@ export default function Chat() {
           <div className="flex-1 flex flex-col min-h-0 w-full">
 
             {/* ── Header ── */}
-            <div className="px-4 py-2.5 flex items-center gap-3 shrink-0" style={{ backgroundColor: BRAND.headerBg }}>
-              <Link to="/dashboard/conversations" className="p-1.5 hover:bg-white/10 rounded-full transition-colors">
+            <div
+              className="px-4 sm:px-5 py-3 flex items-center gap-3 shrink-0 relative overflow-hidden border-b border-white/10"
+              style={{ background: 'linear-gradient(135deg, #2f4ac2 0%, #3B5BDB 50%, #4f6ee8 100%)' }}
+            >
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_120%_at_100%_-20%,rgba(255,255,255,0.15),transparent)] pointer-events-none" />
+              <Link
+                to="/dashboard/conversations"
+                className="relative p-2 hover:bg-white/15 rounded-xl transition-colors shrink-0"
+                aria-label="Back to conversations"
+              >
                 <FaArrowLeft className="w-4 h-4 text-white" />
               </Link>
-              <div className="relative">
-                <Avatar src={otherAvatar} name={otherName} size="sm" />
+              <div className="relative shrink-0">
+                <div className="ring-2 ring-white/30 rounded-full">
+                  <Avatar src={otherAvatar} name={otherName} size="md" />
+                </div>
                 {otherUser?.isOnline && (
-                  <div className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-green-400 ring-2 ring-[#3B5BDB]" />
+                  <div className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-[#22C55E] ring-2 ring-[#3B5BDB]" />
                 )}
               </div>
-              <div className="flex-1 min-w-0">
+              <div className="relative flex-1 min-w-0">
                 {targetUserId && (user?.role === 'company' || user?.role === 'admin') ? (
                   <Link
                     to={`/dashboard/profile/${targetUserId}`}
                     className="block text-left hover:underline decoration-white/80 underline-offset-2"
                   >
-                    <h2 className="text-sm font-semibold text-white truncate">{otherName}</h2>
+                    <h2 className="text-base font-bold text-white truncate leading-tight">{otherName}</h2>
                   </Link>
                 ) : (
-                  <h2 className="text-sm font-semibold text-white truncate">{otherName}</h2>
+                  <h2 className="text-base font-bold text-white truncate leading-tight">{otherName}</h2>
                 )}
-                <p className="text-[11px] text-white/70 truncate">
+                <p className="text-[11px] text-white/75 truncate font-medium mt-0.5 flex items-center gap-1.5">
+                  {otherUser?.isOnline && (
+                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#22C55E]" />
+                  )}
                   {scopedProjectTitle
                     ? scopedProjectTitle
                     : otherUser?.isOnline
-                      ? 'online'
+                      ? 'Online now'
                       : otherRole
                         ? otherRole.replace(/_/g, ' ')
-                        : 'tap here for info'}
+                        : 'View profile'}
                 </p>
               </div>
-              <div className="flex items-center gap-1">
+              <div className="relative flex items-center gap-1">
                 <button
                   type="button"
                   onClick={(e) => { e.stopPropagation(); setShowSearch(!showSearch); setSearchQuery(''); }}
-                  className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                  className="p-2.5 hover:bg-white/15 rounded-xl transition-colors"
+                  aria-label="Search messages"
                 >
                   <FaMagnifyingGlass className="w-4 h-4 text-white" />
                 </button>
@@ -587,7 +601,8 @@ export default function Chat() {
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); setShowMoreMenu(!showMoreMenu); }}
-                    className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                    className="p-2.5 hover:bg-white/15 rounded-xl transition-colors"
+                    aria-label="More options"
                   >
                     <FaEllipsisVertical className="w-4 h-4 text-white" />
                   </button>
@@ -653,8 +668,21 @@ export default function Chat() {
               }}
             >
               {loadingInit && (
-                <div className="flex items-center justify-center py-12">
-                  <span className="w-7 h-7 border-3 border-[#3B5BDB]/30 border-t-[#3B5BDB] rounded-full animate-spin" />
+                <div className="space-y-3 py-4 max-w-3xl mx-auto">
+                  {[
+                    { side: 'left',  width: 'w-3/5' },
+                    { side: 'right', width: 'w-2/5' },
+                    { side: 'left',  width: 'w-2/5' },
+                    { side: 'right', width: 'w-1/2' },
+                    { side: 'left',  width: 'w-3/5' },
+                  ].map((row, i) => (
+                    <div key={i} className={`flex ${row.side === 'right' ? 'justify-end' : 'justify-start'}`}>
+                      <div
+                        className={`rounded-2xl bg-white/70 ${row.width} h-10 animate-pulse`}
+                        style={{ animationDelay: `${i * 80}ms` }}
+                      />
+                    </div>
+                  ))}
                 </div>
               )}
 
