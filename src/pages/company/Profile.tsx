@@ -71,6 +71,7 @@ export default function CompanyProfile() {
   const [youtubeUrl, setYoutubeUrl] = useState('');
   const [vimeoUrl, setVimeoUrl] = useState('');
   const [panNumber, setPanNumber] = useState('');
+  const [gstNumber, setGstNumber] = useState('');
   const [bankAccountName, setBankAccountName] = useState('');
   const [bankAccountNumber, setBankAccountNumber] = useState('');
   const [ifscCode, setIfscCode] = useState('');
@@ -134,6 +135,7 @@ export default function CompanyProfile() {
     setYoutubeUrl(p.youtubeUrl ?? '');
     setVimeoUrl(p.vimeoUrl ?? '');
     setPanNumber(p.panNumber ?? '');
+    setGstNumber(p.gstNumber ?? '');
     setBankAccountName(p.bankAccountName ?? '');
     setBankAccountNumber(p.bankAccountNumber ?? '');
     setIfscCode(p.ifscCode ?? '');
@@ -171,6 +173,7 @@ export default function CompanyProfile() {
         youtubeUrl: youtubeUrl.trim() || undefined,
         vimeoUrl: vimeoUrl.trim() || undefined,
         panNumber: panNumber.trim() || undefined,
+        gstNumber: gstNumber.trim() || undefined,
         bankAccountName: bankAccountName.trim() || undefined,
         bankAccountNumber: bankAccountNumber.trim() || undefined,
         ifscCode: ifscCode.trim() || undefined,
@@ -225,6 +228,7 @@ export default function CompanyProfile() {
     youtubeUrl,
     vimeoUrl,
     panNumber,
+    gstNumber,
     bankAccountName,
     bankAccountNumber,
     ifscCode,
@@ -412,15 +416,11 @@ export default function CompanyProfile() {
                         </ProfileSection>
 
                         {/* About */}
-                        <ProfileSection 
-                          title="About Company" 
+                        <ProfileSection
+                          title="About Company"
                           icon={<FaUser />}
                         >
                           <div className="space-y-4">
-                            <div>
-                              <dt className="text-xs font-medium text-neutral-500 mb-1">Bio</dt>
-                              <dd className="text-sm text-neutral-700 whitespace-pre-wrap">{bio || '—'}</dd>
-                            </div>
                             <div>
                               <dt className="text-xs font-medium text-neutral-500 mb-1">About Us</dt>
                               <dd className="text-sm text-neutral-700 whitespace-pre-wrap">{aboutUs || '—'}</dd>
@@ -631,16 +631,6 @@ export default function CompanyProfile() {
                         >
                           <div className="space-y-4">
                             <EditableField
-                              label="Bio / Short Description"
-                              type="textarea"
-                              rows={3}
-                              value={bio}
-                              onChange={setBio}
-                              placeholder="Brief description of your company..."
-                              disabled={saving}
-                              helpText="A short tagline or description"
-                            />
-                            <EditableField
                               label="About Us"
                               type="textarea"
                               rows={4}
@@ -683,26 +673,18 @@ export default function CompanyProfile() {
                           icon={<FaIdCard />}
                         >
                           <div className="space-y-4">
-                            <div>
-                              <label className="block text-xs font-medium text-neutral-700 mb-1.5">
-                                GST Number
-                                {profile?.isGstVerified && (
-                                  <span className="ml-2 text-xs px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-full font-semibold border border-emerald-200/60">
-                                    Verified
-                                  </span>
-                                )}
-                              </label>
-                              <div className="relative">
-                                <FaIdCard className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 w-4 h-4" />
-                                <input 
-                                  type="text" 
-                                  value={profile?.gstNumber ?? ''} 
-                                  readOnly 
-                                  className="w-full pl-10 pr-3 py-2.5 border border-neutral-200 rounded-xl text-sm bg-neutral-50 text-neutral-500 cursor-not-allowed font-mono"
-                                />
-                              </div>
-                              <p className="text-[10px] text-neutral-400 mt-1.5">GST number verification is done by admin</p>
-                            </div>
+                            <EditableField
+                              label="GST Number"
+                              value={gstNumber}
+                              onChange={setGstNumber}
+                              placeholder="e.g. 29ABCDE1234F1Z5"
+                              disabled={saving}
+                              helpText={profile?.isGstVerified ? 'GST Number is verified' : '15-character GSTIN'}
+                              icon={<FaIdCard />}
+                            />
+                            {profile?.isGstVerified && (
+                              <p className="text-[10px] text-emerald-600 -mt-2 ml-1">✓ Verified by admin</p>
+                            )}
                             <EditableField
                               label="PAN Number"
                               value={panNumber}

@@ -142,6 +142,14 @@ export default function IndividualAvailability() {
 
   const calendarDays = buildCalendar(displayYear, displayMonth, apiSlots);
 
+  // Collect all shoot dates from bookings for the current month
+  const allShootDates = Object.values(bookingDetails).reduce((dates, booking) => {
+    if (booking.shootDates?.length) {
+      booking.shootDates.forEach(d => dates.add(d));
+    }
+    return dates;
+  }, new Set<string>());
+
   // Month stats (exclude padding cells)
   const monthStats = calendarDays.reduce(
     (acc, c) => {
@@ -375,6 +383,7 @@ export default function IndividualAvailability() {
         blocking={saving}
         onBlock={handleBlock}
         onUnblock={handleUnblock}
+        allShootDates={Array.from(allShootDates)}
       />
     </div>
   );

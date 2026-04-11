@@ -239,9 +239,10 @@ export default function SearchFilter() {
               {/* Horizontal filter bar */}
               <div className="rounded-3xl bg-white shadow-soft border border-neutral-100 p-6 mb-8 relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-[#3B5BDB]/5 to-transparent rounded-full blur-3xl pointer-events-none" />
-                <div className="flex flex-wrap gap-4 items-end relative z-10">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 relative z-10">
+                  {/* Row 1 - First 6 fields */}
                   {/* Search input */}
-                  <div className="flex-1 min-w-[180px]">
+                  <div>
                     <label className="block text-[11px] font-bold text-neutral-500 mb-2 uppercase tracking-widest">
                       {searchType === 'crew' ? ' Name' : 'Vendor Name'}
                     </label>
@@ -254,7 +255,7 @@ export default function SearchFilter() {
                   </div>
 
                   {/* Location */}
-                  <div className="flex-1 min-w-[150px]">
+                  <div>
                     <label className="block text-[11px] font-bold text-neutral-500 mb-2 uppercase tracking-widest">City</label>
                     <div className="relative group">
                       <input type="text" value={location} onChange={(e) => { setLocation(e.target.value); setPage(1); }}
@@ -266,7 +267,7 @@ export default function SearchFilter() {
 
                   {/* Skill filter for crew */}
                   {searchType === 'crew' && (
-                    <div className="flex-1 min-w-[150px]">
+                    <div>
                       <label className="block text-[11px] font-bold text-neutral-500 mb-2 uppercase tracking-widest">Role</label>
                       <select value={skillFilter} onChange={(e) => { setSkillFilter(e.target.value); setPage(1); }}
                         className="w-full px-4 py-3 border border-neutral-200 rounded-2xl text-sm bg-neutral-50 focus:bg-white focus:outline-none focus:border-[#3B5BDB]/40 focus:ring-4 focus:ring-[#3B5BDB]/10 transition-all duration-300 appearance-none">
@@ -278,7 +279,7 @@ export default function SearchFilter() {
 
                   {/* Vendor type filter */}
                   {searchType === 'vendors' && (
-                    <div className="flex-1 min-w-[150px]">
+                    <div>
                       <label className="block text-[11px] font-bold text-neutral-500 mb-2 uppercase tracking-widest">Type</label>
                       <select value={skillFilter} onChange={(e) => { setSkillFilter(e.target.value); setPage(1); }}
                         className="w-full px-4 py-3 border border-neutral-200 rounded-2xl text-sm bg-neutral-50 focus:bg-white focus:outline-none focus:border-[#3B5BDB]/40 focus:ring-4 focus:ring-[#3B5BDB]/10 transition-all duration-300 appearance-none">
@@ -289,7 +290,7 @@ export default function SearchFilter() {
                   )}
 
                   {/* Budget Min */}
-                  <div className="flex-1 min-w-[140px]">
+                  <div>
                     <label className="block text-[11px] font-bold text-neutral-500 mb-2 uppercase tracking-widest">Budget Min</label>
                     <input
                       type="number"
@@ -302,7 +303,7 @@ export default function SearchFilter() {
                   </div>
 
                   {/* Budget Max */}
-                  <div className="flex-1 min-w-[140px]">
+                  <div>
                     <label className="block text-[11px] font-bold text-neutral-500 mb-2 uppercase tracking-widest">Budget Max </label>
                     <input
                       type="number"
@@ -314,24 +315,28 @@ export default function SearchFilter() {
                     />
                   </div>
 
+                  {/* Row 2 - Start Date, End Date, Reset */}
                   {/* Start Date */}
-                  <div className="flex-1 min-w-[140px]">
+                  <div>
                     <label className="block text-[11px] font-bold text-neutral-500 mb-2 uppercase tracking-widest">Start Date</label>
                     <input type="date" value={startDate} onChange={(e) => { setStartDate(e.target.value); setPage(1); }}
                       className="w-full px-4 py-3 border border-neutral-200 rounded-2xl text-sm bg-neutral-50 focus:bg-white focus:outline-none focus:border-[#3B5BDB]/40 focus:ring-4 focus:ring-[#3B5BDB]/10 transition-all duration-300" />
                   </div>
 
                   {/* End Date */}
-                  <div className="flex-1 min-w-[140px]">
+                  <div>
                     <label className="block text-[11px] font-bold text-neutral-500 mb-2 uppercase tracking-widest">End Date</label>
                     <input type="date" value={endDate} min={startDate || undefined} onChange={(e) => { setEndDate(e.target.value); setPage(1); }}
                       className="w-full px-4 py-3 border border-neutral-200 rounded-2xl text-sm bg-neutral-50 focus:bg-white focus:outline-none focus:border-[#3B5BDB]/40 focus:ring-4 focus:ring-[#3B5BDB]/10 transition-all duration-300" />
                   </div>
 
-                  <button type="button" onClick={() => { setQuery(''); setLocation(''); setSkillFilter(''); setStartDate(''); setEndDate(''); setBudgetMin(''); setBudgetMax(''); setPage(1); }}
-                    className="px-6 py-3 rounded-2xl border border-neutral-200 text-sm font-semibold text-neutral-600 hover:text-neutral-900 hover:border-neutral-300 hover:bg-neutral-100 hover:shadow-sm transition-all duration-300 whitespace-nowrap">
-                    Reset
-                  </button>
+                  {/* Reset button */}
+                  <div className="flex items-end">
+                    <button type="button" onClick={() => { setQuery(''); setLocation(''); setSkillFilter(''); setStartDate(''); setEndDate(''); setBudgetMin(''); setBudgetMax(''); setPage(1); }}
+                      className="w-full px-6 py-3 rounded-2xl border border-neutral-200 text-sm font-semibold text-neutral-600 hover:text-neutral-900 hover:border-neutral-300 hover:bg-neutral-100 hover:shadow-sm transition-all duration-300 whitespace-nowrap">
+                      Reset
+                    </button>
+                  </div>
                 </div>
               </div>
 

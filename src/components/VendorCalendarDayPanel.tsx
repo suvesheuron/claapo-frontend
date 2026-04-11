@@ -43,6 +43,8 @@ interface VendorCalendarDayPanelProps {
   onRequestCancel?: (bookingId: string) => void;
   /** Right sliding pane (full height); default is inline card beside calendar */
   variant?: 'card' | 'drawer';
+  /** Shoot dates from all bookings for this month to check if date is a shoot date */
+  allShootDates?: string[];
 }
 
 export default function VendorCalendarDayPanel({
@@ -57,6 +59,7 @@ export default function VendorCalendarDayPanel({
   onUnblock,
   onRequestCancel,
   variant = 'card',
+  allShootDates = [],
 }: VendorCalendarDayPanelProps) {
   const [blockMode, setBlockMode] = useState(false);
   const [blockPick, setBlockPick] = useState(blockReasons[0] ?? 'Other');
@@ -175,29 +178,7 @@ export default function VendorCalendarDayPanel({
                     <FaMessage className="text-xs" /> Chat
                   </Link>
                 )}
-                {(b?.invoiceId || selectedDate) && (
-                  <Link
-                    to={
-                      b?.invoiceId
-                        ? `/dashboard/invoice/${b.invoiceId}`
-                        : `/dashboard/invoices?issuedOn=${encodeURIComponent(selectedDate)}`
-                    }
-                    className="inline-flex flex-1 min-w-[100px] items-center justify-center gap-1.5 rounded-lg py-2 px-2 bg-emerald-50 text-emerald-800 text-xs font-semibold border border-emerald-200/60"
-                  >
-                    <FaFileInvoice className="text-xs" /> View invoice
-                  </Link>
-                )}
               </div>
-
-              {canReqCancel && id && (
-                <button
-                  type="button"
-                  onClick={() => onRequestCancel!(id)}
-                  className="w-full rounded-lg py-2 border border-amber-300 bg-amber-50 text-amber-900 text-xs font-semibold hover:bg-amber-100"
-                >
-                  Request cancellation
-                </button>
-              )}
             </div>
           );
         })}
@@ -265,12 +246,28 @@ export default function VendorCalendarDayPanel({
         )}
 
         <div className="border-t border-neutral-100 pt-4 mt-4">
-          <Link
-            to={`/dashboard/invoices?issuedOn=${selectedDate}`}
-            className="flex w-full items-center justify-center gap-2 rounded-xl py-2.5 bg-[#EEF4FF] text-[#3B5BDB] text-xs font-semibold border border-[#3B5BDB]/20 hover:bg-[#DBEAFE] transition-colors"
-          >
-            <FaFileInvoice className="text-xs" /> Invoices issued on this date
-          </Link>
+          {allShootDates.includes(selectedDate) ? (
+            <Link
+              to={`/dashboard/invoices?issuedOn=${selectedDate}`}
+              className="flex w-full items-center justify-center gap-2 rounded-xl py-2.5 bg-[#EEF4FF] text-[#3B5BDB] text-xs font-semibold border border-[#3B5BDB]/20 hover:bg-[#DBEAFE] transition-colors"
+            >
+              <FaFileInvoice className="text-xs" /> Invoices
+            </Link>
+          ) : null}
+          
+          {/* Direct cancellation button for booked/hired dates */}
+          {(booking || fallbackBookings.some(fb => fb.status === 'accepted' || fb.status === 'locked')) && (
+            <button
+              type="button"
+              onClick={() => {
+                const bookingId = booking?.id ?? fallbackBookings.find(fb => fb.status === 'accepted' || fb.status === 'locked')?.id;
+                if (bookingId) onRequestCancel?.(bookingId);
+              }}
+              className="mt-2 w-full rounded-xl py-2.5 border border-amber-300 bg-amber-50 text-amber-900 text-xs font-semibold hover:bg-amber-100 transition-colors"
+            >
+              Request cancellation
+            </button>
+          )}
         </div>
       </div>
     </div>

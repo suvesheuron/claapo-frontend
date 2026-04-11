@@ -163,6 +163,20 @@ export default function IndividualDashboard() {
 
   const calendarDays = buildCalendar(monthOffset, mergedBookingsByDay);
 
+  // Collect all shoot dates from bookings for the current month
+  const allShootDates = useMemo(() => {
+    const dates = new Set<string>();
+    allBookings
+      .filter(b => (b.status === 'accepted' || b.status === 'locked' || b.status === 'cancel_requested') && b.project.status !== 'cancelled')
+      .forEach(b => {
+        getBookingDateKeys(b).forEach(d => dates.add(d));
+      });
+    pastItems.forEach(b => {
+      getBookingDateKeys(b).forEach(d => dates.add(d));
+    });
+    return Array.from(dates);
+  }, [allBookings, pastItems]);
+
   const slotForDetailPanel = detailDate
     ? monthSlotDetails[detailDate] ?? {
         date: detailDate,
@@ -528,6 +542,7 @@ export default function IndividualDashboard() {
               onBlock={async (reason) => { await handleDetailBlock(reason); }}
               onUnblock={async () => { await handleDetailUnblock(); }}
               onRequestCancel={(bookingId) => { setCancellingId(bookingId); }}
+              allShootDates={allShootDates}
             />
           </aside>
         </>

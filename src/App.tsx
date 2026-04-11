@@ -56,6 +56,9 @@ const CreateInvoice = lazy(() => import('./pages/CreateInvoice'));
 // Ongoing projects (individual + vendor)
 const OngoingProjects = lazy(() => import('./pages/OngoingProjects'));
 
+// Project Details (merged ongoing + past)
+const ProjectDetails = lazy(() => import('./pages/ProjectDetails'));
+
 // Company cancel requests
 const CancelRequests = lazy(() => import('./pages/company/CancelRequests'));
 
@@ -154,6 +157,7 @@ export default function App() {
           <Route path="/dashboard/invoice/new" element={<ProtectedRoute allowedRoles={['individual', 'vendor']}><CreateInvoice /></ProtectedRoute>} />
           <Route path="/dashboard/invoice/:invoiceId" element={<ProtectedRoute><Invoice /></ProtectedRoute>} />
           <Route path="/dashboard/bookings" element={<ProtectedRoute allowedRoles={['individual', 'vendor']}><Bookings /></ProtectedRoute>} />
+          <Route path="/dashboard/project-details" element={<ProtectedRoute allowedRoles={['individual', 'vendor']}><ProjectDetails /></ProtectedRoute>} />
           <Route path="/dashboard/ongoing-projects" element={<ProtectedRoute allowedRoles={['individual', 'vendor']}><OngoingProjects /></ProtectedRoute>} />
           <Route path="/dashboard/team" element={<ProtectedRoute allowedRoles={['company', 'admin']}><TeamPage /></ProtectedRoute>} />
 

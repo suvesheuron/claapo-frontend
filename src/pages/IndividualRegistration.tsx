@@ -56,9 +56,15 @@ function validateEmail(v: string): string | undefined {
 }
 
 function validateDailyBudget(v: string): string | undefined {
-  if (!v.trim()) return undefined; // optional
+  if (!v.trim()) return 'Budget is required.';
   const n = Number(v.replace(/[^0-9.]/g, ''));
   if (isNaN(n) || n <= 0) return 'Must be a positive number.';
+  return undefined;
+}
+
+function validateLocation(v: string): string | undefined {
+  if (!v.trim()) return 'Location is required.';
+  if (v.trim().length < 3) return 'Enter a valid city and state.';
   return undefined;
 }
 
@@ -123,11 +129,12 @@ export default function IndividualRegistration() {
         case 'primaryRole': err = validatePrimaryRole(primaryRole); break;
         case 'email':       err = validateEmail(email);        break;
         case 'dailyBudget': err = validateDailyBudget(dailyBudget); break;
+        case 'location':    err = validateLocation(location);  break;
         case 'password':    err = validatePassword(password);  break;
       }
       setFieldErrors((prev) => ({ ...prev, [field]: err }));
     },
-    [fullName, phone, primaryRole, email, dailyBudget, password],
+    [fullName, phone, primaryRole, email, dailyBudget, location, password],
   );
 
   /* validate all on submit */
@@ -138,13 +145,14 @@ export default function IndividualRegistration() {
       primaryRole: validatePrimaryRole(primaryRole),
       email:       validateEmail(email),
       dailyBudget: validateDailyBudget(dailyBudget),
+      location:    validateLocation(location),
       password:    validatePassword(password),
     };
     if (!termsAccepted) errs.terms = 'You must accept the terms.';
     setFieldErrors(errs);
     setTouched({
       fullName: true, phone: true, primaryRole: true,
-      email: true, dailyBudget: true, password: true, terms: true,
+      email: true, dailyBudget: true, location: true, password: true, terms: true,
     });
     return !Object.values(errs).some(Boolean);
   };
@@ -350,7 +358,7 @@ export default function IndividualRegistration() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-[13px] text-neutral-700 mb-1.5 font-semibold">
-              Budget <span className="text-neutral-400 font-normal">(₹/day)</span>
+              Budget <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -371,10 +379,12 @@ export default function IndividualRegistration() {
               type="text"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
+              onBlur={() => handleBlur('location')}
               placeholder="Mumbai, Maharashtra"
               disabled={loading}
-              className={`${inputBase} border-neutral-300 focus:border-[#3B5BDB] focus:ring-[#3B5BDB]/12`}
+              className={`${inputBase} ${borderClass('location')}`}
             />
+            {fieldErrors.location && <p className="text-xs text-red-500 mt-1.5">{fieldErrors.location}</p>}
           </div>
         </div>
 
