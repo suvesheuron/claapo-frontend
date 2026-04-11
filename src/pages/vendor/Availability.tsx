@@ -84,8 +84,8 @@ function buildCalendar(
 
 const cellStyle: Record<string, string> = {
   available: 'bg-[#DCFCE7] border-[#86EFAC] text-[#15803D]',
-  booked:    'bg-[#DBEAFE] border-[#93C5FD] text-[#1D4ED8]',
-  completed: 'bg-[#DBEAFE] border-[#93C5FD] text-[#1D4ED8]',
+  booked:    'bg-[#FDE68A] border-[#F59E0B] text-[#92400E]',
+  completed: 'bg-[#93C5FD] border-[#3B82F6] text-[#1E3A8A]',
   blocked:   'bg-[#FEE2E2] border-[#FECACA] text-[#B91C1C]',
 };
 
@@ -397,9 +397,9 @@ export default function VendorAvailability() {
                         {!cell.muted && cell.status && (
                           <span className="text-[9px] leading-tight truncate w-full font-medium opacity-80">
                             {cell.status === 'available' && 'Free'}
-                            {cell.status === 'booked'    && (cell.project?.split(' ')[0] ?? 'Booked')}
+                            {cell.status === 'booked'    && (cell.project?.split(' ')[0] ?? 'Ongoing')}
                             {cell.status === 'completed' && (cell.project?.split(' ')[0] ?? 'Done')}
-                            {cell.status === 'blocked'   && (cell.notes ? cell.notes.slice(0, 9) + (cell.notes.length > 9 ? '…' : '') : 'Blocked')}
+                            {cell.status === 'blocked'   && (cell.notes ? cell.notes.slice(0, 9) + (cell.notes.length > 9 ? '…' : '') : 'Unavailable')}
                           </span>
                         )}
                       </div>
@@ -411,9 +411,9 @@ export default function VendorAvailability() {
                 <div className="flex flex-wrap gap-5 mt-5 pt-4 border-t border-neutral-100">
                   {[
                     { color: 'bg-[#22C55E]',   label: 'Available' },
-                    { color: 'bg-[#3B82F6]',   label: 'Booked' },
+                    { color: 'bg-[#F59E0B]',   label: 'Ongoing' },
                     { color: 'bg-[#3B82F6]',   label: 'Completed' },
-                    { color: 'bg-[#EF4444]', label: 'Blocked' },
+                    { color: 'bg-[#EF4444]', label: 'Unavailable' },
                   ].map(({ color, label }) => (
                     <div key={label} className="flex items-center gap-2">
                       <div className={`w-3 h-3 rounded-full ${color}`} />
