@@ -84,8 +84,8 @@ function buildCalendar(
 
 const cellStyle: Record<string, string> = {
   available: 'bg-[#DCFCE7] border-[#86EFAC] text-[#15803D] hover:bg-[#BBF7D0]',
-  booked:    'bg-[#DBEAFE] border-[#93C5FD] text-[#1D4ED8] hover:bg-[#BFDBFE]',
-  completed: 'bg-[#DBEAFE] border-[#93C5FD] text-[#1D4ED8] hover:bg-[#BFDBFE]',
+  booked:    'bg-[#FDE68A] border-[#F59E0B] text-[#92400E] hover:bg-[#FCD34D]',
+  completed: 'bg-[#93C5FD] border-[#3B82F6] text-[#1E3A8A] hover:bg-[#60A5FA]',
   blocked:   'bg-gradient-to-br from-[#FEE2E2] to-[#FECACA] border-[#F87171] text-[#991B1B] hover:from-[#FECACA] hover:to-[#FCA5A5] shadow-sm shadow-red-200/40',
 };
 
@@ -230,7 +230,7 @@ export default function IndividualAvailability() {
                     <FaCalendarCheck className="w-2.5 h-2.5" /> {monthStats.booked + monthStats.completed} booked
                   </span>
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[#FEE2E2] to-[#FECACA] border border-[#F87171] px-2.5 py-1 text-[11px] font-extrabold text-[#991B1B] shadow-sm">
-                    <FaBan className="w-2.5 h-2.5" /> {monthStats.blocked} blocked
+                    <FaBan className="w-2.5 h-2.5" /> {monthStats.blocked} unavailable
                   </span>
                 </div>
               </div>
@@ -321,9 +321,9 @@ export default function IndividualAvailability() {
                         {!cell.muted && cell.status && (
                           <span className="relative text-[9px] leading-tight truncate w-full font-semibold opacity-90">
                             {cell.status === 'available' && 'Free'}
-                            {cell.status === 'booked' && (cell.project?.split(' ')[0] ?? 'Booked')}
+                            {cell.status === 'booked' && (cell.project?.split(' ')[0] ?? 'Ongoing')}
                             {cell.status === 'completed' && (cell.project?.split(' ')[0] ?? 'Done')}
-                            {cell.status === 'blocked' && (cell.notes ? cell.notes.slice(0, 9) + (cell.notes.length > 9 ? '…' : '') : 'Blocked')}
+                            {cell.status === 'blocked' && (cell.notes ? cell.notes.slice(0, 9) + (cell.notes.length > 9 ? '…' : '') : 'Unavailable')}
                           </span>
                         )}
                       </div>
@@ -335,9 +335,9 @@ export default function IndividualAvailability() {
                 <div className="flex flex-wrap gap-x-5 gap-y-2 mt-5 pt-4 border-t border-neutral-100">
                   {[
                     { swatch: 'bg-[#DCFCE7] border-[#86EFAC]', label: 'Available' },
-                    { swatch: 'bg-[#DBEAFE] border-[#93C5FD]', label: 'Booked' },
-                    { swatch: 'bg-[#DBEAFE] border-[#93C5FD]', label: 'Completed' },
-                    { swatch: 'bg-gradient-to-br from-[#FEE2E2] to-[#FECACA] border-[#F87171]', label: 'Blocked / Not available' },
+                    { swatch: 'bg-[#FDE68A] border-[#F59E0B]', label: 'Ongoing' },
+                    { swatch: 'bg-[#93C5FD] border-[#3B82F6]', label: 'Completed' },
+                    { swatch: 'bg-gradient-to-br from-[#FEE2E2] to-[#FECACA] border-[#F87171]', label: 'Unavailable' },
                   ].map(({ swatch, label }) => (
                     <div key={label} className="flex items-center gap-2">
                       <div className={`w-4 h-4 rounded border ${swatch}`} />

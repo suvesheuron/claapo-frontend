@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FaXmark, FaMessage, FaFileInvoice, FaPlus } from 'react-icons/fa6';
+import { FaXmark, FaMessage, FaFileInvoice, FaLocationDot, FaCalendarDay } from 'react-icons/fa6';
 import type { BookingWithDetails, SlotStatus } from '../types/availability';
 import { formatPaise } from '../utils/currency';
 
@@ -192,7 +192,36 @@ export default function AvailabilityDateDetailModal({
                     <span className="font-semibold text-neutral-900 text-right">{formatDateRange(booking.shootDates)}</span>
                   </div>
                 ) : null}
-                {booking.shootLocations?.length ? (
+                
+                {/* Show date-location pairs if available (new format) */}
+                {booking.shootDateLocations && booking.shootDateLocations.length > 0 ? (
+                  <div>
+                    <span className="text-neutral-500 text-xs mb-2 block">Shoot Locations</span>
+                    <div className="space-y-2">
+                      {booking.shootDateLocations.map((pair) => (
+                        <div key={pair.date} className="flex items-start gap-2.5 bg-white rounded-lg border border-neutral-200 p-2.5">
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <div className="w-6 h-6 rounded-md bg-blue-50 flex items-center justify-center shrink-0">
+                              <FaCalendarDay className="w-2.5 h-2.5 text-blue-600" />
+                            </div>
+                            <p className="text-xs font-semibold text-neutral-900">
+                              {new Date(pair.date + 'T00:00:00').toLocaleDateString('en-IN', {
+                                weekday: 'short',
+                                day: 'numeric',
+                                month: 'short',
+                              })}
+                            </p>
+                          </div>
+                          <div className="flex items-start gap-1.5 flex-1 min-w-0">
+                            <FaLocationDot className="w-2.5 h-2.5 text-blue-600 mt-0.5 shrink-0" />
+                            <p className="text-xs text-neutral-700 font-medium truncate">{pair.location}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : booking.shootLocations?.length ? (
+                  /* Fallback: show locations without date pairing (old format) */
                   <div className="flex justify-between gap-3">
                     <span className="text-neutral-500 shrink-0">Locations</span>
                     <span className="font-semibold text-neutral-900 text-right">{booking.shootLocations.join(', ')}</span>

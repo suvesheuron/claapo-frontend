@@ -15,10 +15,10 @@ const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
 const statusConfig = {
   draft:       { bg: 'bg-[#F3F4F6]', border: 'border-neutral-200', text: 'text-neutral-600', dot: 'bg-neutral-400', label: 'Draft' },
-  open:        { bg: 'bg-[#DBEAFE]', border: 'border-[#93C5FD]', text: 'text-[#1D4ED8]', dot: 'bg-[#3B5BDB]', label: 'Open' },
-  active:      { bg: 'bg-[#DBEAFE]', border: 'border-[#93C5FD]', text: 'text-[#1D4ED8]', dot: 'bg-[#3B5BDB]', label: 'Active' },
-  in_progress: { bg: 'bg-[#FEF9E6]', border: 'border-[#FDE68A]', text: 'text-[#92400E]', dot: 'bg-[#F4C430]', label: 'In Progress' },
-  completed:   { bg: 'bg-[#D1FAE5]', border: 'border-[#6EE7B7]', text: 'text-[#065F46]', dot: 'bg-[#22C55E]', label: 'Completed' },
+  open:        { bg: 'bg-[#BFDBFE]', border: 'border-[#60A5FA]', text: 'text-[#1E40AF]', dot: 'bg-[#3B82F6]', label: 'Open' },
+  active:      { bg: 'bg-[#FDE68A]', border: 'border-[#F59E0B]', text: 'text-[#92400E]', dot: 'bg-[#F59E0B]', label: 'Ongoing' },
+  in_progress: { bg: 'bg-[#FDE68A]', border: 'border-[#F59E0B]', text: 'text-[#92400E]', dot: 'bg-[#F59E0B]', label: 'Ongoing' },
+  completed:   { bg: 'bg-[#93C5FD]', border: 'border-[#3B82F6]', text: 'text-[#1E3A8A]', dot: 'bg-[#2563EB]', label: 'Completed' },
   cancelled:   { bg: 'bg-[#FEE2E2]', border: 'border-[#FCA5A5]', text: 'text-[#B91C1C]', dot: 'bg-red-400', label: 'Cancelled' },
 } as const;
 
@@ -28,6 +28,7 @@ interface Project {
   status: keyof typeof statusConfig;
   startDate: string;
   endDate: string;
+  shootDates?: string[];
   productionHouseName?: string | null;
   locationCity?: string | null;
   _count?: { bookings: number };
@@ -79,16 +80,30 @@ function buildCalendar(year: number, month: number, projects: Project[]): Calend
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-  // Map: day -> all projects that span that day
+  // Map: day -> all projects that have a shoot date on that day
   const dayMap: Record<number, Project[]> = {};
   for (const p of projects) {
-    const start = new Date(p.startDate);
-    const end = new Date(p.endDate);
-    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-      if (d.getFullYear() === year && d.getMonth() === month) {
-        const day = d.getDate();
-        if (!dayMap[day]) dayMap[day] = [];
-        dayMap[day].push(p);
+    // Use shootDates if available, otherwise fall back to startDate-endDate range (backward compatibility)
+    if (p.shootDates && p.shootDates.length > 0) {
+      // Use the specific shoot dates
+      for (const shootDateStr of p.shootDates) {
+        const shootDate = new Date(shootDateStr);
+        if (shootDate.getFullYear() === year && shootDate.getMonth() === month) {
+          const day = shootDate.getDate();
+          if (!dayMap[day]) dayMap[day] = [];
+          dayMap[day].push(p);
+        }
+      }
+    } else {
+      // Fallback: use entire project timeline (for projects without shootDates)
+      const start = new Date(p.startDate);
+      const end = new Date(p.endDate);
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        if (d.getFullYear() === year && d.getMonth() === month) {
+          const day = d.getDate();
+          if (!dayMap[day]) dayMap[day] = [];
+          dayMap[day].push(p);
+        }
       }
     }
   }

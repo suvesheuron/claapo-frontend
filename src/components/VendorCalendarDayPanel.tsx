@@ -142,9 +142,6 @@ export default function VendorCalendarDayPanel({
           const equip = b?.roleName ?? f?.equipmentLabel ?? null;
           const rate = b?.rateOffered ?? f?.rateOffered ?? null;
           const id = b?.id ?? f?.id;
-          const st = (b?.status ?? f?.status ?? '').toLowerCase();
-          const canReqCancel =
-            !!onRequestCancel && !!id && (st === 'accepted' || st === 'locked');
           const projectId = b?.projectId ?? f?.projectId;
           const companyChatId = b?.companyUserId ?? f?.companyUserId;
 

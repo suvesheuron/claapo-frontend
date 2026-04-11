@@ -25,6 +25,7 @@ export interface BookingWithDetails {
   status: BookingStatus;
   shootDates: string[];
   shootLocations: string[];
+  shootDateLocations?: Array<{ date: string; location: string }> | null;
   message?: string | null;
   invoiceId?: string | null;
   invoiceStatus?: string | null;

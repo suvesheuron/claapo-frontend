@@ -27,6 +27,7 @@ interface Booking {
   message: string | null;
   createdAt: string;
   shootDates?: string[] | null;
+  shootDateLocations?: Array<{ date: string; location: string }> | null;
   project: { id: string; title: string; startDate: string; endDate: string; status?: string; locationCity?: string | null };
   requester: { id: string; email: string; companyProfile?: { companyName?: string } | null };
   vendorEquipment?: { id: string; name: string } | null;
@@ -269,7 +270,7 @@ export default function Bookings() {
                             )}
                           </div>
 
-                          {/* Shoot dates — the part that was missing */}
+                          {/* Shoot dates with locations */}
                           {shootDates.length > 0 && (
                             <div className="rounded-xl bg-brand-primary/5 border border-brand-primary/15 p-3.5">
                               <div className="flex items-center gap-2 mb-2">
@@ -278,16 +279,40 @@ export default function Bookings() {
                                   Hire dates · {shootDates.length} {shootDates.length === 1 ? 'day' : 'days'}
                                 </p>
                               </div>
-                              <ul className="flex flex-wrap gap-1.5">
-                                {shootDates.map((d) => (
-                                  <li
-                                    key={d}
-                                    className="inline-flex items-center text-[11px] font-semibold bg-white text-brand-primary px-2.5 py-1 rounded-lg border border-brand-primary/30 shadow-sm"
-                                  >
-                                    {formatShootDate(d)}
-                                  </li>
-                                ))}
-                              </ul>
+                              
+                              {/* Check if we have location data */}
+                              {booking.shootDateLocations && booking.shootDateLocations.length > 0 ? (
+                                <div className="space-y-2">
+                                  {booking.shootDateLocations.map((pair) => (
+                                    <div key={pair.date} className="flex items-start gap-2.5 bg-white rounded-lg border border-brand-primary/20 p-2.5">
+                                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                                        <div className="w-7 h-7 rounded-md bg-brand-primary/10 flex items-center justify-center shrink-0">
+                                          <FaCalendarDay className="w-3 h-3 text-brand-primary" />
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                          <p className="text-xs font-semibold text-neutral-900">{formatShootDate(pair.date)}</p>
+                                        </div>
+                                      </div>
+                                      <div className="flex items-start gap-1.5 flex-1 min-w-0">
+                                        <FaLocationDot className="w-3 h-3 text-brand-primary mt-0.5 shrink-0" />
+                                        <p className="text-xs text-neutral-700 font-medium truncate">{pair.location}</p>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                /* Fallback: show dates without locations (backward compatibility) */
+                                <ul className="flex flex-wrap gap-1.5">
+                                  {shootDates.map((d) => (
+                                    <li
+                                      key={d}
+                                      className="inline-flex items-center text-[11px] font-semibold bg-white text-brand-primary px-2.5 py-1 rounded-lg border border-brand-primary/30 shadow-sm"
+                                    >
+                                      {formatShootDate(d)}
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
                             </div>
                           )}
 

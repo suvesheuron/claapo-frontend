@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  FaClipboardList, FaCircleCheck, FaTriangleExclamation, FaClock,
+  FaCircleCheck, FaTriangleExclamation, FaClock,
   FaMessage, FaBan, FaLock, FaCalendar, FaChevronLeft, FaChevronRight,
 } from 'react-icons/fa6';
 import DashboardHeader from '../components/DashboardHeader';

@@ -20,6 +20,7 @@ interface ProjectItem {
   status: string;
   startDate: string;
   endDate: string;
+  shootDates?: string[];
   productionHouseName?: string | null;
   _count?: { bookings: number };
 }
@@ -51,13 +52,28 @@ function buildCalendar(year: number, month: number, projects: ProjectItem[]): Ca
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const prevDays = new Date(year, month, 0).getDate();
   const dayMap: Record<number, ProjectItem> = {};
+  
+  // Only highlight actual shoot dates, not the entire project timeline
   for (const p of projects) {
-    const start = new Date(p.startDate);
-    const end = new Date(p.endDate);
-    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-      if (d.getFullYear() === year && d.getMonth() === month) dayMap[d.getDate()] = p;
+    // Use shootDates if available, otherwise fall back to startDate-endDate range (backward compatibility)
+    if (p.shootDates && p.shootDates.length > 0) {
+      // Use the specific shoot dates
+      for (const shootDateStr of p.shootDates) {
+        const shootDate = new Date(shootDateStr);
+        if (shootDate.getFullYear() === year && shootDate.getMonth() === month) {
+          dayMap[shootDate.getDate()] = p;
+        }
+      }
+    } else {
+      // Fallback: use entire project timeline (for projects without shootDates)
+      const start = new Date(p.startDate);
+      const end = new Date(p.endDate);
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        if (d.getFullYear() === year && d.getMonth() === month) dayMap[d.getDate()] = p;
+      }
     }
   }
+  
   const cells: CalendarCell[] = [];
   for (let i = firstDay - 1; i >= 0; i--) cells.push({ d: prevDays - i, muted: true });
   for (let day = 1; day <= daysInMonth; day++) cells.push({ d: day, muted: false, project: dayMap[day] ?? null });
