@@ -15,27 +15,26 @@ import {
 import type { NavItem } from '../components/DashboardSidebar';
 
 export const individualNavLinks: NavItem[] = [
-  { icon: FaHouse,         label: 'Dashboard',        to: '/dashboard',                  section: 'Overview' },
-  { icon: FaCalendar,      label: 'Manage Schedule',  to: '/dashboard/availability',     section: 'Overview' },
-  { icon: FaFolder,        label: 'Bookings',         to: '/dashboard/bookings',         section: 'Projects' },
-  { icon: FaClipboardList, label: 'Ongoing Projects', to: '/dashboard/ongoing-projects', section: 'Projects' },
-  { icon: FaFolder,        label: 'Past Projects',    to: '/dashboard/past-projects',    section: 'Projects' },
-  { icon: FaMessage,       label: 'Chat',             to: '/dashboard/conversations',    section: 'Communication' },
-  { icon: FaFileInvoice,   label: 'Invoices',         to: '/dashboard/invoices',         section: 'Communication' },
-  { icon: FaChartLine,     label: 'Earnings',         to: '/dashboard/earnings',         section: 'Communication' },
-  { icon: FaUser,          label: 'Profile',          to: '/dashboard/profile',          section: 'Account' },
+  { icon: FaHouse,         label: 'Dashboard',          to: '/dashboard',                  section: 'Overview' },
+  { icon: FaCalendar,      label: 'Manage Schedule',    to: '/dashboard/availability',     section: 'Overview' },
+  { icon: FaFolder,        label: 'Project Requests',   to: '/dashboard/bookings',         section: 'Projects' },
+  { icon: FaClipboardList, label: 'Project Details',    to: '/dashboard/project-details',  section: 'Projects' },
+  { icon: FaMessage,       label: 'Chat',               to: '/dashboard/conversations',    section: 'Communication' },
+  { icon: FaFileInvoice,   label: 'Invoices',           to: '/dashboard/invoices',         section: 'Communication' },
+  { icon: FaChartLine,     label: 'Earnings',           to: '/dashboard/earnings',         section: 'Communication' },
+  { icon: FaUser,          label: 'Profile',            to: '/dashboard/profile',          section: 'Account' },
 ];
 
 export const vendorNavLinks: NavItem[] = [
-  { icon: FaHouse,         label: 'Dashboard',        to: '/dashboard',                     section: 'Overview' },
-  { icon: FaCalendar,      label: 'Manage Schedule',  to: '/dashboard/vendor-availability', section: 'Overview' },
-  { icon: FaTruck,         label: 'Equipment',        to: '/dashboard/equipment',           section: 'Overview' },
-  { icon: FaFolder,        label: 'Bookings',         to: '/dashboard/bookings',            section: 'Projects' },
-  { icon: FaClipboardList, label: 'Ongoing Projects', to: '/dashboard/ongoing-projects',    section: 'Projects' },
-  { icon: FaMessage,       label: 'Chat',             to: '/dashboard/conversations',       section: 'Communication' },
-  { icon: FaFileInvoice,   label: 'Invoices',         to: '/dashboard/invoices',            section: 'Communication' },
-  { icon: FaChartLine,     label: 'Earnings',         to: '/dashboard/earnings',            section: 'Communication' },
-  { icon: FaUser,          label: 'Profile',          to: '/dashboard/vendor-profile',      section: 'Account' },
+  { icon: FaHouse,         label: 'Dashboard',          to: '/dashboard',                     section: 'Overview' },
+  { icon: FaCalendar,      label: 'Manage Schedule',    to: '/dashboard/vendor-availability', section: 'Overview' },
+  { icon: FaTruck,         label: 'Equipment',          to: '/dashboard/equipment',           section: 'Overview' },
+  { icon: FaFolder,        label: 'Project Requests',   to: '/dashboard/bookings',            section: 'Projects' },
+  { icon: FaClipboardList, label: 'Project Details',    to: '/dashboard/project-details',     section: 'Projects' },
+  { icon: FaMessage,       label: 'Chat',               to: '/dashboard/conversations',       section: 'Communication' },
+  { icon: FaFileInvoice,   label: 'Invoices',           to: '/dashboard/invoices',            section: 'Communication' },
+  { icon: FaChartLine,     label: 'Earnings',           to: '/dashboard/earnings',            section: 'Communication' },
+  { icon: FaUser,          label: 'Profile',            to: '/dashboard/vendor-profile',      section: 'Account' },
 ];
 
 export const companyNavLinks: NavItem[] = [

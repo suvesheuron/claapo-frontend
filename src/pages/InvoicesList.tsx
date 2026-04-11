@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { FaFileInvoice, FaPlus, FaTriangleExclamation, FaMagnifyingGlass } from 'react-icons/fa6';
+import { FaFileInvoice, FaPlus, FaTriangleExclamation, FaMagnifyingGlass, FaCalendar } from 'react-icons/fa6';
 import DashboardHeader from '../components/DashboardHeader';
 import DashboardSidebar from '../components/DashboardSidebar';
 import AppFooter from '../components/AppFooter';
@@ -56,21 +56,41 @@ export default function InvoicesList() {
   const [searchParams, setSearchParams] = useSearchParams();
   const issuedOnRaw = searchParams.get('issuedOn')?.trim() ?? '';
   const issuedOn = ISO_DAY.test(issuedOnRaw) ? issuedOnRaw : '';
+  const dateFromRaw = searchParams.get('dateFrom')?.trim() ?? '';
+  const dateFrom = ISO_DAY.test(dateFromRaw) ? dateFromRaw : '';
+  const dateToRaw = searchParams.get('dateTo')?.trim() ?? '';
+  const dateTo = ISO_DAY.test(dateToRaw) ? dateToRaw : '';
 
   const listPath = useMemo(() => {
     const q = new URLSearchParams({ limit: '50' });
     if (issuedOn) q.set('issuedOn', issuedOn);
+    if (dateFrom) q.set('dateFrom', dateFrom);
+    if (dateTo) q.set('dateTo', dateTo);
     return `/invoices?${q.toString()}`;
-  }, [issuedOn]);
+  }, [issuedOn, dateFrom, dateTo]);
 
   const { data, loading, error } = useApiQuery<InvoicesResponse>(listPath);
   const allInvoices = data?.items ?? [];
   const [projectSearch, setProjectSearch] = useState('');
-  const invoices = projectSearch.trim()
-    ? allInvoices.filter((inv) =>
+
+  // Filter by date range (client-side)
+  const invoices = useMemo(() => {
+    let filtered = allInvoices;
+    if (dateFrom || dateTo) {
+      filtered = filtered.filter((inv) => {
+        const invDate = new Date(inv.createdAt).setHours(0, 0, 0, 0);
+        const from = dateFrom ? new Date(dateFrom + 'T00:00:00').getTime() : 0;
+        const to = dateTo ? new Date(dateTo + 'T23:59:59').getTime() : Infinity;
+        return invDate >= from && invDate <= to;
+      });
+    }
+    if (projectSearch.trim()) {
+      filtered = filtered.filter((inv) =>
         (inv.project?.title ?? '').toLowerCase().includes(projectSearch.trim().toLowerCase()),
-      )
-    : allInvoices;
+      );
+    }
+    return filtered;
+  }, [allInvoices, dateFrom, dateTo, projectSearch]);
 
   const navLinks = currentRole === 'Company' ? companyNavLinks
     : currentRole === 'Vendor' ? vendorNavLinks
@@ -131,44 +151,94 @@ export default function InvoicesList() {
                 )}
               </div>
 
-              {/* Search bar */}
+              {/* Search bar and filters */}
               {!loading && allInvoices.length > 0 && (
-                <div className="mb-5 flex flex-col sm:flex-row gap-3 sm:items-end">
-                  <div className="flex-1 min-w-0">
-                    <label className="sr-only" htmlFor="invoice-project-search">Search by project name</label>
-                    <div className="relative">
-                      <FaMagnifyingGlass className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 w-3.5 h-3.5" />
-                      <input
-                        id="invoice-project-search"
-                        type="text"
-                        value={projectSearch}
-                        onChange={(e) => setProjectSearch(e.target.value)}
-                        placeholder="Search by project name…"
-                        className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200 bg-white text-sm placeholder-neutral-400 focus:outline-none focus:border-[#3B5BDB]/40 focus:ring-2 focus:ring-[#3B5BDB]/10 shadow-sm transition-all duration-200"
-                      />
+                <div className="mb-5 space-y-3">
+                  <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
+                    <div className="flex-1 min-w-0">
+                      <label className="sr-only" htmlFor="invoice-project-search">Search by project name</label>
+                      <div className="relative">
+                        <FaMagnifyingGlass className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 w-3.5 h-3.5" />
+                        <input
+                          id="invoice-project-search"
+                          type="text"
+                          value={projectSearch}
+                          onChange={(e) => setProjectSearch(e.target.value)}
+                          placeholder="Search by project name…"
+                          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200 bg-white text-sm placeholder-neutral-400 focus:outline-none focus:border-[#3B5BDB]/40 focus:ring-2 focus:ring-[#3B5BDB]/10 shadow-sm transition-all duration-200"
+                        />
+                      </div>
                     </div>
                   </div>
-                  <div className="flex flex-wrap items-center gap-2 shrink-0">
-                    <label htmlFor="invoice-issued-filter" className="text-xs font-medium text-neutral-600 whitespace-nowrap">
-                      Issued on
+
+                  {/* Date range filter */}
+                  <div className="flex flex-wrap items-center gap-3 p-3 bg-white rounded-xl border border-neutral-200 shadow-sm">
+                    <FaCalendar className="text-neutral-400 w-4 h-4" />
+                    <label htmlFor="invoice-date-from" className="text-xs font-medium text-neutral-600 whitespace-nowrap">
+                      From
                     </label>
                     <input
-                      id="invoice-issued-filter"
+                      id="invoice-date-from"
                       type="date"
-                      defaultValue={issuedOn}
-                      key={issuedOn || 'none'}
-                      className="rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 focus:outline-none focus:border-[#3B5BDB]/40"
+                      value={dateFrom}
+                      className="rounded-lg border border-neutral-200 bg-white px-2.5 py-2 text-sm text-neutral-900 focus:outline-none focus:border-[#3B5BDB]/40"
                       onChange={(e) => {
                         const v = e.target.value;
                         setSearchParams((prev) => {
                           const next = new URLSearchParams(prev);
-                          if (v) next.set('issuedOn', v);
-                          else next.delete('issuedOn');
+                          if (v) next.set('dateFrom', v);
+                          else next.delete('dateFrom');
                           return next;
                         });
                       }}
                     />
+                    <label htmlFor="invoice-date-to" className="text-xs font-medium text-neutral-600 whitespace-nowrap">
+                      To
+                    </label>
+                    <input
+                      id="invoice-date-to"
+                      type="date"
+                      value={dateTo}
+                      min={dateFrom || undefined}
+                      className="rounded-lg border border-neutral-200 bg-white px-2.5 py-2 text-sm text-neutral-900 focus:outline-none focus:border-[#3B5BDB]/40"
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        setSearchParams((prev) => {
+                          const next = new URLSearchParams(prev);
+                          if (v) next.set('dateTo', v);
+                          else next.delete('dateTo');
+                          return next;
+                        });
+                      }}
+                    />
+                    {(dateFrom || dateTo) && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSearchParams((prev) => {
+                            const next = new URLSearchParams(prev);
+                            next.delete('dateFrom');
+                            next.delete('dateTo');
+                            return next;
+                          });
+                        }}
+                        className="text-xs text-[#3B5BDB] font-semibold hover:underline underline-offset-2 ml-auto"
+                      >
+                        Clear dates
+                      </button>
+                    )}
                   </div>
+
+                  {/* Active date filter indicator */}
+                  {(dateFrom || dateTo) && (
+                    <p className="text-xs text-[#3B5BDB] font-medium flex items-center gap-2">
+                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#3B5BDB]" />
+                      Showing invoices from{' '}
+                      {dateFrom ? new Date(dateFrom + 'T12:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
+                      {' '}to{' '}
+                      {dateTo ? new Date(dateTo + 'T12:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -206,19 +276,22 @@ export default function InvoicesList() {
                       <p className="text-sm text-neutral-400 mb-5 max-w-xs mx-auto">Try a different project name or clear the search.</p>
                       <button type="button" onClick={() => setProjectSearch('')} className="text-sm text-[#3B5BDB] font-semibold hover:underline underline-offset-2">Clear search</button>
                     </>
-                  ) : issuedOn ? (
+                  ) : dateFrom || dateTo ? (
                     <>
-                      <p className="text-base font-semibold text-neutral-700 mb-2">No invoices on this date</p>
+                      <p className="text-base font-semibold text-neutral-700 mb-2">No invoices in this date range</p>
                       <p className="text-sm text-neutral-400 mb-5 max-w-xs mx-auto">
-                        Nothing was issued on{' '}
-                        {new Date(issuedOn + 'T12:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}.
+                        Nothing was issued between{' '}
+                        {dateFrom ? new Date(dateFrom + 'T12:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
+                        {' '}and{' '}
+                        {dateTo ? new Date(dateTo + 'T12:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}.
                       </p>
                       <button
                         type="button"
                         onClick={() => {
                           setSearchParams((prev) => {
                             const next = new URLSearchParams(prev);
-                            next.delete('issuedOn');
+                            next.delete('dateFrom');
+                            next.delete('dateTo');
                             return next;
                           });
                         }}

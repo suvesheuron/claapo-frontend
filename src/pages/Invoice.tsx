@@ -20,6 +20,8 @@ interface IssuerRecipientDetails {
   gstNumber: string | null;
   address: string | null;
   panNumber: string | null;
+  email: string | null;
+  phone: string | null;
   bankAccountName: string | null;
   bankAccountNumber: string | null;
   ifscCode: string | null;
@@ -43,6 +45,8 @@ interface InvoiceData {
   paidAt: string | null;
   projectTitle: string | null;
   projectId: string;
+  projectShootDates?: string[] | null;
+  projectShootLocations?: string[] | null;
   fromName: string;
   fromRole: string | null;
   fromCity: string | null;
@@ -301,6 +305,12 @@ export default function Invoice() {
                               {invoice.issuerDetails?.panNumber && <p className="text-xs text-neutral-500">PAN: {invoice.issuerDetails.panNumber}</p>}
                             </div>
                           )}
+                          {(invoice.issuerDetails?.email || invoice.issuerDetails?.phone) && (
+                            <div className="mt-1 space-y-0.5">
+                              {invoice.issuerDetails?.email && <p className="text-xs text-neutral-500">Email: {invoice.issuerDetails.email}</p>}
+                              {invoice.issuerDetails?.phone && <p className="text-xs text-neutral-500">Phone: {invoice.issuerDetails.phone}</p>}
+                            </div>
+                          )}
                           {invoice.issuerDetails?.address && (
                             <p className="text-xs text-neutral-600 mt-2 leading-relaxed whitespace-pre-wrap">{invoice.issuerDetails.address}</p>
                           )}
@@ -356,6 +366,40 @@ export default function Invoice() {
                           )}
                         </div>
                       </div>
+
+                      {/* Project Details */}
+                      {(invoice.projectTitle || invoice.projectShootDates?.length || invoice.projectShootLocations?.length) && (
+                        <div className="mb-8 p-4 rounded-xl bg-[#EEF2FF] border border-[#3B5BDB]/10">
+                          <h3 className="text-xs font-bold text-[#3B5BDB] uppercase tracking-wider mb-3 flex items-center gap-2">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                            </svg>
+                            Project Details
+                          </h3>
+                          <div className="space-y-2 text-sm">
+                            {invoice.projectTitle && (
+                              <div className="flex gap-2">
+                                <span className="text-neutral-500 shrink-0 w-24">Project:</span>
+                                <span className="font-semibold text-neutral-900">{invoice.projectTitle}</span>
+                              </div>
+                            )}
+                            {invoice.projectShootDates && invoice.projectShootDates.length > 0 && (
+                              <div className="flex gap-2">
+                                <span className="text-neutral-500 shrink-0 w-24">Shoot Dates:</span>
+                                <span className="font-semibold text-neutral-900">
+                                  {invoice.projectShootDates.map((d) => new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })).join(', ')}
+                                </span>
+                              </div>
+                            )}
+                            {invoice.projectShootLocations && invoice.projectShootLocations.length > 0 && (
+                              <div className="flex gap-2">
+                                <span className="text-neutral-500 shrink-0 w-24">Location:</span>
+                                <span className="font-semibold text-neutral-900">{invoice.projectShootLocations.join(', ')}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
 
                       {/* Line items */}
                       <div className="border-t border-neutral-200 pt-6 mb-6 overflow-x-auto">

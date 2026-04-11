@@ -54,6 +54,8 @@ export interface AvailabilityDateDetailModalProps {
   blockReasonOptions?: string[];
   /** Sliding right pane (e.g. individual dashboard); default is centered modal. */
   variant?: 'modal' | 'drawer';
+  /** Shoot dates from all bookings for this month to check if date is a shoot date */
+  allShootDates?: string[];
 }
 
 export default function AvailabilityDateDetailModal({
@@ -69,6 +71,7 @@ export default function AvailabilityDateDetailModal({
   onRequestCancelBooking,
   blockReasonOptions,
   variant = 'modal',
+  allShootDates = [],
 }: AvailabilityDateDetailModalProps) {
   const reasonList = blockReasonOptions?.length ? blockReasonOptions : DEFAULT_BLOCK_REASONS;
   const [blockMode, setBlockMode] = useState(false);
@@ -213,45 +216,7 @@ export default function AvailabilityDateDetailModal({
                     <FaMessage className="text-sm" /> Chat
                   </Link>
                 )}
-                {booking.invoiceId ? (
-                  <Link
-                    to={`/dashboard/invoice/${booking.invoiceId}`}
-                    onClick={onClose}
-                    className="inline-flex flex-1 min-w-[120px] items-center justify-center gap-2 rounded-xl py-2.5 px-3 bg-emerald-50 text-emerald-800 text-sm font-semibold hover:bg-emerald-100 border border-emerald-200/60"
-                  >
-                    <FaFileInvoice className="text-sm" /> View invoice
-                  </Link>
-                ) : (
-                  <Link
-                    to={`/dashboard/invoice/new?bookingId=${encodeURIComponent(booking.id)}`}
-                    onClick={onClose}
-                    className={`inline-flex flex-1 min-w-[120px] items-center justify-center gap-2 rounded-xl py-2.5 px-3 text-sm font-semibold border ${
-                      isCompany
-                        ? 'bg-neutral-100 text-neutral-400 border-neutral-200 pointer-events-none cursor-not-allowed'
-                        : 'bg-emerald-50 text-emerald-800 border-emerald-200/60 hover:bg-emerald-100'
-                    }`}
-                    aria-disabled={isCompany}
-                    tabIndex={isCompany ? -1 : undefined}
-                  >
-                    <FaPlus className="text-sm" /> Create invoice
-                  </Link>
-                )}
               </div>
-
-              {!isCompany &&
-                onRequestCancelBooking &&
-                (booking.status === 'accepted' || booking.status === 'locked') && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onRequestCancelBooking(booking);
-                      onClose();
-                    }}
-                    className="w-full rounded-xl py-2.5 border border-amber-300 bg-amber-50 text-amber-900 text-sm font-semibold hover:bg-amber-100"
-                  >
-                    Request cancellation
-                  </button>
-                )}
             </div>
           )}
 
@@ -357,13 +322,30 @@ export default function AvailabilityDateDetailModal({
         </div>
 
         <div className="px-5 py-3 border-t border-neutral-100 shrink-0 space-y-2">
-          <Link
-            to={`/dashboard/invoices?issuedOn=${encodeURIComponent(selectedDate)}`}
-            onClick={onClose}
-            className="w-full flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold bg-[#EEF4FF] text-[#3B5BDB] border border-[#3B5BDB]/20 hover:bg-[#DBEAFE]"
-          >
-            <FaFileInvoice className="text-sm" /> Invoices issued on this date
-          </Link>
+          {allShootDates.includes(selectedDate ?? '') ? (
+            <Link
+              to={`/dashboard/invoices?issuedOn=${encodeURIComponent(selectedDate ?? '')}`}
+              onClick={onClose}
+              className="w-full flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold bg-[#EEF4FF] text-[#3B5BDB] border border-[#3B5BDB]/20 hover:bg-[#DBEAFE]"
+            >
+              <FaFileInvoice className="text-sm" /> Invoices
+            </Link>
+          ) : null}
+          
+          {/* Direct cancellation button for booked/hired dates */}
+          {!isCompany && booking && (booking.status === 'accepted' || booking.status === 'locked') && (
+            <button
+              type="button"
+              onClick={() => {
+                onRequestCancelBooking?.(booking);
+                onClose();
+              }}
+              className="w-full rounded-xl py-2.5 border border-amber-300 bg-amber-50 text-amber-900 text-sm font-semibold hover:bg-amber-100 transition-colors"
+            >
+              Request cancellation
+            </button>
+          )}
+          
           <button
             type="button"
             onClick={onClose}

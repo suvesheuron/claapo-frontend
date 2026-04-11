@@ -81,7 +81,7 @@ export default function Bookings() {
       ? vendorNavLinks
       : individualNavLinks;
 
-  useEffect(() => { document.title = 'Booking Requests – Claapo'; }, []);
+  useEffect(() => { document.title = 'Project Requests – Claapo'; }, []);
 
   const [tab, setTab]       = useState<TabFilter>('all');
   const [actioning, setActioning] = useState<string | null>(null);
@@ -121,8 +121,8 @@ export default function Bookings() {
             <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-6 xl:px-8 py-6">
 
               <div className="mb-6">
-                <h1 className="text-2xl font-bold text-neutral-900 tracking-tight">Booking Requests</h1>
-                <p className="text-sm text-neutral-500 mt-1">Review incoming booking requests from production companies</p>
+                <h1 className="text-2xl font-bold text-neutral-900 tracking-tight">Project Requests</h1>
+                <p className="text-sm text-neutral-500 mt-1">Review incoming project requests from production companies</p>
               </div>
 
               {/* Tab filter */}

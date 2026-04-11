@@ -17,9 +17,9 @@ export const REGISTRATION_GENRES = [
 ] as const;
 
 export const REGISTRATION_COMPANY_TYPES = [
-  'Agency',
+  // 'Agency',
   'Production House',
-  'Agency & Production House',
+  // 'Agency & Production House',
   'Line Production',
 ] as const;
 

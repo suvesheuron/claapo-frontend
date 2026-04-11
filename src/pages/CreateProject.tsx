@@ -30,8 +30,6 @@ export default function CreateProject() {
   const [shootDates, setShootDates] = useState<string[]>(['']);
   const [shootLocations, setShootLocations]   = useState<string[]>(['']);
 
-  const [budget, setBudget] = useState('');
-
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState<string | null>(null);
 
@@ -69,7 +67,6 @@ export default function CreateProject() {
         locationCity: locationCity.trim() || undefined,
         shootDates: filteredShootDates,
         shootLocations: shootLocations.filter(s => s.trim()),
-        budget: budget ? Math.round(parseFloat(budget)) : undefined,
       });
 
       navigate('/dashboard/projects');
@@ -155,10 +152,6 @@ export default function CreateProject() {
                         <input type="text" value={locationCity} onChange={(e) => setLocationCity(e.target.value)} placeholder="e.g., Mumbai" disabled={loading} className="rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3B5BDB] focus:bg-white text-sm transition-all disabled:opacity-50" />
                       </div>
                       <div>
-                        <label className="block text-neutral-700 text-xs mb-1.5 font-semibold">Total Budget (₹) <span className="text-neutral-400 font-normal">(optional)</span></label>
-                        <input type="number" min="0" value={budget} onChange={(e) => setBudget(e.target.value)} placeholder="e.g., 500000" disabled={loading} className="rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3B5BDB] focus:bg-white text-sm transition-all disabled:opacity-50" />
-                      </div>
-                      <div>
                         <div className="flex items-center justify-between mb-2">
                           <label className="text-neutral-700 text-xs font-semibold">Shoot Dates <span className="text-[#F40F02]">*</span></label>
                           <button type="button" onClick={addShootDate} className="text-xs text-[#3B5BDB] hover:underline flex items-center gap-1">
@@ -219,7 +212,6 @@ export default function CreateProject() {
                         { label: 'Project Name',      value: title.trim() || 'Not set' },
                         { label: 'Production House',  value: productionHouseName.trim() || 'Not set' },
                         { label: 'Duration',          value: duration },
-                        { label: 'Budget',            value: budget ? `₹${budget}` : 'Not set' },
                         { label: 'Shoot dates',       value: shootDates.filter(d => d.trim()).length ? shootDates.filter(d => d.trim()).map(d => new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })).join(', ') : 'Not set' },
                         { label: 'Locations',         value: shootLocations.filter(s => s.trim()).join(', ') || 'Not set' },
                       ].map(({ label, value }) => (
