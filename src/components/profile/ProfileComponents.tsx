@@ -1,5 +1,5 @@
 import React from 'react';
-import { FaInstagram, FaYoutube, FaVimeoV, FaImdb, FaLinkedinIn, FaXTwitter } from 'react-icons/fa6';
+import { FaInstagram, FaYoutube, FaVimeoV, FaImdb, FaLinkedinIn, FaXTwitter, FaGlobe } from 'react-icons/fa6';
 import { getCompletionStatus } from '../../utils/profileCompletion';
 
 interface ProfileSectionProps {
@@ -263,6 +263,7 @@ interface SocialLinksProps {
  */
 export function SocialLinks({ links, editable = false, onChange, disabled = false }: SocialLinksProps) {
   const socialPlatforms: { key: keyof SocialLinksData; label: string; Icon: React.ComponentType<{ className?: string }>; placeholder: string; color: string; bg: string }[] = [
+    { key: 'website', label: 'Website', Icon: FaGlobe, placeholder: 'https://your-site.com', color: 'text-[#3B5BDB]', bg: 'bg-[#3B5BDB]/10' },
     { key: 'instagramUrl', label: 'Instagram', Icon: FaInstagram, placeholder: 'https://instagram.com/username', color: 'text-[#E4405F]', bg: 'bg-[#E4405F]/10' },
     { key: 'youtubeUrl', label: 'YouTube', Icon: FaYoutube, placeholder: 'https://youtube.com/@channel', color: 'text-[#FF0000]', bg: 'bg-[#FF0000]/10' },
     { key: 'vimeoUrl', label: 'Vimeo', Icon: FaVimeoV, placeholder: 'https://vimeo.com/username', color: 'text-[#1AB7EA]', bg: 'bg-[#1AB7EA]/10' },

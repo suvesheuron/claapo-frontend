@@ -34,6 +34,7 @@ interface ProfileData {
   locationCity: string | null;
   locationState: string | null;
   dailyBudget: number | null;
+  website: string | null;
   imdbUrl: string | null;
   instagramUrl: string | null;
   youtubeUrl: string | null;
@@ -74,6 +75,7 @@ export default function IndividualProfile() {
   const [locationCity, setLocationCity] = useState('');
   const [locationState, setLocationState] = useState('');
   const [dailyBudget, setDailyBudget] = useState('');
+  const [website, setWebsite] = useState('');
   const [imdbUrl, setImdbUrl] = useState('');
   const [instagramUrl, setInstagramUrl] = useState('');
   const [youtubeUrl, setYoutubeUrl] = useState('');
@@ -128,6 +130,7 @@ export default function IndividualProfile() {
     setLocationCity(p.locationCity ?? '');
     setLocationState(p.locationState ?? '');
     setDailyBudget(p.dailyBudget ? String(paiseToRupees(p.dailyBudget)) : '');
+    setWebsite(p.website ?? '');
     setImdbUrl(p.imdbUrl ?? '');
     setInstagramUrl(p.instagramUrl ?? '');
     setYoutubeUrl(p.youtubeUrl ?? '');
@@ -167,6 +170,7 @@ export default function IndividualProfile() {
         locationCity: locationCity.trim() || undefined,
         locationState: locationState.trim() || undefined,
         dailyBudget: dailyBudget ? rupeesToPaise(dailyBudget) : undefined,
+        website: website.trim() || undefined,
         imdbUrl: imdbUrl.trim() || undefined,
         instagramUrl: instagramUrl.trim() || undefined,
         youtubeUrl: youtubeUrl.trim() || undefined,
@@ -203,6 +207,7 @@ export default function IndividualProfile() {
     locationCity,
     locationState,
     dailyBudget: dailyBudget ? rupeesToPaise(dailyBudget) : null,
+    website,
     imdbUrl,
     instagramUrl,
     youtubeUrl,
@@ -437,6 +442,7 @@ export default function IndividualProfile() {
                           icon={<FaGlobe />}
                         >
                           <SocialLinks links={{
+                            website: website || null,
                             instagramUrl: instagramUrl || null,
                             imdbUrl: imdbUrl || null,
                             youtubeUrl: youtubeUrl || null,
@@ -601,6 +607,7 @@ export default function IndividualProfile() {
                         >
                           <SocialLinks
                             links={{
+                              website,
                               instagramUrl,
                               imdbUrl,
                               youtubeUrl,
@@ -610,6 +617,7 @@ export default function IndividualProfile() {
                             }}
                             editable
                             onChange={(field, value) => {
+                              if (field === 'website') setWebsite(value);
                               if (field === 'instagramUrl') setInstagramUrl(value);
                               if (field === 'imdbUrl') setImdbUrl(value);
                               if (field === 'youtubeUrl') setYoutubeUrl(value);

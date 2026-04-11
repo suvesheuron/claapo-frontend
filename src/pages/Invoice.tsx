@@ -280,87 +280,59 @@ export default function Invoice() {
                     </div>
 
                     {/* Printable invoice area */}
-                    <div id="invoice-print-area" ref={printRef} className="bg-white rounded-2xl border border-neutral-200 p-6 sm:p-8">
+                    <div id="invoice-print-area" ref={printRef} className="bg-white rounded-2xl border border-neutral-200 p-6 sm:p-10">
                       {/* Claapo Logo + Invoice Header */}
-                      <div className="flex items-center justify-between mb-6 pb-6 border-b border-neutral-200">
+                      <div className="flex items-start justify-between mb-8 pb-6 border-b-2 border-neutral-900">
                         <div className="flex items-center gap-3">
                           <img src="/claapo-logo.svg" alt="Claapo" className="h-12 w-auto" />
                         </div>
                         <div className="text-right">
-                          <h2 className="text-2xl font-bold text-neutral-900 tracking-tight">INVOICE</h2>
-                          <p className="text-sm text-neutral-500 mt-0.5">{invoice.invoiceNumber}</p>
+                          <h2 className="text-3xl font-bold text-neutral-900 tracking-tight">INVOICE</h2>
+                          <p className="text-sm font-mono text-neutral-600 mt-1">{invoice.invoiceNumber}</p>
+                          <div className="mt-3 space-y-0.5 text-xs text-neutral-600">
+                            <p>
+                              <span className="text-neutral-400">Issued:&nbsp;</span>
+                              <span className="font-semibold text-neutral-800">{formatDate(invoice.issuedAt)}</span>
+                            </p>
+                            {invoice.dueDate && (
+                              <p>
+                                <span className="text-neutral-400">Due:&nbsp;</span>
+                                <span className="font-semibold text-neutral-800">{formatDate(invoice.dueDate)}</span>
+                              </p>
+                            )}
+                            {invoice.paidAt && (
+                              <p className="text-[#15803D] font-semibold">Paid on {formatDate(invoice.paidAt)}</p>
+                            )}
+                          </div>
                         </div>
                       </div>
 
-                      {/* From / To */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                        <div>
-                          <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-2">From</h3>
-                          <p className="text-sm font-semibold text-neutral-900">{invoice.fromName}</p>
-                          {invoice.fromRole && <p className="text-sm text-neutral-600">{invoice.fromRole}</p>}
-                          {invoice.fromCity && <p className="text-sm text-neutral-500">{invoice.fromCity}</p>}
-                          {(invoice.issuerDetails?.gstNumber || invoice.issuerDetails?.panNumber) && (
-                            <div className="mt-1 space-y-0.5">
-                              {invoice.issuerDetails?.gstNumber && <p className="text-xs text-neutral-500">GST: {invoice.issuerDetails.gstNumber}</p>}
-                              {invoice.issuerDetails?.panNumber && <p className="text-xs text-neutral-500">PAN: {invoice.issuerDetails.panNumber}</p>}
-                            </div>
-                          )}
-                          {(invoice.issuerDetails?.email || invoice.issuerDetails?.phone) && (
-                            <div className="mt-1 space-y-0.5">
-                              {invoice.issuerDetails?.email && <p className="text-xs text-neutral-500">Email: {invoice.issuerDetails.email}</p>}
-                              {invoice.issuerDetails?.phone && <p className="text-xs text-neutral-500">Phone: {invoice.issuerDetails.phone}</p>}
-                            </div>
-                          )}
-                          {invoice.issuerDetails?.address && (
-                            <p className="text-xs text-neutral-600 mt-2 leading-relaxed whitespace-pre-wrap">{invoice.issuerDetails.address}</p>
-                          )}
-                          {(invoice.issuerDetails?.bankAccountName ||
-                            invoice.issuerDetails?.bankAccountNumber ||
-                            invoice.issuerDetails?.bankName ||
-                            invoice.issuerDetails?.ifscCode) && (
-                            <div className="mt-3 pt-3 border-t border-neutral-200 space-y-1">
-                              <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wide">Bank details</p>
-                              {invoice.issuerDetails.bankName && (
-                                <p className="text-xs text-neutral-600">{invoice.issuerDetails.bankName}</p>
-                              )}
-                              {invoice.issuerDetails.bankAccountName && (
-                                <p className="text-xs text-neutral-600">{invoice.issuerDetails.bankAccountName}</p>
-                              )}
-                              {invoice.issuerDetails.bankAccountNumber && (
-                                <p className="text-xs text-neutral-600 font-mono">A/c {invoice.issuerDetails.bankAccountNumber}</p>
-                              )}
-                              {invoice.issuerDetails.ifscCode && (
-                                <p className="text-xs text-neutral-600 font-mono">IFSC {invoice.issuerDetails.ifscCode}</p>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                        <div>
-                          <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-2">To</h3>
-                          <p className="text-sm font-semibold text-neutral-900">{invoice.toName}</p>
-                          {invoice.toCity && <p className="text-sm text-neutral-500">{invoice.toCity}</p>}
-                          {invoice.recipientDetails?.gstNumber && <p className="text-xs text-neutral-500 mt-1">GST: {invoice.recipientDetails.gstNumber}</p>}
-                          {invoice.recipientDetails?.panNumber && <p className="text-xs text-neutral-500">PAN: {invoice.recipientDetails.panNumber}</p>}
+                      {/* Bill To */}
+                      <div className="mb-8">
+                        <h3 className="text-[11px] font-bold text-neutral-500 uppercase tracking-[0.15em] mb-3">Bill To</h3>
+                        <div className="pl-4 border-l-2 border-neutral-200">
+                          <p className="text-base font-bold text-neutral-900">{invoice.toName}</p>
+                          {invoice.toCity && <p className="text-sm text-neutral-600 mt-0.5">{invoice.toCity}</p>}
                           {invoice.recipientDetails?.address && (
-                            <p className="text-xs text-neutral-600 mt-2 leading-relaxed whitespace-pre-wrap">{invoice.recipientDetails.address}</p>
+                            <p className="text-xs text-neutral-600 mt-1 leading-relaxed whitespace-pre-wrap">{invoice.recipientDetails.address}</p>
                           )}
-                          {(invoice.recipientDetails?.bankAccountName ||
-                            invoice.recipientDetails?.bankAccountNumber ||
-                            invoice.recipientDetails?.bankName ||
-                            invoice.recipientDetails?.ifscCode) && (
-                            <div className="mt-3 pt-3 border-t border-neutral-200 space-y-1">
-                              <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wide">Bank details</p>
-                              {invoice.recipientDetails.bankName && (
-                                <p className="text-xs text-neutral-600">{invoice.recipientDetails.bankName}</p>
+                          {(invoice.recipientDetails?.gstNumber || invoice.recipientDetails?.panNumber) && (
+                            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-0.5">
+                              {invoice.recipientDetails.gstNumber && (
+                                <p className="text-xs text-neutral-500"><span className="text-neutral-400">GST:</span> <span className="font-mono text-neutral-700">{invoice.recipientDetails.gstNumber}</span></p>
                               )}
-                              {invoice.recipientDetails.bankAccountName && (
-                                <p className="text-xs text-neutral-600">{invoice.recipientDetails.bankAccountName}</p>
+                              {invoice.recipientDetails.panNumber && (
+                                <p className="text-xs text-neutral-500"><span className="text-neutral-400">PAN:</span> <span className="font-mono text-neutral-700">{invoice.recipientDetails.panNumber}</span></p>
                               )}
-                              {invoice.recipientDetails.bankAccountNumber && (
-                                <p className="text-xs text-neutral-600 font-mono">A/c {invoice.recipientDetails.bankAccountNumber}</p>
+                            </div>
+                          )}
+                          {(invoice.recipientDetails?.email || invoice.recipientDetails?.phone) && (
+                            <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5">
+                              {invoice.recipientDetails.email && (
+                                <p className="text-xs text-neutral-500">{invoice.recipientDetails.email}</p>
                               )}
-                              {invoice.recipientDetails.ifscCode && (
-                                <p className="text-xs text-neutral-600 font-mono">IFSC {invoice.recipientDetails.ifscCode}</p>
+                              {invoice.recipientDetails.phone && (
+                                <p className="text-xs text-neutral-500">{invoice.recipientDetails.phone}</p>
                               )}
                             </div>
                           )}
@@ -454,58 +426,135 @@ export default function Invoice() {
                         </div>
                       )}
 
-                      {/* Attachments */}
-                      <div className="mt-8 pt-6 border-t border-neutral-200">
-                        <div className="flex items-center justify-between gap-2 mb-2">
-                          <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">Attachments</p>
-                          {canEditAttachments && (
-                            <>
-                              <input ref={fileInputRef} type="file" className="hidden" onChange={handleAddAttachment} />
-                              <button
-                                type="button"
-                                onClick={() => fileInputRef.current?.click()}
-                                disabled={uploadingAttachment}
-                                className="no-print text-xs font-semibold text-[#3B5BDB] hover:underline disabled:opacity-50 flex items-center gap-1"
-                              >
-                                <FaPaperclip className="w-3 h-3" />
-                                {uploadingAttachment ? 'Uploading…' : 'Add attachment'}
-                              </button>
-                            </>
+                      {/* Issued by / Payable to — industry-standard footer */}
+                      <div className="mt-10 pt-6 border-t-2 border-neutral-900">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                          {/* Issued by */}
+                          <div>
+                            <h3 className="text-[11px] font-bold text-neutral-500 uppercase tracking-[0.15em] mb-3">Issued By</h3>
+                            <p className="text-sm font-bold text-neutral-900">{invoice.fromName}</p>
+                            {invoice.fromRole && <p className="text-xs text-neutral-600 mt-0.5">{invoice.fromRole}</p>}
+                            {invoice.issuerDetails?.address && (
+                              <p className="text-xs text-neutral-600 mt-1.5 leading-relaxed whitespace-pre-wrap">{invoice.issuerDetails.address}</p>
+                            )}
+                            {!invoice.issuerDetails?.address && invoice.fromCity && (
+                              <p className="text-xs text-neutral-600 mt-1.5">{invoice.fromCity}</p>
+                            )}
+                            <div className="mt-2 space-y-0.5">
+                              {invoice.issuerDetails?.email && (
+                                <p className="text-xs text-neutral-600">{invoice.issuerDetails.email}</p>
+                              )}
+                              {invoice.issuerDetails?.phone && (
+                                <p className="text-xs text-neutral-600">{invoice.issuerDetails.phone}</p>
+                              )}
+                            </div>
+                            {(invoice.issuerDetails?.gstNumber || invoice.issuerDetails?.panNumber) && (
+                              <div className="mt-2 flex flex-wrap gap-x-4 gap-y-0.5">
+                                {invoice.issuerDetails.gstNumber && (
+                                  <p className="text-xs text-neutral-500"><span className="text-neutral-400">GST:</span> <span className="font-mono text-neutral-700">{invoice.issuerDetails.gstNumber}</span></p>
+                                )}
+                                {invoice.issuerDetails.panNumber && (
+                                  <p className="text-xs text-neutral-500"><span className="text-neutral-400">PAN:</span> <span className="font-mono text-neutral-700">{invoice.issuerDetails.panNumber}</span></p>
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Payable to */}
+                          {(invoice.issuerDetails?.bankAccountName ||
+                            invoice.issuerDetails?.bankAccountNumber ||
+                            invoice.issuerDetails?.bankName ||
+                            invoice.issuerDetails?.ifscCode) ? (
+                            <div className="md:border-l md:border-neutral-200 md:pl-8">
+                              <h3 className="text-[11px] font-bold text-neutral-500 uppercase tracking-[0.15em] mb-3">Payable To</h3>
+                              <div className="space-y-1">
+                                {invoice.issuerDetails.bankAccountName && (
+                                  <p className="text-sm font-semibold text-neutral-900">{invoice.issuerDetails.bankAccountName}</p>
+                                )}
+                                {invoice.issuerDetails.bankName && (
+                                  <p className="text-xs text-neutral-600">{invoice.issuerDetails.bankName}</p>
+                                )}
+                                {invoice.issuerDetails.bankAccountNumber && (
+                                  <p className="text-xs text-neutral-700">
+                                    <span className="text-neutral-400">A/c No.&nbsp;</span>
+                                    <span className="font-mono">{invoice.issuerDetails.bankAccountNumber}</span>
+                                  </p>
+                                )}
+                                {invoice.issuerDetails.ifscCode && (
+                                  <p className="text-xs text-neutral-700">
+                                    <span className="text-neutral-400">IFSC&nbsp;</span>
+                                    <span className="font-mono">{invoice.issuerDetails.ifscCode}</span>
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="md:border-l md:border-neutral-200 md:pl-8">
+                              <h3 className="text-[11px] font-bold text-neutral-500 uppercase tracking-[0.15em] mb-3">Payment Terms</h3>
+                              <p className="text-xs text-neutral-600 leading-relaxed">
+                                Payment due {invoice.dueDate ? `by ${formatDate(invoice.dueDate)}` : 'within 30 days of issue'}. Contact the issuer for payment instructions.
+                              </p>
+                            </div>
                           )}
                         </div>
-                        {attachments.length === 0 ? (
-                          <p className="text-sm text-neutral-400">No attachments</p>
-                        ) : (
-                          <ul className="space-y-2">
-                            {attachments.map((a) => (
-                              <li key={a.id} className="flex items-center justify-between gap-2 py-1.5 px-2 rounded-lg bg-neutral-50 border border-neutral-100">
-                                <a href={a.downloadUrl ?? '#'} target="_blank" rel="noopener noreferrer" className="text-sm text-[#3B5BDB] hover:underline truncate flex items-center gap-2 min-w-0">
-                                  <FaDownload className="w-3 h-3 shrink-0" />
-                                  <span className="truncate">{a.fileName}</span>
-                                  <span className="text-xs text-neutral-400 shrink-0">({(a.size / 1024).toFixed(1)} KB)</span>
-                                </a>
-                                {canEditAttachments && (
-                                  <button
-                                    type="button"
-                                    onClick={() => handleDeleteAttachment(a.id)}
-                                    disabled={deletingAttachmentId === a.id}
-                                    className="no-print text-red-600 hover:text-red-700 p-1 disabled:opacity-50"
-                                    aria-label="Remove attachment"
-                                  >
-                                    <FaTrash className="w-3.5 h-3.5" />
-                                  </button>
-                                )}
-                              </li>
-                            ))}
-                          </ul>
+
+                        <div className="mt-8 pt-4 border-t border-neutral-100 flex items-center justify-between gap-4 flex-wrap">
+                          <p className="text-[10px] text-neutral-400 uppercase tracking-wider">
+                            Payment due within 30 days · This is a computer-generated invoice and does not require a signature
+                          </p>
+                          <p className="text-[10px] text-neutral-400">Powered by Claapo</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Attachments — supporting files, not part of the printed invoice */}
+                    <div className="no-print mt-6 bg-white rounded-2xl border border-neutral-200 p-5 sm:p-6">
+                      <div className="flex items-center justify-between gap-2 mb-3">
+                        <div>
+                          <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">Supporting Documents</p>
+                          <p className="text-[11px] text-neutral-400 mt-0.5">Files attached for reference — not included in the printed invoice.</p>
+                        </div>
+                        {canEditAttachments && (
+                          <>
+                            <input ref={fileInputRef} type="file" className="hidden" onChange={handleAddAttachment} />
+                            <button
+                              type="button"
+                              onClick={() => fileInputRef.current?.click()}
+                              disabled={uploadingAttachment}
+                              className="text-xs font-semibold text-[#3B5BDB] hover:underline disabled:opacity-50 flex items-center gap-1 shrink-0"
+                            >
+                              <FaPaperclip className="w-3 h-3" />
+                              {uploadingAttachment ? 'Uploading…' : 'Add attachment'}
+                            </button>
+                          </>
                         )}
                       </div>
-
-                      <div className="mt-6 pt-4 border-t border-neutral-100">
-                        <p className="text-xs text-neutral-400">
-                          Payment due within 30 days. Please make payment to the account details provided.
-                        </p>
-                      </div>
+                      {attachments.length === 0 ? (
+                        <p className="text-sm text-neutral-400">No attachments</p>
+                      ) : (
+                        <ul className="space-y-2">
+                          {attachments.map((a) => (
+                            <li key={a.id} className="flex items-center justify-between gap-2 py-1.5 px-2 rounded-lg bg-neutral-50 border border-neutral-100">
+                              <a href={a.downloadUrl ?? '#'} target="_blank" rel="noopener noreferrer" className="text-sm text-[#3B5BDB] hover:underline truncate flex items-center gap-2 min-w-0">
+                                <FaDownload className="w-3 h-3 shrink-0" />
+                                <span className="truncate">{a.fileName}</span>
+                                <span className="text-xs text-neutral-400 shrink-0">({(a.size / 1024).toFixed(1)} KB)</span>
+                              </a>
+                              {canEditAttachments && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteAttachment(a.id)}
+                                  disabled={deletingAttachmentId === a.id}
+                                  className="text-red-600 hover:text-red-700 p-1 disabled:opacity-50"
+                                  aria-label="Remove attachment"
+                                >
+                                  <FaTrash className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                     </div>
                   </>
                 )}
