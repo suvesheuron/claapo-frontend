@@ -3,7 +3,7 @@ import { Link, useParams, useNavigate } from 'react-router-dom';
 import {
   FaArrowLeft, FaUsers, FaTruck, FaLock, FaUnlock,
   FaTrash, FaBan, FaMessage, FaFileInvoice,
-  FaTriangleExclamation, FaPenToSquare,
+  FaTriangleExclamation, FaPenToSquare, FaCircleCheck,
 } from 'react-icons/fa6';
 import DashboardHeader from '../../components/DashboardHeader';
 import DashboardSidebar from '../../components/DashboardSidebar';
@@ -92,6 +92,12 @@ export default function ProjectDetail() {
   const [cancelError, setCancelError] = useState<string | null>(null);
   const [confirmDeleteProject, setConfirmDeleteProject] = useState(false);
   const [deletingProject, setDeletingProject] = useState(false);
+  const [activatingProject, setActivatingProject] = useState(false);
+  const [confirmActivateProject, setConfirmActivateProject] = useState(false);
+  const [activateError, setActivateError] = useState<string | null>(null);
+  const [completingProject, setCompletingProject] = useState(false);
+  const [confirmCompleteProject, setConfirmCompleteProject] = useState(false);
+  const [completeError, setCompleteError] = useState<string | null>(null);
 
   const loadProject = useCallback(async () => {
     if (!projectId) return;
@@ -130,6 +136,8 @@ export default function ProjectDetail() {
   const vendorBookings = bookings.filter((b) => b.target.role === 'vendor');
   const allLocked      = bookings.length > 0 && bookings.every((b) => b.status === 'locked');
   const canDeleteProject = project && (project.status === 'draft' || project.status === 'cancelled');
+  const canActivateProject = project && (project.status === 'draft' || project.status === 'open');
+  const canCompleteProject = project && (project.status === 'active' || project.status === 'open') && allLocked;
 
   const totalBudget = getProjectTotalBudget(project);
   const crewCost    = crewBookings.filter((b) => b.status === 'accepted' || b.status === 'locked').reduce((s, b) => s + (b.rateOffered ?? 0), 0);
@@ -182,6 +190,43 @@ export default function ProjectDetail() {
       toast.error(err instanceof ApiException ? err.payload.message : 'Failed to delete project.');
     } finally {
       setDeletingProject(false);
+    }
+  };
+
+  const handleActivateProject = async () => {
+    if (!projectId) return;
+    setActivateError(null);
+    setActivatingProject(true);
+    try {
+      await api.patch(`/projects/${projectId}`, { status: 'active' });
+      toast.success('Project activated successfully!');
+      setConfirmActivateProject(false);
+      await loadProject();
+    } catch (err) {
+      const msg = err instanceof ApiException ? err.payload.message : 'Could not activate project.';
+      toast.error(msg);
+      setActivateError(msg);
+    } finally {
+      setActivatingProject(false);
+    }
+  };
+
+  const handleCompleteProject = async () => {
+    if (!projectId) return;
+    setCompleteError(null);
+    setCompletingProject(true);
+    try {
+      await api.patch(`/projects/${projectId}`, { status: 'completed' });
+      toast.success('Project marked as completed!');
+      setConfirmCompleteProject(false);
+      await loadProject();
+      await loadBookings();
+    } catch (err) {
+      const msg = err instanceof ApiException ? err.payload.message : 'Could not complete project.';
+      toast.error(msg);
+      setCompleteError(msg);
+    } finally {
+      setCompletingProject(false);
     }
   };
 
@@ -254,6 +299,13 @@ export default function ProjectDetail() {
                         <FaTrash className="w-3.5 h-3.5" /> Delete
                       </button>
                     )}
+                    {canActivateProject && (
+                      <button type="button" onClick={() => setConfirmActivateProject(true)}
+                        className="rounded-xl px-4 py-2 bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 flex items-center gap-2 transition-colors disabled:opacity-50">
+                        <FaUnlock className="w-3.5 h-3.5" />
+                        Activate Project
+                      </button>
+                    )}
                     {!allLocked ? (
                       <button onClick={handleLockAll} disabled={lockingAll}
                         className="rounded-xl px-4 py-2 bg-[#3B5BDB] text-white text-sm font-semibold hover:bg-[#2f4ac2] flex items-center gap-2 transition-colors disabled:opacity-50">
@@ -276,6 +328,28 @@ export default function ProjectDetail() {
                     <p className="text-sm font-semibold text-[#15803D]">Project is locked</p>
                     <p className="text-xs text-[#166534] mt-0.5">All confirmed crew and vendors are locked for this project.</p>
                   </div>
+                </div>
+              )}
+
+              {canCompleteProject && (
+                <div className="rounded-2xl bg-amber-50 border border-amber-200 p-4 mb-5 flex items-center justify-between gap-3">
+                  <div className="flex items-start gap-3 flex-1">
+                    <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
+                      <FaCircleCheck className="text-amber-600 text-base" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-amber-900">Ready to complete this project?</p>
+                      <p className="text-xs text-amber-700 mt-0.5">All bookings are locked. Marking as complete will finalize the project and move it to Past Projects.</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmCompleteProject(true)}
+                    className="rounded-xl px-5 py-2.5 bg-amber-600 text-white text-sm font-semibold hover:bg-amber-700 flex items-center gap-2 transition-colors shrink-0"
+                  >
+                    <FaCircleCheck className="w-3.5 h-3.5" />
+                    Mark as Complete
+                  </button>
                 </div>
               )}
 
@@ -515,6 +589,75 @@ export default function ProjectDetail() {
                 <button type="button" disabled={deletingProject} onClick={handleDeleteProject}
                   className="flex-1 rounded-xl py-2.5 bg-red-500 text-white text-sm font-semibold hover:bg-red-600 disabled:opacity-50 flex items-center justify-center gap-2">
                   <FaTrash className="w-3 h-3" /> {deletingProject ? 'Deleting…' : 'Delete'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {confirmActivateProject && (
+        <>
+          <div className="fixed inset-0 bg-black/40 z-40" onClick={() => setConfirmActivateProject(false)} />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+              <div className="w-11 h-11 rounded-xl bg-emerald-50 flex items-center justify-center mb-4 border border-emerald-100">
+                <FaUnlock className="text-emerald-600 text-base" />
+              </div>
+              <h2 className="text-base font-bold text-neutral-900 mb-2">Activate project?</h2>
+              <p className="text-sm text-neutral-600 mb-4">
+                {project?.title ? `"${project.title}"` : 'This project'} will become active and visible to all booked crew and vendors. They will be notified about the activation.
+              </p>
+              {activateError && (
+                <div className="flex items-center gap-2 mb-4 p-3 bg-red-50 border border-red-200/80 rounded-xl">
+                  <FaTriangleExclamation className="text-red-500 text-xs shrink-0" />
+                  <p className="text-xs text-red-700">{activateError}</p>
+                </div>
+              )}
+              <div className="flex gap-3">
+                <button type="button" onClick={() => setConfirmActivateProject(false)}
+                  className="flex-1 rounded-xl py-2.5 border border-neutral-300 text-neutral-700 text-sm font-medium hover:bg-neutral-50 transition-colors">
+                  Cancel
+                </button>
+                <button type="button" disabled={activatingProject} onClick={handleActivateProject}
+                  className="flex-1 rounded-xl py-2.5 bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 disabled:opacity-50 flex items-center justify-center gap-2">
+                  <FaUnlock className="w-3 h-3" /> {activatingProject ? 'Activating…' : 'Activate Project'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {confirmCompleteProject && (
+        <>
+          <div className="fixed inset-0 bg-black/40 z-40" onClick={() => setConfirmCompleteProject(false)} />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+              <div className="w-11 h-11 rounded-xl bg-amber-50 flex items-center justify-center mb-4 border border-amber-100">
+                <FaCircleCheck className="text-amber-600 text-base" />
+              </div>
+              <h2 className="text-base font-bold text-neutral-900 mb-2">Complete project?</h2>
+              <p className="text-sm text-neutral-600 mb-2">
+                {project?.title ? `"${project.title}"` : 'This project'} will be marked as completed. All booked crew and vendors will be notified, and the project will move to your Past Projects.
+              </p>
+              <p className="text-xs text-neutral-500 mb-4">
+                Invoices can still be created and managed after completion.
+              </p>
+              {completeError && (
+                <div className="flex items-center gap-2 mb-4 p-3 bg-red-50 border border-red-200/80 rounded-xl">
+                  <FaTriangleExclamation className="text-red-500 text-xs shrink-0" />
+                  <p className="text-xs text-red-700">{completeError}</p>
+                </div>
+              )}
+              <div className="flex gap-3">
+                <button type="button" onClick={() => setConfirmCompleteProject(false)}
+                  className="flex-1 rounded-xl py-2.5 border border-neutral-300 text-neutral-700 text-sm font-medium hover:bg-neutral-50 transition-colors">
+                  Cancel
+                </button>
+                <button type="button" disabled={completingProject} onClick={handleCompleteProject}
+                  className="flex-1 rounded-xl py-2.5 bg-amber-600 text-white text-sm font-semibold hover:bg-amber-700 disabled:opacity-50 flex items-center justify-center gap-2">
+                  <FaCircleCheck className="w-3 h-3" /> {completingProject ? 'Completing…' : 'Mark as Complete'}
                 </button>
               </div>
             </div>

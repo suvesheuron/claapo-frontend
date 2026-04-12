@@ -49,6 +49,7 @@ interface DayChatMessage {
   senderLabel: string;
   conversationId: string;
   otherParticipantId: string;
+  otherParticipantName?: string;
 }
 
 interface ProjectDayChatGroup {
@@ -64,6 +65,7 @@ interface ProjectDayChatsResponse {
     createdAt: string;
     conversationId: string;
     otherParticipantId: string;
+    otherParticipant?: { id: string; displayName: string };
     sender?: { id?: string; displayName?: string };
   }>;
   meta?: { pages?: number };
@@ -197,6 +199,7 @@ export default function CompanyDashboard() {
         senderLabel: m.sender?.displayName ?? '—',
         conversationId: m.conversationId,
         otherParticipantId: m.otherParticipantId,
+        otherParticipantName: m.otherParticipant?.displayName,
       });
     }
     const pages = Math.max(1, firstRes.meta?.pages ?? 1);
@@ -213,6 +216,7 @@ export default function CompanyDashboard() {
           senderLabel: m.sender?.displayName ?? '—',
           conversationId: m.conversationId,
           otherParticipantId: m.otherParticipantId,
+          otherParticipantName: m.otherParticipant?.displayName,
         });
       }
     }
@@ -257,7 +261,7 @@ export default function CompanyDashboard() {
       .finally(() => setDateChatGroupsLoading(false));
   }, [loadDateChatGroups, panel]);
 
-  // When a person is selected inside a project, load their full conversation for that project
+  // When a person is selected inside a project, load THEIR messages for THAT DAY only
   useEffect(() => {
     if (!expandedChatPerson || !expandedChatProject) {
       setPersonChatMessages([]);
@@ -265,43 +269,37 @@ export default function CompanyDashboard() {
       setPersonChatLoading(false);
       return;
     }
+    // Get the date range from the panel
+    if (!panel?.dateIso) return;
+    
+    // Filter messages: only from selected day AND from/to this person
     const group = dateChatGroups.find((g) => g.projectId === expandedChatProject);
-    const sample = group?.items.find((m) => m.otherParticipantId === expandedChatPerson);
-    if (!sample) return;
-    const conversationId = sample.conversationId;
-    let cancelled = false;
-    setPersonChatLoading(true);
-    setPersonChatError(null);
-    void api
-      .get<{ items: Array<{ id: string; senderId: string; content: string | null; createdAt: string; sender?: { displayName?: string } }> }>(
-        `/conversations/${conversationId}/messages?limit=100`,
+    if (!group) {
+      setPersonChatMessages([]);
+      setPersonChatLoading(false);
+      return;
+    }
+    
+    // Filter to only messages involving this person on this day
+    const personMessages = group.items
+      .filter((m) => 
+        m.otherParticipantId === expandedChatPerson || 
+        m.senderId === expandedChatPerson
       )
-      .then((res) => {
-        if (cancelled) return;
-        const sorted = (res.items ?? [])
-          .slice()
-          .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
-          .map((m) => ({
-            id: m.id,
-            senderId: m.senderId,
-            senderLabel: m.sender?.displayName ?? '—',
-            content: m.content,
-            createdAt: m.createdAt,
-          }));
-        setPersonChatMessages(sorted);
-      })
-      .catch((err) => {
-        if (cancelled) return;
-        setPersonChatError(err instanceof ApiException ? err.payload.message : 'Could not load conversation.');
-        setPersonChatMessages([]);
-      })
-      .finally(() => {
-        if (!cancelled) setPersonChatLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [expandedChatPerson, expandedChatProject, dateChatGroups]);
+      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+      .map((m) => ({
+        id: m.id,
+        senderId: m.senderId,
+        senderLabel: m.senderLabel,
+        content: m.content,
+        createdAt: m.createdAt,
+        conversationId: m.conversationId,
+        otherParticipantId: m.otherParticipantId,
+      }));
+    
+    setPersonChatMessages(personMessages);
+    setPersonChatLoading(false);
+  }, [expandedChatPerson, expandedChatProject, dateChatGroups, panel]);
 
   const fmtChatTime = (iso: string) =>
     new Date(iso).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
@@ -806,19 +804,28 @@ export default function CompanyDashboard() {
                         const pid = m.otherParticipantId;
                         if (!pid) continue;
                         const existing = participantMap.get(pid);
-                        // Prefer name from a message where sender === that participant
-                        const candidateName = m.senderId === pid ? m.senderLabel : existing?.name;
+                        
+                        // Get the participant name - prefer otherParticipantName from backend
+                        // This is the most reliable source as it comes from the user's profile
+                        const participantName = m.otherParticipantName || 
+                                               (m.senderId === pid ? m.senderLabel : null) ||
+                                               existing?.name ||
+                                               '—';
+                        
                         if (!existing) {
                           participantMap.set(pid, {
                             id: pid,
-                            name: candidateName ?? (m.senderId === pid ? m.senderLabel : '—'),
+                            name: participantName,
                             messageCount: 1,
                             lastAt: m.createdAt,
                             lastContent: m.content,
                           });
                         } else {
                           existing.messageCount += 1;
-                          if (candidateName) existing.name = candidateName;
+                          // Update name if we found a better one (from otherParticipantName)
+                          if (m.otherParticipantName && existing.name === '—') {
+                            existing.name = m.otherParticipantName;
+                          }
                           if (new Date(m.createdAt).getTime() > new Date(existing.lastAt).getTime()) {
                             existing.lastAt = m.createdAt;
                             existing.lastContent = m.content;
