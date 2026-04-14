@@ -115,6 +115,18 @@ export default function IndividualDashboard() {
   const { data: pastData } = useApiQuery<{ items: PastBookingItem[] }>('/bookings/past');
   const allBookings = bookingsData?.items ?? [];
   const pendingBookings = allBookings.filter(b => b.status === 'pending').slice(0, 5);
+
+  // Dates with pending booking requests
+  const pendingDates = useMemo(() => {
+    const dates = new Set<string>();
+    allBookings
+      .filter(b => b.status === 'pending')
+      .forEach(b => {
+        getBookingDateKeys(b).forEach(d => dates.add(d));
+      });
+    return dates;
+  }, [allBookings]);
+
   const pastItems = pastData?.items ?? [];
   const activeCount = allBookings.filter(b => b.status === 'accepted' || b.status === 'locked').length;
   const pastCount = pastItems.length;
@@ -369,7 +381,7 @@ export default function IndividualDashboard() {
                           onClick={() => !cell.muted && setDetailDate(getDateStr(cell.d))}
                           disabled={cell.muted}
                           className={`
-                            cal-cell rounded-xl border text-center p-1 sm:p-1.5
+                            cal-cell rounded-xl border text-center p-1 sm:p-1.5 relative
                             min-h-[44px] sm:min-h-[52px] flex flex-col items-center justify-center gap-0.5
                             ${cell.muted
                               ? 'bg-white border-neutral-100 text-neutral-300 cursor-default'
@@ -380,6 +392,10 @@ export default function IndividualDashboard() {
                           `}
                         >
                           <span className="text-[11px] sm:text-xs font-semibold leading-none">{cell.d}</span>
+                          {/* Pending booking request indicator */}
+                          {pendingDates.has(getDateStr(cell.d)) && (
+                            <span className="absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-[#F40F02] animate-pulse" />
+                          )}
                           {cell.status && !cell.muted && cell.status !== 'available' && (
                             <span className="text-[8px] sm:text-[9px] font-medium leading-tight truncate w-full opacity-80 px-0.5">
                               {cell.status === 'blocked'

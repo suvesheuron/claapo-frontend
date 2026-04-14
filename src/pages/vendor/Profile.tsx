@@ -37,6 +37,7 @@ interface VendorProfileData {
   vimeoUrl?: string | null;
   address?: string | null;
   panNumber?: string | null;
+  upiId?: string | null;
   bankAccountName?: string | null;
   bankAccountNumber?: string | null;
   ifscCode?: string | null;
@@ -72,6 +73,7 @@ export default function VendorProfile() {
   const [vimeoUrl, setVimeoUrl] = useState('');
   const [address, setAddress] = useState('');
   const [panNumber, setPanNumber] = useState('');
+  const [upiId, setUpiId] = useState('');
   const [bankAccountName, setBankAccountName] = useState('');
   const [bankAccountNumber, setBankAccountNumber] = useState('');
   const [ifscCode, setIfscCode] = useState('');
@@ -129,6 +131,7 @@ export default function VendorProfile() {
     setVimeoUrl(p.vimeoUrl ?? '');
     setAddress(p.address ?? '');
     setPanNumber(p.panNumber ?? '');
+    setUpiId(p.upiId ?? '');
     setBankAccountName(p.bankAccountName ?? '');
     setBankAccountNumber(p.bankAccountNumber ?? '');
     setIfscCode(p.ifscCode ?? '');
@@ -158,6 +161,7 @@ export default function VendorProfile() {
         vimeoUrl: vimeoUrl.trim() || undefined,
         address: address.trim() || undefined,
         panNumber: panNumber.trim() || undefined,
+        upiId: upiId.trim() || undefined,
         bankAccountName: bankAccountName.trim() || undefined,
         bankAccountNumber: bankAccountNumber.trim() || undefined,
         ifscCode: ifscCode.trim() || undefined,
@@ -399,6 +403,7 @@ export default function VendorProfile() {
                               copyable
                             />
                             <InfoRow label="PAN" value={panNumber || '—'} copyable />
+                            <InfoRow label="UPI ID" value={profile?.upiId || '—'} copyable />
                             <InfoRow label="Bank" value={bankName || '—'} />
                             <InfoRow label="Account" value={bankAccountNumber || '—'} copyable />
                             <InfoRow label="IFSC" value={ifscCode || '—'} copyable />
@@ -640,6 +645,7 @@ export default function VendorProfile() {
                               <p className="text-[10px] text-neutral-400 mt-1.5">GST number verification is done by admin</p>
                             </div>
                             <EditableField label="PAN Number" value={panNumber} onChange={setPanNumber} placeholder="e.g. ABCDE1234F" disabled={saving} />
+                            <EditableField label="UPI ID (Optional)" value={upiId} onChange={setUpiId} placeholder="e.g. name@upi" disabled={saving} helpText="Your UPI ID / VPA for receiving payments" />
                             <EditableField label="Bank name" value={bankName} onChange={setBankName} disabled={saving} icon={<FaBuilding />} />
                             <EditableField label="Account holder name" value={bankAccountName} onChange={setBankAccountName} disabled={saving} />
                             <EditableField label="Account number" value={bankAccountNumber} onChange={setBankAccountNumber} disabled={saving} />

@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
-import { FaArrowLeft, FaPlus, FaTrash, FaFileInvoice } from 'react-icons/fa6';
+import { FaArrowLeft, FaPlus, FaTrash, FaFileInvoice, FaPaperclip, FaUpload } from 'react-icons/fa6';
 import DashboardHeader from '../components/DashboardHeader';
 import AppFooter from '../components/AppFooter';
 import { api, ApiException } from '../services/api';
@@ -23,6 +23,12 @@ interface LineItem {
   unitPrice: string;
 }
 
+interface PendingAttachment {
+  file: File;
+  previewUrl?: string;
+  uploading: boolean;
+}
+
 export default function CreateInvoice() {
   useEffect(() => { document.title = 'Create Invoice – Claapo'; }, []);
   const navigate = useNavigate();
@@ -39,6 +45,8 @@ export default function CreateInvoice() {
   const [dueDate, setDueDate] = useState('');
   const [lineItems, setLineItems] = useState<LineItem[]>([{ description: '', quantity: '1', unitPrice: '' }]);
   const [submitting, setSubmitting] = useState(false);
+  const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const selectedBooking = bookings.find((b) => b.id === selectedBookingId) ?? null;
 
@@ -51,27 +59,32 @@ export default function CreateInvoice() {
     if (match) setSelectedBookingId(bookingIdFromUrl);
   }, [bookingsLoading, bookingIdFromUrl, bookingsData]);
 
-  // Pre-fill a line item when booking is selected
+  // Keep line items blank when booking is selected — no auto pre-fill
   useEffect(() => {
     if (!selectedBooking) return;
-    const rolePart = selectedBooking.projectRole?.roleName?.trim();
-    const titlePart = selectedBooking.project.title?.trim();
-    const description = [titlePart, rolePart].filter(Boolean).join(' — ') || 'Services rendered';
-    if (selectedBooking.rateOffered != null) {
-      setLineItems([{
-        description,
-        quantity: '1',
-        unitPrice: String(selectedBooking.rateOffered / 100),
-      }]);
-    } else {
-      setLineItems([{ description, quantity: '1', unitPrice: '' }]);
-    }
+    // Do not pre-fill — user enters particulars manually
   }, [selectedBooking?.id]);
 
   const addLine = () => setLineItems((prev) => [...prev, { description: '', quantity: '1', unitPrice: '' }]);
   const removeLine = (i: number) => setLineItems((prev) => prev.filter((_, idx) => idx !== i));
   const updateLine = (i: number, key: keyof LineItem, val: string) => {
     setLineItems((prev) => prev.map((l, idx) => idx === i ? { ...l, [key]: val } : l));
+  };
+
+  const handleAddAttachments = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    const newAttachments: PendingAttachment[] = Array.from(files).map((file) => ({
+      file,
+      previewUrl: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined,
+      uploading: false,
+    }));
+    setPendingAttachments((prev) => [...prev, ...newAttachments]);
+    e.target.value = '';
+  };
+
+  const removePendingAttachment = (i: number) => {
+    setPendingAttachments((prev) => prev.filter((_, idx) => idx !== i));
   };
 
   const subtotalPaise = lineItems.reduce((sum, l) => {
@@ -102,8 +115,32 @@ export default function CreateInvoice() {
         })),
       };
       const created = await api.post<{ id: string }>('/invoices', dto);
+      const invoiceId = created.id;
+
+      // Upload pending attachments
+      for (const att of pendingAttachments) {
+        try {
+          const { uploadUrl, key } = await api.get<{ uploadUrl: string; key: string }>(
+            `/invoices/${invoiceId}/attachments/upload-url?contentType=${encodeURIComponent(att.file.type || 'application/octet-stream')}`,
+          );
+          await fetch(uploadUrl, {
+            method: 'PUT',
+            body: att.file,
+            headers: { 'Content-Type': att.file.type || 'application/octet-stream' },
+          });
+          await api.post(`/invoices/${invoiceId}/attachments`, {
+            fileKey: key,
+            fileName: att.file.name,
+            mimeType: att.file.type || 'application/octet-stream',
+            size: att.file.size,
+          });
+        } catch {
+          // Silently skip failed attachments — user can add them later
+        }
+      }
+
       toast.success('Invoice created as draft!');
-      navigate(`/dashboard/invoice/${created.id}`);
+      navigate(`/dashboard/invoice/${invoiceId}`);
     } catch (err) {
       toast.error(err instanceof ApiException ? err.payload.message : 'Failed to create invoice.');
     } finally {
@@ -170,10 +207,10 @@ export default function CreateInvoice() {
               />
             </div>
 
-            {/* Line Items */}
+            {/* Particulars */}
             <div className="bg-white rounded-2xl border border-neutral-200 p-5">
               <div className="flex items-center justify-between mb-3">
-                <h2 className="text-sm font-bold text-neutral-700">Line Items</h2>
+                <h2 className="text-sm font-bold text-neutral-700">Particulars</h2>
                 <button type="button" onClick={addLine} className="flex items-center gap-1.5 text-[#3B5BDB] text-xs font-semibold hover:text-[#2f4ac2] transition-colors">
                   <FaPlus className="w-3 h-3" /> Add Item
                 </button>
@@ -252,6 +289,68 @@ export default function CreateInvoice() {
               GST @ 18% is auto-calculated and added to your invoice total.
               The invoice will be created as a <strong>Draft</strong> — you can review and send it from the invoice detail page.
             </p>
+
+            {/* Attach Files */}
+            <div className="bg-white rounded-2xl border border-neutral-200 p-5">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-sm font-bold text-neutral-700">Attach Files</h2>
+                <label className="flex items-center gap-1.5 text-[#3B5BDB] text-xs font-semibold hover:text-[#2f4ac2] transition-colors cursor-pointer">
+                  <FaUpload className="w-3 h-3" />
+                  Choose Files
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
+                    className="hidden"
+                    onChange={handleAddAttachments}
+                  />
+                </label>
+              </div>
+              {pendingAttachments.length === 0 ? (
+                <p className="text-sm text-neutral-400">No files attached</p>
+              ) : (
+                <div className="space-y-2">
+                  {/* Image preview grid */}
+                  {pendingAttachments.some((a) => a.previewUrl) && (
+                    <div className="flex flex-wrap gap-2">
+                      {pendingAttachments.map((a, i) =>
+                        a.previewUrl ? (
+                          <div key={i} className="relative w-16 h-16 rounded-lg overflow-hidden border border-neutral-200 shrink-0">
+                            <img src={a.previewUrl} alt={a.file.name} className="w-full h-full object-cover" />
+                            <button
+                              type="button"
+                              onClick={() => removePendingAttachment(i)}
+                              className="absolute top-0.5 right-0.5 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center text-[10px] hover:bg-red-600"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ) : null,
+                      )}
+                    </div>
+                  )}
+                  {/* File list */}
+                  {pendingAttachments.map((a, i) => (
+                    <div key={i} className="flex items-center justify-between gap-2 py-1.5 px-2 rounded-lg bg-neutral-50 border border-neutral-100">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <FaPaperclip className="w-3 h-3 text-neutral-400 shrink-0" />
+                        <span className="text-sm text-neutral-700 truncate">{a.file.name}</span>
+                        <span className="text-xs text-neutral-400 shrink-0">({(a.file.size / 1024).toFixed(1)} KB)</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removePendingAttachment(i)}
+                        className="text-red-400 hover:text-red-600 p-1 shrink-0 transition-colors"
+                        aria-label="Remove file"
+                      >
+                        <FaTrash className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
             <div className="flex items-center gap-3">
               <button

@@ -20,6 +20,7 @@ interface IssuerRecipientDetails {
   gstNumber: string | null;
   address: string | null;
   panNumber: string | null;
+  upiId: string | null;
   email: string | null;
   phone: string | null;
   bankAccountName: string | null;
@@ -307,35 +308,71 @@ export default function Invoice() {
                         </div>
                       </div>
 
-                      {/* Bill To */}
-                      <div className="mb-8">
-                        <h3 className="text-[11px] font-bold text-neutral-500 uppercase tracking-[0.15em] mb-3">Bill To</h3>
-                        <div className="pl-4 border-l-2 border-neutral-200">
-                          <p className="text-base font-bold text-neutral-900">{invoice.toName}</p>
-                          {invoice.toCity && <p className="text-sm text-neutral-600 mt-0.5">{invoice.toCity}</p>}
-                          {invoice.recipientDetails?.address && (
-                            <p className="text-xs text-neutral-600 mt-1 leading-relaxed whitespace-pre-wrap">{invoice.recipientDetails.address}</p>
-                          )}
-                          {(invoice.recipientDetails?.panNumber || invoice.recipientDetails?.gstNumber) && (
-                            <div className="mt-2 space-y-0.5">
-                              {invoice.recipientDetails.panNumber && (
-                                <p className="text-xs text-neutral-500"><span className="text-neutral-400">PAN:&nbsp;</span><span className="font-mono text-neutral-700">{invoice.recipientDetails.panNumber}</span></p>
-                              )}
-                              {invoice.recipientDetails.gstNumber && (
-                                <p className="text-xs text-neutral-500"><span className="text-neutral-400">GST:&nbsp;</span><span className="font-mono text-neutral-700">{invoice.recipientDetails.gstNumber}</span></p>
-                              )}
-                            </div>
-                          )}
-                          {(invoice.recipientDetails?.email || invoice.recipientDetails?.phone) && (
-                            <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5">
-                              {invoice.recipientDetails.email && (
-                                <p className="text-xs text-neutral-500">{invoice.recipientDetails.email}</p>
-                              )}
-                              {invoice.recipientDetails.phone && (
-                                <p className="text-xs text-neutral-500">{invoice.recipientDetails.phone}</p>
-                              )}
-                            </div>
-                          )}
+                      {/* Bill From / Bill To */}
+                      <div className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+                        {/* Bill From */}
+                        <div>
+                          <h3 className="text-[11px] font-bold text-neutral-500 uppercase tracking-[0.15em] mb-3">Bill From</h3>
+                          <div className="pl-4 border-l-2 border-neutral-200">
+                            <p className="text-base font-bold text-neutral-900">{invoice.fromName}</p>
+                            {invoice.fromRole && <p className="text-xs text-neutral-600 mt-0.5">{invoice.fromRole}</p>}
+                            {invoice.fromCity && <p className="text-sm text-neutral-600 mt-0.5">{invoice.fromCity}</p>}
+                            {invoice.issuerDetails?.address && (
+                              <p className="text-xs text-neutral-600 mt-1 leading-relaxed whitespace-pre-wrap">{invoice.issuerDetails.address}</p>
+                            )}
+                            {(invoice.issuerDetails?.panNumber || invoice.issuerDetails?.gstNumber) && (
+                              <div className="mt-2 space-y-0.5">
+                                {invoice.issuerDetails.panNumber && (
+                                  <p className="text-xs text-neutral-500"><span className="text-neutral-400">PAN:&nbsp;</span><span className="font-mono text-neutral-700">{invoice.issuerDetails.panNumber}</span></p>
+                                )}
+                                {invoice.issuerDetails.gstNumber && (
+                                  <p className="text-xs text-neutral-500"><span className="text-neutral-400">GST:&nbsp;</span><span className="font-mono text-neutral-700">{invoice.issuerDetails.gstNumber}</span></p>
+                                )}
+                              </div>
+                            )}
+                            {(invoice.issuerDetails?.email || invoice.issuerDetails?.phone) && (
+                              <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5">
+                                {invoice.issuerDetails.email && (
+                                  <p className="text-xs text-neutral-500">{invoice.issuerDetails.email}</p>
+                                )}
+                                {invoice.issuerDetails.phone && (
+                                  <p className="text-xs text-neutral-500">{invoice.issuerDetails.phone}</p>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Bill To */}
+                        <div>
+                          <h3 className="text-[11px] font-bold text-neutral-500 uppercase tracking-[0.15em] mb-3">Bill To</h3>
+                          <div className="pl-4 border-l-2 border-neutral-200">
+                            <p className="text-base font-bold text-neutral-900">{invoice.toName}</p>
+                            {invoice.toCity && <p className="text-sm text-neutral-600 mt-0.5">{invoice.toCity}</p>}
+                            {invoice.recipientDetails?.address && (
+                              <p className="text-xs text-neutral-600 mt-1 leading-relaxed whitespace-pre-wrap">{invoice.recipientDetails.address}</p>
+                            )}
+                            {(invoice.recipientDetails?.panNumber || invoice.recipientDetails?.gstNumber) && (
+                              <div className="mt-2 space-y-0.5">
+                                {invoice.recipientDetails.panNumber && (
+                                  <p className="text-xs text-neutral-500"><span className="text-neutral-400">PAN:&nbsp;</span><span className="font-mono text-neutral-700">{invoice.recipientDetails.panNumber}</span></p>
+                                )}
+                                {invoice.recipientDetails.gstNumber && (
+                                  <p className="text-xs text-neutral-500"><span className="text-neutral-400">GST:&nbsp;</span><span className="font-mono text-neutral-700">{invoice.recipientDetails.gstNumber}</span></p>
+                                )}
+                              </div>
+                            )}
+                            {(invoice.recipientDetails?.email || invoice.recipientDetails?.phone) && (
+                              <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5">
+                                {invoice.recipientDetails.email && (
+                                  <p className="text-xs text-neutral-500">{invoice.recipientDetails.email}</p>
+                                )}
+                                {invoice.recipientDetails.phone && (
+                                  <p className="text-xs text-neutral-500">{invoice.recipientDetails.phone}</p>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
 
@@ -426,47 +463,24 @@ export default function Invoice() {
                         </div>
                       )}
 
-                      {/* Issued by / Payable to — industry-standard footer */}
+                      {/* Signature / Payable to */}
                       <div className="mt-10 pt-6 border-t-2 border-neutral-900">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                          {/* Issued by */}
+                          {/* Signature */}
                           <div>
-                            <h3 className="text-[11px] font-bold text-neutral-500 uppercase tracking-[0.15em] mb-3">Issued By</h3>
-                            <p className="text-sm font-bold text-neutral-900">{invoice.fromName}</p>
-                            {invoice.fromRole && <p className="text-xs text-neutral-600 mt-0.5">{invoice.fromRole}</p>}
-                            {invoice.issuerDetails?.address && (
-                              <p className="text-xs text-neutral-600 mt-1.5 leading-relaxed whitespace-pre-wrap">{invoice.issuerDetails.address}</p>
-                            )}
-                            {!invoice.issuerDetails?.address && invoice.fromCity && (
-                              <p className="text-xs text-neutral-600 mt-1.5">{invoice.fromCity}</p>
-                            )}
-                            <div className="mt-2 space-y-0.5">
-                              {invoice.issuerDetails?.email && (
-                                <p className="text-xs text-neutral-600">{invoice.issuerDetails.email}</p>
-                              )}
-                              {invoice.issuerDetails?.phone && (
-                                <p className="text-xs text-neutral-600">{invoice.issuerDetails.phone}</p>
-                              )}
-                            </div>
-                            {(invoice.issuerDetails?.panNumber || invoice.issuerDetails?.gstNumber) && (
-                              <div className="mt-2 space-y-0.5">
-                                {invoice.issuerDetails.panNumber && (
-                                  <p className="text-xs text-neutral-500"><span className="text-neutral-400">PAN:&nbsp;</span><span className="font-mono text-neutral-700">{invoice.issuerDetails.panNumber}</span></p>
-                                )}
-                                {invoice.issuerDetails.gstNumber && (
-                                  <p className="text-xs text-neutral-500"><span className="text-neutral-400">GST:&nbsp;</span><span className="font-mono text-neutral-700">{invoice.issuerDetails.gstNumber}</span></p>
-                                )}
-                              </div>
-                            )}
+                            <h3 className="text-[11px] font-bold text-neutral-500 uppercase tracking-[0.15em] mb-3">Signature</h3>
+                            <div className="border-b-2 border-neutral-300 pb-16" />
+                            <p className="text-xs text-neutral-500 mt-2">Authorised Signatory</p>
                           </div>
 
                           {/* Payable to */}
                           {(invoice.issuerDetails?.bankAccountName ||
                             invoice.issuerDetails?.bankAccountNumber ||
                             invoice.issuerDetails?.bankName ||
-                            invoice.issuerDetails?.ifscCode) ? (
+                            invoice.issuerDetails?.ifscCode ||
+                            invoice.issuerDetails?.upiId) ? (
                             <div className="md:border-l md:border-neutral-200 md:pl-8">
-                              <h3 className="text-[11px] font-bold text-neutral-500 uppercase tracking-[0.15em] mb-3">Payable To</h3>
+                              <h3 className="text-[11px] font-bold text-neutral-500 uppercase tracking-[0.15em] mb-3">Bill Payable To</h3>
                               <div className="space-y-1">
                                 {invoice.issuerDetails.bankAccountName && (
                                   <p className="text-sm font-semibold text-neutral-900">{invoice.issuerDetails.bankAccountName}</p>
@@ -484,6 +498,12 @@ export default function Invoice() {
                                   <p className="text-xs text-neutral-700">
                                     <span className="text-neutral-400">IFSC&nbsp;</span>
                                     <span className="font-mono">{invoice.issuerDetails.ifscCode}</span>
+                                  </p>
+                                )}
+                                {invoice.issuerDetails.upiId && (
+                                  <p className="text-xs text-neutral-700">
+                                    <span className="text-neutral-400">UPI ID&nbsp;</span>
+                                    <span className="font-mono">{invoice.issuerDetails.upiId}</span>
                                   </p>
                                 )}
                               </div>

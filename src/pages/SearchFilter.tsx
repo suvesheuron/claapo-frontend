@@ -11,7 +11,7 @@ import DashboardSidebar from '../components/DashboardSidebar';
 import { api, ApiException } from '../services/api';
 import { formatPaise } from '../utils/currency';
 import { companyNavLinks } from '../navigation/dashboardNav';
-import { REGISTRATION_INDIVIDUAL_DEPARTMENTS, REGISTRATION_VENDOR_CATEGORIES, vendorCategoryToVendorType } from '../constants/registrationCategories';
+import { REGISTRATION_INDIVIDUAL_DEPARTMENTS, REGISTRATION_VENDOR_CATEGORIES, REGISTRATION_GENRES, vendorCategoryToVendorType } from '../constants/registrationCategories';
 
 type SearchType = 'crew' | 'vendors';
 
@@ -77,6 +77,7 @@ export default function SearchFilter() {
   const [query,      setQuery]      = useState('');
   const [location,   setLocation]   = useState('');
   const [skillFilter, setSkillFilter] = useState('');
+  const [genreFilter, setGenreFilter] = useState('');
   const [startDate,  setStartDate]  = useState('');
   const [endDate,    setEndDate]    = useState('');
   const [budgetMin,  setBudgetMin]  = useState('');
@@ -97,6 +98,7 @@ export default function SearchFilter() {
     q: string,
     loc: string,
     skill: string,
+    genre: string,
     sDate: string,
     eDate: string,
     minBudgetInr: string,
@@ -131,6 +133,7 @@ export default function SearchFilter() {
       if (type === 'crew') {
         if (loc) params.city = loc;
         if (skill.trim()) params.skill = skill.trim();
+        if (genre.trim()) params.genre = genre.trim();
         if (q.trim()) params.name = q.trim();
       } else {
         if (loc) params.city = loc;
@@ -160,6 +163,7 @@ export default function SearchFilter() {
     q: string,
     loc: string,
     skill: string,
+    genre: string,
     sDate: string,
     eDate: string,
     minBudgetInr: string,
@@ -169,14 +173,14 @@ export default function SearchFilter() {
   ) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(
-      () => doSearch(q, loc, skill, sDate, eDate, minBudgetInr, maxBudgetInr, pg, type),
+      () => doSearch(q, loc, skill, genre, sDate, eDate, minBudgetInr, maxBudgetInr, pg, type),
       300,
     );
   }, [doSearch]);
 
   useEffect(() => {
-    triggerSearch(query, location, skillFilter, startDate, endDate, budgetMin, budgetMax, page, searchType);
-  }, [query, location, skillFilter, startDate, endDate, budgetMin, budgetMax, page, searchType, triggerSearch]);
+    triggerSearch(query, location, skillFilter, genreFilter, startDate, endDate, budgetMin, budgetMax, page, searchType);
+  }, [query, location, skillFilter, genreFilter, startDate, endDate, budgetMin, budgetMax, page, searchType, triggerSearch]);
 
   const handleSendRequest = (user: SelectedUser) => { setSelectedUser(user); setIsModalOpen(true); };
   const openChatProjectModal = (target: ChatTarget) => {
@@ -196,6 +200,7 @@ export default function SearchFilter() {
     setQuery('');
     setLocation('');
     setSkillFilter('');
+    setGenreFilter('');
     setStartDate('');
     setEndDate('');
     setBudgetMin('');
@@ -277,6 +282,18 @@ export default function SearchFilter() {
                     </div>
                   )}
 
+                  {/* Genre filter for crew */}
+                  {searchType === 'crew' && (
+                    <div>
+                      <label className="block text-[11px] font-bold text-neutral-500 mb-2 uppercase tracking-widest">Genre</label>
+                      <select value={genreFilter} onChange={(e) => { setGenreFilter(e.target.value); setPage(1); }}
+                        className="w-full px-4 py-3 border border-neutral-200 rounded-2xl text-sm bg-neutral-50 focus:bg-white focus:outline-none focus:border-[#3B5BDB]/40 focus:ring-4 focus:ring-[#3B5BDB]/10 transition-all duration-300 appearance-none">
+                        <option value="">All genres</option>
+                        {REGISTRATION_GENRES.map(g => <option key={g} value={g}>{g}</option>)}
+                      </select>
+                    </div>
+                  )}
+
                   {/* Vendor type filter */}
                   {searchType === 'vendors' && (
                     <div>
@@ -332,7 +349,7 @@ export default function SearchFilter() {
 
                   {/* Reset button */}
                   <div className="flex items-end">
-                    <button type="button" onClick={() => { setQuery(''); setLocation(''); setSkillFilter(''); setStartDate(''); setEndDate(''); setBudgetMin(''); setBudgetMax(''); setPage(1); }}
+                    <button type="button" onClick={() => { setQuery(''); setLocation(''); setSkillFilter(''); setGenreFilter(''); setStartDate(''); setEndDate(''); setBudgetMin(''); setBudgetMax(''); setPage(1); }}
                       className="w-full px-6 py-3 rounded-2xl border border-neutral-200 text-sm font-semibold text-neutral-600 hover:text-neutral-900 hover:border-neutral-300 hover:bg-neutral-100 hover:shadow-sm transition-all duration-300 whitespace-nowrap">
                       Reset
                     </button>
