@@ -50,6 +50,7 @@ interface DayChatMessage {
   conversationId: string;
   otherParticipantId: string;
   otherParticipantName?: string;
+  isSameAccount?: boolean;
 }
 
 interface ProjectDayChatGroup {
@@ -67,6 +68,7 @@ interface ProjectDayChatsResponse {
     otherParticipantId: string;
     otherParticipant?: { id: string; displayName: string };
     sender?: { id?: string; displayName?: string };
+    isSameAccount?: boolean;
   }>;
   meta?: { pages?: number };
 }
@@ -200,6 +202,7 @@ export default function CompanyDashboard() {
         conversationId: m.conversationId,
         otherParticipantId: m.otherParticipantId,
         otherParticipantName: m.otherParticipant?.displayName,
+        isSameAccount: m.isSameAccount,
       });
     }
     const pages = Math.max(1, firstRes.meta?.pages ?? 1);
@@ -217,6 +220,7 @@ export default function CompanyDashboard() {
           conversationId: m.conversationId,
           otherParticipantId: m.otherParticipantId,
           otherParticipantName: m.otherParticipant?.displayName,
+          isSameAccount: m.isSameAccount,
         });
       }
     }
@@ -282,8 +286,8 @@ export default function CompanyDashboard() {
     
     // Filter to only messages involving this person on this day
     const personMessages = group.items
-      .filter((m) => 
-        m.otherParticipantId === expandedChatPerson || 
+      .filter((m) =>
+        m.otherParticipantId === expandedChatPerson ||
         m.senderId === expandedChatPerson
       )
       .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
@@ -295,6 +299,7 @@ export default function CompanyDashboard() {
         createdAt: m.createdAt,
         conversationId: m.conversationId,
         otherParticipantId: m.otherParticipantId,
+        isSameAccount: m.isSameAccount,
       }));
     
     setPersonChatMessages(personMessages);
@@ -931,7 +936,7 @@ export default function CompanyDashboard() {
                                           (() => {
                                             let lastDateLabel = '';
                                             return personChatMessages.map((m) => {
-                                              const isFromPerson = m.senderId === person.id;
+                                              const isFromPerson = m.isSameAccount !== undefined ? !m.isSameAccount : m.senderId === person.id;
                                               const dateLabel = new Date(m.createdAt).toLocaleDateString('en-IN', {
                                                 day: 'numeric',
                                                 month: 'short',

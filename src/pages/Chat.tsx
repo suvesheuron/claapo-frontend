@@ -38,6 +38,8 @@ import { individualNavLinks, vendorNavLinks, companyNavLinks } from '../navigati
 interface ChatMessage {
   id: string;
   senderId: string;
+  senderDisplayName?: string;
+  isSameAccount?: boolean;
   content: string | null;
   type?: 'text' | 'image' | 'file';
   mediaKey?: string | null;
@@ -49,7 +51,7 @@ interface ChatMessage {
   deletedAt?: string | null;
   forwardedFromId?: string | null;
   replyToId?: string | null;
-  replyTo?: { id: string; content: string | null; senderId: string } | null;
+  replyTo?: { id: string; content: string | null; senderId: string; senderDisplayName?: string } | null;
 }
 
 interface OtherUser {
@@ -195,6 +197,8 @@ export default function Chat() {
     (m: {
       id: string;
       senderId: string;
+      senderDisplayName?: string;
+      isSameAccount?: boolean;
       content: string | null;
       type?: string;
       mediaKey?: string | null;
@@ -210,6 +214,8 @@ export default function Chat() {
     }): ChatMessage => ({
       id: m.id,
       senderId: m.senderId,
+      senderDisplayName: m.senderDisplayName ?? m.sender?.displayName,
+      isSameAccount: m.isSameAccount ?? m.senderId === user?.id,
       content: m.content,
       type: (m.type as ChatMessage['type']) ?? 'text',
       mediaKey: m.mediaKey,
@@ -222,7 +228,7 @@ export default function Chat() {
       replyToId: m.replyToId,
       replyTo: m.replyTo,
     }),
-    [],
+    [user?.id],
   );
 
   const fetchMessages = useCallback(
@@ -661,7 +667,7 @@ export default function Chat() {
             <div
               ref={chatContainerRef}
               onScroll={handleScroll}
-              className="flex-1 overflow-y-auto px-3 sm:px-4 py-3 relative"
+              className="flex-1 min-h-0 overflow-y-auto px-3 sm:px-4 py-3 pb-24 relative"
               style={{
                 backgroundColor: BRAND.chatBg,
                 backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23c5bfb0' fill-opacity='0.08'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
@@ -712,12 +718,21 @@ export default function Chat() {
               {/* Messages wrapper */}
               <AnimatePresence initial={false}>
                 {filteredMessages.map((msg, idx) => {
-                  const isMe = msg.senderId === user?.id;
+                  const isMe = msg.isSameAccount ?? msg.senderId === user?.id;
                   const isDeleted = !!msg.deletedAt;
                   const showDate = shouldShowDateLabel(filteredMessages, idx);
 
+                  // Show sender name whenever the message was not sent by the current logged-in user.
+                  // This works for both cross-party messages (individual↔company) and same-account
+                  // messages (subuser↔main user), so everyone can see exactly who sent each message.
+                  const showSenderLabel = !isDeleted && msg.senderId !== user?.id;
+
+                  // Use the sender's display name from the API. This is populated server-side from
+                  // individualProfile.displayName, companyProfile.companyName, or vendorProfile.companyName.
+                  const senderLabel = msg.senderDisplayName || '—';
+
                   return (
-                    <motion.div 
+                    <motion.div
                       key={msg.id}
                       initial={{ opacity: 0, y: 15, scale: 0.95 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -734,28 +749,35 @@ export default function Chat() {
 
                       {/* Message bubble */}
                       <div
-                        className={`flex mb-2 ${isMe ? 'justify-end' : 'justify-start'}`}
+                        className={`flex mb-1 ${isMe ? 'justify-end' : 'justify-start'}`}
                         onContextMenu={(e) => {
                           e.preventDefault();
                           if (!isDeleted) setContextMenu({ msgId: msg.id, x: e.clientX, y: e.clientY });
                         }}
                       >
-                        <div
-                          className={`relative max-w-[80%] sm:max-w-[70%] px-3.5 py-2.5 rounded-2xl shadow-sm group ${
-                            isDeleted
-                              ? 'bg-neutral-100 italic'
-                              : isMe
-                                ? 'rounded-br-sm'
-                                : 'rounded-bl-sm border border-neutral-100'
-                          }`}
-                          style={
-                            isDeleted
-                              ? { backgroundColor: '#f0f0f0' }
-                              : isMe
-                                ? { background: 'linear-gradient(135deg, #3B5BDB, #5B9DF9)', color: '#fff' }
-                                : { backgroundColor: BRAND.incoming }
-                          }
-                        >
+                        <div className="flex flex-col max-w-[80%] sm:max-w-[70%]">
+                          {/* Sender name label: shows who sent the message when it's not the current user */}
+                          {showSenderLabel && (
+                            <span className={`text-[10px] font-semibold mb-0.5 ${isMe ? 'text-right text-[#3B5BDB]' : 'text-neutral-500'}`}>
+                              {senderLabel}
+                            </span>
+                          )}
+                          <div
+                            className={`relative px-3.5 py-2.5 rounded-2xl shadow-sm group ${
+                              isDeleted
+                                ? 'bg-neutral-100 italic'
+                                : isMe
+                                  ? 'rounded-br-sm'
+                                  : 'rounded-bl-sm border border-neutral-100'
+                            }`}
+                            style={
+                              isDeleted
+                                ? { backgroundColor: '#f0f0f0' }
+                                : isMe
+                                  ? { background: 'linear-gradient(135deg, #3B5BDB, #5B9DF9)', color: '#fff' }
+                                  : { backgroundColor: BRAND.incoming }
+                            }
+                          >
                         {/* Forwarded label */}
                         {msg.forwardedFromId && !isDeleted && (
                           <p className="text-[10px] text-neutral-500 italic mb-0.5 flex items-center gap-1">
@@ -825,6 +847,7 @@ export default function Chat() {
                         )}
                       </div>
                     </div>
+                    </div>
                   </motion.div>
                 );
               })}
@@ -836,7 +859,7 @@ export default function Chat() {
             {contextMenu && (() => {
               const msg = messages.find((m) => m.id === contextMenu.msgId);
               if (!msg) return null;
-              const isMe = msg.senderId === user?.id;
+              const isMe = msg.isSameAccount ?? msg.senderId === user?.id;
               return (
                 <div
                   className="fixed z-50 bg-white rounded-xl shadow-2xl border border-neutral-200 py-2 min-w-[180px]"
