@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaLocationDot, FaUpRightFromSquare, FaCalendarDays, FaTriangleExclamation, FaVideo, FaLink, FaChevronLeft, FaChevronRight, FaBan, FaCircleCheck, FaCalendarCheck, FaGlobe, FaInstagram, FaYoutube, FaVimeoV, FaImdb, FaLinkedinIn, FaXTwitter } from 'react-icons/fa6';
 import toast from 'react-hot-toast';
 import DashboardHeader from '../components/DashboardHeader';
@@ -10,11 +10,14 @@ import Avatar from '../components/Avatar';
 import ReviewsList from '../components/ReviewsList';
 import LeaveReviewSection from '../components/LeaveReviewSection';
 import AvailabilityDateDetailModal from '../components/AvailabilityDateDetailModal';
+import BookingRequestModal from '../components/BookingRequestModal';
+import InquiryRequestModal from '../components/InquiryRequestModal';
 import { api, ApiException } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { companyNavLinks } from '../navigation/dashboardNav';
 import type { BookingWithDetails, SlotStatus } from '../types/availability';
 import { parseAvailabilityMonthResponse } from '../utils/parseAvailabilityResponse';
+import { formatPaise } from '../utils/currency';
 
 type UserRole = 'individual' | 'company' | 'vendor' | 'admin';
 
@@ -116,6 +119,11 @@ export default function OtherUserProfile() {
   const [profileSlotMap, setProfileSlotMap] = useState<Record<string, { date: string; status: SlotStatus; notes?: string | null }>>({});
   const [profileBookingDetails, setProfileBookingDetails] = useState<Record<string, BookingWithDetails>>({});
   const [detailDate, setDetailDate] = useState<string | null>(null);
+  
+  // Modal states for booking and chat
+  const navigate = useNavigate();
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+  const [selectedChatDate, setSelectedChatDate] = useState<string | null>(null);
 
   useEffect(() => {
     if (!userId) return;
@@ -222,6 +230,91 @@ export default function OtherUserProfile() {
     typeof window !== 'undefined' && userId
       ? `${window.location.origin}/dashboard/profile/${userId}`
       : '';
+
+  // Helper to check if a date has an existing confirmed booking
+  const getDateBookingStatus = (dateKey: string): 'none' | 'pending' | 'accepted' | 'locked' | 'completed' => {
+    const booking = profileBookingDetails[dateKey];
+    if (!booking) return 'none';
+    return booking.status as 'pending' | 'accepted' | 'locked' | 'completed';
+  };
+
+  // Handle Chat button click on a date
+  const handleDateChatClick = (dateKey: string) => {
+    const status = getDateBookingStatus(dateKey);
+    // If there's already an accepted/locked booking, go directly to chat
+    if (status === 'accepted' || status === 'locked' || status === 'completed') {
+      const booking = profileBookingDetails[dateKey];
+      if (booking?.conversationId) {
+        navigate(`/dashboard/chat/${userId}?conversationId=${booking.conversationId}`);
+      } else {
+        // Fallback: navigate without conversationId, chat page will find or create it
+        navigate(`/dashboard/chat/${userId}?projectId=${booking?.projectId || ''}`);
+      }
+    } else {
+      // No confirmed booking - open inquiry modal with pre-selected date
+      setDetailDate(null);
+      setSelectedChatDate(dateKey);
+    }
+  };
+
+  // Handle starting inquiry chat after project selection
+  const handleStartInquiryChat = async (projectId: string) => {
+    if (!selectedChatDate || !userId || !profile) return;
+    
+    try {
+      // First, create or get conversation
+      const conv = await api.post<{ id: string; participantA: string; participantB: string; projectId: string }>(
+        `/conversations`,
+        { projectId, otherUserId: userId }
+      );
+      
+      // Format the inquiry message
+      const shootDate = parseIso(selectedChatDate).toLocaleDateString('en-IN', { 
+        day: 'numeric', 
+        month: 'long' 
+      });
+      const projectName = activeProjects?.find((p: any) => p.id === projectId)?.title || 'a project';
+      
+      const inquiryMessage = `Hi, hope you're doing well :)
+
+We're working on ${projectName}. The shoot is planned for ${shootDate}. Just wanted to check if you'd be interested in being a part of it?`;
+
+      // Send the inquiry message
+      await api.post(`/conversations/${conv.id}/messages`, {
+        type: 'text',
+        content: inquiryMessage,
+      });
+
+      toast.success('Inquiry sent!');
+      setSelectedChatDate(null);
+      
+      // Navigate to the chat
+      navigate(`/dashboard/chat/${userId}?projectId=${projectId}`);
+    } catch (err) {
+      const msg = err instanceof ApiException ? err.payload.message : 'Failed to send inquiry.';
+      toast.error(msg);
+    }
+  };
+
+  // Helper to parse ISO date string
+  const parseIso = (iso: string) => new Date(iso + 'T12:00:00');
+
+  // Get active projects for inquiry (lazy load when needed)
+  const [activeProjects, setActiveProjects] = useState<any[]>([]);
+  const [projectsLoading, setProjectsLoading] = useState(false);
+
+  useEffect(() => {
+    if (selectedChatDate && activeProjects.length === 0 && !projectsLoading) {
+      setProjectsLoading(true);
+      api.get<any>('/projects?limit=50')
+        .then((res) => {
+          const items = res?.items || res?.data || [];
+          setActiveProjects(items.filter((p: any) => p.status === 'active' || p.status === 'open' || p.status === 'draft'));
+        })
+        .catch(() => {})
+        .finally(() => setProjectsLoading(false));
+    }
+  }, [selectedChatDate]);
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-neutral-50 min-w-0 w-full">
@@ -619,6 +712,17 @@ export default function OtherUserProfile() {
                     slot={detailDate ? profileSlotMap[detailDate] : undefined}
                     booking={detailDate ? profileBookingDetails[detailDate] : undefined}
                     mode="company_readonly"
+                    targetUserId={userId}
+                    targetUserName={title}
+                    onChatClick={() => handleDateChatClick(detailDate!)}
+                    onBookCrewClick={() => {
+                      // Pre-select the date and open booking modal
+                      setDetailDate(null);
+                      // We'll need to handle this with a booking modal that can pre-select dates
+                      // For now, navigate to booking from profile with date hint
+                      // This will be handled by the BookingRequestModal
+                      setIsBookingModalOpen(true);
+                    }}
                   />
                   </>
                   )}
@@ -647,6 +751,34 @@ export default function OtherUserProfile() {
           <AppFooter />
         </main>
       </div>
+
+      {/* Booking Request Modal */}
+      {profile && (
+        <BookingRequestModal
+          isOpen={isBookingModalOpen}
+          onClose={() => setIsBookingModalOpen(false)}
+          userName={title}
+          userRole={isIndividual ? (p?.skills?.[0] ?? 'Individual') : (p?.vendorType ?? 'Vendor')}
+          userRate={isIndividual && p?.dailyBudget ? formatPaise(p.dailyBudget) + ' /day' : '—'}
+          targetUserId={profile.id}
+          isVendor={isVendor}
+          onSuccess={() => setIsBookingModalOpen(false)}
+        />
+      )}
+
+      {/* Inquiry Request Modal (for chat before booking) */}
+      {selectedChatDate && activeProjects.length > 0 && (
+        <InquiryRequestModal
+          isOpen={!!selectedChatDate}
+          onClose={() => setSelectedChatDate(null)}
+          targetUserId={userId!}
+          targetName={title}
+          selectedDate={selectedChatDate}
+          projects={activeProjects}
+          projectsLoading={projectsLoading}
+          onSendInquiry={handleStartInquiryChat}
+        />
+      )}
     </div>
   );
 }

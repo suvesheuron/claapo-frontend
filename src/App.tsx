@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
 import { useAuth, type BackendRole } from './contexts/AuthContext';
 import { useRole, type UserRole } from './contexts/RoleContext';
@@ -122,6 +122,22 @@ function PageFallback() {
   );
 }
 
+/**
+ * Wrapper that prevents subusers from accessing the CreateProject page.
+ * Subusers have mainUserId set (pointing to their parent company).
+ */
+function SubuserRestrictedCreateProject() {
+  const { user } = useAuth();
+  const isSubuser = user?.mainUserId != null;
+  
+  if (isSubuser) {
+    // Redirect subusers to the projects list page
+    return <Navigate to="/dashboard/projects" replace />;
+  }
+  
+  return <CreateProject />;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -149,7 +165,9 @@ export default function App() {
           <Route path="/dashboard/projects" element={<ProtectedRoute allowedRoles={['company', 'admin']}><Projects /></ProtectedRoute>} />
           <Route path="/dashboard/projects/:id" element={<ProtectedRoute><ProjectDetail /></ProtectedRoute>} />
           <Route path="/dashboard/company-availability" element={<ProtectedRoute allowedRoles={['company', 'admin']}><CompanyAvailability /></ProtectedRoute>} />
-          <Route path="/dashboard/projects/new" element={<ProtectedRoute allowedRoles={['company', 'admin']}><CreateProject /></ProtectedRoute>} />
+          <Route path="/dashboard/projects/new" element={<ProtectedRoute allowedRoles={['company', 'admin']}>
+            <SubuserRestrictedCreateProject />
+          </ProtectedRoute>} />
           <Route path="/dashboard/projects/:id/edit" element={<ProtectedRoute allowedRoles={['company', 'admin']}><EditProject /></ProtectedRoute>} />
           <Route path="/dashboard/search" element={<ProtectedRoute allowedRoles={['company', 'admin']}><SearchFilter /></ProtectedRoute>} />
           <Route path="/dashboard/profile/:userId" element={<ProtectedRoute allowedRoles={['company', 'admin']}><OtherUserProfile /></ProtectedRoute>} />
@@ -157,7 +175,9 @@ export default function App() {
           {/* Shared routes */}
           <Route path="/dashboard/chat/:userId" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
           <Route path="/dashboard/conversations" element={<ProtectedRoute><Conversations /></ProtectedRoute>} />
+          <Route path="/dashboard/conversations/:projectId" element={<ProtectedRoute><Conversations /></ProtectedRoute>} />
           <Route path="/dashboard/invoices" element={<ProtectedRoute><InvoicesList /></ProtectedRoute>} />
+          <Route path="/dashboard/invoices/:projectId" element={<ProtectedRoute><InvoicesList /></ProtectedRoute>} />
           <Route path="/dashboard/invoice/new" element={<ProtectedRoute allowedRoles={['individual', 'vendor']}><CreateInvoice /></ProtectedRoute>} />
           <Route path="/dashboard/invoice/:invoiceId" element={<ProtectedRoute><Invoice /></ProtectedRoute>} />
           <Route path="/dashboard/bookings" element={<ProtectedRoute allowedRoles={['individual', 'vendor']}><Bookings /></ProtectedRoute>} />

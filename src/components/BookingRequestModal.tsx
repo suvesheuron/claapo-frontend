@@ -313,6 +313,7 @@ export default function BookingRequestModal({
   const selectedProject = activeProjects.find((p) => p.id === projectId) ?? null;
   const projectStartIso = selectedProject?.startDate?.slice(0, 10) ?? '';
   const projectEndIso = selectedProject?.endDate?.slice(0, 10) ?? '';
+  const projectShootLocations = selectedProject?.shootLocations ?? [];
 
   const initials = userName
     .split(' ')
@@ -535,6 +536,27 @@ export default function BookingRequestModal({
                       setBookingDates(dates);
                       // Remove location entries for dates that were deselected
                       setShootDateLocations((prev) => prev.filter((pair) => dates.includes(pair.date)));
+                      
+                      // Auto-populate locations for newly selected dates from project shootLocations
+                      if (projectShootLocations.length > 0) {
+                        const newDatesWithLocations: ShootDateLocation[] = [];
+                        dates.forEach((date) => {
+                          // Check if this date already has a location
+                          const existingPair = shootDateLocations.find((pair) => pair.date === date);
+                          if (!existingPair) {
+                            // Assign location based on index in dates array
+                            const locationIndex = dates.indexOf(date) % projectShootLocations.length;
+                            newDatesWithLocations.push({
+                              date,
+                              location: projectShootLocations[locationIndex] ?? '',
+                            });
+                          }
+                        });
+                        
+                        if (newDatesWithLocations.length > 0) {
+                          setShootDateLocations((prev) => [...prev, ...newDatesWithLocations]);
+                        }
+                      }
                     }}
                     minDate={projectStartIso}
                     maxDate={projectEndIso}

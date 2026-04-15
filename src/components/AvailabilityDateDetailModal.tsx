@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FaXmark, FaMessage, FaFileInvoice, FaLocationDot, FaCalendarDay } from 'react-icons/fa6';
+import { FaXmark, FaMessage, FaFileInvoice, FaLocationDot, FaCalendarDay, FaUserPlus } from 'react-icons/fa6';
 import type { BookingWithDetails, SlotStatus } from '../types/availability';
 import { formatPaise } from '../utils/currency';
 import { SLOT_STATUS_LABEL, SLOT_STATUS_BADGE } from '../utils/slotStatusStyles';
@@ -46,6 +46,14 @@ export interface AvailabilityDateDetailModalProps {
   variant?: 'modal' | 'drawer';
   /** Shoot dates from all bookings for this month to check if date is a shoot date */
   allShootDates?: string[];
+  /** For company view: target user ID for booking/chat actions */
+  targetUserId?: string;
+  /** For companyview: target user display name */
+  targetUserName?: string;
+  /** Callback when Chat button is clicked (for inquiry flow) */
+  onChatClick?: (dateKey: string) => void;
+  /** Callback when Book Crew button is clicked */
+  onBookCrewClick?: (dateKey: string) => void;
 }
 
 export default function AvailabilityDateDetailModal({
@@ -62,6 +70,10 @@ export default function AvailabilityDateDetailModal({
   blockReasonOptions,
   variant = 'modal',
   allShootDates = [],
+  targetUserId,
+  targetUserName: _targetUserName,
+  onChatClick,
+  onBookCrewClick,
 }: AvailabilityDateDetailModalProps) {
   const reasonList = blockReasonOptions?.length ? blockReasonOptions : DEFAULT_BLOCK_REASONS;
   const [blockMode, setBlockMode] = useState(false);
@@ -235,6 +247,44 @@ export default function AvailabilityDateDetailModal({
                     <FaMessage className="text-sm" /> Chat
                   </Link>
                 )}
+                {/* Show Invoice button for completed bookings */}
+                {booking.status === 'completed' && (
+                  <Link
+                    to={`/dashboard/invoices?bookingId=${encodeURIComponent(booking.id)}`}
+                    onClick={onClose}
+                    className="inline-flex flex-1 min-w-[120px] items-center justify-center gap-2 rounded-xl py-2.5 px-3 bg-[#EEF4FF] text-[#3B5BDB] text-sm font-semibold hover:bg-[#DBEAFE] border border-[#3B5BDB]/20"
+                  >
+                    <FaFileInvoice className="text-sm" /> Invoice
+                  </Link>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Show Chat and Book Crew buttons for company viewing a date without confirmed booking */}
+          {isCompany && !booking && selectedDate && targetUserId && (
+            <div className="space-y-3">
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    onChatClick?.(selectedDate);
+                    onClose();
+                  }}
+                  className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl py-2.5 px-3 bg-[#3B5BDB] text-white text-sm font-semibold hover:bg-[#2f4ac2]"
+                >
+                  <FaMessage className="text-sm" /> Chat
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onBookCrewClick?.(selectedDate);
+                    onClose();
+                  }}
+                  className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl py-2.5 px-3 bg-[#3B5BDB] text-white text-sm font-semibold hover:bg-[#2f4ac2]"
+                >
+                  <FaUserPlus className="text-sm" /> Book Crew
+                </button>
               </div>
             </div>
           )}

@@ -44,6 +44,7 @@ interface ProfileData {
   isAvailable: boolean;
   panNumber: string | null;
   gstNumber: string | null;
+  upiId: string | null;
   bankAccountName: string | null;
   bankAccountNumber: string | null;
   ifscCode: string | null;
@@ -85,6 +86,7 @@ export default function IndividualProfile() {
   const [twitterUrl, setTwitterUrl] = useState('');
   const [panNumber, setPanNumber] = useState('');
   const [gstNumber, setGstNumber] = useState('');
+  const [upiId, setUpiId] = useState('');
   const [bankAccountName, setBankAccountName] = useState('');
   const [bankAccountNumber, setBankAccountNumber] = useState('');
   const [ifscCode, setIfscCode] = useState('');
@@ -141,6 +143,7 @@ export default function IndividualProfile() {
     setTwitterUrl(p.twitterUrl ?? '');
     setPanNumber(p.panNumber ?? '');
     setGstNumber(p.gstNumber ?? '');
+    setUpiId(p.upiId ?? '');
     setBankAccountName(p.bankAccountName ?? '');
     setBankAccountNumber(p.bankAccountNumber ?? '');
     setIfscCode(p.ifscCode ?? '');
@@ -182,6 +185,7 @@ export default function IndividualProfile() {
         twitterUrl: twitterUrl.trim() || undefined,
         panNumber: panNumber.trim() || undefined,
         gstNumber: gstNumber.trim() || undefined,
+        upiId: upiId.trim() || undefined,
         bankAccountName: bankAccountName.trim() || undefined,
         bankAccountNumber: bankAccountNumber.trim() || undefined,
         ifscCode: ifscCode.trim() || undefined,
@@ -220,6 +224,7 @@ export default function IndividualProfile() {
     twitterUrl,
     panNumber,
     gstNumber,
+    upiId,
     bankAccountName,
     bankAccountNumber,
     ifscCode,
@@ -466,6 +471,7 @@ export default function IndividualProfile() {
                           <div className="space-y-1 divide-y divide-neutral-50">
                             <InfoRow label="PAN Number" value={panNumber || '—'} icon={<FaIdCard />} copyable />
                             <InfoRow label="GST Number" value={gstNumber || '—'} icon={<FaIdCard />} copyable />
+                            <InfoRow label="UPI ID" value={upiId || '—'} icon={<FaIdCard />} copyable />
                             <InfoRow label="Bank Name" value={bankName || '—'} icon={<FaBuilding />} />
                             <InfoRow label="Account Name" value={bankAccountName || '—'} />
                             <InfoRow label="Account Number" value={bankAccountNumber || '—'} copyable />
@@ -658,6 +664,15 @@ export default function IndividualProfile() {
                               disabled={saving}
                               icon={<FaIdCard />}
                               helpText="15-character GSTIN — leave blank if not registered"
+                            />
+                            <EditableField
+                              label="UPI ID (Optional)"
+                              value={upiId}
+                              onChange={setUpiId}
+                              placeholder="e.g. name@upi"
+                              disabled={saving}
+                              icon={<FaIdCard />}
+                              helpText="Your UPI ID / VPA for receiving payments"
                             />
                             <EditableField
                               label="Bank Name"

@@ -15,6 +15,7 @@ interface SubUser {
   id: string;
   email: string;
   phone: string;
+  displayName?: string | null;
   isActive: boolean;
   createdAt: string;
   assignedProjects?: { id: string; title: string }[];
@@ -36,6 +37,7 @@ export default function TeamPage() {
 
   // Create sub-user form
   const [showCreate, setShowCreate] = useState(false);
+  const [displayName, setDisplayName] = useState('');
   const [email, setEmail]       = useState('');
   const [phone, setPhone]       = useState('');
   const [password, setPassword] = useState('');
@@ -62,10 +64,16 @@ export default function TeamPage() {
     if (e164Phone.replace(/\D/g, '').length < 10) { setCreateError('Enter a valid 10-digit phone number.'); return; }
     setCreating(true); setCreateError(null);
     try {
-      await api.post('/profile/sub-users', { email: email.trim(), phone: e164Phone, password });
+      await api.post('/profile/sub-users', { 
+        email: email.trim(), 
+        displayName: displayName.trim() || undefined,
+        phone: e164Phone, 
+        password 
+      });
       toast.success('Sub-user created.');
       setCreateSuccess(true);
       setShowCreate(false);
+      setDisplayName('');
       setEmail(''); setPhone(''); setPassword('');
       refetchUsers();
       setTimeout(() => setCreateSuccess(false), 3000);
@@ -237,10 +245,10 @@ export default function TeamPage() {
                           {/* Left accent border */}
                           <div className={`absolute left-0 top-0 bottom-0 w-[3px] rounded-l-xl ${u.isActive ? 'bg-emerald-400' : 'bg-neutral-300'}`} />
                           <div className="flex gap-4 flex-1 min-w-0 pl-1">
-                            <Avatar name={u.email} size="md" />
+                            <Avatar name={u.displayName ?? u.email} size="md" />
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
-                                <p className="text-sm font-semibold text-neutral-900 truncate">{u.email}</p>
+                                <p className="text-sm font-semibold text-neutral-900 truncate">{u.displayName ?? u.email}</p>
                                 <span className={`w-2 h-2 rounded-full shrink-0 ${u.isActive ? 'bg-emerald-500' : 'bg-neutral-300'}`} title={u.isActive ? 'Active' : 'Inactive'} />
                               </div>
                               <p className="text-xs text-neutral-500 truncate mt-0.5">{u.phone}</p>
@@ -318,6 +326,12 @@ export default function TeamPage() {
 
                 <div className="space-y-4">
                   <div>
+                    <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Name</label>
+                    <input type="text" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="John Doe (optional)" disabled={creating}
+                      className={modalInputClass} />
+                    <p className="text-[10px] text-neutral-400 mt-1">This name will be shown in chats and project details</p>
+                  </div>
+                  <div>
                     <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Email <span className="text-red-500">*</span></label>
                     <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="subuser@example.com" disabled={creating}
                       className={modalInputClass} />
@@ -373,8 +387,8 @@ export default function TeamPage() {
 
               <div className="p-6">
                 <div className="flex items-center gap-3 mb-5 p-3 rounded-xl bg-neutral-50 border border-neutral-100">
-                  <Avatar name={assigningUser.email} size="sm" />
-                  <span className="text-sm font-semibold text-neutral-800 truncate">{assigningUser.email}</span>
+                  <Avatar name={assigningUser.displayName ?? assigningUser.email} size="sm" />
+                  <span className="text-sm font-semibold text-neutral-800 truncate">{assigningUser.displayName ?? assigningUser.email}</span>
                 </div>
 
                 {assignError && (

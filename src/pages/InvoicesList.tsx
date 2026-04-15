@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
-import { FaFileInvoice, FaPlus, FaTriangleExclamation, FaMagnifyingGlass, FaCalendar } from 'react-icons/fa6';
+import { Link, useSearchParams, useParams } from 'react-router-dom';
+import { FaFileInvoice, FaPlus, FaTriangleExclamation, FaMagnifyingGlass, FaCalendar, FaFolder, FaArrowLeft } from 'react-icons/fa6';
 import DashboardHeader from '../components/DashboardHeader';
 import DashboardSidebar from '../components/DashboardSidebar';
 import AppFooter from '../components/AppFooter';
@@ -23,6 +23,19 @@ interface InvoiceItem {
 }
 
 interface InvoicesResponse { items: InvoiceItem[]; meta: { total: number } }
+
+interface Project {
+  id: string;
+  title: string;
+  status: string;
+  startDate: string;
+  endDate: string;
+  createdAt: string;
+  conversationCount: number;
+  invoiceCount: number;
+  bookingCount: number;
+}
+interface ProjectsWithStatsResponse { items: Project[]; meta: { total: number } }
 
 const STATUS_CFG = {
   draft:     { bg: 'bg-neutral-50',   text: 'text-neutral-500',  ring: 'ring-neutral-200', dot: 'bg-neutral-400',  label: 'Draft' },
@@ -54,6 +67,7 @@ export default function InvoicesList() {
   useEffect(() => { document.title = 'Invoices – Claapo'; }, []);
   const { currentRole } = useRole();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { projectId: selectedProjectId } = useParams<{ projectId: string }>();
   const issuedOnRaw = searchParams.get('issuedOn')?.trim() ?? '';
   const issuedOn = ISO_DAY.test(issuedOnRaw) ? issuedOnRaw : '';
   const dateFromRaw = searchParams.get('dateFrom')?.trim() ?? '';
@@ -61,13 +75,19 @@ export default function InvoicesList() {
   const dateToRaw = searchParams.get('dateTo')?.trim() ?? '';
   const dateTo = ISO_DAY.test(dateToRaw) ? dateToRaw : '';
 
+  // Fetch projects list
+  const { data: projectsData, loading: projectsLoading } = useApiQuery<ProjectsWithStatsResponse>('/projects/my/with-stats?limit=100');
+  const projects = projectsData?.items ?? [];
+
+  // Build invoice list URL with optional project filter
   const listPath = useMemo(() => {
-    const q = new URLSearchParams({ limit: '50' });
+    const q = new URLSearchParams({ limit: '100' });
     if (issuedOn) q.set('issuedOn', issuedOn);
     if (dateFrom) q.set('dateFrom', dateFrom);
     if (dateTo) q.set('dateTo', dateTo);
+    if (selectedProjectId) q.set('projectId', selectedProjectId);
     return `/invoices?${q.toString()}`;
-  }, [issuedOn, dateFrom, dateTo]);
+  }, [issuedOn, dateFrom, dateTo, selectedProjectId]);
 
   const { data, loading, error } = useApiQuery<InvoicesResponse>(listPath);
   const allInvoices = data?.items ?? [];
@@ -98,6 +118,113 @@ export default function InvoicesList() {
 
   const canCreate = currentRole === 'Individual' || currentRole === 'Vendor';
 
+  // Find selected project details
+  const selectedProject = projects.find(p => p.id === selectedProjectId);
+
+  function formatProjectDate(dateStr: string) {
+    return new Date(dateStr).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' });
+  }
+
+  // Project List View
+  const renderProjectList = () => {
+    if (projectsLoading) {
+      return (
+        <div className="space-y-3">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div
+              key={i}
+              className="rounded-2xl bg-white border border-neutral-200/80 px-6 py-5 animate-pulse"
+              style={{ animationDelay: `${i * 50}ms` }}
+            >
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-xl bg-neutral-100 shrink-0" />
+                <div className="flex-1 space-y-3">
+                  <div className="h-5 bg-neutral-100 rounded-lg w-2/5" />
+                  <div className="h-3 bg-neutral-50 rounded-lg w-1/3" />
+                  <div className="h-3 bg-neutral-50 rounded-lg w-1/4" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    if (projects.length === 0) {
+      return (
+        <div className="rounded-3xl bg-white border border-neutral-200/80 py-20 text-center px-6 flex flex-col items-center justify-center mt-4">
+          <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-[#EEF4FF] to-[#DBEAFE] flex items-center justify-center mx-auto mb-5 border border-[#3B5BDB]/10 shadow-sm">
+            <FaFolder className="text-[#3B5BDB] text-2xl" />
+          </div>
+          <p className="text-lg font-bold text-neutral-900 mb-1.5">No projects yet</p>
+          <p className="text-sm text-neutral-500 max-w-md mx-auto leading-relaxed">
+            Create a project or accept a booking to start managing invoices.
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <ul className="space-y-2">
+        {projects.map((project) => {
+          const hasInvoices = project.invoiceCount > 0;
+          return (
+            <li key={project.id}>
+              <Link
+                to={`/dashboard/invoices/${project.id}`}
+                className={`relative flex items-start gap-4 px-6 py-5 rounded-2xl border transition-all group overflow-hidden ${
+                  hasInvoices
+                    ? 'bg-white border-neutral-200/80 hover:border-[#3B5BDB]/30 hover:shadow-sm'
+                    : 'bg-white border-neutral-200/80 opacity-60 cursor-not-allowed'
+                }`}
+                onClick={(e) => {
+                  if (!hasInvoices) {
+                    e.preventDefault();
+                  }
+                }}
+              >
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#EEF1FF] to-[#DBEAFE] flex items-center justify-center shrink-0 border border-[#3B5BDB]/10">
+                  <FaFileInvoice className="text-[#3B5BDB] text-lg" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <div className="min-w-0">
+                      <p className={`text-base font-semibold truncate ${hasInvoices ? 'text-neutral-900 group-hover:text-[#3B5BDB]' : 'text-neutral-600'}`}>
+                        {project.title}
+                      </p>
+                      <p className="text-xs text-neutral-500 mt-1">
+                        {formatProjectDate(project.startDate)} — {formatProjectDate(project.endDate)}
+                      </p>
+                    </div>
+                    <div className="flex flex-col items-end gap-2 shrink-0">
+                      <span className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full capitalize ${
+                        project.status === 'active' ? 'bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200' :
+                        project.status === 'completed' ? 'bg-blue-50 text-blue-600 ring-1 ring-blue-200' :
+                        project.status === 'draft' ? 'bg-neutral-50 text-neutral-500 ring-1 ring-neutral-200' :
+                        'bg-neutral-50 text-neutral-500 ring-1 ring-neutral-200'
+                      }`}>
+                        {project.status}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4 mt-2">
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#EEF1FF] border border-[#3B5BDB]/10">
+                      <FaFileInvoice className="text-[#3B5BDB] text-xs" />
+                      <span className="text-xs font-semibold text-[#3B5BDB]">{project.invoiceCount} {project.invoiceCount === 1 ? 'invoice' : 'invoices'}</span>
+                    </div>
+                    {project.invoiceCount === 0 && (
+                      <p className="text-xs text-neutral-400">No invoices yet</p>
+                    )}
+                  </div>
+                </div>
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    );
+  };
+
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-[#F8F9FB] w-full">
       <DashboardHeader />
@@ -108,19 +235,27 @@ export default function InvoicesList() {
         <main className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
           <div className="flex-1 min-h-0 overflow-auto">
             <div className="max-w-[1000px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
-
-              {/* Page header */}
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h1 className="text-2xl font-bold tracking-tight text-neutral-900 flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-xl bg-[#EEF1FF] flex items-center justify-center">
-                      <FaFileInvoice className="text-[#3B5BDB] text-sm" />
-                    </div>
-                    Invoices
-                  </h1>
-                  <p className="text-sm text-neutral-500 mt-1.5 ml-[46px]">
-                    {currentRole === 'Company' ? 'Invoices received from crew and vendors' : 'Invoices you have sent to clients'}
-                  </p>
+              {selectedProjectId ? (
+                <>
+                  {/* Invoice List View with back button */}
+                  <div className="flex items-center justify-between mb-6">
+                    <div>
+                      <Link
+                        to="/dashboard/invoices"
+                        className="inline-flex items-center gap-2 text-sm text-neutral-600 hover:text-[#3B5BDB] font-semibold mb-3 transition-colors"
+                      >
+                        <FaArrowLeft className="w-3.5 h-3.5" />
+                        Back to Projects
+                      </Link>
+                      <h1 className="text-2xl font-bold tracking-tight text-neutral-900 flex items-center gap-2.5">
+                        <div className="w-9 h-9 rounded-xl bg-[#EEF1FF] flex items-center justify-center">
+                          <FaFileInvoice className="text-[#3B5BDB] text-sm" />
+                        </div>
+                        {selectedProject?.title ?? 'Project Invoices'}
+                      </h1>
+                      <p className="text-sm text-neutral-500 mt-1.5 ml-[46px]">
+                        {currentRole === 'Company' ? 'Invoices received from crew and vendors' : 'Invoices you have sent to clients'}
+                      </p>
                   {issuedOn && (
                     <p className="text-xs text-[#3B5BDB] font-medium mt-2 ml-[46px] flex flex-wrap items-center gap-2">
                       Showing invoices issued on{' '}
@@ -355,6 +490,40 @@ export default function InvoicesList() {
                     );
                   })}
                 </div>
+              )}
+                </>
+              ) : (
+                <>
+                  {/* Projects List Header */}
+                  <div className="mb-6">
+                    <h1 className="text-2xl font-bold tracking-tight text-neutral-900 flex items-center gap-2.5">
+                      <div className="w-9 h-9 rounded-xl bg-[#EEF1FF] flex items-center justify-center">
+                        <FaFileInvoice className="text-[#3B5BDB] text-sm" />
+                      </div>
+                      Invoices
+                    </h1>
+                    <p className="text-sm text-neutral-500 mt-1.5 ml-[46px]">
+                      {projectsLoading
+                        ? 'Loading your projects…'
+                        : projects.length === 0
+                          ? 'No projects yet'
+                          : 'Select a project to view invoices'}
+                    </p>
+                  </div>
+
+                  {/* Error */}
+                  {error && (
+                    <div className="flex items-center gap-3 rounded-2xl bg-red-50 border border-red-100 p-4 mb-5 shadow-sm">
+                      <div className="w-9 h-9 rounded-xl bg-red-100 flex items-center justify-center shrink-0">
+                        <FaTriangleExclamation className="text-red-500" />
+                      </div>
+                      <p className="text-sm text-red-700">{error}</p>
+                    </div>
+                  )}
+
+                  {/* Scrollable project list */}
+                  {renderProjectList()}
+                </>
               )}
             </div>
           </div>

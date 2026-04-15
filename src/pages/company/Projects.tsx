@@ -10,6 +10,7 @@ import AppFooter from '../../components/AppFooter';
 import { useApiQuery } from '../../hooks/useApiQuery';
 import { formatBudgetCompact } from '../../utils/currency';
 import { api, ApiException } from '../../services/api';
+import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
 import { companyNavLinks } from '../../navigation/dashboardNav';
 
@@ -105,6 +106,9 @@ function formatDateRange(start: string, end: string): string {
 const REFETCH_INTERVAL_MS = 25_000;
 
 export default function Projects() {
+  const { user } = useAuth();
+  const isSubuser = user?.mainUserId != null;
+  
   const { data, loading, error, refetch } = useApiQuery<ProjectsResponse>('/projects?limit=50');
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [cancelActionError, setCancelActionError] = useState<string | null>(null);
@@ -196,13 +200,15 @@ export default function Projects() {
                     Manage your production projects, crew, and budgets.
                   </p>
                 </div>
-                <Link
-                  to="/dashboard/projects/new"
-                  className="inline-flex items-center gap-2 rounded-xl h-11 px-5 bg-[#3B5BDB] text-white text-sm font-semibold hover:bg-[#2f4ac2] transition-all shadow-sm shadow-[#3B5BDB]/25 hover:shadow-md hover:-translate-y-0.5"
-                >
-                  <FaPlus className="w-3 h-3" />
-                  New Project
-                </Link>
+                {!isSubuser && (
+                  <Link
+                    to="/dashboard/projects/new"
+                    className="inline-flex items-center gap-2 rounded-xl h-11 px-5 bg-[#3B5BDB] text-white text-sm font-semibold hover:bg-[#2f4ac2] transition-all shadow-sm shadow-[#3B5BDB]/25 hover:shadow-md hover:-translate-y-0.5"
+                  >
+                    <FaPlus className="w-3 h-3" />
+                    New Project
+                  </Link>
+                )}
               </div>
 
               {/* ═══════════ STATS ROW ═══════════ */}
@@ -312,14 +318,18 @@ export default function Projects() {
                   </div>
                   <h3 className="text-lg font-bold text-neutral-900 mb-2">No projects yet</h3>
                   <p className="text-sm text-neutral-500 mb-6 max-w-xs mx-auto leading-relaxed">
-                    Create your first project to start managing productions and booking crew.
+                    {!isSubuser 
+                      ? "Create your first project to start managing productions and booking crew."
+                      : "You don't have any projects yet. Ask your company admin to create one."}
                   </p>
-                  <Link
-                    to="/dashboard/projects/new"
-                    className="inline-flex items-center gap-2 rounded-xl px-6 py-3 bg-[#3B5BDB] text-white text-sm font-bold hover:bg-[#2f4ac2] transition-all shadow-sm shadow-[#3B5BDB]/25"
-                  >
-                    <FaPlus className="w-3 h-3" /> Create Project
-                  </Link>
+                  {!isSubuser && (
+                    <Link
+                      to="/dashboard/projects/new"
+                      className="inline-flex items-center gap-2 rounded-xl px-6 py-3 bg-[#3B5BDB] text-white text-sm font-bold hover:bg-[#2f4ac2] transition-all shadow-sm shadow-[#3B5BDB]/25"
+                    >
+                      <FaPlus className="w-3 h-3" /> Create Project
+                    </Link>
+                  )}
                 </div>
               )}
 

@@ -8,6 +8,7 @@ import AppFooter from '../components/AppFooter';
 import RoleIndicator from '../components/RoleIndicator';
 import { useApiQuery } from '../hooks/useApiQuery';
 import { useChatUnread } from '../contexts/ChatUnreadContext';
+import { useAuth } from '../contexts/AuthContext';
 import { companyNavLinks } from '../navigation/dashboardNav';
 import { api, ApiException } from '../services/api';
 
@@ -50,6 +51,7 @@ interface DayChatMessage {
   conversationId: string;
   otherParticipantId: string;
   otherParticipantName?: string;
+  isSameAccount?: boolean;
 }
 
 interface ProjectDayChatGroup {
@@ -67,6 +69,7 @@ interface ProjectDayChatsResponse {
     otherParticipantId: string;
     otherParticipant?: { id: string; displayName: string };
     sender?: { id?: string; displayName?: string };
+    isSameAccount?: boolean;
   }>;
   meta?: { pages?: number };
 }
@@ -123,6 +126,9 @@ function buildCalendar(year: number, month: number, projects: Project[]): Calend
 }
 
 export default function CompanyDashboard() {
+  const { user } = useAuth();
+  const isSubuser = user?.mainUserId != null;
+  
   useEffect(() => { document.title = 'Dashboard – Claapo'; }, []);
 
   const today = new Date();
@@ -132,7 +138,7 @@ export default function CompanyDashboard() {
   const [dateChatGroups, setDateChatGroups] = useState<ProjectDayChatGroup[]>([]);
   const [expandedChatProject, setExpandedChatProject] = useState<string | null>(null);
   const [expandedChatPerson, setExpandedChatPerson] = useState<string | null>(null);
-  const [personChatMessages, setPersonChatMessages] = useState<Array<{ id: string; senderId: string; senderLabel: string; content: string | null; createdAt: string }>>([]);
+  const [personChatMessages, setPersonChatMessages] = useState<Array<{ id: string; senderId: string; senderLabel: string; content: string | null; createdAt: string; isSameAccount?: boolean }>>([]);
   const [personChatLoading, setPersonChatLoading] = useState(false);
   const [personChatError, setPersonChatError] = useState<string | null>(null);
   const [dateChatGroupsLoading, setDateChatGroupsLoading] = useState(false);
@@ -200,6 +206,7 @@ export default function CompanyDashboard() {
         conversationId: m.conversationId,
         otherParticipantId: m.otherParticipantId,
         otherParticipantName: m.otherParticipant?.displayName,
+        isSameAccount: m.isSameAccount,
       });
     }
     const pages = Math.max(1, firstRes.meta?.pages ?? 1);
@@ -217,6 +224,7 @@ export default function CompanyDashboard() {
           conversationId: m.conversationId,
           otherParticipantId: m.otherParticipantId,
           otherParticipantName: m.otherParticipant?.displayName,
+          isSameAccount: m.isSameAccount,
         });
       }
     }
@@ -282,8 +290,8 @@ export default function CompanyDashboard() {
     
     // Filter to only messages involving this person on this day
     const personMessages = group.items
-      .filter((m) => 
-        m.otherParticipantId === expandedChatPerson || 
+      .filter((m) =>
+        m.otherParticipantId === expandedChatPerson ||
         m.senderId === expandedChatPerson
       )
       .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
@@ -295,6 +303,7 @@ export default function CompanyDashboard() {
         createdAt: m.createdAt,
         conversationId: m.conversationId,
         otherParticipantId: m.otherParticipantId,
+        isSameAccount: m.isSameAccount,
       }));
     
     setPersonChatMessages(personMessages);
@@ -345,7 +354,7 @@ export default function CompanyDashboard() {
               {/* Quick actions */}
               <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {[
-                  { icon: FaPlus,  title: 'New Project', desc: 'Start a production', to: '/dashboard/projects/new', primary: true },
+                  ...(isSubuser ? [] : [{ icon: FaPlus,  title: 'New Project', desc: 'Start a production', to: '/dashboard/projects/new', primary: true as const }]),
                   { icon: FaUsers, title: 'Find Crew',    desc: 'Hire freelancers',  to: '/dashboard/search' },
                   { icon: FaTruck, title: 'Find Vendors', desc: 'Equipment & services', to: '/dashboard/search?type=vendors' },
                 ].map((action) => (
@@ -681,9 +690,11 @@ export default function CompanyDashboard() {
                     </div>
                     <p className="text-sm font-bold text-neutral-900 mb-1">No project scheduled</p>
                     <p className="text-xs text-neutral-500 mb-5 px-4">This date is available for production</p>
-                    <Link to="/dashboard/projects/new" className="rounded-xl inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-br from-[#3B5BDB] to-[#2f4ac2] text-white text-xs font-bold hover:shadow-lg hover:shadow-[#3B5BDB]/25 transition-all duration-200">
-                      <FaPlus className="w-3 h-3" /> Create Project
-                    </Link>
+                    {!isSubuser && (
+                      <Link to="/dashboard/projects/new" className="rounded-xl inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-br from-[#3B5BDB] to-[#2f4ac2] text-white text-xs font-bold hover:shadow-lg hover:shadow-[#3B5BDB]/25 transition-all duration-200">
+                        <FaPlus className="w-3 h-3" /> Create Project
+                      </Link>
+                    )}
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -931,7 +942,7 @@ export default function CompanyDashboard() {
                                           (() => {
                                             let lastDateLabel = '';
                                             return personChatMessages.map((m) => {
-                                              const isFromPerson = m.senderId === person.id;
+                                              const isFromPerson = m.isSameAccount !== undefined ? !m.isSameAccount : m.senderId === person.id;
                                               const dateLabel = new Date(m.createdAt).toLocaleDateString('en-IN', {
                                                 day: 'numeric',
                                                 month: 'short',
@@ -1032,7 +1043,7 @@ export default function CompanyDashboard() {
               >
                 <FaFileInvoice className="w-3.5 h-3.5" /> Invoices issued on this date
               </Link>
-              {panel.projects.length > 0 && (
+              {panel.projects.length > 0 && !isSubuser && (
                 <Link to="/dashboard/projects/new" className="flex items-center justify-center gap-2 w-full rounded-xl py-2.5 bg-gradient-to-r from-[#F4C430] to-[#E6B820] text-neutral-900 text-xs font-bold hover:shadow-md hover:shadow-amber-500/20 transition-all duration-200">
                   <FaPlus className="w-3 h-3" /> New Project
                 </Link>
