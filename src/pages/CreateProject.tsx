@@ -35,14 +35,13 @@ interface DateLocation {
 
 export default function CreateProject() {
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const isSubuser = user?.mainUserId != null;
-  
+  const { user: _user } = useAuth();
+
   useEffect(() => { document.title = 'Create New Project – Claapo'; }, []);
 
   // Fetch company profile on mount
   const [companyName, setCompanyName] = useState('');
-  const [loadingProfile, setLoadingProfile] = useState(true);
+  const [_loadingProfile, setLoadingProfile] = useState(true);
 
   useEffect(() => {
     const fetchProfile = async () => {

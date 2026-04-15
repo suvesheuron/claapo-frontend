@@ -1,11 +1,9 @@
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { FaTruck, FaMagnifyingGlass, FaChevronLeft, FaChevronRight, FaPlus, FaTriangleExclamation, FaLocationDot, FaMessage } from 'react-icons/fa6';
+import { FaTruck, FaMagnifyingGlass, FaChevronLeft, FaChevronRight, FaPlus, FaTriangleExclamation, FaLocationDot } from 'react-icons/fa6';
 import AppFooter from '../components/AppFooter';
 import Avatar from '../components/Avatar';
-import BookingRequestModal from '../components/BookingRequestModal';
-import ProjectChatStartModal from '../components/ProjectChatStartModal';
 import DashboardHeader from '../components/DashboardHeader';
 import DashboardSidebar from '../components/DashboardSidebar';
 import { useAuth } from '../contexts/AuthContext';
@@ -41,9 +39,6 @@ interface VendorResult {
   equipment?: VendorEquipmentItem[];
 }
 
-interface SelectedUser { userId: string; name: string; role: string; rate: string; isVendor?: boolean; initialVendorEquipmentId?: string }
-interface ChatTarget { userId: string; label: string }
-
 const PAGE_SIZE = 15;
 
 const containerVariants = {
@@ -67,32 +62,27 @@ function parseBudgetToPaise(input: string): number | null {
 export default function SearchFilter() {
   const { user } = useAuth();
   const isSubuser = user?.mainUserId != null;
-  
-  const navigate = useNavigate();
+
   const [searchParams] = useSearchParams();
-  const [selectedUser, setSelectedUser] = useState<SelectedUser | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [chatTarget, setChatTarget] = useState<ChatTarget | null>(null);
-  const [isChatProjectModalOpen, setIsChatProjectModalOpen] = useState(false);
 
   const initType = (searchParams.get('type') as SearchType) === 'vendors' ? 'vendors' : 'crew';
   const [searchType, setSearchType] = useState<SearchType>(initType);
 
-  const [query,      setQuery]      = useState('');
-  const [location,   setLocation]   = useState('');
+  const [query, setQuery] = useState('');
+  const [location, setLocation] = useState('');
   const [skillFilter, setSkillFilter] = useState('');
   const [genreFilter, setGenreFilter] = useState('');
-  const [startDate,  setStartDate]  = useState('');
-  const [endDate,    setEndDate]    = useState('');
-  const [budgetMin,  setBudgetMin]  = useState('');
-  const [budgetMax,  setBudgetMax]  = useState('');
-  const [page,       setPage]       = useState(1);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [budgetMin, setBudgetMin] = useState('');
+  const [budgetMax, setBudgetMax] = useState('');
+  const [page, setPage] = useState(1);
 
-  const [crewResults,   setCrewResults]   = useState<CrewResult[]>([]);
+  const [crewResults, setCrewResults] = useState<CrewResult[]>([]);
   const [vendorResults, setVendorResults] = useState<VendorResult[]>([]);
   const [totalPages, setTotalPages] = useState(1);
-  const [loading,  setLoading]  = useState(false);
-  const [error,    setError]    = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -185,18 +175,6 @@ export default function SearchFilter() {
   useEffect(() => {
     triggerSearch(query, location, skillFilter, genreFilter, startDate, endDate, budgetMin, budgetMax, page, searchType);
   }, [query, location, skillFilter, genreFilter, startDate, endDate, budgetMin, budgetMax, page, searchType, triggerSearch]);
-
-  const handleSendRequest = (user: SelectedUser) => { setSelectedUser(user); setIsModalOpen(true); };
-  const openChatProjectModal = (target: ChatTarget) => {
-    setChatTarget(target);
-    setIsChatProjectModalOpen(true);
-  };
-  const handleStartProjectChat = (projectId: string) => {
-    if (!chatTarget) return;
-    setIsChatProjectModalOpen(false);
-    navigate(`/dashboard/chat/${chatTarget.userId}?projectId=${encodeURIComponent(projectId)}`);
-    setChatTarget(null);
-  };
 
   const switchType = (type: SearchType) => {
     setSearchType(type);
@@ -450,22 +428,9 @@ export default function SearchFilter() {
                           </div>
                           
                           <div className="flex flex-col gap-2 mt-2">
-                            <button type="button" onClick={() => handleSendRequest({ userId: r.userId, name: r.displayName, role: r.skills?.[0] ?? 'Crew', rate: r.dailyBudget ? formatPaise(r.dailyBudget) + ' /day' : 'Rate on request' })}
-                              className="w-full rounded-xl px-4 py-3 bg-[#3B5BDB] text-white text-sm font-bold hover:bg-[#2f4ac2] shadow-sm hover:shadow-md transition-all duration-200 transform hover:-translate-y-0.5">
-                              Book Crew
-                            </button>
-                            <div className="flex gap-2">
-                              <button
-                                type="button"
-                                onClick={() => openChatProjectModal({ userId: r.userId, label: r.displayName })}
-                                className="flex-1 rounded-xl px-4 py-2 border border-neutral-200 text-neutral-600 text-xs font-semibold hover:bg-neutral-50 transition-all duration-200 flex items-center justify-center gap-1.5"
-                              >
-                                <FaMessage className="w-3 h-3" /> Chat
-                              </button>
-                              <Link to={`/dashboard/profile/${r.userId}`} className="flex-1 rounded-xl px-4 py-2 border border-neutral-200 text-neutral-600 text-xs font-semibold hover:bg-neutral-50 transition-all duration-200 text-center">
-                                View Profile
-                              </Link>
-                            </div>
+                            <Link to={`/dashboard/profile/${r.userId}`} className="w-full rounded-xl px-4 py-3 bg-[#3B5BDB] text-white text-sm font-bold hover:bg-[#2f4ac2] shadow-sm hover:shadow-md transition-all duration-200 transform hover:-translate-y-0.5 text-center">
+                              View Profile
+                            </Link>
                           </div>
                         </div>
                       </motion.div>
@@ -514,22 +479,9 @@ export default function SearchFilter() {
                           </div>
                           
                           <div className="flex flex-col gap-2 mt-2">
-                            <button type="button" onClick={() => handleSendRequest({ userId: r.userId, name: r.companyName, role: r.vendorType === 'all' ? 'All types' : (r.vendorType?.replace(/_/g, ' ') ?? 'Vendor'), rate: '—', isVendor: true, initialVendorEquipmentId: r.equipment?.length === 1 ? r.equipment[0].id : undefined })}
-                              className="w-full rounded-xl px-4 py-3 bg-[#3B5BDB] text-white text-sm font-bold hover:bg-[#2f4ac2] shadow-sm hover:shadow-md transition-all duration-200 transform hover:-translate-y-0.5">
-                              Request Booking
-                            </button>
-                            <div className="flex gap-2">
-                              <button
-                                type="button"
-                                onClick={() => openChatProjectModal({ userId: r.userId, label: r.companyName })}
-                                className="flex-1 rounded-xl px-4 py-2 border border-neutral-200 text-neutral-600 text-xs font-semibold hover:bg-neutral-50 transition-all duration-200 flex items-center justify-center gap-1.5"
-                              >
-                                <FaMessage className="w-3 h-3" /> Chat
-                              </button>
-                              <Link to={`/dashboard/profile/${r.userId}`} className="flex-1 rounded-xl px-4 py-2 border border-neutral-200 text-neutral-600 text-xs font-semibold hover:bg-neutral-50 transition-all duration-200 text-center">
-                                View Profile
-                              </Link>
-                            </div>
+                            <Link to={`/dashboard/profile/${r.userId}`} className="w-full rounded-xl px-4 py-3 bg-[#3B5BDB] text-white text-sm font-bold hover:bg-[#2f4ac2] shadow-sm hover:shadow-md transition-all duration-200 transform hover:-translate-y-0.5 text-center">
+                              View Profile
+                            </Link>
                           </div>
                         </div>
                       </motion.div>
@@ -562,27 +514,6 @@ export default function SearchFilter() {
           <AppFooter />
         </main>
       </div>
-
-      <BookingRequestModal
-        isOpen={isModalOpen}
-        onClose={() => { setIsModalOpen(false); setSelectedUser(null); }}
-        userName={selectedUser?.name ?? ''}
-        userRole={selectedUser?.role ?? ''}
-        userRate={selectedUser?.rate ?? ''}
-        targetUserId={selectedUser?.userId ?? ''}
-        isVendor={selectedUser?.isVendor ?? false}
-        initialVendorEquipmentId={selectedUser?.initialVendorEquipmentId}
-        onSuccess={() => { setIsModalOpen(false); setSelectedUser(null); }}
-      />
-      <ProjectChatStartModal
-        isOpen={isChatProjectModalOpen}
-        targetLabel={chatTarget?.label ?? 'this user'}
-        onClose={() => {
-          setIsChatProjectModalOpen(false);
-          setChatTarget(null);
-        }}
-        onStartChat={handleStartProjectChat}
-      />
     </div>
   );
 }
