@@ -8,6 +8,7 @@ import BookingRequestModal from '../components/BookingRequestModal';
 import ProjectChatStartModal from '../components/ProjectChatStartModal';
 import DashboardHeader from '../components/DashboardHeader';
 import DashboardSidebar from '../components/DashboardSidebar';
+import { useAuth } from '../contexts/AuthContext';
 import { api, ApiException } from '../services/api';
 import { formatPaise } from '../utils/currency';
 import { companyNavLinks } from '../navigation/dashboardNav';
@@ -64,6 +65,9 @@ function parseBudgetToPaise(input: string): number | null {
 }
 
 export default function SearchFilter() {
+  const { user } = useAuth();
+  const isSubuser = user?.mainUserId != null;
+  
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [selectedUser, setSelectedUser] = useState<SelectedUser | null>(null);
@@ -225,10 +229,12 @@ export default function SearchFilter() {
                   <h1 className="text-2xl font-bold tracking-tight text-neutral-900">Find Crew & Vendors</h1>
                   <p className="text-sm text-neutral-500 mt-1">Search and hire the best talent for your productions</p>
                 </div>
-                <Link to="/dashboard/projects/new" className="rounded-xl px-5 py-2.5 bg-[#3B5BDB] text-white text-sm font-semibold hover:bg-[#2f4ac2] shadow-sm hover:shadow-md inline-flex items-center gap-2 transition-all duration-200 shrink-0">
-                  <FaPlus className="w-3 h-3" />
-                  <span className="hidden sm:inline">Create Project</span>
-                </Link>
+                {!isSubuser && (
+                  <Link to="/dashboard/projects/new" className="rounded-xl px-5 py-2.5 bg-[#3B5BDB] text-white text-sm font-semibold hover:bg-[#2f4ac2] shadow-sm hover:shadow-md inline-flex items-center gap-2 transition-all duration-200 shrink-0">
+                    <FaPlus className="w-3 h-3" />
+                    <span className="hidden sm:inline">Create Project</span>
+                  </Link>
+                )}
               </div>
 
               {/* Crew / Vendor toggle — pill-shaped tabs */}

@@ -8,6 +8,7 @@ import DashboardSidebar from '../../components/DashboardSidebar';
 import AppFooter from '../../components/AppFooter';
 import RoleIndicator from '../../components/RoleIndicator';
 import { useApiQuery } from '../../hooks/useApiQuery';
+import { useAuth } from '../../contexts/AuthContext';
 import { companyNavLinks } from '../../navigation/dashboardNav';
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
@@ -83,6 +84,9 @@ function buildCalendar(year: number, month: number, projects: ProjectItem[]): Ca
 }
 
 export default function CompanyAvailability() {
+  const { user } = useAuth();
+  const isSubuser = user?.mainUserId != null;
+  
   useEffect(() => { document.title = 'Availability – Claapo'; }, []);
 
   const today = new Date();
@@ -136,13 +140,15 @@ export default function CompanyAvailability() {
                 </div>
                 <div className="flex items-center gap-3">
                   <RoleIndicator />
-                  <Link
-                    to="/dashboard/projects/new"
-                    className="flex items-center gap-2 px-4 py-2.5 bg-[#3B5BDB] text-white rounded-xl text-sm font-semibold hover:bg-[#2f4ac2] transition-all shadow-sm shadow-blue-500/20 hover:shadow-md hover:shadow-blue-500/25"
-                  >
-                    <FaPlus className="w-3 h-3" />
-                    <span>New Project</span>
-                  </Link>
+                  {!isSubuser && (
+                    <Link
+                      to="/dashboard/projects/new"
+                      className="flex items-center gap-2 px-4 py-2.5 bg-[#3B5BDB] text-white rounded-xl text-sm font-semibold hover:bg-[#2f4ac2] transition-all shadow-sm shadow-blue-500/20 hover:shadow-md hover:shadow-blue-500/25"
+                    >
+                      <FaPlus className="w-3 h-3" />
+                      <span>New Project</span>
+                    </Link>
+                  )}
                 </div>
               </div>
 
@@ -304,13 +310,15 @@ export default function CompanyAvailability() {
                   </div>
                   <p className="text-sm font-bold text-neutral-800 mb-1">No Project Scheduled</p>
                   <p className="text-xs text-neutral-400 mb-5 leading-relaxed">This day is available for<br />new projects</p>
-                  <Link
-                    to="/dashboard/projects/new"
-                    className="flex items-center gap-2 px-5 py-2.5 bg-[#3B5BDB] text-white rounded-xl text-sm font-semibold hover:bg-[#2f4ac2] transition-all shadow-sm shadow-blue-500/20"
-                  >
-                    <FaPlus className="w-3 h-3" />
-                    Create Project
-                  </Link>
+                  {!isSubuser && (
+                    <Link
+                      to="/dashboard/projects/new"
+                      className="flex items-center gap-2 px-5 py-2.5 bg-[#3B5BDB] text-white rounded-xl text-sm font-semibold hover:bg-[#2f4ac2] transition-all shadow-sm shadow-blue-500/20"
+                    >
+                      <FaPlus className="w-3 h-3" />
+                      Create Project
+                    </Link>
+                  )}
                 </div>
               )}
             </div>

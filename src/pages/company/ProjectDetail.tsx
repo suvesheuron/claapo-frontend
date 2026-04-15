@@ -64,6 +64,21 @@ interface Booking {
   shootLocations?: string[];
 }
 
+interface SubUserAssignment {
+  id: string;
+  subUserId: string;
+  accountUserId: string;
+  projectId: string;
+  createdAt: string;
+  subUser: {
+    id: string;
+    email: string;
+    displayName?: string | null;
+    individualProfile?: { displayName?: string } | null;
+    companyProfile?: { companyName?: string } | null;
+  };
+}
+
 function formatDateRange(start: string, end: string): string {
   const s = new Date(start);
   const e = new Date(end);
@@ -82,8 +97,10 @@ export default function ProjectDetail() {
 
   const [project, setProject] = useState<Project | null>(null);
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [subUsers, setSubUsers] = useState<SubUserAssignment[]>([]);
   const [loadingProject, setLoadingProject] = useState(true);
   const [loadingBookings, setLoadingBookings] = useState(true);
+  const [loadingSubUsers, setLoadingSubUsers] = useState(true);
   const [projectError, setProjectError] = useState<string | null>(null);
 
   const [lockingAll, setLockingAll] = useState(false);
@@ -126,11 +143,25 @@ export default function ProjectDetail() {
     }
   }, [projectId]);
 
+  const loadSubUsers = useCallback(async () => {
+    if (!projectId) return;
+    setLoadingSubUsers(true);
+    try {
+      const res = await api.get<{ items: SubUserAssignment[] }>(`/projects/${projectId}/sub-users`);
+      setSubUsers(res.items ?? []);
+    } catch {
+      setSubUsers([]);
+    } finally {
+      setLoadingSubUsers(false);
+    }
+  }, [projectId]);
+
   useEffect(() => {
     document.title = 'Project Details – Claapo';
     loadProject();
     loadBookings();
-  }, [loadProject, loadBookings]);
+    loadSubUsers();
+  }, [loadProject, loadBookings, loadSubUsers]);
 
   const crewBookings   = bookings.filter((b) => b.target.role === 'individual');
   const vendorBookings = bookings.filter((b) => b.target.role === 'vendor');
@@ -280,11 +311,21 @@ export default function ProjectDetail() {
                     </p>
                     {(project.shootDates?.length || project.shootLocations?.length) ? (
                       <p className="text-xs text-neutral-500 mt-1">
-                        {project.shootDates?.length ? `Shoot dates: ${project.shootDates.map((d) => new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })).join(', ')}` : ''}
-                        {project.shootDates?.length && project.shootLocations?.length ? ' · ' : ''}
-                        {project.shootLocations?.length ? `Locations: ${project.shootLocations.join(', ')}` : ''}
+                        {project.shootDates?.length ? `Project dates: ${project.shootDates.map((d) => new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })).join(', ')}` : ''}
                       </p>
                     ) : null}
+                    {project.shootLocations?.length ? (
+                      <p className="text-xs text-neutral-500 mt-0.5">
+                        Project locations: {project.shootLocations.join(', ')}
+                      </p>
+                    ) : null}
+                    {/* Project Assigned To - Sub-users */}
+                    {!loadingSubUsers && subUsers.length > 0 && (
+                      <p className="text-xs text-neutral-500 mt-1">
+                        <span className="font-medium text-neutral-600">Assigned to:</span>{' '}
+                        {subUsers.map((su) => su.subUser.displayName ?? su.subUser.email).join(', ')}
+                      </p>
+                    )}
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <Link

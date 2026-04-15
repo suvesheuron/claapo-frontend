@@ -74,7 +74,7 @@ export default function DashboardHeader({ userName: propUserName, userAvatar: pr
   const profile = meData?.profile;
   const isMainUser = meData?.isMainUser !== false;
 
-  const displayName = propUserName ?? profile?.companyName ?? profile?.displayName ?? user?.email?.split('@')[0] ?? 'Account';
+  const displayName = propUserName ?? user?.displayName ?? profile?.companyName ?? profile?.displayName ?? user?.email?.split('@')[0] ?? 'Account';
   const userAvatar = propUserAvatar ?? profile?.avatarUrl ?? undefined;
   const roleInfo = user?.role ? ROLE_LABELS[user.role] : undefined;
 

@@ -36,6 +36,9 @@ export interface AuthUser {
   id: string;
   email: string;
   role: BackendRole;
+  displayName?: string | null;
+  /** Null for main users (company/vendor), UUID for subusers pointing to parent */
+  mainUserId?: string | null;
 }
 
 interface TokenResponse {
@@ -48,6 +51,8 @@ interface JwtPayload {
   sub: string;
   email: string;
   role: BackendRole;
+  displayName?: string | null;
+  mainUserId?: string | null;
   exp: number;
   iat: number;
 }
@@ -95,7 +100,13 @@ function decodeJwt(token: string): JwtPayload | null {
 function userFromJwt(token: string): AuthUser | null {
   const payload = decodeJwt(token);
   if (!payload) return null;
-  return { id: payload.sub, email: payload.email, role: payload.role };
+  return {
+    id: payload.sub,
+    email: payload.email,
+    role: payload.role,
+    displayName: payload.displayName,
+    mainUserId: payload.mainUserId ?? null,
+  };
 }
 
 // ─── Context ─────────────────────────────────────────────────────────────────
