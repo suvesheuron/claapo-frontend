@@ -16,18 +16,6 @@ interface ProjectResponse {
   title: string;
 }
 
-interface CompanyProfileData {
-  companyName?: string | null;
-}
-
-interface MeResponse {
-  id: string;
-  email: string;
-  role: string;
-  mainUserId: string | null;
-  profile?: CompanyProfileData | null;
-}
-
 interface DateLocation {
   date: string;
   location: string;
@@ -38,25 +26,6 @@ export default function CreateProject() {
   const { user: _user } = useAuth();
 
   useEffect(() => { document.title = 'Create New Project – Claapo'; }, []);
-
-  // Fetch company profile on mount
-  const [companyName, setCompanyName] = useState('');
-  const [_loadingProfile, setLoadingProfile] = useState(true);
-
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const me = await api.get<MeResponse>('/users/me');
-        const profileData = me.profile as CompanyProfileData | undefined;
-        setCompanyName(profileData?.companyName ?? '');
-      } catch (err) {
-        console.error('Failed to fetch company profile:', err);
-      } finally {
-        setLoadingProfile(false);
-      }
-    };
-    fetchProfile();
-  }, []);
 
   // Form state
   const [title, setTitle]                     = useState('');
@@ -85,6 +54,12 @@ export default function CreateProject() {
 
   const handleCreate = async () => {
     if (!title.trim()) { setError('Project name is required.'); return; }
+    if (!startDate) { setError('Start date is required.'); return; }
+    if (!endDate) { setError('End date is required.'); return; }
+    if (new Date(endDate).getTime() < new Date(startDate).getTime()) {
+      setError('End date cannot be earlier than start date.');
+      return;
+    }
     const validDates = projectDates.filter(d => d.date.trim());
     if (!validDates.length) { setError('At least one project date is required.'); return; }
     
@@ -101,7 +76,6 @@ export default function CreateProject() {
     try {
       await api.post<ProjectResponse>('/projects', {
         title: title.trim(),
-        productionHouseName: companyName.trim() || undefined,
         description: description.trim() || undefined,
         startDate: startDate || undefined,
         endDate: endDate || undefined,
@@ -173,15 +147,6 @@ export default function CreateProject() {
                         />
                       </div>
                       <div>
-                        <label className="block text-neutral-700 text-xs mb-1.5 font-semibold">Production House Name</label>
-                        <input
-                          type="text"
-                          value={companyName}
-                          disabled
-                          className="rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-neutral-100 text-neutral-900 text-sm cursor-not-allowed opacity-60"
-                        />
-                      </div>
-                      <div>
                         <label className="block text-neutral-700 text-xs mb-1.5 font-semibold">Project Description</label>
                         <textarea
                           rows={3}
@@ -194,20 +159,21 @@ export default function CreateProject() {
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-neutral-700 text-xs mb-1.5 font-semibold">Start Date <span className="text-neutral-400 font-normal">(optional)</span></label>
+                          <label className="block text-neutral-700 text-xs mb-1.5 font-semibold">Start Date <span className="text-[#F40F02]">*</span></label>
                           <div className="relative">
                             <input
                               type="date"
                               value={startDate}
                               onChange={(e) => setStartDate(e.target.value)}
                               disabled={loading}
+                              required
                               className="date-input-no-native-icon rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 focus:outline-none focus:border-[#3B5BDB] focus:bg-white text-sm transition-all disabled:opacity-50"
                             />
                             <FaCalendar className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 text-xs pointer-events-none" />
                           </div>
                         </div>
                         <div>
-                          <label className="block text-neutral-700 text-xs mb-1.5 font-semibold">End Date <span className="text-neutral-400 font-normal">(optional)</span></label>
+                          <label className="block text-neutral-700 text-xs mb-1.5 font-semibold">End Date <span className="text-[#F40F02]">*</span></label>
                           <div className="relative">
                             <input
                               type="date"
@@ -215,6 +181,7 @@ export default function CreateProject() {
                               min={startDate}
                               onChange={(e) => setEndDate(e.target.value)}
                               disabled={loading}
+                              required
                               className="date-input-no-native-icon rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 focus:outline-none focus:border-[#3B5BDB] focus:bg-white text-sm transition-all disabled:opacity-50"
                             />
                             <FaCalendar className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 text-xs pointer-events-none" />
@@ -313,7 +280,6 @@ export default function CreateProject() {
                     <div className="space-y-3 mb-5">
                       {[
                         { label: 'Project Name',      value: title.trim() || 'Not set' },
-                        { label: 'Production House',  value: companyName.trim() || 'Not set' },
                         { label: 'Duration',          value: duration },
                         { label: 'Project dates',     value: projectDates.filter(d => d.date).length
                           ? projectDates.filter(d => d.date).map(d => `${formatDate(d.date)} · ${d.location || 'TBD'}`).join(', ')
