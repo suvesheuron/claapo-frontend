@@ -15,6 +15,11 @@ interface ConversationItem {
   projectId?: string;
   unreadCount?: number;
   lastMessageAt?: string | null;
+  project?: {
+    id: string;
+    title?: string;
+    shootDates?: string[];
+  } | null;
 }
 
 interface ConversationsResponse {
@@ -31,6 +36,8 @@ interface ChatUnreadContextValue {
    * date a message arrived, with subtler pulses on the project's other shoot dates.
    */
   unreadDateByProject: Record<string, string>;
+  /** Map of projectId -> shoot dates for calendar-level unread highlighting. */
+  unreadShootDatesByProject: Record<string, string[]>;
   refetch: () => void;
   markAllConversationsAsRead: (conversations: ConversationItem[]) => Promise<void>;
 }
@@ -53,6 +60,7 @@ export function ChatUnreadProvider({ children }: { children: React.ReactNode }) 
   const [totalUnread, setTotalUnread] = useState(0);
   const [unreadByProject, setUnreadByProject] = useState<Record<string, number>>({});
   const [unreadDateByProject, setUnreadDateByProject] = useState<Record<string, string>>({});
+  const [unreadShootDatesByProject, setUnreadShootDatesByProject] = useState<Record<string, string[]>>({});
   const [tick, setTick] = useState(0);
 
   const refetch = useCallback(async () => {
@@ -60,6 +68,7 @@ export function ChatUnreadProvider({ children }: { children: React.ReactNode }) 
       setTotalUnread(0);
       setUnreadByProject({});
       setUnreadDateByProject({});
+      setUnreadShootDatesByProject({});
       return;
     }
     try {
@@ -68,6 +77,7 @@ export function ChatUnreadProvider({ children }: { children: React.ReactNode }) 
       let total = 0;
       const byProject: Record<string, number> = {};
       const dateByProject: Record<string, string> = {};
+      const shootDatesByProject: Record<string, Set<string>> = {};
       // Track the most recent timestamp per project so we can resolve ties.
       const latestTsByProject: Record<string, number> = {};
       for (const c of items) {
@@ -76,6 +86,13 @@ export function ChatUnreadProvider({ children }: { children: React.ReactNode }) 
         total += n;
         if (!c.projectId) continue;
         byProject[c.projectId] = (byProject[c.projectId] ?? 0) + n;
+        if (Array.isArray(c.project?.shootDates) && c.project.shootDates.length > 0) {
+          shootDatesByProject[c.projectId] ??= new Set<string>();
+          for (const d of c.project.shootDates) {
+            const key = toLocalDateKey(d);
+            if (key) shootDatesByProject[c.projectId].add(key);
+          }
+        }
         if (c.lastMessageAt) {
           const ts = new Date(c.lastMessageAt).getTime();
           if (!Number.isNaN(ts) && ts > (latestTsByProject[c.projectId] ?? 0)) {
@@ -87,10 +104,16 @@ export function ChatUnreadProvider({ children }: { children: React.ReactNode }) 
       setTotalUnread(total);
       setUnreadByProject(byProject);
       setUnreadDateByProject(dateByProject);
+      setUnreadShootDatesByProject(
+        Object.fromEntries(
+          Object.entries(shootDatesByProject).map(([pid, dates]) => [pid, Array.from(dates)]),
+        ),
+      );
     } catch {
       setTotalUnread(0);
       setUnreadByProject({});
       setUnreadDateByProject({});
+      setUnreadShootDatesByProject({});
     }
   }, [user]);
 
@@ -115,6 +138,7 @@ export function ChatUnreadProvider({ children }: { children: React.ReactNode }) 
     totalUnread,
     unreadByProject,
     unreadDateByProject,
+    unreadShootDatesByProject,
     refetch,
     markAllConversationsAsRead,
   };
@@ -133,6 +157,7 @@ export function useChatUnread(): ChatUnreadContextValue {
       totalUnread: 0,
       unreadByProject: {},
       unreadDateByProject: {},
+      unreadShootDatesByProject: {},
       refetch: () => {},
       markAllConversationsAsRead: async () => {},
     };

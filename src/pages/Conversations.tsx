@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { FaTriangleExclamation, FaMagnifyingGlass, FaMessage, FaCheck, FaFolder, FaArrowLeft, FaComments } from 'react-icons/fa6';
+import { FaTriangleExclamation, FaMagnifyingGlass, FaMessage, FaCheck, FaFolder, FaArrowLeft, FaComments, FaCalendar } from 'react-icons/fa6';
 import DashboardHeader from '../components/DashboardHeader';
 import DashboardSidebar from '../components/DashboardSidebar';
 import Avatar from '../components/Avatar';
@@ -55,6 +55,7 @@ function formatDate(dateStr: string) {
 export default function Conversations() {
   useEffect(() => { document.title = 'Messages – Claapo'; }, []);
   const { currentRole } = useRole();
+  const isCompanyView = currentRole === 'Company';
   const { markAllConversationsAsRead } = useChatUnread();
   const markedReadOnMount = useRef(false);
   const { projectId: selectedProjectId } = useParams<{ projectId: string }>();
@@ -80,6 +81,8 @@ export default function Conversations() {
 
   const [filter, setFilter] = useState<Filter>('all');
   const [search, setSearch] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
 
   const navLinks =
     currentRole === 'Company'
@@ -92,6 +95,14 @@ export default function Conversations() {
 
   const filtered = conversations.filter((conv) => {
     if (filter === 'unread' && !(conv.unreadCount && conv.unreadCount > 0)) return false;
+    if (dateFrom || dateTo) {
+      const ts = conv.lastMessage?.createdAt ?? conv.lastMessageAt;
+      if (!ts) return false;
+      const convDate = new Date(ts).setHours(0, 0, 0, 0);
+      const from = dateFrom ? new Date(dateFrom + 'T00:00:00').getTime() : 0;
+      const to = dateTo ? new Date(dateTo + 'T23:59:59').getTime() : Infinity;
+      if (convDate < from || convDate > to) return false;
+    }
     if (!search.trim()) return true;
     const other = conv.otherParticipant ?? conv.otherUser;
     const name = other ? getName(other).toLowerCase() : '';
@@ -205,29 +216,31 @@ export default function Conversations() {
     );
   };
 
-  // Conversations View for Selected Project
+  // Conversations View (project scoped for company, global for others)
   const renderConversations = () => (
     <>
       {/* Header with back button and project title */}
       <header className="shrink-0 bg-white border-b border-neutral-200/80">
         <div className="max-w-5xl mx-auto px-5 sm:px-8 pt-7 pb-5">
-          <Link
-            to="/dashboard/conversations"
-            className="inline-flex items-center gap-2 text-sm text-neutral-600 hover:text-[#3B5BDB] font-semibold mb-4 transition-colors"
-          >
-            <FaArrowLeft className="w-3.5 h-3.5" />
-            Back to Projects
-          </Link>
+          {isCompanyView && selectedProjectId && (
+            <Link
+              to="/dashboard/conversations"
+              className="inline-flex items-center gap-2 text-sm text-neutral-600 hover:text-[#3B5BDB] font-semibold mb-4 transition-colors"
+            >
+              <FaArrowLeft className="w-3.5 h-3.5" />
+              Back to Projects
+            </Link>
+          )}
           <div className="flex items-end justify-between gap-4 mb-5 flex-wrap">
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold text-neutral-900 tracking-tight">
-                {selectedProject?.title ?? 'Project Messages'}
+                {isCompanyView && selectedProjectId ? (selectedProject?.title ?? 'Project Messages') : 'Messages'}
               </h1>
               <p className="text-sm text-neutral-500 mt-1">
                 {loading
                   ? 'Loading conversations…'
                   : conversations.length === 0
-                    ? 'No conversations in this project yet.'
+                    ? (isCompanyView && selectedProjectId ? 'No conversations in this project yet.' : 'No conversations yet.')
                     : (
                       <>
                         {conversations.length} {conversations.length === 1 ? 'conversation' : 'conversations'}
@@ -277,6 +290,36 @@ export default function Conversations() {
                 </button>
               ))}
             </div>
+            <div className="flex items-center gap-2 p-2 rounded-xl bg-white border border-neutral-200/70">
+              <FaCalendar className="w-3.5 h-3.5 text-neutral-400" />
+              <label className="text-[11px] text-neutral-500 font-medium">From</label>
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className="text-xs border border-neutral-200 rounded-lg px-2 py-1.5"
+              />
+              <label className="text-[11px] text-neutral-500 font-medium">To</label>
+              <input
+                type="date"
+                min={dateFrom || undefined}
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className="text-xs border border-neutral-200 rounded-lg px-2 py-1.5"
+              />
+              {(dateFrom || dateTo) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDateFrom('');
+                    setDateTo('');
+                  }}
+                  className="text-xs text-[#3B5BDB] font-semibold hover:underline"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </header>
@@ -324,7 +367,7 @@ export default function Conversations() {
                   ? 'Every message has been read. Nothing new on your plate right now.'
                   : search.trim()
                     ? 'Try a different name.'
-                    : 'Send a booking request to start chatting with crew or vendors.'}
+                    : 'Inquiry and booking chats will appear here.'}
               </p>
             </div>
           ) : (
@@ -405,7 +448,7 @@ export default function Conversations() {
         <DashboardSidebar links={navLinks} />
         <main className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
           <div className="flex-1 flex flex-col min-h-0 min-w-0">
-            {selectedProjectId ? renderConversations() : (
+            {(isCompanyView && !selectedProjectId) ? (
               <>
                 {/* Projects List Header */}
                 <header className="shrink-0 bg-white border-b border-neutral-200/80">
@@ -442,7 +485,7 @@ export default function Conversations() {
                   </div>
                 </div>
               </>
-            )}
+            ) : renderConversations()}
           </div>
         </main>
       </div>

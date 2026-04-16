@@ -36,6 +36,7 @@ export default function CreateInvoice() {
   const bookingIdFromUrl = searchParams.get('bookingId')?.trim() ?? '';
 
   const { data: bookingsData, loading: bookingsLoading } = useApiQuery<{ items: BookingItem[] }>('/bookings/incoming');
+  const { data: myProfile } = useApiQuery<any>('/profile/me');
   const bookings = useMemo(
     () => (bookingsData?.items ?? []).filter((b) => b.status === 'accepted' || b.status === 'locked'),
     [bookingsData?.items],
@@ -87,12 +88,21 @@ export default function CreateInvoice() {
     setPendingAttachments((prev) => prev.filter((_, idx) => idx !== i));
   };
 
+  const hasValidGst = useMemo(() => {
+    const gst =
+      myProfile?.individualProfile?.gstNumber
+      ?? myProfile?.vendorProfile?.gstNumber
+      ?? null;
+    if (!gst || typeof gst !== 'string') return false;
+    return /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test(gst.trim().toUpperCase());
+  }, [myProfile]);
+
   const subtotalPaise = lineItems.reduce((sum, l) => {
     const qty = parseFloat(l.quantity) || 0;
     const price = rupeesToPaise(l.unitPrice);
     return sum + qty * price;
   }, 0);
-  const gstPaise = Math.round(subtotalPaise * 0.18);
+  const gstPaise = hasValidGst ? Math.round(subtotalPaise * 0.18) : 0;
   const totalPaise = subtotalPaise + gstPaise;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -274,7 +284,7 @@ export default function CreateInvoice() {
                   <span className="font-semibold">{formatPaise(subtotalPaise)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-neutral-500">GST (18%)</span>
+                  <span className="text-neutral-500">{hasValidGst ? 'GST (18%)' : 'GST (Not Applied)'}</span>
                   <span className="font-semibold">{formatPaise(gstPaise)}</span>
                 </div>
                 <div className="flex justify-between text-base pt-2 border-t border-neutral-200">
@@ -286,7 +296,9 @@ export default function CreateInvoice() {
 
             {/* GST Note */}
             <p className="text-xs text-neutral-400">
-              GST @ 18% is auto-calculated and added to your invoice total.
+              {hasValidGst
+                ? 'GST @ 18% is auto-calculated and added to your invoice total.'
+                : 'GST is not applied because no valid GST number is present on your profile.'}
               The invoice will be created as a <strong>Draft</strong> — you can review and send it from the invoice detail page.
             </p>
 

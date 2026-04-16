@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { FaCalendar, FaTruck, FaBell, FaChevronLeft, FaChevronRight, FaMessage, FaTriangleExclamation, FaUser } from 'react-icons/fa6';
 import { api, ApiException } from '../services/api';
 import { useApiQuery } from '../hooks/useApiQuery';
+import { useChatUnread } from '../contexts/ChatUnreadContext';
 import { formatPaise, formatRateRange } from '../utils/currency';
 import DashboardHeader from '../components/DashboardHeader';
 import DashboardSidebar from '../components/DashboardSidebar';
@@ -118,6 +119,7 @@ export default function VendorDashboard() {
 
   const { data: bookingsData, loading: bookingsLoading, refetch: refetchBookings } =
     useApiQuery<{ items: IncomingBooking[] }>('/bookings/incoming');
+  const { unreadByProject, unreadShootDatesByProject } = useChatUnread();
   const { data: pastData } = useApiQuery<{ items: PastBookingItem[] }>('/bookings/past');
   const { data: equipmentList } = useApiQuery<EquipmentItem[] | { items: EquipmentItem[] }>('/equipment/me');
 
@@ -134,6 +136,15 @@ export default function VendorDashboard() {
       });
     return dates;
   }, [incomingItems]);
+
+  const unreadShootDates = useMemo(() => {
+    const dates = new Set<string>();
+    Object.entries(unreadShootDatesByProject).forEach(([projectId, shootDates]) => {
+      if ((unreadByProject[projectId] ?? 0) <= 0) return;
+      shootDates.forEach((d) => dates.add(d));
+    });
+    return dates;
+  }, [unreadByProject, unreadShootDatesByProject]);
 
   const activeCount = incomingItems.filter(b => b.status === 'accepted' || b.status === 'locked').length;
   const pastItems = pastData?.items ?? [];
@@ -396,6 +407,13 @@ export default function VendorDashboard() {
                             {/* Pending booking request indicator */}
                             {pendingDates.has(getDateStr(cell.d)) && (
                               <span className="absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-[#F40F02] animate-pulse" />
+                            )}
+                            {/* Inquiry/message shoot-date indicator */}
+                            {!pendingDates.has(getDateStr(cell.d)) && unreadShootDates.has(getDateStr(cell.d)) && (
+                              <span className="absolute top-0.5 right-0.5 flex items-center justify-center">
+                                <span className="absolute inline-flex h-2.5 w-2.5 rounded-full bg-[#F40F02] opacity-45 animate-ping" />
+                                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#F40F02]" />
+                              </span>
                             )}
                             {cell.status && !cell.muted && cell.status !== 'available' && (
                               <span className="text-[8px] sm:text-[9px] font-medium leading-tight truncate w-full opacity-80">

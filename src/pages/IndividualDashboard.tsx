@@ -8,6 +8,7 @@ import RoleIndicator from '../components/RoleIndicator';
 import VendorCalendarDayPanel from '../components/VendorCalendarDayPanel';
 import { api, ApiException } from '../services/api';
 import { useApiQuery } from '../hooks/useApiQuery';
+import { useChatUnread } from '../contexts/ChatUnreadContext';
 import { formatPaise } from '../utils/currency';
 import { individualNavLinks } from '../navigation/dashboardNav';
 import toast from 'react-hot-toast';
@@ -112,6 +113,7 @@ export default function IndividualDashboard() {
 
   const { data: bookingsData, loading: bookingsLoading, refetch: refetchBookings } =
     useApiQuery<IncomingBookingsResponse>('/bookings/incoming');
+  const { unreadByProject, unreadShootDatesByProject } = useChatUnread();
   const { data: pastData } = useApiQuery<{ items: PastBookingItem[] }>('/bookings/past');
   const allBookings = bookingsData?.items ?? [];
   const pendingBookings = allBookings.filter(b => b.status === 'pending').slice(0, 5);
@@ -126,6 +128,15 @@ export default function IndividualDashboard() {
       });
     return dates;
   }, [allBookings]);
+
+  const unreadShootDates = useMemo(() => {
+    const dates = new Set<string>();
+    Object.entries(unreadShootDatesByProject).forEach(([projectId, shootDates]) => {
+      if ((unreadByProject[projectId] ?? 0) <= 0) return;
+      shootDates.forEach((d) => dates.add(d));
+    });
+    return dates;
+  }, [unreadByProject, unreadShootDatesByProject]);
 
   const pastItems = pastData?.items ?? [];
   const activeCount = allBookings.filter(b => b.status === 'accepted' || b.status === 'locked').length;
@@ -395,6 +406,13 @@ export default function IndividualDashboard() {
                           {/* Pending booking request indicator */}
                           {pendingDates.has(getDateStr(cell.d)) && (
                             <span className="absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-[#F40F02] animate-pulse" />
+                          )}
+                          {/* Inquiry/message shoot-date indicator */}
+                          {!pendingDates.has(getDateStr(cell.d)) && unreadShootDates.has(getDateStr(cell.d)) && (
+                            <span className="absolute top-0.5 right-0.5 flex items-center justify-center">
+                              <span className="absolute inline-flex h-2.5 w-2.5 rounded-full bg-[#F40F02] opacity-45 animate-ping" />
+                              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#F40F02]" />
+                            </span>
                           )}
                           {cell.status && !cell.muted && cell.status !== 'available' && (
                             <span className="text-[8px] sm:text-[9px] font-medium leading-tight truncate w-full opacity-80 px-0.5">

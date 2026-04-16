@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   FaIndianRupeeSign,
   FaFileInvoice,
@@ -71,22 +71,34 @@ export default function SpendingDashboard() {
 
   const { data, loading, error } = useApiQuery<InvoicesResponse>('/invoices?limit=100');
   const invoices = data?.items ?? [];
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
 
-  const totalSpent = invoices
+  const filteredInvoices = useMemo(() => {
+    if (!dateFrom && !dateTo) return invoices;
+    return invoices.filter((inv) => {
+      const ts = new Date(inv.createdAt).setHours(0, 0, 0, 0);
+      const from = dateFrom ? new Date(dateFrom + 'T00:00:00').getTime() : 0;
+      const to = dateTo ? new Date(dateTo + 'T23:59:59').getTime() : Infinity;
+      return ts >= from && ts <= to;
+    });
+  }, [invoices, dateFrom, dateTo]);
+
+  const totalSpent = filteredInvoices
     .filter((i) => i.status === 'paid')
     .reduce((sum, i) => sum + i.totalAmount, 0);
 
-  const pendingPayments = invoices.filter((i) => i.status === 'sent' || i.status === 'overdue');
+  const pendingPayments = filteredInvoices.filter((i) => i.status === 'sent' || i.status === 'overdue');
   const pendingTotal = pendingPayments.reduce((sum, i) => sum + i.totalAmount, 0);
 
   const activeProjectTitles = new Set(
-    invoices
+    filteredInvoices
       .filter((i) => i.status !== 'cancelled' && i.project?.title)
       .map((i) => i.project!.title),
   );
 
   // Estimate team size from unique invoice issuers (unique invoiceNumbers prefix as proxy)
-  const uniqueInvoiceNumbers = new Set(invoices.map((i) => i.invoiceNumber));
+  const uniqueInvoiceNumbers = new Set(filteredInvoices.map((i) => i.invoiceNumber));
   const teamSize = uniqueInvoiceNumbers.size;
 
   const stats = [
@@ -96,9 +108,23 @@ export default function SpendingDashboard() {
     { label: 'Team Size', value: String(teamSize), icon: FaPeopleGroup, accent: 'bg-[#EEF2FF] text-[#3B5BDB]' },
   ];
 
-  const recentPayments = [...invoices]
+  const recentPayments = [...filteredInvoices]
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     .slice(0, 10);
+
+  const projectWise = useMemo(() => {
+    const map = new Map<string, { projectTitle: string; invoiceCount: number; paidTotal: number; pendingTotal: number; total: number }>();
+    for (const inv of filteredInvoices) {
+      const key = inv.project?.title?.trim() || 'No project';
+      const cur = map.get(key) ?? { projectTitle: key, invoiceCount: 0, paidTotal: 0, pendingTotal: 0, total: 0 };
+      cur.invoiceCount += 1;
+      cur.total += inv.totalAmount;
+      if (inv.status === 'paid') cur.paidTotal += inv.totalAmount;
+      if (inv.status === 'sent' || inv.status === 'overdue') cur.pendingTotal += inv.totalAmount;
+      map.set(key, cur);
+    }
+    return Array.from(map.values()).sort((a, b) => b.total - a.total);
+  }, [filteredInvoices]);
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-[#F8F9FB] w-full">
@@ -121,10 +147,10 @@ export default function SpendingDashboard() {
                   </h1>
                   <p className="text-sm text-neutral-500 mt-1.5 ml-[46px]">Track company expenses and payments</p>
                 </div>
-                {invoices.length > 0 && (
+                {filteredInvoices.length > 0 && (
                   <button
                     type="button"
-                    onClick={() => downloadCSV(invoices)}
+                    onClick={() => downloadCSV(filteredInvoices)}
                     className="flex items-center gap-2 px-5 py-2.5 bg-[#3B5BDB] text-white rounded-xl text-sm font-semibold hover:bg-[#2f4ac2] shadow-sm transition-all"
                   >
                     <FaDownload className="w-3.5 h-3.5" /> Export CSV
@@ -139,6 +165,40 @@ export default function SpendingDashboard() {
                     <FaTriangleExclamation className="text-red-500" />
                   </div>
                   <p className="text-sm text-red-700">{error}</p>
+                </div>
+              )}
+
+              {/* Date filters */}
+              {!loading && (
+                <div className="mb-5 flex flex-wrap items-center gap-3 p-3 bg-white rounded-xl border border-neutral-200">
+                  <FaClock className="text-neutral-400 w-4 h-4" />
+                  <label className="text-xs text-neutral-500 font-medium">From</label>
+                  <input
+                    type="date"
+                    value={dateFrom}
+                    onChange={(e) => setDateFrom(e.target.value)}
+                    className="rounded-lg border border-neutral-200 px-2.5 py-2 text-sm"
+                  />
+                  <label className="text-xs text-neutral-500 font-medium">To</label>
+                  <input
+                    type="date"
+                    value={dateTo}
+                    min={dateFrom || undefined}
+                    onChange={(e) => setDateTo(e.target.value)}
+                    className="rounded-lg border border-neutral-200 px-2.5 py-2 text-sm"
+                  />
+                  {(dateFrom || dateTo) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDateFrom('');
+                        setDateTo('');
+                      }}
+                      className="text-xs text-[#3B5BDB] font-semibold hover:underline ml-auto"
+                    >
+                      Clear dates
+                    </button>
+                  )}
                 </div>
               )}
 
@@ -171,6 +231,30 @@ export default function SpendingDashboard() {
                   </div>
 
                   {/* Recent Payments */}
+                  <div className="rounded-2xl bg-white border border-neutral-200 overflow-hidden mb-5">
+                    <div className="px-5 py-4 border-b border-neutral-100">
+                      <h2 className="text-sm font-bold text-neutral-900">Project-wise Spending</h2>
+                    </div>
+                    {projectWise.length === 0 ? (
+                      <div className="p-6 text-sm text-neutral-500">No project data in selected range.</div>
+                    ) : (
+                      <div className="divide-y divide-neutral-100">
+                        {projectWise.map((row) => (
+                          <div key={row.projectTitle} className="px-5 py-3.5 flex items-center justify-between gap-4">
+                            <div className="min-w-0">
+                              <p className="text-sm font-semibold text-neutral-900 truncate">{row.projectTitle}</p>
+                              <p className="text-xs text-neutral-500">{row.invoiceCount} invoices</p>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <p className="text-sm font-bold text-neutral-900">{formatPaise(row.total)}</p>
+                              <p className="text-[11px] text-neutral-500">Paid {formatPaise(row.paidTotal)} · Pending {formatPaise(row.pendingTotal)}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
                   <div className="rounded-2xl bg-white border border-neutral-200 overflow-hidden">
                     <div className="px-5 py-4 border-b border-neutral-100">
                       <h2 className="text-sm font-bold text-neutral-900">Recent Payments</h2>
