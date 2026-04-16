@@ -21,7 +21,7 @@ export default function Contact() {
       {/* Hero */}
       <section className="py-16" style={{ background: 'linear-gradient(145deg, #a8c8f0 0%, #d8eaf9 60%, #eaf3fd 100%)' }}>
         <div className="max-w-4xl mx-auto px-6 text-center">
-          <p className="text-xs font-bold tracking-[0.2em] text-[#3B5BDB] uppercase mb-3">Contact Us</p>
+          <p className="text-xs font-bold tracking-[0.2em] text-[#3678F1] uppercase mb-3">Contact Us</p>
           <h1 className="text-4xl sm:text-5xl font-extrabold text-[#0f172a] mb-4 leading-tight">
             We'd love to hear from you
           </h1>
@@ -42,8 +42,8 @@ export default function Contact() {
                 <h3 className="text-lg font-bold text-slate-900 mb-5">Get in touch</h3>
                 <ul className="space-y-5">
                   <li className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center shrink-0 mt-0.5">
-                      <FaLocationDot className="text-[#3B5BDB] text-sm" />
+                    <div className="w-10 h-10 rounded-xl bg-[#E8F0FE] flex items-center justify-center shrink-0 mt-0.5">
+                      <FaLocationDot className="text-[#3678F1] text-sm" />
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-slate-900">Office</p>
@@ -51,21 +51,21 @@ export default function Contact() {
                     </div>
                   </li>
                   <li className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center shrink-0 mt-0.5">
-                      <FaEnvelope className="text-[#3B5BDB] text-sm" />
+                    <div className="w-10 h-10 rounded-xl bg-[#E8F0FE] flex items-center justify-center shrink-0 mt-0.5">
+                      <FaEnvelope className="text-[#3678F1] text-sm" />
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-slate-900">Email</p>
-                      <a href="mailto:hello@crewcall.in" className="text-sm text-[#3B5BDB] hover:underline">hello@crewcall.in</a>
+                      <a href="mailto:hello@crewcall.in" className="text-sm text-[#3678F1] hover:underline">hello@crewcall.in</a>
                     </div>
                   </li>
                   <li className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center shrink-0 mt-0.5">
-                      <FaPhone className="text-[#3B5BDB] text-sm" />
+                    <div className="w-10 h-10 rounded-xl bg-[#E8F0FE] flex items-center justify-center shrink-0 mt-0.5">
+                      <FaPhone className="text-[#3678F1] text-sm" />
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-slate-900">Phone</p>
-                      <a href="tel:+919876543210" className="text-sm text-[#3B5BDB] hover:underline">+91 98765 43210</a>
+                      <a href="tel:+919876543210" className="text-sm text-[#3678F1] hover:underline">+91 98765 43210</a>
                     </div>
                   </li>
                 </ul>
@@ -79,7 +79,7 @@ export default function Contact() {
                     { Icon: FaInstagram, href: 'https://instagram.com', label: 'Instagram' },
                     { Icon: FaXTwitter, href: 'https://x.com', label: 'X / Twitter' },
                   ].map(s => (
-                    <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer" aria-label={s.label} className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center hover:border-[#3B5BDB] hover:text-[#3B5BDB] transition-colors text-slate-400">
+                    <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer" aria-label={s.label} className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center hover:border-[#3678F1] hover:text-[#3678F1] transition-colors text-slate-400">
                       <s.Icon className="text-sm" />
                     </a>
                   ))}
@@ -108,7 +108,7 @@ export default function Contact() {
                           <input
                             type="text" required
                             value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
-                            className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#3B5BDB]/30 focus:border-[#3B5BDB] transition-all"
+                            className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#3678F1]/30 focus:border-[#3678F1] transition-all"
                             placeholder="Your name"
                           />
                         </div>
@@ -117,7 +117,7 @@ export default function Contact() {
                           <input
                             type="email" required
                             value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
-                            className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#3B5BDB]/30 focus:border-[#3B5BDB] transition-all"
+                            className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#3678F1]/30 focus:border-[#3678F1] transition-all"
                             placeholder="you@example.com"
                           />
                         </div>
@@ -127,7 +127,7 @@ export default function Contact() {
                         <input
                           type="text" required
                           value={form.subject} onChange={e => setForm(p => ({ ...p, subject: e.target.value }))}
-                          className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#3B5BDB]/30 focus:border-[#3B5BDB] transition-all"
+                          className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#3678F1]/30 focus:border-[#3678F1] transition-all"
                           placeholder="What's this about?"
                         />
                       </div>
@@ -136,11 +136,11 @@ export default function Contact() {
                         <textarea
                           required rows={5}
                           value={form.message} onChange={e => setForm(p => ({ ...p, message: e.target.value }))}
-                          className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#3B5BDB]/30 focus:border-[#3B5BDB] transition-all resize-none"
+                          className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#3678F1]/30 focus:border-[#3678F1] transition-all resize-none"
                           placeholder="Tell us more..."
                         />
                       </div>
-                      <button type="submit" className="w-full rounded-xl bg-[#3B5BDB] text-white py-3 text-sm font-bold hover:bg-[#2f4ac2] transition-all shadow-lg shadow-[#3B5BDB]/20">
+                      <button type="submit" className="w-full rounded-xl bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white py-3 text-sm font-bold hover:from-[#2563EB] hover:to-[#1D4ED8] transition-colors shadow-brand">
                         Send Message
                       </button>
                     </form>

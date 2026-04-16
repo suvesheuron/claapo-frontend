@@ -216,7 +216,7 @@ export default function ProjectDetail() {
     try {
       await api.delete(`/projects/${projectId}`);
       setConfirmDeleteProject(false);
-      navigate('/dashboard/projects');
+      navigate('/projects');
     } catch (err) {
       toast.error(err instanceof ApiException ? err.payload.message : 'Failed to delete project.');
     } finally {
@@ -283,22 +283,22 @@ export default function ProjectDetail() {
           <div className="flex-1 min-h-0 overflow-auto">
             <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-6 xl:px-8 py-5">
 
-              <Link to="/dashboard/projects" className="inline-flex items-center gap-2 text-neutral-500 hover:text-[#3B5BDB] mb-5 text-sm transition-colors">
+              <Link to="/projects" className="inline-flex items-center gap-2 text-neutral-500 hover:text-[#3678F1] mb-5 text-sm transition-colors">
                 <FaArrowLeft className="w-3.5 h-3.5" />
                 Back to Projects
               </Link>
 
               {projectError && (
-                <div className="flex items-center gap-3 rounded-2xl bg-red-50 border border-red-200 p-4 mb-5">
-                  <FaTriangleExclamation className="text-red-500 shrink-0" />
-                  <p className="text-sm text-red-700">{projectError}</p>
+                <div className="flex items-center gap-3 rounded-2xl bg-[#FEE2E2] border border-[#F40F02]/30 p-4 mb-5">
+                  <FaTriangleExclamation className="text-[#F40F02] shrink-0" />
+                  <p className="text-sm text-[#991B1B]">{projectError}</p>
                 </div>
               )}
 
               {loadingProject ? (
-                <div className="animate-pulse mb-6">
-                  <div className="h-6 bg-neutral-200 rounded w-1/3 mb-2" />
-                  <div className="h-4 bg-neutral-100 rounded w-1/4" />
+                <div className="mb-6 space-y-2">
+                  <div className="skeleton h-6 w-1/3 rounded-md" />
+                  <div className="skeleton h-4 w-1/4 rounded-full" />
                 </div>
               ) : project ? (
                 <div className="flex items-start justify-between gap-4 mb-6">
@@ -329,27 +329,27 @@ export default function ProjectDetail() {
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <Link
-                      to={`/dashboard/projects/${projectId}/edit`}
-                      className="rounded-xl px-4 py-2 border border-neutral-200 text-neutral-800 text-sm font-semibold hover:bg-neutral-50 flex items-center gap-2 transition-colors"
+                      to={`/projects/${projectId}/edit`}
+                      className="rounded-xl px-4 py-2 border border-neutral-200 text-neutral-800 text-sm font-semibold hover:border-[#3678F1] hover:bg-[#E8F0FE] hover:text-[#3678F1] flex items-center gap-2 transition-colors"
                     >
                       <FaPenToSquare className="w-3.5 h-3.5" /> Edit
                     </Link>
                     {canDeleteProject && (
                       <button type="button" onClick={() => setConfirmDeleteProject(true)}
-                        className="rounded-xl px-4 py-2 border border-[#FEE2E2] text-[#B91C1C] text-sm font-semibold hover:bg-[#FEE2E2] flex items-center gap-2 transition-colors">
+                        className="rounded-xl px-4 py-2 border border-[#FEE2E2] text-[#991B1B] text-sm font-semibold hover:bg-[#FEE2E2] hover:border-[#F40F02]/30 flex items-center gap-2 transition-colors">
                         <FaTrash className="w-3.5 h-3.5" /> Delete
                       </button>
                     )}
                     {canActivateProject && (
                       <button type="button" onClick={() => setConfirmActivateProject(true)}
-                        className="rounded-xl px-4 py-2 bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 flex items-center gap-2 transition-colors disabled:opacity-50">
+                        className="rounded-xl px-4 py-2 bg-[#22C55E] text-white text-sm font-semibold hover:bg-[#16A34A] flex items-center gap-2 transition-colors disabled:opacity-50">
                         <FaUnlock className="w-3.5 h-3.5" />
                         Activate Project
                       </button>
                     )}
                     {!allLocked ? (
                       <button onClick={handleLockAll} disabled={lockingAll}
-                        className="rounded-xl px-4 py-2 bg-[#3B5BDB] text-white text-sm font-semibold hover:bg-[#2f4ac2] flex items-center gap-2 transition-colors disabled:opacity-50">
+                        className="rounded-xl px-4 py-2 bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white text-sm font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] flex items-center gap-2 transition-colors duration-200 shadow-brand disabled:opacity-50">
                         <FaLock className="w-3.5 h-3.5" />
                         {lockingAll ? 'Locking…' : 'Lock Project'}
                       </button>
@@ -373,20 +373,20 @@ export default function ProjectDetail() {
               )}
 
               {canCompleteProject && (
-                <div className="rounded-2xl bg-amber-50 border border-amber-200 p-4 mb-5 flex items-center justify-between gap-3">
+                <div className="rounded-2xl bg-[#E8F0FE] border border-[#3678F1]/20 p-4 mb-5 flex items-center justify-between gap-3">
                   <div className="flex items-start gap-3 flex-1">
-                    <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
-                      <FaCircleCheck className="text-amber-600 text-base" />
+                    <div className="w-10 h-10 rounded-xl bg-white ring-1 ring-[#3678F1]/15 flex items-center justify-center shrink-0">
+                      <FaCircleCheck className="text-[#3678F1] text-base" />
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm font-semibold text-amber-900">Ready to complete this project?</p>
-                      <p className="text-xs text-amber-700 mt-0.5">All bookings are locked. Marking as complete will finalize the project and move it to Past Projects.</p>
+                      <p className="text-sm font-semibold text-[#1E3A8A]">Ready to complete this project?</p>
+                      <p className="text-xs text-[#2563EB] mt-0.5">All bookings are locked. Marking as complete will finalize the project and move it to Past Projects.</p>
                     </div>
                   </div>
                   <button
                     type="button"
                     onClick={() => setConfirmCompleteProject(true)}
-                    className="rounded-xl px-5 py-2.5 bg-amber-600 text-white text-sm font-semibold hover:bg-amber-700 flex items-center gap-2 transition-colors shrink-0"
+                    className="rounded-xl px-5 py-2.5 bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white text-sm font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] flex items-center gap-2 transition-colors duration-200 shadow-brand shrink-0"
                   >
                     <FaCircleCheck className="w-3.5 h-3.5" />
                     Mark as Complete
@@ -396,28 +396,28 @@ export default function ProjectDetail() {
 
               <div id="project-bookings" className="grid grid-cols-1 lg:grid-cols-2 gap-5 scroll-mt-24">
                 {/* Crew */}
-                <div className="rounded-2xl bg-white border border-neutral-200 p-5">
+                <div className="rounded-2xl bg-white border border-neutral-200 p-5 hover:border-[#3678F1] transition-colors duration-200">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-lg bg-[#EEF4FF] flex items-center justify-center">
-                        <FaUsers className="text-[#3B5BDB] text-sm" />
+                      <div className="w-8 h-8 rounded-lg bg-[#E8F0FE] ring-1 ring-[#3678F1]/15 flex items-center justify-center">
+                        <FaUsers className="text-[#3678F1] text-sm" />
                       </div>
                       <h2 className="text-sm font-bold text-neutral-900">
                         Crew ({crewBookings.length})
                       </h2>
                     </div>
-                    <Link to="/dashboard/search" className="text-xs text-[#3B5BDB] hover:underline font-medium">+ Add Crew</Link>
+                    <Link to="/search" className="text-xs text-[#3678F1] hover:underline font-medium">+ Add Crew</Link>
                   </div>
 
                   {loadingBookings ? (
                     <div className="space-y-2">
-                      {[1, 2].map((i) => <div key={i} className="h-14 rounded-xl bg-neutral-100 animate-pulse" />)}
+                      {[1, 2].map((i) => <div key={i} className="skeleton h-14 rounded-xl" />)}
                     </div>
                   ) : crewBookings.length === 0 ? (
                     <div className="text-center py-8">
                       <FaUsers className="text-neutral-300 text-2xl mx-auto mb-2" />
                       <p className="text-sm text-neutral-500">No crew members assigned</p>
-                      <Link to="/dashboard/search" className="text-xs text-[#3B5BDB] hover:underline mt-1 inline-block">Search for crew</Link>
+                      <Link to="/search" className="text-xs text-[#3678F1] hover:underline mt-1 inline-block">Search for crew</Link>
                     </div>
                   ) : (
                     <div className="space-y-2">
@@ -428,10 +428,10 @@ export default function ProjectDetail() {
                               <p className="text-xs text-neutral-700 font-medium mb-2">
                                 Cancel booking for <span className="font-bold">{getMemberName(booking)}</span>?
                               </p>
-                              {cancelError && <p className="text-xs text-red-600 mb-2">{cancelError}</p>}
+                              {cancelError && <p className="text-xs text-[#F40F02] mb-2">{cancelError}</p>}
                               <div className="flex gap-2">
                                 <button onClick={() => handleCancelBooking(booking.id)}
-                                  className="px-3 py-1.5 bg-[#F40F02] text-white text-xs font-semibold rounded-lg hover:bg-red-700 transition-colors">
+                                  className="px-3 py-1.5 bg-[#F40F02] text-white text-xs font-semibold rounded-lg hover:bg-[#C50C00] transition-colors">
                                   Cancel Booking
                                 </button>
                                 <button onClick={() => { setCancellingId(null); setCancelError(null); }}
@@ -459,13 +459,13 @@ export default function ProjectDetail() {
                               </div>
                               <div className="flex items-center gap-1.5 shrink-0">
                                 {statusBadge(booking.status)}
-                                <Link to={`/dashboard/chat/${booking.target.id}?projectId=${encodeURIComponent(booking.projectId)}`} title="Chat"
-                                  className="w-7 h-7 rounded-lg bg-[#F3F4F6] flex items-center justify-center text-neutral-500 hover:bg-[#EEF4FF] hover:text-[#3B5BDB] transition-colors">
+                                <Link to={`/chat/${booking.target.id}?projectId=${encodeURIComponent(booking.projectId)}`} title="Chat"
+                                  className="w-7 h-7 rounded-lg bg-[#F3F4F6] flex items-center justify-center text-neutral-500 hover:bg-[#E8F0FE] hover:text-[#3678F1] transition-colors">
                                   <FaMessage className="text-xs" />
                                 </Link>
                                 {booking.status === 'locked' && (
-                                  <Link to="/dashboard/invoices" title="View Invoices"
-                                    className="w-7 h-7 rounded-lg bg-[#F3F4F6] flex items-center justify-center text-neutral-500 hover:bg-[#EEF4FF] hover:text-[#3B5BDB] transition-colors">
+                                  <Link to="/invoices" title="View Invoices"
+                                    className="w-7 h-7 rounded-lg bg-[#F3F4F6] flex items-center justify-center text-neutral-500 hover:bg-[#E8F0FE] hover:text-[#3678F1] transition-colors">
                                     <FaFileInvoice className="text-xs" />
                                   </Link>
                                 )}
@@ -485,28 +485,28 @@ export default function ProjectDetail() {
                 </div>
 
                 {/* Vendors */}
-                <div className="rounded-2xl bg-white border border-neutral-200 p-5">
+                <div className="rounded-2xl bg-white border border-neutral-200 p-5 hover:border-[#3678F1] transition-colors duration-200">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-lg bg-[#FEF9E6] flex items-center justify-center">
-                        <FaTruck className="text-[#F4C430] text-sm" />
+                      <div className="w-8 h-8 rounded-lg bg-[#E8F0FE] ring-1 ring-[#3678F1]/15 flex items-center justify-center">
+                        <FaTruck className="text-[#3678F1] text-sm" />
                       </div>
                       <h2 className="text-sm font-bold text-neutral-900">
                         Vendors ({vendorBookings.length})
                       </h2>
                     </div>
-                    <Link to="/dashboard/search?type=vendors" className="text-xs text-[#3B5BDB] hover:underline font-medium">+ Add Vendor</Link>
+                    <Link to="/search?type=vendors" className="text-xs text-[#3678F1] hover:underline font-medium">+ Add Vendor</Link>
                   </div>
 
                   {loadingBookings ? (
                     <div className="space-y-2">
-                      {[1, 2].map((i) => <div key={i} className="h-14 rounded-xl bg-neutral-100 animate-pulse" />)}
+                      {[1, 2].map((i) => <div key={i} className="skeleton h-14 rounded-xl" />)}
                     </div>
                   ) : vendorBookings.length === 0 ? (
                     <div className="text-center py-8">
                       <FaTruck className="text-neutral-300 text-2xl mx-auto mb-2" />
                       <p className="text-sm text-neutral-500">No vendors assigned</p>
-                      <Link to="/dashboard/search?type=vendors" className="text-xs text-[#3B5BDB] hover:underline mt-1 inline-block">Search for vendors</Link>
+                      <Link to="/search?type=vendors" className="text-xs text-[#3678F1] hover:underline mt-1 inline-block">Search for vendors</Link>
                     </div>
                   ) : (
                     <div className="space-y-2">
@@ -517,10 +517,10 @@ export default function ProjectDetail() {
                               <p className="text-xs text-neutral-700 font-medium mb-2">
                                 Cancel booking for <span className="font-bold">{getMemberName(booking)}</span>?
                               </p>
-                              {cancelError && <p className="text-xs text-red-600 mb-2">{cancelError}</p>}
+                              {cancelError && <p className="text-xs text-[#F40F02] mb-2">{cancelError}</p>}
                               <div className="flex gap-2">
                                 <button onClick={() => handleCancelBooking(booking.id)}
-                                  className="px-3 py-1.5 bg-[#F40F02] text-white text-xs font-semibold rounded-lg hover:bg-red-700 transition-colors">
+                                  className="px-3 py-1.5 bg-[#F40F02] text-white text-xs font-semibold rounded-lg hover:bg-[#C50C00] transition-colors">
                                   Cancel Booking
                                 </button>
                                 <button onClick={() => { setCancellingBookingId(null); setCancelError(null); }}
@@ -531,8 +531,8 @@ export default function ProjectDetail() {
                             </div>
                           ) : (
                             <div className="flex items-center gap-3">
-                              <div className="w-9 h-9 rounded-xl bg-[#EEF4FF] flex items-center justify-center shrink-0">
-                                <FaTruck className="text-[#3B5BDB] text-xs" />
+                              <div className="w-9 h-9 rounded-xl bg-[#E8F0FE] ring-1 ring-[#3678F1]/15 flex items-center justify-center shrink-0">
+                                <FaTruck className="text-[#3678F1] text-xs" />
                               </div>
                               <div className="flex-1 min-w-0">
                                 <p className="text-xs font-bold text-neutral-900 truncate">{getMemberName(booking)}</p>
@@ -550,12 +550,12 @@ export default function ProjectDetail() {
                               </div>
                               <div className="flex items-center gap-1.5 shrink-0">
                                 {statusBadge(booking.status)}
-                                <Link to={`/dashboard/chat/${booking.target.id}?projectId=${encodeURIComponent(booking.projectId)}`} title="Chat"
-                                  className="w-7 h-7 rounded-lg bg-[#F3F4F6] flex items-center justify-center text-neutral-500 hover:bg-[#EEF4FF] hover:text-[#3B5BDB] transition-colors">
+                                <Link to={`/chat/${booking.target.id}?projectId=${encodeURIComponent(booking.projectId)}`} title="Chat"
+                                  className="w-7 h-7 rounded-lg bg-[#F3F4F6] flex items-center justify-center text-neutral-500 hover:bg-[#E8F0FE] hover:text-[#3678F1] transition-colors">
                                   <FaMessage className="text-xs" />
                                 </Link>
-                                <Link to="/dashboard/invoices" title="View Invoices"
-                                  className="w-7 h-7 rounded-lg bg-[#F3F4F6] flex items-center justify-center text-neutral-500 hover:bg-[#EEF4FF] hover:text-[#3B5BDB] transition-colors">
+                                <Link to="/invoices" title="View Invoices"
+                                  className="w-7 h-7 rounded-lg bg-[#F3F4F6] flex items-center justify-center text-neutral-500 hover:bg-[#E8F0FE] hover:text-[#3678F1] transition-colors">
                                   <FaFileInvoice className="text-xs" />
                                 </Link>
                                 {booking.status !== 'locked' && (
@@ -577,24 +577,24 @@ export default function ProjectDetail() {
 
               {/* Budget Summary */}
               {project && (
-                <div className="rounded-2xl bg-white border border-neutral-200 p-5 mt-5">
+                <div className="rounded-2xl bg-white border border-neutral-200 p-5 mt-5 hover:border-[#3678F1] transition-colors duration-200">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-sm font-bold text-neutral-900">Budget Summary</h3>
-                    <Link to="/dashboard/invoices" className="flex items-center gap-1.5 text-xs text-[#3B5BDB] font-semibold hover:underline">
+                    <Link to="/invoices" className="flex items-center gap-1.5 text-xs text-[#3678F1] font-semibold hover:underline">
                       <FaFileInvoice className="w-3 h-3" /> View Invoices
                     </Link>
                   </div>
                   {loadingBookings ? (
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      {[1,2,3,4].map((i) => <div key={i} className="h-16 rounded-xl bg-neutral-100 animate-pulse" />)}
+                      {[1,2,3,4].map((i) => <div key={i} className="skeleton h-16 rounded-xl" />)}
                     </div>
                   ) : (
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                       {[
                         { label: 'Total Budget', value: formatBudgetCompact(totalBudget), color: 'text-neutral-900' },
-                        { label: 'Crew Cost',    value: formatBudgetCompact(crewCost),    color: 'text-[#3B5BDB]' },
-                        { label: 'Vendor Cost',  value: formatBudgetCompact(vendorCost),  color: 'text-[#F4C430]' },
-                        { label: 'Remaining',    value: formatBudgetCompact(remaining),   color: remaining >= 0 ? 'text-[#22C55E]' : 'text-red-500' },
+                        { label: 'Crew Cost',    value: formatBudgetCompact(crewCost),    color: 'text-[#3678F1]' },
+                        { label: 'Vendor Cost',  value: formatBudgetCompact(vendorCost),  color: 'text-[#2563EB]' },
+                        { label: 'Remaining',    value: formatBudgetCompact(remaining),   color: remaining >= 0 ? 'text-[#22C55E]' : 'text-[#F40F02]' },
                       ].map(({ label, value, color }) => (
                         <div key={label} className="rounded-xl bg-[#F3F4F6] p-3">
                           <p className="text-xs text-neutral-500">{label}</p>
@@ -615,9 +615,12 @@ export default function ProjectDetail() {
 
       {confirmDeleteProject && (
         <>
-          <div className="fixed inset-0 bg-black/40 z-40" onClick={() => setConfirmDeleteProject(false)} />
+          <div className="fixed inset-0 bg-black/40 z-40 backdrop-enter" onClick={() => setConfirmDeleteProject(false)} />
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+              <div className="w-11 h-11 rounded-xl bg-[#FEE2E2] flex items-center justify-center mb-4 border border-[#F40F02]/20">
+                <FaTrash className="text-[#F40F02] text-base" />
+              </div>
               <h2 className="text-base font-bold text-neutral-900 mb-2">Delete project permanently?</h2>
               <p className="text-sm text-neutral-600 mb-4">
                 {project?.title ? `"${project.title}" will be permanently removed.` : 'This project will be permanently removed.'} This cannot be undone.
@@ -628,7 +631,7 @@ export default function ProjectDetail() {
                   Keep
                 </button>
                 <button type="button" disabled={deletingProject} onClick={handleDeleteProject}
-                  className="flex-1 rounded-xl py-2.5 bg-red-500 text-white text-sm font-semibold hover:bg-red-600 disabled:opacity-50 flex items-center justify-center gap-2">
+                  className="flex-1 rounded-xl py-2.5 bg-[#F40F02] text-white text-sm font-semibold hover:bg-[#C50C00] disabled:opacity-50 flex items-center justify-center gap-2 transition-colors">
                   <FaTrash className="w-3 h-3" /> {deletingProject ? 'Deleting…' : 'Delete'}
                 </button>
               </div>
@@ -639,20 +642,20 @@ export default function ProjectDetail() {
 
       {confirmActivateProject && (
         <>
-          <div className="fixed inset-0 bg-black/40 z-40" onClick={() => setConfirmActivateProject(false)} />
+          <div className="fixed inset-0 bg-black/40 z-40 backdrop-enter" onClick={() => setConfirmActivateProject(false)} />
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
-              <div className="w-11 h-11 rounded-xl bg-emerald-50 flex items-center justify-center mb-4 border border-emerald-100">
-                <FaUnlock className="text-emerald-600 text-base" />
+              <div className="w-11 h-11 rounded-xl bg-[#DCFCE7] flex items-center justify-center mb-4 border border-[#86EFAC]">
+                <FaUnlock className="text-[#15803D] text-base" />
               </div>
               <h2 className="text-base font-bold text-neutral-900 mb-2">Activate project?</h2>
               <p className="text-sm text-neutral-600 mb-4">
                 {project?.title ? `"${project.title}"` : 'This project'} will become active and visible to all booked crew and vendors. They will be notified about the activation.
               </p>
               {activateError && (
-                <div className="flex items-center gap-2 mb-4 p-3 bg-red-50 border border-red-200/80 rounded-xl">
-                  <FaTriangleExclamation className="text-red-500 text-xs shrink-0" />
-                  <p className="text-xs text-red-700">{activateError}</p>
+                <div className="flex items-center gap-2 mb-4 p-3 bg-[#FEE2E2] border border-[#F40F02]/30 rounded-xl">
+                  <FaTriangleExclamation className="text-[#F40F02] text-xs shrink-0" />
+                  <p className="text-xs text-[#991B1B]">{activateError}</p>
                 </div>
               )}
               <div className="flex gap-3">
@@ -661,7 +664,7 @@ export default function ProjectDetail() {
                   Cancel
                 </button>
                 <button type="button" disabled={activatingProject} onClick={handleActivateProject}
-                  className="flex-1 rounded-xl py-2.5 bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 disabled:opacity-50 flex items-center justify-center gap-2">
+                  className="flex-1 rounded-xl py-2.5 bg-[#22C55E] text-white text-sm font-semibold hover:bg-[#16A34A] disabled:opacity-50 flex items-center justify-center gap-2 transition-colors">
                   <FaUnlock className="w-3 h-3" /> {activatingProject ? 'Activating…' : 'Activate Project'}
                 </button>
               </div>
@@ -672,11 +675,11 @@ export default function ProjectDetail() {
 
       {confirmCompleteProject && (
         <>
-          <div className="fixed inset-0 bg-black/40 z-40" onClick={() => setConfirmCompleteProject(false)} />
+          <div className="fixed inset-0 bg-black/40 z-40 backdrop-enter" onClick={() => setConfirmCompleteProject(false)} />
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
-              <div className="w-11 h-11 rounded-xl bg-amber-50 flex items-center justify-center mb-4 border border-amber-100">
-                <FaCircleCheck className="text-amber-600 text-base" />
+              <div className="w-11 h-11 rounded-xl bg-[#E8F0FE] flex items-center justify-center mb-4 border border-[#3678F1]/20">
+                <FaCircleCheck className="text-[#3678F1] text-base" />
               </div>
               <h2 className="text-base font-bold text-neutral-900 mb-2">Complete project?</h2>
               <p className="text-sm text-neutral-600 mb-2">
@@ -686,9 +689,9 @@ export default function ProjectDetail() {
                 Invoices can still be created and managed after completion.
               </p>
               {completeError && (
-                <div className="flex items-center gap-2 mb-4 p-3 bg-red-50 border border-red-200/80 rounded-xl">
-                  <FaTriangleExclamation className="text-red-500 text-xs shrink-0" />
-                  <p className="text-xs text-red-700">{completeError}</p>
+                <div className="flex items-center gap-2 mb-4 p-3 bg-[#FEE2E2] border border-[#F40F02]/30 rounded-xl">
+                  <FaTriangleExclamation className="text-[#F40F02] text-xs shrink-0" />
+                  <p className="text-xs text-[#991B1B]">{completeError}</p>
                 </div>
               )}
               <div className="flex gap-3">
@@ -697,7 +700,7 @@ export default function ProjectDetail() {
                   Cancel
                 </button>
                 <button type="button" disabled={completingProject} onClick={handleCompleteProject}
-                  className="flex-1 rounded-xl py-2.5 bg-amber-600 text-white text-sm font-semibold hover:bg-amber-700 disabled:opacity-50 flex items-center justify-center gap-2">
+                  className="flex-1 rounded-xl py-2.5 bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white text-sm font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] disabled:opacity-50 flex items-center justify-center gap-2 transition-colors duration-200 shadow-brand">
                   <FaCircleCheck className="w-3 h-3" /> {completingProject ? 'Completing…' : 'Mark as Complete'}
                 </button>
               </div>

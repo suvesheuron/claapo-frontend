@@ -238,7 +238,7 @@ export default function IndividualProfile() {
   const skillsArray = skills.split(',').map(s => s.trim()).filter(Boolean);
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-[#F8F9FB] min-w-0 w-full">
+    <div className="h-screen flex flex-col overflow-hidden bg-[#F3F4F6] min-w-0 w-full">
       <DashboardHeader />
 
       <div className="flex-1 flex min-h-0 overflow-hidden">
@@ -249,26 +249,30 @@ export default function IndividualProfile() {
             <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-6 xl:px-8 py-6">
 
               {/* Header Section */}
-              <div className="mb-6 flex items-start justify-between gap-4 flex-wrap">
-                <div>
-                  <h1 className="text-2xl font-bold text-neutral-900 tracking-tight">My Profile</h1>
-                  <p className="text-sm text-neutral-600 mt-1">Manage your professional profile and settings</p>
+              <div className="relative rounded-2xl bg-white border border-neutral-200/70 px-6 sm:px-8 py-6 overflow-hidden shadow-soft mb-6">
+                <div className="absolute inset-y-0 right-0 w-1/2 bg-gradient-to-l from-[#E8F0FE]/60 to-transparent pointer-events-none" />
+                <span aria-hidden className="absolute left-0 top-6 bottom-6 w-1 rounded-r-full bg-gradient-to-b from-[#3678F1] to-[#5B9DF9]" />
+                <div className="relative flex items-start justify-between gap-4 flex-wrap z-10 pl-3">
+                  <div className="min-w-0">
+                    <h1 className="text-[22px] sm:text-[24px] font-extrabold text-neutral-900 tracking-tight leading-tight">My Profile</h1>
+                    <p className="text-sm text-neutral-500 mt-1.5">Manage your professional profile and settings</p>
+                  </div>
+                  {!editing && !meLoading && (
+                    <button
+                      type="button"
+                      onClick={() => setEditing(true)}
+                      className="px-4 py-2.5 bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white rounded-xl text-sm font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] transition-colors flex items-center gap-2 shadow-brand"
+                    >
+                      <FaPen className="w-3.5 h-3.5" /> Edit Profile
+                    </button>
+                  )}
                 </div>
-                {!editing && !meLoading && (
-                  <button
-                    type="button"
-                    onClick={() => setEditing(true)}
-                    className="px-4 py-2.5 bg-brand-primary text-white rounded-xl text-sm font-semibold hover:bg-brand-primary/90 transition-colors flex items-center gap-2 shadow-sm"
-                  >
-                    <FaPen className="w-3.5 h-3.5" /> Edit Profile
-                  </button>
-                )}
               </div>
 
               {meLoading ? (
-                <div className="animate-pulse space-y-6">
-                  <div className="h-64 bg-neutral-200 rounded-2xl" />
-                  <div className="h-96 bg-neutral-200 rounded-2xl" />
+                <div className="space-y-6">
+                  <div className="skeleton h-64 rounded-2xl" />
+                  <div className="skeleton h-96 rounded-2xl" />
                 </div>
               ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -276,19 +280,19 @@ export default function IndividualProfile() {
                   {/* Left Sidebar - Profile Card & Completion */}
                   <div className="lg:col-span-1 space-y-6">
                     {/* Profile Card */}
-                    <div className="rounded-2xl bg-white border border-neutral-200 shadow-sm overflow-hidden">
+                    <div className="rounded-2xl bg-white border border-neutral-200/70 shadow-soft overflow-hidden hover:border-[#3678F1] transition-colors duration-200">
                       {/* Gradient Banner */}
-                      <div className="h-28 bg-gradient-to-br from-brand-primary via-brand-primary/90 to-brand-primary/80 relative overflow-hidden">
+                      <div className="h-28 bg-gradient-to-br from-[#3678F1] via-[#2563EB] to-[#1D4ED8] relative overflow-hidden">
                         <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(255,255,255,0.3) 0%, transparent 50%), radial-gradient(circle at 80% 30%, rgba(255,255,255,0.2) 0%, transparent 50%)' }} />
                       </div>
-                      
+
                       {/* Avatar */}
                       <div className="flex justify-center -mt-12 mb-4">
                         <div className="relative group cursor-pointer ring-4 ring-white rounded-full shadow-lg" onClick={() => fileInputRef.current?.click()}>
                           <Avatar src={avatarUrl ?? undefined} name={nameForAvatar} size="lg" />
                           <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                             {avatarUploading
-                              ? <span className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                              ? <span className="w-6 h-6 border-[2.5px] border-[#3678F1]/15 border-t-white border-r-white rounded-full animate-spin" />
                               : <FaCamera className="text-white text-sm" />}
                           </div>
                           <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
@@ -306,13 +310,13 @@ export default function IndividualProfile() {
 
                         <div className="flex flex-wrap items-center justify-center gap-2 mt-3">
                           {me?.isVerified && (
-                            <span className="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200/60">
+                            <span className="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full bg-[#DCFCE7] text-[#15803D] font-semibold border border-[#86EFAC]">
                               <FaCircleCheck className="w-3 h-3" /> Verified
                             </span>
                           )}
                           {me?.profile?.isAvailable && (
-                            <span className="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 font-semibold border border-blue-200/60">
-                              <span className="w-1.5 h-1.5 rounded-full bg-blue-500" /> Available
+                            <span className="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full bg-[#E8F0FE] text-[#3678F1] font-semibold border border-[#3678F1]/30">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#3678F1]" /> Available
                             </span>
                           )}
                         </div>
@@ -327,7 +331,7 @@ export default function IndividualProfile() {
                     </div>
 
                     {/* Profile Completion */}
-                    <div className="rounded-2xl bg-white border border-neutral-200 shadow-sm p-5">
+                    <div className="rounded-2xl bg-white border border-neutral-200/70 shadow-soft p-5 hover:border-[#3678F1] transition-colors duration-200">
                       <ProfileCompletionBadge percentage={profileCompletion} size="lg" />
                       {improvementTips.length > 0 && editing && (
                         <div className="mt-4 space-y-2">
@@ -335,7 +339,7 @@ export default function IndividualProfile() {
                           <ul className="space-y-1.5">
                             {improvementTips.slice(0, 3).map((tip, idx) => (
                               <li key={idx} className="flex items-start gap-2 text-xs text-neutral-600">
-                                <span className="text-brand-primary mt-0.5">•</span>
+                                <span className="text-[#3678F1] mt-0.5">•</span>
                                 {tip}
                               </li>
                             ))}
@@ -345,10 +349,10 @@ export default function IndividualProfile() {
                     </div>
 
                     {/* Quick Info */}
-                    <div className="rounded-2xl bg-white border border-neutral-200 shadow-sm p-5 space-y-3">
+                    <div className="rounded-2xl bg-white border border-neutral-200/70 shadow-soft p-5 space-y-3 hover:border-[#3678F1] transition-colors duration-200">
                       <div className="flex items-center gap-3 text-sm text-neutral-600">
-                        <div className="w-8 h-8 rounded-lg bg-brand-primary/10 flex items-center justify-center shrink-0">
-                          <FaMoneyBillWave className="w-4 h-4 text-brand-primary" />
+                        <div className="w-8 h-8 rounded-lg bg-[#E8F0FE] ring-1 ring-[#3678F1]/15 flex items-center justify-center shrink-0">
+                          <FaMoneyBillWave className="w-4 h-4 text-[#3678F1]" />
                         </div>
                         <div>
                           <p className="text-xs text-neutral-500">Budget</p>
@@ -356,8 +360,8 @@ export default function IndividualProfile() {
                         </div>
                       </div>
                       <div className="flex items-center gap-3 text-sm text-neutral-600">
-                        <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center shrink-0">
-                          <FaCircleCheck className="w-4 h-4 text-emerald-600" />
+                        <div className="w-8 h-8 rounded-lg bg-[#DCFCE7] flex items-center justify-center shrink-0">
+                          <FaCircleCheck className="w-4 h-4 text-[#15803D]" />
                         </div>
                         <div>
                           <p className="text-xs text-neutral-500">Availability</p>
@@ -370,13 +374,13 @@ export default function IndividualProfile() {
                   {/* Main Content */}
                   <div className="lg:col-span-2 space-y-6">
                     {error && (
-                      <div className="flex items-start gap-2 rounded-xl bg-red-50 border border-red-200 px-4 py-3">
-                        <FaTriangleExclamation className="text-red-500 text-sm shrink-0 mt-0.5" />
-                        <p className="text-sm text-red-700">{error}</p>
+                      <div className="flex items-start gap-2 rounded-xl bg-[#FEEBEA] border border-[#F40F02]/30 px-4 py-3">
+                        <FaTriangleExclamation className="text-[#F40F02] text-sm shrink-0 mt-0.5" />
+                        <p className="text-sm text-[#991B1B]">{error}</p>
                       </div>
                     )}
                     {saved && (
-                      <div className="flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-emerald-700 text-sm font-semibold">
+                      <div className="flex items-center gap-2 rounded-xl bg-[#DCFCE7] border border-[#86EFAC] px-4 py-3 text-[#15803D] text-sm font-semibold">
                         <FaCircleCheck /> Profile saved successfully!
                       </div>
                     )}
@@ -542,7 +546,7 @@ export default function IndividualProfile() {
                           <div className="space-y-4">
                             <div>
                               <label className="block text-xs font-medium text-neutral-700 mb-1.5">
-                                Role <span className="text-red-500">*</span>
+                                Role <span className="text-[#F40F02]">*</span>
                               </label>
                               <div className="relative">
                                 <FaBriefcase className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 w-4 h-4 pointer-events-none" />
@@ -550,7 +554,7 @@ export default function IndividualProfile() {
                                   value={skillsArray[0] ?? ''}
                                   onChange={(e) => setSkills(e.target.value)}
                                   disabled={saving}
-                                  className="w-full pl-10 pr-3 py-2.5 border border-neutral-300 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary disabled:bg-neutral-50 appearance-none"
+                                  className="w-full pl-10 pr-3 py-2.5 border border-neutral-300 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#3678F1]/20 focus:border-[#3678F1] disabled:bg-neutral-50 appearance-none"
                                 >
                                   <option value="">Select your role…</option>
                                   {REGISTRATION_INDIVIDUAL_DEPARTMENTS.map((r) => (
@@ -578,8 +582,8 @@ export default function IndividualProfile() {
                                       }
                                       className={`text-xs font-medium px-2.5 py-1 rounded-lg border transition-colors ${
                                         on
-                                          ? 'bg-brand-primary text-white border-brand-primary'
-                                          : 'bg-white text-neutral-600 border-neutral-200 hover:border-brand-primary/40'
+                                          ? 'bg-[#3678F1] text-white border-[#3678F1]'
+                                          : 'bg-white text-neutral-600 border-neutral-200 hover:border-[#3678F1]/40'
                                       }`}
                                     >
                                       {g}
@@ -721,11 +725,11 @@ export default function IndividualProfile() {
                             type="button"
                             onClick={handleSave}
                             disabled={saving}
-                            className="px-6 py-2.5 bg-brand-primary text-white rounded-xl text-sm font-semibold hover:bg-brand-primary/90 disabled:opacity-60 transition-colors flex items-center gap-2"
+                            className="px-6 py-2.5 bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white rounded-xl text-sm font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] disabled:opacity-60 shadow-brand transition-colors flex items-center gap-2"
                           >
                             {saving ? (
                               <>
-                                <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                                <span className="w-6 h-6 border-[2.5px] border-[#3678F1]/15 border-t-white border-r-white rounded-full animate-spin" />
                                 Saving…
                               </>
                             ) : (

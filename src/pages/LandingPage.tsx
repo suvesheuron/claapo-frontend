@@ -49,26 +49,26 @@ const testimonials = [
   {
     quote: '"Claapo reduced our pre-production time by 40%. Centralised hiring, real availability, and no more WhatsApp chaos."',
     name: 'Priya Sharma', role: 'Executive Producer · Production House', category: 'Company',
-    initials: 'PS', color: 'bg-blue-500',
+    initials: 'PS', color: 'bg-[#3678F1]',
   },
   {
     quote: '"The invoicing feature alone saves me hours every week. Bookings, chats, and GST invoices — all in one place."',
     name: 'Sneha Kapoor', role: 'Freelance DOP · Individual', category: 'Individual',
-    initials: 'SK', color: 'bg-emerald-500',
+    initials: 'SK', color: 'bg-[#3678F1]',
   },
   {
     quote: '"Finally, a platform that understands how equipment rentals actually work. The inventory tracking is superb."',
     name: 'Amit Patel', role: 'Rental House Owner · Vendor', category: 'Vendor',
-    initials: 'AP', color: 'bg-purple-500',
+    initials: 'AP', color: 'bg-[#3678F1]',
   },
   {
     quote: '"I get discovered by top agencies, manage my calendar, and get paid faster. Claapo changed the way I freelance."',
     name: 'Rahul Verma', role: 'Freelance Editor · Individual', category: 'Individual',
-    initials: 'RV', color: 'bg-amber-500',
+    initials: 'RV', color: 'bg-[#3678F1]',
   },
 ];
 
-const avatarColors = ['bg-blue-500', 'bg-emerald-500', 'bg-purple-500'];
+const avatarColors = ['bg-[#3678F1]', 'bg-[#3678F1]', 'bg-[#3678F1]'];
 const avatarInitials = ['Co', 'In', 'Vd'];
 
 const faqs = [
@@ -127,14 +127,14 @@ export default function LandingPage() {
             {/* Left */}
             <div className="max-w-xl">
               <div className="inline-flex items-center gap-2 bg-white/60 backdrop-blur rounded-full px-4 py-1.5 mb-6 border border-white/80">
-                <FaBolt className="text-amber-500 text-xs" />
+                <FaBolt className="text-[#F4C430] text-xs" />
                 <span className="text-xs font-semibold text-slate-700">India's Complete Film &amp; Media Ecosystem</span>
               </div>
               <h1 className="text-5xl lg:text-[60px] font-extrabold text-[#0f172a] leading-[1.08] mb-6 tracking-tight">
                 One Platform.<br />
                 Companies.<br />
                 Individuals.<br />
-                <span className="text-[#3B5BDB]">Vendors.</span>
+                <span className="text-[#3678F1]">Vendors.</span>
               </h1>
               <p className="text-[15px] text-slate-500 leading-relaxed mb-9 max-w-[440px]">
                 Whether you run a production house, freelance on set, or rent out gear &mdash;
@@ -145,15 +145,15 @@ export default function LandingPage() {
               <div className="flex flex-wrap gap-3 mb-9">
                 <Link
                   to="/register"
-                  className="inline-flex items-center justify-center rounded-xl bg-[#3B5BDB] text-white px-7 py-3.5 text-sm font-bold hover:bg-[#2f4ac2] transition-all shadow-xl shadow-[#3B5BDB]/30 hover:-translate-y-0.5"
+                  className="inline-flex items-center justify-center rounded-xl bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white px-7 py-3.5 text-sm font-bold hover:from-[#2563EB] hover:to-[#1D4ED8] transition-colors shadow-brand"
                 >
                   Join Claapo &mdash; Free <FaArrowRight className="ml-2 text-xs" />
                 </Link>
                 <Link
                   to="/dashboard"
-                  className="inline-flex items-center justify-center gap-2.5 rounded-xl bg-white/70 backdrop-blur border border-white text-[#3B5BDB] px-7 py-3.5 text-sm font-bold hover:bg-white transition-all shadow-sm"
+                  className="inline-flex items-center justify-center gap-2.5 rounded-xl bg-white border border-neutral-200/70 text-neutral-700 px-7 py-3.5 text-sm font-bold hover:border-[#3678F1] hover:text-[#3678F1] transition-colors"
                 >
-                  <div className="w-5 h-5 rounded-full bg-[#3B5BDB] flex items-center justify-center shrink-0">
+                  <div className="w-5 h-5 rounded-full bg-[#3678F1] flex items-center justify-center shrink-0">
                     <FaPlay className="text-white text-[8px] ml-[1px]" />
                   </div>
                   Watch Demo
@@ -168,7 +168,7 @@ export default function LandingPage() {
                       {init}
                     </div>
                   ))}
-                  <div className="w-8 h-8 rounded-full border-2 border-white bg-[#3B5BDB] flex items-center justify-center text-[9px] font-bold text-white shadow-sm">+3k</div>
+                  <div className="w-8 h-8 rounded-full border-2 border-white bg-[#3678F1] flex items-center justify-center text-[9px] font-bold text-white shadow-sm">+3k</div>
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-slate-700">3,000+ Companies, Individuals &amp; Vendors</p>
@@ -180,7 +180,7 @@ export default function LandingPage() {
             {/* Right */}
             <div className="hidden lg:flex flex-1 justify-end">
               <div className="relative w-full max-w-md">
-                <div className="absolute inset-0 blur-3xl bg-gradient-to-tr from-[#3B5BDB]/20 via-sky-300/20 to-indigo-400/10 rounded-[40px] pointer-events-none" />
+                <div className="absolute inset-0 blur-3xl bg-gradient-to-tr from-[#3678F1]/20 via-[#3678F1]/15 to-[#3678F1]/10 rounded-[40px] pointer-events-none" />
                 <div className="relative rounded-[32px] overflow-hidden">
                   <img src={speakerImg} alt="Announce your productions without the chaos" className="w-full h-full object-cover" />
                 </div>
@@ -220,7 +220,7 @@ export default function LandingPage() {
               { value: `${statBookings.toLocaleString()}+`, label: 'Bookings Completed' },
             ].map((s) => (
               <div key={s.label} className="bg-white rounded-2xl p-6 text-center shadow-sm border border-slate-100">
-                <p className="text-3xl sm:text-4xl font-extrabold text-[#3B5BDB] mb-1">{s.value}</p>
+                <p className="text-3xl sm:text-4xl font-extrabold text-[#3678F1] mb-1">{s.value}</p>
                 <p className="text-xs sm:text-sm text-slate-500 font-medium">{s.label}</p>
               </div>
             ))}
@@ -234,7 +234,7 @@ export default function LandingPage() {
       <section id="ecosystem" ref={ecosystem.ref} className="py-20" style={{ background: 'linear-gradient(180deg, #e5f0fc 0%, #eef5fd 100%)' }}>
         <div className="max-w-6xl mx-auto px-6">
           <div className={`text-center mb-14 transition-all duration-700 ${ecosystem.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`}>
-            <p className="text-xs font-bold tracking-[0.2em] text-[#3B5BDB] uppercase mb-3">The Ecosystem</p>
+            <p className="text-xs font-bold tracking-[0.2em] text-[#3678F1] uppercase mb-3">The Ecosystem</p>
             <h2 className="text-3xl sm:text-4xl font-bold text-[#0f172a] mb-4">One platform. Three sides. Equal footing.</h2>
             <p className="text-sm text-slate-500 max-w-xl mx-auto leading-relaxed">
               Claapo treats every side of the industry as a first-class citizen &mdash;
@@ -246,64 +246,64 @@ export default function LandingPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {/* Companies */}
-            <div className={`group bg-white rounded-2xl shadow-sm border border-slate-100 p-8 flex flex-col transition-all duration-700 hover:shadow-lg hover:-translate-y-1 ${ecosystem.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`} style={{ transitionDelay: '0ms' }}>
-              <div className="w-12 h-12 rounded-2xl bg-blue-100 flex items-center justify-center mb-6">
-                <FaVideo className="text-[#3B5BDB] text-lg" />
+            <div className={`group bg-white rounded-2xl shadow-sm border border-slate-100 p-8 flex flex-col hover:border-[#3678F1] transition-colors duration-200 ${ecosystem.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`} style={{ transitionDelay: '0ms' }}>
+              <div className="w-12 h-12 rounded-2xl bg-[#E8F0FE] flex items-center justify-center mb-6">
+                <FaVideo className="text-[#3678F1] text-lg" />
               </div>
-              <span className="text-[10px] font-bold tracking-[0.18em] uppercase text-[#3B5BDB] mb-1">For Companies</span>
+              <span className="text-[10px] font-bold tracking-[0.18em] uppercase text-[#3678F1] mb-1">For Companies</span>
               <h3 className="text-xl font-bold text-slate-900 mb-2">Production Houses</h3>
               <p className="text-sm text-slate-500 leading-relaxed mb-6">Centralize hiring, manage projects end-to-end, and collaborate with your team.</p>
               <ul className="space-y-2.5 mb-8 flex-1">
                 {['Verified Crew & Vendor Database', 'Project & Budget Management', 'Team Collaboration & Sub-users', 'Real-time Availability Checks', 'Integrated Payments'].map(item => (
                   <li key={item} className="flex items-center gap-2.5">
-                    <FaCheck className="text-[#3B5BDB] text-[11px] shrink-0" />
+                    <FaCheck className="text-[#3678F1] text-[11px] shrink-0" />
                     <span className="text-sm text-slate-600">{item}</span>
                   </li>
                 ))}
               </ul>
-              <Link to="/register/company" className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#3B5BDB] hover:underline mt-auto">
+              <Link to="/register/company" className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#3678F1] hover:underline mt-auto">
                 Join as Company <FaArrowRight className="text-xs" />
               </Link>
             </div>
 
             {/* Individuals */}
-            <div className={`group bg-white rounded-2xl shadow-sm border border-slate-100 p-8 flex flex-col transition-all duration-700 hover:shadow-lg hover:-translate-y-1 ${ecosystem.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`} style={{ transitionDelay: '100ms' }}>
-              <div className="w-12 h-12 rounded-2xl bg-emerald-100 flex items-center justify-center mb-6">
-                <FaUsers className="text-emerald-600 text-lg" />
+            <div className={`group bg-white rounded-2xl shadow-sm border border-slate-100 p-8 flex flex-col hover:border-[#3678F1] transition-colors duration-200 ${ecosystem.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`} style={{ transitionDelay: '100ms' }}>
+              <div className="w-12 h-12 rounded-2xl bg-[#E8F0FE] flex items-center justify-center mb-6">
+                <FaUsers className="text-[#3678F1] text-lg" />
               </div>
-              <span className="text-[10px] font-bold tracking-[0.18em] uppercase text-emerald-600 mb-1">For Individuals</span>
+              <span className="text-[10px] font-bold tracking-[0.18em] uppercase text-[#3678F1] mb-1">For Individuals</span>
               <h3 className="text-xl font-bold text-slate-900 mb-2">Freelance Crew</h3>
               <p className="text-sm text-slate-500 leading-relaxed mb-6">Get discovered by top agencies, manage your schedule, and get paid faster.</p>
               <ul className="space-y-2.5 mb-8 flex-1">
                 {['Live Availability Calendar', 'Professional Profile & Showreel', 'One-click Invoicing with GST', 'Booking Notifications', 'Past Work Portfolio'].map(item => (
                   <li key={item} className="flex items-center gap-2.5">
-                    <FaCheck className="text-emerald-600 text-[11px] shrink-0" />
+                    <FaCheck className="text-[#3678F1] text-[11px] shrink-0" />
                     <span className="text-sm text-slate-600">{item}</span>
                   </li>
                 ))}
               </ul>
-              <Link to="/register/individual" className="inline-flex items-center gap-1.5 text-sm font-semibold text-emerald-600 hover:underline mt-auto">
+              <Link to="/register/individual" className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#3678F1] hover:underline mt-auto">
                 Join as Individual <FaArrowRight className="text-xs" />
               </Link>
             </div>
 
             {/* Vendors */}
-            <div className={`group bg-white rounded-2xl shadow-sm border border-slate-100 p-8 flex flex-col transition-all duration-700 hover:shadow-lg hover:-translate-y-1 ${ecosystem.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`} style={{ transitionDelay: '200ms' }}>
-              <div className="w-12 h-12 rounded-2xl bg-purple-100 flex items-center justify-center mb-6">
-                <FaTruck className="text-purple-600 text-lg" />
+            <div className={`group bg-white rounded-2xl shadow-sm border border-slate-100 p-8 flex flex-col hover:border-[#3678F1] transition-colors duration-200 ${ecosystem.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`} style={{ transitionDelay: '200ms' }}>
+              <div className="w-12 h-12 rounded-2xl bg-[#E8F0FE] flex items-center justify-center mb-6">
+                <FaTruck className="text-[#3678F1] text-lg" />
               </div>
-              <span className="text-[10px] font-bold tracking-[0.18em] uppercase text-purple-600 mb-1">For Vendors</span>
+              <span className="text-[10px] font-bold tracking-[0.18em] uppercase text-[#3678F1] mb-1">For Vendors</span>
               <h3 className="text-xl font-bold text-slate-900 mb-2">Equipment &amp; Rentals</h3>
               <p className="text-sm text-slate-500 leading-relaxed mb-6">List equipment, manage rental calendars, and receive direct booking requests.</p>
               <ul className="space-y-2.5 mb-8 flex-1">
                 {['Equipment Inventory Management', 'Rental Calendar & Scheduling', 'Direct Quote Requests', 'GST Verified Badges', 'Multi-city Availability'].map(item => (
                   <li key={item} className="flex items-center gap-2.5">
-                    <FaCheck className="text-purple-600 text-[11px] shrink-0" />
+                    <FaCheck className="text-[#3678F1] text-[11px] shrink-0" />
                     <span className="text-sm text-slate-600">{item}</span>
                   </li>
                 ))}
               </ul>
-              <Link to="/register/vendor" className="inline-flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:underline mt-auto">
+              <Link to="/register/vendor" className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#3678F1] hover:underline mt-auto">
                 Join as Vendor <FaArrowRight className="text-xs" />
               </Link>
             </div>
@@ -311,7 +311,7 @@ export default function LandingPage() {
 
           {/* Mid-section CTA — equal three-way entry */}
           <div className={`mt-12 text-center transition-all duration-700 ${ecosystem.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`} style={{ transitionDelay: '300ms' }}>
-            <Link to="/register" className="inline-flex items-center gap-2 rounded-xl bg-[#3B5BDB] text-white px-8 py-3.5 text-sm font-bold hover:bg-[#2f4ac2] transition-all shadow-lg shadow-[#3B5BDB]/20 hover:-translate-y-0.5">
+            <Link to="/register" className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white px-8 py-3.5 text-sm font-bold hover:from-[#2563EB] hover:to-[#1D4ED8] transition-colors shadow-brand">
               Choose Your Path <FaArrowRight className="text-xs" />
             </Link>
             <p className="text-xs text-slate-400 mt-3">Free to join &mdash; no credit card required</p>
@@ -325,7 +325,7 @@ export default function LandingPage() {
       <section id="features" className="py-24" style={{ background: 'linear-gradient(180deg, #eef5fd 0%, #e8f2fb 50%, #eef5fd 100%)' }}>
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-20">
-            <p className="text-xs font-bold tracking-[0.2em] text-[#3B5BDB] uppercase mb-3">Features</p>
+            <p className="text-xs font-bold tracking-[0.2em] text-[#3678F1] uppercase mb-3">Features</p>
             <h2 className="text-3xl sm:text-4xl font-bold text-[#0f172a] mb-4">Everything every side of the industry needs</h2>
             <p className="text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
               Tools built for Companies, Individuals, and Vendors alike &mdash;
@@ -342,21 +342,21 @@ export default function LandingPage() {
                   <div className="flex items-center justify-between mb-6">
                     <span className="font-bold text-slate-900">Availability</span>
                     <div className="flex gap-1.5">
-                      <span className="w-3 h-3 rounded-full bg-red-400 inline-block" />
-                      <span className="w-3 h-3 rounded-full bg-yellow-400 inline-block" />
-                      <span className="w-3 h-3 rounded-full bg-green-400 inline-block" />
+                      <span className="w-3 h-3 rounded-full bg-[#F40F02] inline-block" />
+                      <span className="w-3 h-3 rounded-full bg-[#F4C430] inline-block" />
+                      <span className="w-3 h-3 rounded-full bg-[#22C55E] inline-block" />
                     </div>
                   </div>
                   <div className="flex gap-1 mb-6">
                     {[12,13,14,15,16,17,18].map(d => (
-                      <div key={d} className={`flex flex-col items-center gap-1.5 flex-1 py-2 rounded-xl ${d === 14 ? 'bg-[#3B5BDB]' : ''}`}>
+                      <div key={d} className={`flex flex-col items-center gap-1.5 flex-1 py-2 rounded-xl ${d === 14 ? 'bg-[#3678F1]' : ''}`}>
                         <span className={`text-xs font-medium ${d === 14 ? 'text-white' : 'text-slate-400'}`}>{d}</span>
                         {d === 14 && <span className="w-1.5 h-1.5 rounded-full bg-white inline-block" />}
                       </div>
                     ))}
                   </div>
                   <div className="flex items-center gap-3 bg-slate-50 rounded-xl p-4">
-                    <div className="w-1 h-10 bg-[#3B5BDB] rounded-full shrink-0" />
+                    <div className="w-1 h-10 bg-[#3678F1] rounded-full shrink-0" />
                     <div>
                       <p className="text-sm font-semibold text-slate-900">Coca-Cola TVC</p>
                       <p className="text-xs text-slate-400 mt-0.5">09:00 AM - 06:00 PM &middot; Studio 4</p>
@@ -365,8 +365,8 @@ export default function LandingPage() {
                 </div>
               </div>
               <div>
-                <div className="w-12 h-12 rounded-2xl bg-blue-100 flex items-center justify-center mb-6">
-                  <FaCalendarCheck className="text-[#3B5BDB] text-xl" />
+                <div className="w-12 h-12 rounded-2xl bg-[#E8F0FE] flex items-center justify-center mb-6">
+                  <FaCalendarCheck className="text-[#3678F1] text-xl" />
                 </div>
                 <h3 className="text-3xl font-bold text-slate-900 mb-4 leading-snug">Real-time Centralized Calendar</h3>
                 <p className="text-sm text-slate-500 leading-relaxed mb-7">
@@ -379,12 +379,12 @@ export default function LandingPage() {
                     { title: 'Color-coded Statuses', desc: 'Available, Booked, Blocked, and Past Work at a glance.' },
                   ].map(item => (
                     <li key={item.title} className="flex items-start gap-3">
-                      <FaCheck className="text-[#3B5BDB] text-xs mt-1 shrink-0" />
+                      <FaCheck className="text-[#3678F1] text-xs mt-1 shrink-0" />
                       <p className="text-sm text-slate-600 leading-relaxed"><span className="font-semibold text-slate-900">{item.title}:</span> {item.desc}</p>
                     </li>
                   ))}
                 </ul>
-                <Link to="/register" className="inline-flex items-center gap-2 text-sm font-semibold text-[#3B5BDB] hover:underline">
+                <Link to="/register" className="inline-flex items-center gap-2 text-sm font-semibold text-[#3678F1] hover:underline">
                   Try the Calendar <FaArrowRight className="text-xs" />
                 </Link>
               </div>
@@ -393,8 +393,8 @@ export default function LandingPage() {
             {/* Feature 2 — Smart Search */}
             <div ref={feat2.ref} className={`grid grid-cols-1 lg:grid-cols-2 gap-16 items-center transition-all duration-700 ${feat2.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
               <div className="order-2 lg:order-1">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-100 flex items-center justify-center mb-6">
-                  <FaMagnifyingGlass className="text-emerald-600 text-xl" />
+                <div className="w-12 h-12 rounded-2xl bg-[#E8F0FE] flex items-center justify-center mb-6">
+                  <FaMagnifyingGlass className="text-[#3678F1] text-xl" />
                 </div>
                 <h3 className="text-3xl font-bold text-slate-900 mb-4 leading-snug">Smart Search &amp; Discovery</h3>
                 <p className="text-sm text-slate-500 leading-relaxed mb-7">
@@ -407,12 +407,12 @@ export default function LandingPage() {
                     { title: 'Vendor Categories', desc: 'Equipment, Lighting, Transport, Catering &mdash; find any production service.' },
                   ].map(item => (
                     <li key={item.title} className="flex items-start gap-3">
-                      <FaCheck className="text-emerald-600 text-xs mt-1 shrink-0" />
+                      <FaCheck className="text-[#3678F1] text-xs mt-1 shrink-0" />
                       <p className="text-sm text-slate-600 leading-relaxed"><span className="font-semibold text-slate-900">{item.title}:</span> <span dangerouslySetInnerHTML={{ __html: item.desc }} /></p>
                     </li>
                   ))}
                 </ul>
-                <Link to="/register" className="inline-flex items-center gap-2 text-sm font-semibold text-emerald-600 hover:underline">
+                <Link to="/register" className="inline-flex items-center gap-2 text-sm font-semibold text-[#3678F1] hover:underline">
                   Start Searching <FaArrowRight className="text-xs" />
                 </Link>
               </div>
@@ -428,14 +428,14 @@ export default function LandingPage() {
                     { name: 'Raj Khanna', role: 'Gaffer', city: 'Delhi', rate: '8,000', available: false },
                   ].map((p) => (
                     <div key={p.name} className="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors mb-1">
-                      <div className="w-9 h-9 rounded-full bg-[#3B5BDB]/10 flex items-center justify-center text-xs font-bold text-[#3B5BDB] shrink-0">
+                      <div className="w-9 h-9 rounded-full bg-[#3678F1]/10 flex items-center justify-center text-xs font-bold text-[#3678F1] shrink-0">
                         {p.name.split(' ').map(n => n[0]).join('')}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-slate-900 truncate">{p.name}</p>
                         <p className="text-xs text-slate-400 truncate">{p.role} &middot; {p.city}</p>
                       </div>
-                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${p.available ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
+                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${p.available ? 'bg-[#22C55E]/15 text-[#166534]' : 'bg-[#F40F02]/15 text-[#991B1B]'}`}>
                         {p.available ? 'Available' : 'Booked'}
                       </span>
                     </div>
@@ -453,8 +453,8 @@ export default function LandingPage() {
                     { n: 2, label: 'Booking Confirmed', desc: 'Deal memo sent to 3 crew members.', active: true },
                     { n: 3, label: 'Locked & Scheduled', desc: 'Ready for production', done: false },
                   ].map(step => (
-                    <div key={step.n} className={`flex items-center gap-4 p-4 rounded-xl mb-3 last:mb-0 ${step.active ? 'bg-blue-50 border border-blue-200' : 'bg-slate-50'}`}>
-                      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${step.active ? 'bg-[#3B5BDB] text-white' : step.done ? 'bg-green-500 text-white' : 'bg-slate-200 text-slate-400'}`}>
+                    <div key={step.n} className={`flex items-center gap-4 p-4 rounded-xl mb-3 last:mb-0 ${step.active ? 'bg-[#E8F0FE] border border-[#3678F1]/20' : 'bg-slate-50'}`}>
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${step.active ? 'bg-[#3678F1] text-white' : step.done ? 'bg-[#22C55E] text-white' : 'bg-slate-200 text-slate-400'}`}>
                         {step.done ? <FaCheck className="text-[8px]" /> : step.n}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -471,8 +471,8 @@ export default function LandingPage() {
                 </div>
               </div>
               <div>
-                <div className="w-12 h-12 rounded-2xl bg-purple-100 flex items-center justify-center mb-6">
-                  <FaLayerGroup className="text-purple-600 text-xl" />
+                <div className="w-12 h-12 rounded-2xl bg-[#E8F0FE] flex items-center justify-center mb-6">
+                  <FaLayerGroup className="text-[#3678F1] text-xl" />
                 </div>
                 <h3 className="text-3xl font-bold text-slate-900 mb-4 leading-snug">Structured Booking Workflows</h3>
                 <p className="text-sm text-slate-500 leading-relaxed mb-7">
@@ -485,12 +485,12 @@ export default function LandingPage() {
                     { title: 'Lock & Prevent Double-booking', desc: 'Once accepted, dates are locked across the platform.' },
                   ].map(item => (
                     <li key={item.title} className="flex items-start gap-3">
-                      <FaCheck className="text-purple-600 text-xs mt-1 shrink-0" />
+                      <FaCheck className="text-[#3678F1] text-xs mt-1 shrink-0" />
                       <p className="text-sm text-slate-600 leading-relaxed"><span className="font-semibold text-slate-900">{item.title}:</span> {item.desc}</p>
                     </li>
                   ))}
                 </ul>
-                <Link to="/register" className="inline-flex items-center gap-2 text-sm font-semibold text-purple-600 hover:underline">
+                <Link to="/register" className="inline-flex items-center gap-2 text-sm font-semibold text-[#3678F1] hover:underline">
                   Start Booking <FaArrowRight className="text-xs" />
                 </Link>
               </div>
@@ -499,8 +499,8 @@ export default function LandingPage() {
             {/* Feature 4 — Chat & Invoicing */}
             <div ref={feat4.ref} className={`grid grid-cols-1 lg:grid-cols-2 gap-16 items-center transition-all duration-700 ${feat4.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
               <div className="order-2 lg:order-1">
-                <div className="w-12 h-12 rounded-2xl bg-amber-100 flex items-center justify-center mb-6">
-                  <FaFileInvoiceDollar className="text-amber-600 text-xl" />
+                <div className="w-12 h-12 rounded-2xl bg-[#E8F0FE] flex items-center justify-center mb-6">
+                  <FaFileInvoiceDollar className="text-[#3678F1] text-xl" />
                 </div>
                 <h3 className="text-3xl font-bold text-slate-900 mb-4 leading-snug">Chat, Invoicing &amp; Payments</h3>
                 <p className="text-sm text-slate-500 leading-relaxed mb-7">
@@ -514,12 +514,12 @@ export default function LandingPage() {
                     { title: 'Document Attachments', desc: 'Attach contracts, receipts, and supporting documents to invoices.' },
                   ].map(item => (
                     <li key={item.title} className="flex items-start gap-3">
-                      <FaCheck className="text-amber-600 text-xs mt-1 shrink-0" />
+                      <FaCheck className="text-[#3678F1] text-xs mt-1 shrink-0" />
                       <p className="text-sm text-slate-600 leading-relaxed"><span className="font-semibold text-slate-900">{item.title}:</span> {item.desc}</p>
                     </li>
                   ))}
                 </ul>
-                <Link to="/register" className="inline-flex items-center gap-2 text-sm font-semibold text-amber-600 hover:underline">
+                <Link to="/register" className="inline-flex items-center gap-2 text-sm font-semibold text-[#3678F1] hover:underline">
                   Explore Invoicing <FaArrowRight className="text-xs" />
                 </Link>
               </div>
@@ -528,14 +528,14 @@ export default function LandingPage() {
                   {/* Chat mockup */}
                   <div className="bg-white rounded-2xl shadow-xl border border-slate-100 p-5">
                     <div className="flex items-center gap-3 mb-4">
-                      <FaComments className="text-[#3B5BDB] text-sm" />
+                      <FaComments className="text-[#3678F1] text-sm" />
                       <span className="text-sm font-bold text-slate-900">Project Chat</span>
                     </div>
                     <div className="space-y-2">
                       <div className="bg-slate-50 rounded-xl rounded-tl-sm px-3 py-2 max-w-[85%]">
                         <p className="text-xs text-slate-600">Hey, are you available for the 15th?</p>
                       </div>
-                      <div className="bg-[#3B5BDB] rounded-xl rounded-tr-sm px-3 py-2 max-w-[85%] ml-auto">
+                      <div className="bg-[#3678F1] rounded-xl rounded-tr-sm px-3 py-2 max-w-[85%] ml-auto">
                         <p className="text-xs text-white">Yes! I just marked those dates open.</p>
                       </div>
                       <div className="bg-slate-50 rounded-xl rounded-tl-sm px-3 py-2 max-w-[85%]">
@@ -580,14 +580,14 @@ export default function LandingPage() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {[
-              { Icon: FaGear, title: 'Team Management', desc: 'Create sub-users, assign team members to projects, and collaborate seamlessly.', color: 'bg-indigo-100', iconColor: 'text-indigo-600' },
-              { Icon: FaShieldHalved, title: 'GST Verification', desc: 'Verified badges build trust. Companies and vendors can showcase GST compliance.', color: 'bg-green-100', iconColor: 'text-green-600' },
-              { Icon: FaChartLine, title: 'Admin Analytics', desc: 'Dashboard analytics for user activity, revenue tracking, and platform health.', color: 'bg-blue-100', iconColor: 'text-blue-600' },
-              { Icon: FaCirclePlay, title: 'IMDB & Social Links', desc: 'Connect your IMDB, Instagram, and website to your Claapo profile.', color: 'bg-pink-100', iconColor: 'text-pink-600' },
-              { Icon: FaTruck, title: 'Equipment Inventory', desc: 'Vendors can list cameras, lights, and gear with daily rates and availability.', color: 'bg-amber-100', iconColor: 'text-amber-600' },
-              { Icon: FaLock, title: 'Secure & Reliable', desc: 'JWT authentication, encrypted data, and role-based access control.', color: 'bg-slate-100', iconColor: 'text-slate-600' },
+              { Icon: FaGear, title: 'Team Management', desc: 'Create sub-users, assign team members to projects, and collaborate seamlessly.', color: 'bg-[#E8F0FE]', iconColor: 'text-[#3678F1]' },
+              { Icon: FaShieldHalved, title: 'GST Verification', desc: 'Verified badges build trust. Companies and vendors can showcase GST compliance.', color: 'bg-[#E8F0FE]', iconColor: 'text-[#3678F1]' },
+              { Icon: FaChartLine, title: 'Admin Analytics', desc: 'Dashboard analytics for user activity, revenue tracking, and platform health.', color: 'bg-[#E8F0FE]', iconColor: 'text-[#3678F1]' },
+              { Icon: FaCirclePlay, title: 'IMDB & Social Links', desc: 'Connect your IMDB, Instagram, and website to your Claapo profile.', color: 'bg-[#E8F0FE]', iconColor: 'text-[#3678F1]' },
+              { Icon: FaTruck, title: 'Equipment Inventory', desc: 'Vendors can list cameras, lights, and gear with daily rates and availability.', color: 'bg-[#E8F0FE]', iconColor: 'text-[#3678F1]' },
+              { Icon: FaLock, title: 'Secure & Reliable', desc: 'JWT authentication, encrypted data, and role-based access control.', color: 'bg-[#E8F0FE]', iconColor: 'text-[#3678F1]' },
             ].map(f => (
-              <div key={f.title} className="bg-white rounded-2xl shadow-sm border border-slate-100 p-7 hover:shadow-md transition-shadow">
+              <div key={f.title} className="bg-white rounded-2xl shadow-sm border border-slate-100 p-7 hover:border-[#3678F1] transition-colors duration-200">
                 <div className={`w-11 h-11 rounded-xl ${f.color} flex items-center justify-center mb-4`}>
                   <f.Icon className={`${f.iconColor} text-base`} />
                 </div>
@@ -598,7 +598,7 @@ export default function LandingPage() {
           </div>
           {/* CTA */}
           <div className="mt-12 text-center">
-            <Link to="/register" className="inline-flex items-center gap-2 rounded-xl bg-[#3B5BDB] text-white px-8 py-3.5 text-sm font-bold hover:bg-[#2f4ac2] transition-all shadow-lg shadow-[#3B5BDB]/20 hover:-translate-y-0.5">
+            <Link to="/register" className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white px-8 py-3.5 text-sm font-bold hover:from-[#2563EB] hover:to-[#1D4ED8] transition-colors shadow-brand">
               Get Started &mdash; It's Free <FaArrowRight className="text-xs" />
             </Link>
           </div>
@@ -611,16 +611,16 @@ export default function LandingPage() {
       <section id="how-it-works" ref={hiw.ref} className="py-24" style={{ background: 'linear-gradient(180deg, #e5f0fc 0%, #eef5fd 100%)' }}>
         <div className="max-w-5xl mx-auto px-6">
           <div className={`text-center mb-16 transition-all duration-700 ${hiw.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`}>
-            <p className="text-xs font-bold tracking-[0.2em] text-[#3B5BDB] uppercase mb-3">How It Works</p>
+            <p className="text-xs font-bold tracking-[0.2em] text-[#3678F1] uppercase mb-3">How It Works</p>
             <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-3">Three steps. For every side of the industry.</h2>
             <p className="text-sm text-slate-500 max-w-md mx-auto">Whether you're a Company, an Individual, or a Vendor &mdash; the flow is the same.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
-              { num: '1', Icon: FaUsers,         title: 'Join',        desc: 'Sign up as a Company, Individual, or Vendor — free to start, no credit card required.', color: 'bg-blue-50', iconColor: 'text-[#3B5BDB]' },
-              { num: '2', Icon: FaMagnifyingGlass, title: 'Discover',  desc: 'Companies find crew & gear. Individuals find projects. Vendors find bookings.', color: 'bg-emerald-50', iconColor: 'text-emerald-600' },
-              { num: '3', Icon: FaFileInvoiceDollar, title: 'Collaborate', desc: 'Chat, confirm bookings, track schedules, and get paid — all in one place.', color: 'bg-purple-50', iconColor: 'text-purple-600' },
+              { num: '1', Icon: FaUsers,         title: 'Join',        desc: 'Sign up as a Company, Individual, or Vendor — free to start, no credit card required.', color: 'bg-[#E8F0FE]', iconColor: 'text-[#3678F1]' },
+              { num: '2', Icon: FaMagnifyingGlass, title: 'Discover',  desc: 'Companies find crew & gear. Individuals find projects. Vendors find bookings.', color: 'bg-[#E8F0FE]', iconColor: 'text-[#3678F1]' },
+              { num: '3', Icon: FaFileInvoiceDollar, title: 'Collaborate', desc: 'Chat, confirm bookings, track schedules, and get paid — all in one place.', color: 'bg-[#E8F0FE]', iconColor: 'text-[#3678F1]' },
             ].map((step, idx) => (
               <div key={step.title} className={`flex flex-col items-center text-center transition-all duration-700 ${hiw.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`} style={{ transitionDelay: `${idx * 120}ms` }}>
                 <div className={`w-16 h-16 rounded-full ${step.color} shadow-md flex items-center justify-center mb-5`}>
@@ -634,7 +634,7 @@ export default function LandingPage() {
 
           {/* CTA */}
           <div className="mt-14 text-center">
-            <Link to="/register" className="inline-flex items-center gap-2 rounded-xl border-2 border-[#3B5BDB] text-[#3B5BDB] px-8 py-3.5 text-sm font-bold hover:bg-[#3B5BDB] hover:text-white transition-all">
+            <Link to="/register" className="inline-flex items-center gap-2 rounded-xl bg-white border border-neutral-200/70 text-neutral-700 px-8 py-3.5 text-sm font-bold hover:border-[#3678F1] hover:text-[#3678F1] transition-colors">
               Try It Now <FaArrowRight className="text-xs" />
             </Link>
           </div>
@@ -647,23 +647,20 @@ export default function LandingPage() {
       <section ref={reviews.ref} className="py-24" style={{ background: 'linear-gradient(180deg, #e8f2fb 0%, #eef5fd 100%)' }}>
         <div className="max-w-6xl mx-auto px-6">
           <div className={`text-center mb-14 transition-all duration-700 ${reviews.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`}>
-            <p className="text-xs font-bold tracking-[0.2em] text-[#3B5BDB] uppercase mb-3">Testimonials</p>
+            <p className="text-xs font-bold tracking-[0.2em] text-[#3678F1] uppercase mb-3">Testimonials</p>
             <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-3">Loved by all three sides of the industry</h2>
             <p className="text-sm text-slate-500">Stories from Companies, Individuals, and Vendors on Claapo.</p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {testimonials.map((t, idx) => {
-              const badgeStyle =
-                t.category === 'Company'    ? 'bg-blue-100 text-[#3B5BDB]' :
-                t.category === 'Individual' ? 'bg-emerald-100 text-emerald-700' :
-                                               'bg-purple-100 text-purple-700';
+              const badgeStyle = 'bg-[#E8F0FE] text-[#3678F1]';
               return (
                 <div key={t.name} className={`relative pt-5 pl-5 transition-all duration-700 ${reviews.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`} style={{ transitionDelay: `${idx * 100}ms` }}>
-                  <div className="absolute top-0 left-0 z-10 w-10 h-10 rounded-full bg-[#3B5BDB] flex items-center justify-center shadow-lg">
+                  <div className="absolute top-0 left-0 z-10 w-10 h-10 rounded-full bg-[#3678F1] flex items-center justify-center shadow-lg">
                     <span className="text-white font-bold text-xl leading-none" style={{ marginTop: '-1px' }}>&ldquo;</span>
                   </div>
-                  <div className="bg-white rounded-2xl shadow-md border border-slate-100 p-7 flex flex-col h-full">
+                  <div className="bg-white rounded-2xl shadow-md border border-slate-100 p-7 flex flex-col h-full hover:border-[#3678F1] transition-colors duration-200">
                     <span className={`self-start text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full mb-3 ${badgeStyle}`}>{t.category}</span>
                     <p className="text-sm text-slate-600 leading-relaxed mb-7 flex-1 italic">{t.quote}</p>
                     <div className="flex items-center gap-3">
@@ -687,7 +684,7 @@ export default function LandingPage() {
       <section ref={faqRef.ref} className="py-24" style={{ background: 'linear-gradient(180deg, #eef5fd 0%, #e8f2fb 100%)' }}>
         <div className="max-w-3xl mx-auto px-6">
           <div className={`text-center mb-14 transition-all duration-700 ${faqRef.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`}>
-            <p className="text-xs font-bold tracking-[0.2em] text-[#3B5BDB] uppercase mb-3">FAQ</p>
+            <p className="text-xs font-bold tracking-[0.2em] text-[#3678F1] uppercase mb-3">FAQ</p>
             <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-3">Frequently asked questions</h2>
             <p className="text-sm text-slate-500">Everything you need to know about Claapo.</p>
           </div>
@@ -713,7 +710,7 @@ export default function LandingPage() {
 
           <div className="mt-10 text-center">
             <p className="text-sm text-slate-500 mb-3">Still have questions?</p>
-            <Link to="/contact" className="text-sm font-semibold text-[#3B5BDB] hover:underline">
+            <Link to="/contact" className="text-sm font-semibold text-[#3678F1] hover:underline">
               Contact our team <FaArrowRight className="inline text-xs ml-1" />
             </Link>
           </div>
@@ -725,32 +722,32 @@ export default function LandingPage() {
          ══════════════════════════════════════════════════════ */}
       <section ref={ctaRef.ref} className="py-6 pb-24" style={{ background: 'linear-gradient(180deg, #e8f2fb 0%, #eef5fd 100%)' }}>
         <div className="max-w-3xl mx-auto px-6">
-          <div className={`rounded-3xl p-14 text-center transition-all duration-700 ${ctaRef.visible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`} style={{ background: 'linear-gradient(135deg, #3B5BDB 0%, #4B6CF7 100%)' }}>
+          <div className={`rounded-3xl p-14 text-center transition-all duration-700 ${ctaRef.visible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`} style={{ background: 'linear-gradient(135deg, #3678F1 0%, #2563EB 100%)' }}>
             <h2 className="text-3xl font-bold text-white mb-4 leading-snug">
               Pick your side.<br />Start in seconds.
             </h2>
-            <p className="text-sm text-blue-100 mb-9 leading-relaxed">
+            <p className="text-sm text-white/85 mb-9 leading-relaxed">
               Join thousands of Companies, Individuals, and Vendors<br />
               already collaborating on Claapo.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5 max-w-xl mx-auto">
-              <Link to="/register/company" className="inline-flex flex-col justify-center items-center rounded-xl bg-white text-[#3B5BDB] px-4 py-4 text-sm font-bold hover:bg-blue-50 transition-all hover:-translate-y-0.5 shadow-md">
+              <Link to="/register/company" className="inline-flex flex-col justify-center items-center rounded-xl bg-white text-[#3678F1] px-4 py-4 text-sm font-bold hover:bg-[#E8F0FE] transition-colors shadow-md">
                 <FaVideo className="mb-1.5 text-base" />
                 Join as Company
               </Link>
-              <Link to="/register/individual" className="inline-flex flex-col justify-center items-center rounded-xl bg-white text-[#3B5BDB] px-4 py-4 text-sm font-bold hover:bg-blue-50 transition-all hover:-translate-y-0.5 shadow-md">
+              <Link to="/register/individual" className="inline-flex flex-col justify-center items-center rounded-xl bg-white text-[#3678F1] px-4 py-4 text-sm font-bold hover:bg-[#E8F0FE] transition-colors shadow-md">
                 <FaUsers className="mb-1.5 text-base" />
                 Join as Individual
               </Link>
-              <Link to="/register/vendor" className="inline-flex flex-col justify-center items-center rounded-xl bg-white text-[#3B5BDB] px-4 py-4 text-sm font-bold hover:bg-blue-50 transition-all hover:-translate-y-0.5 shadow-md">
+              <Link to="/register/vendor" className="inline-flex flex-col justify-center items-center rounded-xl bg-white text-[#3678F1] px-4 py-4 text-sm font-bold hover:bg-[#E8F0FE] transition-colors shadow-md">
                 <FaTruck className="mb-1.5 text-base" />
                 Join as Vendor
               </Link>
             </div>
-            <Link to="/contact" className="text-xs text-blue-100 hover:text-white underline underline-offset-2">
+            <Link to="/contact" className="text-xs text-white/85 hover:text-white underline underline-offset-2">
               Or talk to our team
             </Link>
-            <p className="text-xs text-blue-200 mt-4">Free to join &mdash; no credit card required.</p>
+            <p className="text-xs text-white/70 mt-4">Free to join &mdash; no credit card required.</p>
           </div>
         </div>
       </section>

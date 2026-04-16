@@ -41,11 +41,11 @@ interface PanelData {
 }
 
 const statusConfig: Record<string, { bg: string; border: string; text: string; dot: string; label: string }> = {
-  draft:     { bg: 'bg-neutral-50', border: 'border-neutral-200', text: 'text-neutral-500', dot: 'bg-neutral-400', label: 'Draft' },
-  open:     { bg: 'bg-blue-50/70', border: 'border-blue-200/60', text: 'text-blue-600', dot: 'bg-blue-500', label: 'Open' },
-  active:   { bg: 'bg-blue-50/70', border: 'border-blue-200/60', text: 'text-blue-600', dot: 'bg-blue-500', label: 'Active' },
-  completed: { bg: 'bg-emerald-50/70', border: 'border-emerald-200/60', text: 'text-emerald-600', dot: 'bg-emerald-500', label: 'Completed' },
-  cancelled: { bg: 'bg-red-50/70', border: 'border-red-200/60', text: 'text-red-600', dot: 'bg-red-400', label: 'Cancelled' },
+  draft:     { bg: 'bg-[#F3F4F6]', border: 'border-neutral-200',  text: 'text-neutral-600', dot: 'bg-neutral-400',  label: 'Draft' },
+  open:      { bg: 'bg-[#DCFCE7]', border: 'border-[#86EFAC]',    text: 'text-[#15803D]',   dot: 'bg-[#22C55E]',    label: 'Open' },
+  active:    { bg: 'bg-[#FEF3C7]', border: 'border-[#F4C430]',    text: 'text-[#946A00]',   dot: 'bg-[#F4C430]',    label: 'Ongoing' },
+  completed: { bg: 'bg-[#DBEAFE]', border: 'border-[#3678F1]',    text: 'text-[#1E3A8A]',   dot: 'bg-[#3678F1]',    label: 'Completed' },
+  cancelled: { bg: 'bg-[#FEE2E2]', border: 'border-[#F40F02]',    text: 'text-[#991B1B]',   dot: 'bg-[#F40F02]',    label: 'Cancelled' },
 };
 
 function buildCalendar(year: number, month: number, projects: ProjectItem[]): CalendarCell[] {
@@ -92,6 +92,16 @@ export default function CompanyAvailability() {
   const today = new Date();
   const [monthOffset, setMonthOffset] = useState(0);
   const [panel, setPanel] = useState<PanelData | null>(null);
+  const [panelClosing, setPanelClosing] = useState(false);
+
+  const closePanel = () => {
+    if (panelClosing) return;
+    setPanelClosing(true);
+    window.setTimeout(() => {
+      setPanel(null);
+      setPanelClosing(false);
+    }, 240);
+  };
 
   const { data: projectsData } = useApiQuery<{ items: ProjectItem[] }>('/projects?limit=100');
   const projects = projectsData?.items ?? [];
@@ -119,7 +129,7 @@ export default function CompanyAvailability() {
   };
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-[#F8F9FB] w-full">
+    <div className="h-screen flex flex-col overflow-hidden bg-[#F3F4F6] w-full">
       <DashboardHeader />
 
       <div className="flex-1 flex min-h-0 overflow-hidden">
@@ -133,7 +143,7 @@ export default function CompanyAvailability() {
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <div className="flex items-center gap-2.5 mb-1">
-                    <div className="w-1 h-6 rounded-full bg-[#3B5BDB]" />
+                    <div className="w-1 h-6 rounded-full bg-[#3678F1]" />
                     <h1 className="text-xl font-bold text-neutral-900 tracking-tight">Project Availability</h1>
                   </div>
                   <p className="text-sm text-neutral-500 ml-3.5">View and manage project schedule across months</p>
@@ -142,8 +152,8 @@ export default function CompanyAvailability() {
                   <RoleIndicator />
                   {!isSubuser && (
                     <Link
-                      to="/dashboard/projects/new"
-                      className="flex items-center gap-2 px-4 py-2.5 bg-[#3B5BDB] text-white rounded-xl text-sm font-semibold hover:bg-[#2f4ac2] transition-all shadow-sm shadow-blue-500/20 hover:shadow-md hover:shadow-blue-500/25"
+                      to="/projects/new"
+                      className="flex items-center gap-2 px-4 py-2.5 bg-[#3678F1] text-white rounded-xl text-sm font-semibold hover:bg-[#2563EB] transition-all shadow-sm shadow-blue-500/20 hover:shadow-md hover:shadow-blue-500/25"
                     >
                       <FaPlus className="w-3 h-3" />
                       <span>New Project</span>
@@ -153,7 +163,7 @@ export default function CompanyAvailability() {
               </div>
 
               {/* Calendar card */}
-              <div className="bg-white rounded-2xl border border-neutral-200/80 p-5 sm:p-6 shadow-sm hover:shadow-md transition-shadow duration-300">
+              <div className="bg-white rounded-2xl border border-neutral-200/80 p-5 sm:p-6 shadow-sm hover:border-[#3678F1] transition-colors duration-200">
                 {/* Month nav */}
                 <div className="flex items-center justify-between mb-5">
                   <button
@@ -164,7 +174,7 @@ export default function CompanyAvailability() {
                   </button>
                   <div className="text-center">
                     <span className="text-lg font-bold text-neutral-900 tracking-tight">{monthLabel}</span>
-                    <span className="ml-2 text-lg font-bold text-[#3B5BDB]/80">{yearLabel}</span>
+                    <span className="ml-2 text-lg font-bold text-[#3678F1]/80">{yearLabel}</span>
                   </div>
                   <button
                     onClick={() => setMonthOffset((o) => o + 1)}
@@ -197,7 +207,7 @@ export default function CompanyAvailability() {
                         className={`relative min-h-[60px] sm:min-h-[68px] rounded-xl flex flex-col items-center justify-center gap-0.5 p-1.5 transition-all duration-200 group border
                           ${cell.muted
                             ? 'opacity-25 cursor-default border-transparent'
-                            : 'cursor-pointer hover:ring-2 hover:ring-[#3B5BDB]/10 hover:shadow-sm'
+                            : 'cursor-pointer hover:ring-2 hover:ring-[#3678F1]/10 hover:shadow-sm'
                           }
                           ${proj && !cell.muted
                             ? cfg!.bg + ' ' + 'border-' + cfg!.border.replace('border-', '')
@@ -205,13 +215,13 @@ export default function CompanyAvailability() {
                               ? 'border-neutral-100 hover:border-neutral-200 hover:bg-neutral-50/50'
                               : 'border-transparent'
                           }
-                          ${todayCell && !proj ? 'ring-2 ring-[#3B5BDB]/20 bg-blue-50/30 border-blue-100' : ''}
-                          ${todayCell && proj ? 'ring-2 ring-[#3B5BDB]/25' : ''}`}
+                          ${todayCell && !proj ? 'ring-2 ring-[#3678F1]/20 bg-[#E8F0FE]/50 border-[#3678F1]/20' : ''}
+                          ${todayCell && proj ? 'ring-2 ring-[#3678F1]/25' : ''}`}
                       >
                         {todayCell && (
-                          <span className="absolute top-1 right-1.5 w-1.5 h-1.5 rounded-full bg-[#3B5BDB]" />
+                          <span className="absolute top-1 right-1.5 w-1.5 h-1.5 rounded-full bg-[#3678F1]" />
                         )}
-                        <span className={`text-xs font-semibold leading-none ${cell.muted ? 'text-neutral-300' : proj ? cfg!.text : todayCell ? 'text-[#3B5BDB]' : 'text-neutral-700'}`}>
+                        <span className={`text-xs font-semibold leading-none ${cell.muted ? 'text-neutral-300' : proj ? cfg!.text : todayCell ? 'text-[#3678F1]' : 'text-neutral-700'}`}>
                           {cell.d}
                         </span>
                         {proj && !cell.muted && (
@@ -247,9 +257,12 @@ export default function CompanyAvailability() {
 
       {/* Sliding panel */}
       {panel && (
-        <div className="fixed inset-0 z-40">
-          <div className="absolute inset-0 bg-black/25 backdrop-blur-sm" onClick={() => setPanel(null)} />
-          <aside className="absolute right-0 top-0 h-full w-[340px] bg-white/95 backdrop-blur-md border-l border-neutral-200/60 shadow-2xl z-50 flex flex-col panel-enter">
+        <>
+          <div
+            className={`fixed inset-0 bg-black/40 backdrop-blur-[2px] z-40 ${panelClosing ? 'backdrop-exit' : 'backdrop-enter'}`}
+            onClick={closePanel}
+          />
+          <aside className={`fixed right-0 top-0 h-full w-full sm:w-[420px] md:w-[460px] lg:w-[480px] bg-white border-l border-neutral-200/60 shadow-2xl z-50 flex flex-col sm:rounded-l-3xl overflow-hidden ${panelClosing ? 'panel-exit' : 'panel-enter'}`}>
             <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100">
               <div>
                 <p className="text-[11px] text-neutral-400 uppercase tracking-widest font-semibold">
@@ -258,8 +271,8 @@ export default function CompanyAvailability() {
                 <p className="text-xl font-bold text-neutral-900 tracking-tight mt-0.5">Day {panel.date}</p>
               </div>
               <button
-                onClick={() => setPanel(null)}
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600 transition-all"
+                onClick={closePanel}
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600 transition-colors"
               >
                 <FaXmark className="w-4 h-4" />
               </button>
@@ -296,8 +309,8 @@ export default function CompanyAvailability() {
                   </div>
 
                   <Link
-                    to={`/dashboard/projects/${panel.project.id}`}
-                    className="mt-6 w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#3B5BDB] text-white rounded-xl text-sm font-semibold hover:bg-[#2f4ac2] transition-all shadow-sm shadow-blue-500/20 hover:shadow-md"
+                    to={`/projects/${panel.project.id}`}
+                    className="mt-6 w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#3678F1] text-white rounded-xl text-sm font-semibold hover:bg-[#2563EB] transition-all shadow-sm shadow-blue-500/20 hover:shadow-md"
                   >
                     <FaEye className="w-3.5 h-3.5" />
                     View Project Details
@@ -305,15 +318,15 @@ export default function CompanyAvailability() {
                 </>
               ) : (
                 <div className="flex flex-col items-center justify-center h-56 text-center">
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center mb-4 border border-blue-100/60">
-                    <FaCalendar className="text-[#3B5BDB] text-xl" />
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#E8F0FE] to-[#DBEAFE] flex items-center justify-center mb-4 border border-[#3678F1]/15">
+                    <FaCalendar className="text-[#3678F1] text-xl" />
                   </div>
                   <p className="text-sm font-bold text-neutral-800 mb-1">No Project Scheduled</p>
                   <p className="text-xs text-neutral-400 mb-5 leading-relaxed">This day is available for<br />new projects</p>
                   {!isSubuser && (
                     <Link
-                      to="/dashboard/projects/new"
-                      className="flex items-center gap-2 px-5 py-2.5 bg-[#3B5BDB] text-white rounded-xl text-sm font-semibold hover:bg-[#2f4ac2] transition-all shadow-sm shadow-blue-500/20"
+                      to="/projects/new"
+                      className="flex items-center gap-2 px-5 py-2.5 bg-[#3678F1] text-white rounded-xl text-sm font-semibold hover:bg-[#2563EB] transition-all shadow-sm shadow-blue-500/20"
                     >
                       <FaPlus className="w-3 h-3" />
                       Create Project
@@ -324,14 +337,14 @@ export default function CompanyAvailability() {
             </div>
             <div className="px-5 py-4 border-t border-neutral-100 shrink-0">
               <Link
-                to={`/dashboard/invoices?issuedOn=${panel.dateIso}`}
-                className="flex w-full items-center justify-center gap-2 rounded-xl py-2.5 bg-[#EEF4FF] text-[#3B5BDB] text-sm font-semibold border border-[#3B5BDB]/20 hover:bg-[#DBEAFE] transition-all"
+                to={`/invoices?issuedOn=${panel.dateIso}`}
+                className="flex w-full items-center justify-center gap-2 rounded-xl py-2.5 bg-[#E8F0FE] text-[#3678F1] text-sm font-semibold border border-[#3678F1]/20 hover:bg-[#DBEAFE] transition-all"
               >
                 <FaFileInvoice className="w-3.5 h-3.5" /> Invoices issued on this date
               </Link>
             </div>
           </aside>
-        </div>
+        </>
       )}
     </div>
   );

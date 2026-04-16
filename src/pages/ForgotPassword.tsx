@@ -166,8 +166,8 @@ export default function ForgotPassword() {
       <AppLayout headerVariant="back" backTo="/login" backLabel="Back to Login" showFooter={false}>
         <div className="flex-1 flex items-center justify-center px-4 py-10">
           <div className="w-full max-w-[420px] text-center">
-            <div className="w-16 h-16 rounded-2xl bg-green-50 border-2 border-green-200 flex items-center justify-center mx-auto mb-5">
-              <FaCircleCheck className="text-green-500 text-2xl" />
+            <div className="w-16 h-16 rounded-2xl bg-[#DCFCE7] ring-1 ring-[#22C55E]/30 flex items-center justify-center mx-auto mb-5">
+              <FaCircleCheck className="text-[#22C55E] text-2xl" />
             </div>
             <h1 className="text-2xl font-bold text-neutral-900 mb-2">Password reset!</h1>
             <p className="text-sm text-neutral-500 mb-6">
@@ -175,7 +175,7 @@ export default function ForgotPassword() {
             </p>
             <button
               onClick={() => navigate('/login')}
-              className="rounded-xl w-full py-3 bg-[#3B5BDB] text-white text-sm font-semibold hover:bg-[#2f4ac2] transition-colors shadow-sm"
+              className="rounded-xl w-full py-3 bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white text-sm font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] transition-colors shadow-brand"
             >
               Sign In
             </button>
@@ -192,8 +192,8 @@ export default function ForgotPassword() {
 
           {/* Header */}
           <div className="flex flex-col items-center mb-8">
-            <div className="w-12 h-12 rounded-xl bg-[#3B5BDB] flex items-center justify-center mb-4 shadow-lg shadow-[#3B5BDB]/25">
-              <FaVideo className="text-white text-lg" />
+            <div className="w-12 h-12 rounded-xl bg-[#E8F0FE] ring-1 ring-[#3678F1]/15 flex items-center justify-center mb-4">
+              <FaVideo className="text-[#3678F1] text-lg" />
             </div>
             <h1 className="text-2xl font-bold text-neutral-900">
               {step === 'phone' ? 'Reset your password' : 'Enter verification code'}
@@ -211,8 +211,8 @@ export default function ForgotPassword() {
             {(['phone', 'otp'] as Step[]).map((s, i) => (
               <div key={s} className="flex items-center gap-2">
                 <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
-                  step === s ? 'bg-[#3B5BDB] text-white' :
-                  (i === 0 && step === 'otp') ? 'bg-green-500 text-white' :
+                  step === s ? 'bg-[#3678F1] text-white' :
+                  (i === 0 && step === 'otp') ? 'bg-[#22C55E] text-white' :
                   'bg-neutral-200 text-neutral-500'
                 }`}>
                   {i === 0 && step === 'otp' ? <FaCircleCheck className="text-[10px]" /> : i + 1}
@@ -239,24 +239,24 @@ export default function ForgotPassword() {
                     required
                     disabled={loading}
                     autoFocus
-                    className="rounded-xl w-full px-4 py-3 border border-neutral-300 bg-white text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3B5BDB] focus:ring-3 focus:ring-[#3B5BDB]/10 text-sm transition-all disabled:opacity-50"
+                    className="rounded-xl w-full px-4 py-3 border border-neutral-300 bg-white text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:ring-2 focus:ring-[#3678F1]/20 text-sm transition-all disabled:opacity-50"
                   />
                 </div>
 
                 {error && (
-                  <div className="flex items-start gap-2.5 rounded-xl bg-red-50 border border-red-200 px-3.5 py-3">
-                    <FaTriangleExclamation className="text-red-500 text-sm shrink-0 mt-0.5" />
-                    <p className="text-xs text-red-700 leading-snug">{error}</p>
+                  <div className="flex items-start gap-2.5 rounded-xl bg-[#FEEBEA] border border-[#F40F02]/30 px-3.5 py-3">
+                    <FaTriangleExclamation className="text-[#991B1B] text-sm shrink-0 mt-0.5" />
+                    <p className="text-xs text-[#991B1B] leading-snug">{error}</p>
                   </div>
                 )}
 
                 <button
                   type="submit"
                   disabled={loading}
-                  className="rounded-xl w-full py-3 bg-[#3B5BDB] text-white text-sm font-semibold hover:bg-[#2f4ac2] transition-colors shadow-sm disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="rounded-xl w-full py-3 bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white text-sm font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] transition-colors shadow-brand disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {loading ? (
-                    <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Sending code…</>
+                    <><span className="w-6 h-6 border-[2.5px] border-white/30 border-t-white border-r-white rounded-full animate-spin" />Sending code…</>
                   ) : 'Send Reset Code'}
                 </button>
               </form>
@@ -308,8 +308,8 @@ export default function ForgotPassword() {
                         onKeyDown={(e) => handleKeyDown(i, e)}
                         disabled={loading}
                         className={`w-11 h-13 text-center text-xl font-bold rounded-xl border-2 bg-[#F3F4F6] focus:outline-none focus:bg-white transition-all disabled:opacity-50
-                          ${d ? 'border-[#3B5BDB] bg-[#EFF4FF]' : 'border-neutral-300'}
-                          ${error ? 'border-red-300' : ''}`}
+                          ${d ? 'border-[#3678F1] bg-[#EFF4FF]' : 'border-neutral-300'}
+                          ${error ? 'border-[#F40F02]/40' : ''}`}
                       />
                     ))}
                   </div>
@@ -322,7 +322,7 @@ export default function ForgotPassword() {
                         type="button"
                         onClick={handleResend}
                         disabled={resending}
-                        className="text-[#3B5BDB] font-semibold hover:underline disabled:opacity-50"
+                        className="text-[#3678F1] font-semibold hover:underline disabled:opacity-50"
                       >
                         {resending ? 'Sending…' : 'Resend'}
                       </button>
@@ -341,7 +341,7 @@ export default function ForgotPassword() {
                       required
                       minLength={8}
                       disabled={loading}
-                      className="rounded-xl w-full px-4 py-3 pr-11 border border-neutral-300 bg-white text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3B5BDB] focus:ring-3 focus:ring-[#3B5BDB]/10 text-sm transition-all disabled:opacity-50"
+                      className="rounded-xl w-full px-4 py-3 pr-11 border border-neutral-300 bg-white text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:ring-2 focus:ring-[#3678F1]/20 text-sm transition-all disabled:opacity-50"
                     />
                     <button type="button" onClick={() => setShowNewPass((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 p-1" aria-label={showNewPass ? 'Hide password' : 'Show password'}>
                       {showNewPass ? <FaEyeSlash className="w-4 h-4" /> : <FaEye className="w-4 h-4" />}
@@ -359,7 +359,7 @@ export default function ForgotPassword() {
                       placeholder="Repeat your new password"
                       required
                       disabled={loading}
-                      className="rounded-xl w-full px-4 py-3 pr-11 border border-neutral-300 bg-white text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3B5BDB] focus:ring-3 focus:ring-[#3B5BDB]/10 text-sm transition-all disabled:opacity-50"
+                      className="rounded-xl w-full px-4 py-3 pr-11 border border-neutral-300 bg-white text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:ring-2 focus:ring-[#3678F1]/20 text-sm transition-all disabled:opacity-50"
                     />
                     <button type="button" onClick={() => setShowConfPass((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 p-1" aria-label={showConfPass ? 'Hide password' : 'Show password'}>
                       {showConfPass ? <FaEyeSlash className="w-4 h-4" /> : <FaEye className="w-4 h-4" />}
@@ -368,19 +368,19 @@ export default function ForgotPassword() {
                 </div>
 
                 {error && (
-                  <div className="flex items-start gap-2.5 rounded-xl bg-red-50 border border-red-200 px-3.5 py-3">
-                    <FaTriangleExclamation className="text-red-500 text-sm shrink-0 mt-0.5" />
-                    <p className="text-xs text-red-700 leading-snug">{error}</p>
+                  <div className="flex items-start gap-2.5 rounded-xl bg-[#FEEBEA] border border-[#F40F02]/30 px-3.5 py-3">
+                    <FaTriangleExclamation className="text-[#991B1B] text-sm shrink-0 mt-0.5" />
+                    <p className="text-xs text-[#991B1B] leading-snug">{error}</p>
                   </div>
                 )}
 
                 <button
                   type="submit"
                   disabled={loading}
-                  className="rounded-xl w-full py-3 bg-[#3B5BDB] text-white text-sm font-semibold hover:bg-[#2f4ac2] transition-colors shadow-sm disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="rounded-xl w-full py-3 bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white text-sm font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] transition-colors shadow-brand disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {loading ? (
-                    <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Resetting…</>
+                    <><span className="w-6 h-6 border-[2.5px] border-white/30 border-t-white border-r-white rounded-full animate-spin" />Resetting…</>
                   ) : 'Reset Password'}
                 </button>
               </form>
@@ -390,7 +390,7 @@ export default function ForgotPassword() {
 
           <p className="mt-5 text-center text-sm text-neutral-500">
             Remember your password?{' '}
-            <Link to="/login" className="text-[#3B5BDB] font-semibold hover:underline">Sign in</Link>
+            <Link to="/login" className="text-[#3678F1] font-semibold hover:underline">Sign in</Link>
           </p>
         </div>
       </div>

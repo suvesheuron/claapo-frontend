@@ -125,10 +125,10 @@ export default function TeamPage() {
 
   const isMainOnlyRestriction = usersError?.toLowerCase().includes('main') ?? false;
 
-  const modalInputClass = 'w-full px-4 py-2.5 border border-neutral-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#3B5BDB]/20 focus:border-[#3B5BDB] disabled:opacity-50 transition-all placeholder:text-neutral-400';
+  const modalInputClass = 'w-full px-4 py-2.5 border border-neutral-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#3678F1]/20 focus:border-[#3678F1] disabled:opacity-50 transition-all placeholder:text-neutral-400';
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-[#F8F9FB] w-full">
+    <div className="h-screen flex flex-col overflow-hidden bg-[#F3F4F6] w-full">
       <DashboardHeader />
       <div className="flex-1 flex min-h-0 overflow-hidden">
         <DashboardSidebar links={companyNavLinks} />
@@ -140,154 +140,185 @@ export default function TeamPage() {
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h1 className="text-xl font-bold text-neutral-900 tracking-tight flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-[#3B5BDB]/10 flex items-center justify-center">
-                      <FaPeopleGroup className="text-[#3B5BDB] text-sm" />
-                    </div>
+                    <span className="w-9 h-9 rounded-xl bg-[#E8F0FE] ring-1 ring-[#3678F1]/15 flex items-center justify-center">
+                      <FaPeopleGroup className="text-[#3678F1] text-sm" />
+                    </span>
                     Team Management
                   </h1>
-                  <p className="text-sm text-neutral-500 mt-1 ml-[42px]">Create sub-user accounts and assign them to projects</p>
+                  <p className="text-sm text-neutral-500 mt-1.5 ml-[46px]">
+                    Create sub-user accounts and assign them to projects
+                  </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => { setShowCreate(true); setCreateError(null); }}
-                  className="rounded-xl px-4 py-2.5 bg-[#3B5BDB] text-white text-sm font-semibold hover:bg-[#2f4ac2] active:scale-[0.98] inline-flex items-center gap-2 transition-all shadow-sm shadow-[#3B5BDB]/20"
+                  className="inline-flex items-center gap-2 h-11 px-5 rounded-xl bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white text-sm font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] transition-colors shadow-brand"
                 >
-                  <FaPlus className="w-3 h-3" /> <span className="hidden sm:inline">Add Sub-User</span><span className="sm:hidden">Add</span>
+                  <FaPlus className="w-3 h-3" />
+                  <span className="hidden sm:inline">Add Sub-User</span>
+                  <span className="sm:hidden">Add</span>
                 </button>
               </div>
 
               {/* Success Alerts */}
               {createSuccess && (
-                <div className="flex items-center gap-2.5 mb-4 px-4 py-3 bg-emerald-50 border border-emerald-200/60 rounded-xl text-emerald-700 text-sm font-medium shadow-sm">
+                <div className="flex items-center gap-2.5 mb-4 px-4 py-3 bg-[#DCFCE7] border border-[#22C55E]/30 rounded-xl text-[#15803D] text-sm font-medium">
                   <FaCircleCheck className="shrink-0" /> Sub-user created successfully!
                 </div>
               )}
               {assignSuccess && (
-                <div className="flex items-center gap-2.5 mb-4 px-4 py-3 bg-emerald-50 border border-emerald-200/60 rounded-xl text-emerald-700 text-sm font-medium shadow-sm">
+                <div className="flex items-center gap-2.5 mb-4 px-4 py-3 bg-[#DCFCE7] border border-[#22C55E]/30 rounded-xl text-[#15803D] text-sm font-medium">
                   <FaCircleCheck className="shrink-0" /> Project assigned successfully!
                 </div>
               )}
 
               {isMainOnlyRestriction && (
-                <div className="flex items-center gap-3 rounded-2xl bg-amber-50 border border-amber-200/60 p-4 mb-5 shadow-sm">
-                  <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center shrink-0">
-                    <FaTriangleExclamation className="text-amber-600 text-sm" />
+                <div className="flex items-center gap-3 rounded-2xl bg-[#E8F0FE] border border-[#3678F1]/20 p-4 mb-5">
+                  <div className="w-9 h-9 rounded-xl bg-white/60 flex items-center justify-center shrink-0">
+                    <FaTriangleExclamation className="text-[#3678F1] text-sm" />
                   </div>
-                  <p className="text-sm text-amber-800">Only the main account can manage team members. You are logged in as a sub-user.</p>
+                  <p className="text-sm text-[#1E3A8A]">
+                    Only the main account can manage team members. You are logged in as a sub-user.
+                  </p>
                 </div>
               )}
 
               {/* Info card */}
-              <div className="rounded-2xl bg-gradient-to-br from-[#EEF2FF] to-[#E8EDFF] border border-[#C7D2FE]/60 p-5 mb-5 shadow-sm">
-                <h3 className="text-sm font-bold text-[#3730A3] mb-2 flex items-center gap-2">
-                  <div className="w-5 h-5 rounded-md bg-[#3B5BDB]/10 flex items-center justify-center">
-                    <span className="text-[10px]">i</span>
-                  </div>
+              <div className="rounded-2xl bg-[#F4F8FE] border border-[#3678F1]/15 p-5 mb-5">
+                <h3 className="text-sm font-bold text-[#1E3A8A] mb-2.5 flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-md bg-white text-[#3678F1] flex items-center justify-center text-[10px] font-bold">i</span>
                   How Sub-User IDs work
                 </h3>
-                <ul className="text-[13px] text-[#4338CA] space-y-1.5 ml-7">
-                  <li className="flex items-start gap-2"><span className="w-1 h-1 rounded-full bg-[#6366F1] mt-1.5 shrink-0" />Sub-users can log in with their own email and password</li>
-                  <li className="flex items-start gap-2"><span className="w-1 h-1 rounded-full bg-[#6366F1] mt-1.5 shrink-0" />They can only access projects you assign to them</li>
-                  <li className="flex items-start gap-2"><span className="w-1 h-1 rounded-full bg-[#6366F1] mt-1.5 shrink-0" />They cannot see other projects or manage the team</li>
-                  <li className="flex items-start gap-2"><span className="w-1 h-1 rounded-full bg-[#6366F1] mt-1.5 shrink-0" />Sub-users inherit your account role (Company/Vendor)</li>
+                <ul className="text-[13px] text-[#2563EB] space-y-1.5 ml-7">
+                  <li className="flex items-start gap-2"><span className="w-1 h-1 rounded-full bg-[#3678F1] mt-1.5 shrink-0" />Sub-users can log in with their own email and password</li>
+                  <li className="flex items-start gap-2"><span className="w-1 h-1 rounded-full bg-[#3678F1] mt-1.5 shrink-0" />They can only access projects you assign to them</li>
+                  <li className="flex items-start gap-2"><span className="w-1 h-1 rounded-full bg-[#3678F1] mt-1.5 shrink-0" />They cannot see other projects or manage the team</li>
+                  <li className="flex items-start gap-2"><span className="w-1 h-1 rounded-full bg-[#3678F1] mt-1.5 shrink-0" />Sub-users inherit your account role (Company/Vendor)</li>
                 </ul>
               </div>
 
               {/* Sub-users list */}
-              <div className="rounded-2xl bg-white border border-neutral-200/80 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+              <div className="rounded-2xl bg-white border border-neutral-200/70 shadow-sm overflow-hidden">
                 <div className="px-6 py-4 border-b border-neutral-100 flex items-center justify-between">
                   <div>
-                    <h2 className="text-sm font-bold text-neutral-900">Sub-Users</h2>
-                    <p className="text-xs text-neutral-400 mt-0.5">{subUsers.length} team member{subUsers.length !== 1 ? 's' : ''}</p>
+                    <h2 className="text-sm font-bold text-neutral-900 flex items-center gap-2">
+                      <span className="w-1 h-4 rounded-full bg-[#3678F1]" />
+                      Sub-Users
+                    </h2>
+                    <p className="text-xs text-neutral-400 mt-0.5 ml-3">
+                      {subUsers.length} team member{subUsers.length !== 1 ? 's' : ''}
+                    </p>
                   </div>
                 </div>
 
                 <div className="p-5">
                   {usersError && (
-                    <div className="flex items-center gap-3 rounded-xl bg-red-50 border border-red-200/80 p-3 mb-4">
-                      <FaTriangleExclamation className="text-red-500 shrink-0 text-sm" />
-                      <p className="text-sm text-red-700">{usersError}</p>
+                    <div className="flex items-center gap-3 rounded-xl bg-[#FEEBEA] border border-[#F40F02]/30 p-3 mb-4">
+                      <FaTriangleExclamation className="text-[#F40F02] shrink-0 text-sm" />
+                      <p className="text-sm text-[#991B1B]">{usersError}</p>
                     </div>
                   )}
 
                   {loadingUsers ? (
                     <div className="space-y-3">
-                      {[1,2,3].map(i => <div key={i} className="h-[72px] rounded-xl bg-neutral-100/60 animate-pulse" />)}
+                      {[1,2,3].map(i => <div key={i} className="skeleton h-[88px] rounded-xl" />)}
                     </div>
                   ) : !isMainOnlyRestriction && subUsers.length === 0 ? (
                     <div className="text-center py-14">
-                      <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-neutral-100 to-neutral-50 border border-neutral-200/60 flex items-center justify-center mx-auto mb-4 shadow-sm">
-                        <FaPeopleGroup className="text-neutral-400 text-xl" />
+                      <div className="w-16 h-16 rounded-2xl bg-[#E8F0FE] ring-1 ring-[#3678F1]/15 flex items-center justify-center mx-auto mb-4">
+                        <FaPeopleGroup className="text-[#3678F1] text-xl" />
                       </div>
-                      <p className="text-sm font-semibold text-neutral-800 mb-1">No sub-users yet</p>
-                      <p className="text-sm text-neutral-500 mb-5 max-w-xs mx-auto">Add team members to collaborate on your projects together</p>
+                      <p className="text-sm font-bold text-neutral-900 mb-1">No sub-users yet</p>
+                      <p className="text-sm text-neutral-500 mb-5 max-w-xs mx-auto">
+                        Add team members to collaborate on your projects together
+                      </p>
                       <button
                         type="button"
                         onClick={() => setShowCreate(true)}
-                        className="rounded-xl px-5 py-2.5 bg-[#3B5BDB] text-white text-sm font-semibold hover:bg-[#2f4ac2] active:scale-[0.98] inline-flex items-center gap-2 transition-all shadow-sm shadow-[#3B5BDB]/20"
+                        className="inline-flex items-center gap-2 h-10 px-5 rounded-xl bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white text-sm font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] transition-colors shadow-brand"
                       >
                         <FaPlus className="w-3 h-3" /> Add First Sub-User
                       </button>
                     </div>
                   ) : isMainOnlyRestriction ? (
                     <div className="text-center py-14">
-                      <div className="w-16 h-16 rounded-2xl bg-neutral-100 border border-neutral-200/60 flex items-center justify-center mx-auto mb-4">
+                      <div className="w-16 h-16 rounded-2xl bg-neutral-100 flex items-center justify-center mx-auto mb-4">
                         <FaPeopleGroup className="text-neutral-400 text-xl" />
                       </div>
-                      <p className="text-sm text-neutral-500">You need to log in with the main account to view and manage sub-users.</p>
+                      <p className="text-sm text-neutral-500">
+                        You need to log in with the main account to view and manage sub-users.
+                      </p>
                     </div>
                   ) : (
                     <div className="space-y-3">
                       {subUsers.map(u => {
                         const assigned = u.assignedProjects ?? [];
                         return (
-                        <div key={u.id} className="flex flex-col sm:flex-row sm:items-stretch gap-4 p-4 rounded-xl border border-neutral-200/80 bg-white hover:border-neutral-300 hover:shadow-sm transition-all group relative overflow-hidden">
-                          {/* Left accent border */}
-                          <div className={`absolute left-0 top-0 bottom-0 w-[3px] rounded-l-xl ${u.isActive ? 'bg-emerald-400' : 'bg-neutral-300'}`} />
-                          <div className="flex gap-4 flex-1 min-w-0 pl-1">
-                            <Avatar name={u.displayName ?? u.email} size="md" />
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <p className="text-sm font-semibold text-neutral-900 truncate">{u.displayName ?? u.email}</p>
-                                <span className={`w-2 h-2 rounded-full shrink-0 ${u.isActive ? 'bg-emerald-500' : 'bg-neutral-300'}`} title={u.isActive ? 'Active' : 'Inactive'} />
-                              </div>
-                              <p className="text-xs text-neutral-500 truncate mt-0.5">{u.phone}</p>
-                              <div className="mt-3">
-                                <p className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
-                                  <FaFolder className="w-3 h-3" /> Assigned projects
-                                </p>
-                                {assigned.length === 0 ? (
-                                  <p className="text-xs text-neutral-400">None yet — use Assign Project to grant access.</p>
-                                ) : (
-                                  <ul className="flex flex-wrap gap-1.5">
-                                    {assigned.map((proj) => (
-                                      <li key={proj.id}>
-                                        <Link
-                                          to={`/dashboard/projects/${proj.id}`}
-                                          className="inline-flex items-center gap-1 rounded-lg px-2 py-1 bg-[#EEF4FF] border border-[#3B5BDB]/15 text-[11px] font-semibold text-[#3B5BDB] hover:bg-[#DBEAFE] hover:border-[#3B5BDB]/25 transition-colors max-w-[220px]"
-                                          title={proj.title}
-                                        >
-                                          <span className="truncate">{proj.title}</span>
-                                        </Link>
-                                      </li>
-                                    ))}
-                                  </ul>
-                                )}
+                          <div
+                            key={u.id}
+                            className="flex flex-col sm:flex-row sm:items-stretch gap-4 p-4 rounded-xl border border-neutral-200/70 bg-white hover:border-[#3678F1] transition-colors duration-200"
+                          >
+                            <div className="flex gap-4 flex-1 min-w-0">
+                              <Avatar name={u.displayName ?? u.email} size="md" />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <p className="text-sm font-bold text-neutral-900 truncate">{u.displayName ?? u.email}</p>
+                                  <span className={`inline-flex items-center gap-1.5 h-5 px-2 rounded-full text-[10px] font-bold tracking-wide ${
+                                    u.isActive
+                                      ? 'bg-[#DCFCE7] text-[#15803D]'
+                                      : 'bg-[#F3F4F6] text-neutral-500'
+                                  }`}>
+                                    <span className={`w-1.5 h-1.5 rounded-full ${u.isActive ? 'bg-[#22C55E]' : 'bg-neutral-400'}`} />
+                                    {u.isActive ? 'Active' : 'Inactive'}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-neutral-500 truncate mt-0.5">{u.phone}</p>
+                                <div className="mt-3">
+                                  <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                                    <FaFolder className="w-3 h-3" /> Assigned projects
+                                  </p>
+                                  {assigned.length === 0 ? (
+                                    <p className="text-xs text-neutral-400">
+                                      None yet — use Assign Project to grant access.
+                                    </p>
+                                  ) : (
+                                    <ul className="flex flex-wrap gap-1.5">
+                                      {assigned.map((proj) => (
+                                        <li key={proj.id}>
+                                          <Link
+                                            to={`/projects/${proj.id}`}
+                                            className="inline-flex items-center gap-1 rounded-lg px-2 py-1 bg-[#E8F0FE] text-[11px] font-semibold text-[#2563EB] hover:bg-[#DBEAFE] transition-colors max-w-[220px]"
+                                            title={proj.title}
+                                          >
+                                            <span className="truncate">{proj.title}</span>
+                                          </Link>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  )}
+                                </div>
                               </div>
                             </div>
+                            <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end sm:flex-col sm:justify-center sm:items-stretch pt-3 sm:pt-0 border-t sm:border-t-0 border-neutral-100">
+                              <button
+                                type="button"
+                                onClick={() => { setAssigningUser(u); setAssignProjectId(''); setAssignError(null); }}
+                                className="inline-flex items-center justify-center h-9 px-3 rounded-xl border border-neutral-200 text-[#3678F1] text-xs font-semibold hover:border-[#3678F1] hover:bg-[#F4F8FE] transition-colors sm:w-full"
+                                title="Assign Project"
+                              >
+                                <span className="hidden sm:inline">Assign Project</span>
+                                <span className="sm:hidden">Assign</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => { setDeletingUser(u); setDeleteError(null); }}
+                                className="inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-xl border border-neutral-200 text-[#F40F02] text-xs font-semibold hover:border-[#F40F02] hover:bg-[#FEEBEA] transition-colors sm:w-full"
+                                title="Remove"
+                              >
+                                <FaTrash className="w-3 h-3" /> <span className="hidden sm:inline">Remove</span>
+                              </button>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end sm:flex-col sm:justify-center sm:items-stretch pt-1 sm:pt-0 border-t sm:border-t-0 border-neutral-100">
-                            <button type="button" onClick={() => { setAssigningUser(u); setAssignProjectId(''); setAssignError(null); }}
-                              className="rounded-lg px-3 py-2 border border-[#3B5BDB]/20 text-[#3B5BDB] text-xs font-semibold hover:bg-[#3B5BDB]/5 transition-colors sm:w-full" title="Assign Project">
-                              <span className="hidden sm:inline">Assign Project</span>
-                              <span className="sm:hidden text-sm">Assign</span>
-                            </button>
-                            <button type="button" onClick={() => { setDeletingUser(u); setDeleteError(null); }}
-                              className="rounded-lg px-3 py-2 border border-red-200/80 text-red-500 text-xs font-semibold hover:bg-red-50 transition-colors flex items-center justify-center gap-1.5 sm:w-full" title="Remove">
-                              <FaTrash className="w-3 h-3" /> <span className="hidden sm:inline">Remove</span>
-                            </button>
-                          </div>
-                        </div>
                         );
                       })}
                     </div>
@@ -318,9 +349,9 @@ export default function TeamPage() {
 
               <div className="p-6">
                 {createError && (
-                  <div className="flex items-center gap-2.5 mb-4 p-3 bg-red-50 border border-red-200/80 rounded-xl">
-                    <FaTriangleExclamation className="text-red-500 text-xs shrink-0" />
-                    <p className="text-sm text-red-700">{createError}</p>
+                  <div className="flex items-center gap-2.5 mb-4 p-3 bg-[#FEEBEA] border border-[#F40F02]/30 rounded-xl">
+                    <FaTriangleExclamation className="text-[#F40F02] text-xs shrink-0" />
+                    <p className="text-sm text-[#991B1B]">{createError}</p>
                   </div>
                 )}
 
@@ -332,17 +363,17 @@ export default function TeamPage() {
                     <p className="text-[10px] text-neutral-400 mt-1">This name will be shown in chats and project details</p>
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Email <span className="text-red-500">*</span></label>
+                    <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Email <span className="text-[#F40F02]">*</span></label>
                     <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="subuser@example.com" disabled={creating}
                       className={modalInputClass} />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Phone <span className="text-red-500">*</span></label>
+                    <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Phone <span className="text-[#F40F02]">*</span></label>
                     <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+919900112233" disabled={creating}
                       className={modalInputClass} />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Password <span className="text-red-500">*</span></label>
+                    <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Password <span className="text-[#F40F02]">*</span></label>
                     <div className="relative">
                       <input type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Min 8 characters" disabled={creating}
                         className={`${modalInputClass} pr-11`} />
@@ -360,8 +391,8 @@ export default function TeamPage() {
                   Cancel
                 </button>
                 <button type="button" onClick={handleCreate} disabled={creating}
-                  className="flex-1 rounded-xl py-2.5 bg-[#3B5BDB] text-white text-sm font-semibold hover:bg-[#2f4ac2] active:scale-[0.98] transition-all disabled:opacity-60 flex items-center justify-center gap-2 shadow-sm shadow-[#3B5BDB]/20">
-                  {creating ? <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Creating...</> : 'Create Sub-User'}
+                  className="flex-1 rounded-xl py-2.5 bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white text-sm font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] transition-colors disabled:opacity-60 flex items-center justify-center gap-2 shadow-brand">
+                  {creating ? <><span className="w-4 h-4 border-[2.5px] border-white/40 border-t-white border-r-white rounded-full animate-spin" />Creating…</> : 'Create Sub-User'}
                 </button>
               </div>
             </div>
@@ -392,9 +423,9 @@ export default function TeamPage() {
                 </div>
 
                 {assignError && (
-                  <div className="flex items-center gap-2.5 mb-4 p-3 bg-red-50 border border-red-200/80 rounded-xl">
-                    <FaTriangleExclamation className="text-red-500 text-xs shrink-0" />
-                    <p className="text-sm text-red-700">{assignError}</p>
+                  <div className="flex items-center gap-2.5 mb-4 p-3 bg-[#FEEBEA] border border-[#F40F02]/30 rounded-xl">
+                    <FaTriangleExclamation className="text-[#F40F02] text-xs shrink-0" />
+                    <p className="text-sm text-[#991B1B]">{assignError}</p>
                   </div>
                 )}
 
@@ -414,8 +445,8 @@ export default function TeamPage() {
                   Cancel
                 </button>
                 <button type="button" onClick={handleAssign} disabled={assigning || !assignProjectId}
-                  className="flex-1 rounded-xl py-2.5 bg-[#3B5BDB] text-white text-sm font-semibold hover:bg-[#2f4ac2] active:scale-[0.98] transition-all disabled:opacity-60 flex items-center justify-center gap-2 shadow-sm shadow-[#3B5BDB]/20">
-                  {assigning ? <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Assigning...</> : 'Assign'}
+                  className="flex-1 rounded-xl py-2.5 bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white text-sm font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] transition-colors disabled:opacity-60 flex items-center justify-center gap-2 shadow-brand">
+                  {assigning ? <><span className="w-4 h-4 border-[2.5px] border-white/40 border-t-white border-r-white rounded-full animate-spin" />Assigning…</> : 'Assign'}
                 </button>
               </div>
             </div>
@@ -430,8 +461,8 @@ export default function TeamPage() {
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl shadow-xl border border-neutral-200/60 w-full max-w-sm overflow-hidden">
               <div className="p-6">
-                <div className="w-12 h-12 rounded-2xl bg-red-50 border border-red-100 flex items-center justify-center mx-auto mb-4">
-                  <FaTrash className="text-red-500" />
+                <div className="w-12 h-12 rounded-2xl bg-[#FEEBEA] ring-1 ring-[#F40F02]/20 flex items-center justify-center mx-auto mb-4">
+                  <FaTrash className="text-[#F40F02]" />
                 </div>
                 <h2 className="text-base font-bold text-neutral-900 mb-2 text-center">Remove Sub-User?</h2>
                 <p className="text-sm text-neutral-600 text-center leading-relaxed">
@@ -439,9 +470,9 @@ export default function TeamPage() {
                 </p>
               </div>
               {deleteError && (
-                <div className="mx-6 mb-4 flex items-center gap-2.5 p-3 bg-red-50 border border-red-200/80 rounded-xl">
-                  <FaTriangleExclamation className="text-red-500 text-xs shrink-0" />
-                  <p className="text-sm text-red-700">{deleteError}</p>
+                <div className="mx-6 mb-4 flex items-center gap-2.5 p-3 bg-[#FEEBEA] border border-[#F40F02]/30 rounded-xl">
+                  <FaTriangleExclamation className="text-[#F40F02] text-xs shrink-0" />
+                  <p className="text-sm text-[#991B1B]">{deleteError}</p>
                 </div>
               )}
               <div className="px-6 py-4 border-t border-neutral-100 bg-neutral-50/50 flex gap-3">
@@ -450,8 +481,8 @@ export default function TeamPage() {
                   Cancel
                 </button>
                 <button type="button" onClick={handleDelete} disabled={deleting}
-                  className="flex-1 rounded-xl py-2.5 bg-red-500 text-white text-sm font-semibold hover:bg-red-600 active:scale-[0.98] transition-all disabled:opacity-60 flex items-center justify-center gap-2 shadow-sm">
-                  {deleting ? <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Removing...</> : <><FaTrash className="w-3 h-3" /> Remove</>}
+                  className="flex-1 rounded-xl py-2.5 bg-[#F40F02] text-white text-sm font-semibold hover:bg-[#C20D02] transition-colors disabled:opacity-60 flex items-center justify-center gap-2 shadow-sm shadow-[#F40F02]/15">
+                  {deleting ? <><span className="w-4 h-4 border-[2.5px] border-white/40 border-t-white border-r-white rounded-full animate-spin" />Removing…</> : <><FaTrash className="w-3 h-3" /> Remove</>}
                 </button>
               </div>
             </div>

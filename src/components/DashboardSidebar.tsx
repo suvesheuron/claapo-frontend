@@ -30,7 +30,7 @@ interface Props {
  *  • Any other link matches when the current pathname equals `to` or
  *    starts with `to + '/'`.
  *  • If multiple links match, the longest (most specific) wins — so
- *    `/dashboard/projects/42` highlights "Projects", not "Dashboard".
+ *    `/projects/42` highlights "Projects", not "Dashboard".
  */
 function useActiveNav(links: NavItem[], pathname: string): string | null {
   return useMemo(() => {
@@ -110,20 +110,20 @@ export default function DashboardSidebar({ links }: Props) {
                     onClick={closeSidebar}
                     className={`group relative flex items-center gap-3 h-10 px-3 rounded-xl text-[13px] font-semibold transition-all duration-200 ${
                       active
-                        ? 'bg-[#EEF4FF] text-[#3B5BDB] shadow-sm shadow-[#3B5BDB]/10'
-                        : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-800'
+                        ? 'bg-[#E8F0FE] text-[#2563EB] shadow-sm shadow-[#3678F1]/10'
+                        : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900'
                     }`}
                   >
                     {/* Left accent bar — only on active */}
                     <span
                       aria-hidden
                       className={`absolute left-0 top-1/2 -translate-y-1/2 w-[3px] rounded-r-full transition-all duration-200 ${
-                        active ? 'h-5 bg-[#3B5BDB]' : 'h-0 bg-transparent'
+                        active ? 'h-5 bg-[#3678F1]' : 'h-0 bg-transparent'
                       }`}
                     />
                     <span
                       className={`inline-flex items-center justify-center w-5 h-5 shrink-0 transition-colors duration-150 ${
-                        active ? 'text-[#3B5BDB]' : 'text-neutral-400 group-hover:text-neutral-600'
+                        active ? 'text-[#3678F1]' : 'text-neutral-400 group-hover:text-neutral-700'
                       }`}
                     >
                       <item.icon className="w-[16px] h-[16px]" />
@@ -132,7 +132,7 @@ export default function DashboardSidebar({ links }: Props) {
                     {showBadge && (
                       <span
                         aria-label={`${badgeCount} pending`}
-                        className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-[#F40F02] text-white text-[10px] font-bold tabular-nums shadow-sm shadow-red-500/30"
+                        className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-[#F40F02] text-white text-[10px] font-bold tabular-nums shadow-sm shadow-[#F40F02]/30"
                       >
                         {badgeCount > 99 ? '99+' : badgeCount}
                       </span>

@@ -228,7 +228,7 @@ export default function OtherUserProfile() {
 
   const profileShareUrl =
     typeof window !== 'undefined' && userId
-      ? `${window.location.origin}/dashboard/profile/${userId}`
+      ? `${window.location.origin}/profile/${userId}`
       : '';
 
   // Helper to check if a date has an existing confirmed booking
@@ -245,10 +245,10 @@ export default function OtherUserProfile() {
     if (status === 'accepted' || status === 'locked' || status === 'completed') {
       const booking = profileBookingDetails[dateKey];
       if (booking?.conversationId) {
-        navigate(`/dashboard/chat/${userId}?conversationId=${booking.conversationId}`);
+        navigate(`/chat/${userId}?conversationId=${booking.conversationId}`);
       } else {
         // Fallback: navigate without conversationId, chat page will find or create it
-        navigate(`/dashboard/chat/${userId}?projectId=${booking?.projectId || ''}`);
+        navigate(`/chat/${userId}?projectId=${booking?.projectId || ''}`);
       }
     } else {
       // No confirmed booking - open inquiry modal with pre-selected date
@@ -289,7 +289,7 @@ We're working on ${projectName}. The shoot is planned for ${shootDate}. Just wan
       setSelectedChatDate(null);
       
       // Navigate to the chat
-      navigate(`/dashboard/chat/${userId}?projectId=${projectId}`);
+      navigate(`/chat/${userId}?projectId=${projectId}`);
     } catch (err) {
       const msg = err instanceof ApiException ? err.payload.message : 'Failed to send inquiry.';
       toast.error(msg);
@@ -323,12 +323,12 @@ We're working on ${projectName}. The shoot is planned for ${shootDate}. Just wan
         <DashboardSidebar links={companyNavLinks} />
         <main className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden relative">
           {/* Subtle background mesh */}
-          <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-br from-[#3B5BDB]/5 via-[#DBEAFE]/30 to-transparent pointer-events-none" />
+          <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-br from-[#3678F1]/5 via-[#DBEAFE]/30 to-transparent pointer-events-none" />
           <div className="flex-1 min-h-0 overflow-auto z-10">
             <div className="max-w-[1100px] mx-auto px-4 sm:px-6 md:px-8 lg:px-6 xl:px-8 py-4 sm:py-6">
               <div className="mb-4 flex items-center gap-3">
                 <Link
-                  to="/dashboard/search"
+                  to="/search"
                   className="inline-flex items-center gap-1.5 text-xs text-neutral-600 hover:text-neutral-900"
                 >
                   <FaArrowLeft className="w-3 h-3" />
@@ -337,20 +337,20 @@ We're working on ${projectName}. The shoot is planned for ${shootDate}. Just wan
               </div>
 
               {loading ? (
-                <div className="animate-pulse space-y-4">
-                  <div className="h-40 bg-neutral-200 rounded-2xl" />
-                  <div className="h-64 bg-neutral-200 rounded-2xl" />
+                <div className="space-y-4">
+                  <div className="skeleton h-40 rounded-2xl" />
+                  <div className="skeleton h-64 rounded-2xl" />
                 </div>
               ) : error ? (
-                <div className="flex items-center gap-3 rounded-2xl bg-red-50 border border-red-200 p-4">
-                  <FaTriangleExclamation className="text-red-500 shrink-0" />
-                  <p className="text-sm text-red-700">{error}</p>
+                <div className="flex items-center gap-3 rounded-2xl bg-[#FEEBEA] border border-[#F40F02]/30 p-4">
+                  <FaTriangleExclamation className="text-[#F40F02] shrink-0" />
+                  <p className="text-sm text-[#991B1B]">{error}</p>
                 </div>
               ) : profile && p ? (
                 <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-6">
                   {/* Hero Card */}
-                  <motion.div variants={itemVariants} className="rounded-3xl bg-white shadow-soft border border-neutral-100 overflow-hidden relative">
-                    <div className="h-32 bg-gradient-to-r from-[#3B5BDB]/10 via-[#7c96ff]/10 to-transparent w-full absolute top-0 left-0 pointer-events-none" />
+                  <motion.div variants={itemVariants} className="rounded-3xl bg-white shadow-soft border border-neutral-100 hover:border-[#3678F1] transition-colors duration-200 overflow-hidden relative">
+                    <div className="h-32 bg-gradient-to-r from-[#3678F1]/10 via-[#7c96ff]/10 to-transparent w-full absolute top-0 left-0 pointer-events-none" />
                     <div className="p-6 sm:p-8 flex flex-col sm:flex-row gap-6 sm:gap-8 relative z-10 mt-6 sm:mt-10">
                       <div className="flex-shrink-0">
                         <div className="ring-4 ring-white rounded-full bg-white shadow-sm inline-block">
@@ -360,7 +360,7 @@ We're working on ${projectName}. The shoot is planned for ${shootDate}. Just wan
                       <div className="flex-1 min-w-0 pt-2">
                         <h1 className="text-2xl sm:text-3xl font-extrabold text-neutral-900 mb-1">{title}</h1>
                         {!isIndividual && (
-                          <p className="text-xs uppercase tracking-[0.15em] font-semibold text-[#3B5BDB] mb-3">
+                          <p className="text-xs uppercase tracking-[0.15em] font-semibold text-[#3678F1] mb-3">
                             {profile.role.replace(/_/g, ' ')}
                           </p>
                         )}
@@ -376,7 +376,7 @@ We're working on ${projectName}. The shoot is planned for ${shootDate}. Just wan
                           </p>
                         )}
                         {isIndividual && p.dailyBudget != null && (
-                          <div className="inline-block mt-2 mb-3 bg-[#EEF4FF] border border-[#3B5BDB]/20 text-[#3B5BDB] px-3 py-1.5 rounded-lg">
+                          <div className="inline-block mt-2 mb-3 bg-[#E8F0FE] border border-[#3678F1]/20 text-[#3678F1] px-3 py-1.5 rounded-lg">
                             <p className="text-sm font-bold">
                               {formatRate(p.dailyBudget)}
                             </p>
@@ -397,10 +397,10 @@ We're working on ${projectName}. The shoot is planned for ${shootDate}. Just wan
                               href={worklink}
                               target="_blank"
                               rel="noreferrer"
-                              className="inline-flex items-center gap-1.5 text-sm font-medium text-[#3B5BDB] hover:text-[#2f4ac2] transition-colors group"
+                              className="inline-flex items-center gap-1.5 text-sm font-medium text-[#3678F1] hover:text-[#2563EB] transition-colors"
                             >
                               View Portfolio
-                              <FaUpRightFromSquare className="w-3.5 h-3.5 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition-transform" />
+                              <FaUpRightFromSquare className="w-3.5 h-3.5" />
                             </a>
                           </div>
                         )}
@@ -409,9 +409,9 @@ We're working on ${projectName}. The shoot is planned for ${shootDate}. Just wan
                   </motion.div>
 
                   {(p.bio || p.aboutMe || p.aboutUs) && (
-                    <motion.div variants={itemVariants} className="rounded-3xl bg-white shadow-soft border border-neutral-100 p-6 sm:p-8">
+                    <motion.div variants={itemVariants} className="rounded-3xl bg-white shadow-soft border border-neutral-100 hover:border-[#3678F1] transition-colors duration-200 p-6 sm:p-8">
                       <h2 className="text-base font-bold text-neutral-900 mb-4 flex items-center gap-2">
-                        <span className="w-1 h-5 rounded-full bg-[#3B5BDB]" /> About
+                        <span className="w-1 h-5 rounded-full bg-[#3678F1]" /> About
                       </h2>
                       <p className="text-sm text-neutral-600 leading-relaxed whitespace-pre-wrap">
                         {p.aboutMe || p.aboutUs || p.bio}
@@ -421,7 +421,7 @@ We're working on ${projectName}. The shoot is planned for ${shootDate}. Just wan
 
                   {(isIndividual || isVendor) && (() => {
                     const platforms: Array<{ key: string; label: string; url: string | undefined; Icon: typeof FaGlobe; color: string; bg: string; border: string }> = [
-                      { key: 'website',   label: 'Website',     url: p.website,      Icon: FaGlobe,      color: 'text-[#3B5BDB]', bg: 'bg-[#3B5BDB]/10', border: 'border-[#3B5BDB]/20' },
+                      { key: 'website',   label: 'Website',     url: p.website,      Icon: FaGlobe,      color: 'text-[#3678F1]', bg: 'bg-[#3678F1]/10', border: 'border-[#3678F1]/20' },
                       { key: 'instagram', label: 'Instagram',   url: p.instagramUrl, Icon: FaInstagram,  color: 'text-[#E4405F]', bg: 'bg-[#E4405F]/10', border: 'border-[#E4405F]/20' },
                       { key: 'youtube',   label: 'YouTube',     url: p.youtubeUrl,   Icon: FaYoutube,    color: 'text-[#FF0000]', bg: 'bg-[#FF0000]/10', border: 'border-[#FF0000]/20' },
                       { key: 'vimeo',     label: 'Vimeo',       url: p.vimeoUrl,     Icon: FaVimeoV,     color: 'text-[#1AB7EA]', bg: 'bg-[#1AB7EA]/10', border: 'border-[#1AB7EA]/20' },
@@ -442,11 +442,11 @@ We're working on ${projectName}. The shoot is planned for ${shootDate}. Just wan
                       }
                     };
                     return (
-                      <motion.div variants={itemVariants} className="rounded-3xl bg-white shadow-soft border border-neutral-100 p-6 sm:p-8">
+                      <motion.div variants={itemVariants} className="rounded-3xl bg-white shadow-soft border border-neutral-100 hover:border-[#3678F1] transition-colors duration-200 p-6 sm:p-8">
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
                           <div>
                             <h2 className="text-base font-bold text-neutral-900 flex items-center gap-2">
-                              <span className="w-1 h-5 rounded-full bg-[#3B5BDB]" /> Social & Links
+                              <span className="w-1 h-5 rounded-full bg-[#3678F1]" /> Social & Links
                             </h2>
                             <p className="text-[11px] text-neutral-400 mt-1.5 ml-3">Left-click to open · Right-click to copy</p>
                           </div>
@@ -457,7 +457,7 @@ We're working on ${projectName}. The shoot is planned for ${shootDate}. Just wan
                                 void navigator.clipboard.writeText(profileShareUrl);
                                 toast.success('Profile link copied');
                               }}
-                              className="inline-flex items-center justify-center gap-2 text-xs font-semibold text-[#3B5BDB] border border-[#3B5BDB]/30 rounded-xl px-3 py-2 hover:bg-[#EEF4FF] transition-colors"
+                              className="inline-flex items-center justify-center gap-2 text-xs font-semibold text-[#3678F1] border border-[#3678F1]/30 rounded-xl px-3 py-2 hover:bg-[#E8F0FE] transition-colors"
                             >
                               <FaLink className="w-3.5 h-3.5" />
                               Copy profile link
@@ -472,7 +472,7 @@ We're working on ${projectName}. The shoot is planned for ${shootDate}. Just wan
                               onClick={() => handleOpen(url!)}
                               onContextMenu={(e) => handleCopy(e, url!, label)}
                               title={`Left-click to open ${label} · Right-click to copy link`}
-                              className={`group relative flex items-center gap-3 px-3.5 py-3 rounded-2xl border ${border} ${bg} hover:shadow-sm hover:-translate-y-0.5 transition-all duration-150 text-left`}
+                              className={`group relative flex items-center gap-3 px-3.5 py-3 rounded-2xl border ${border} ${bg} hover:border-[#3678F1] transition-colors duration-200 text-left`}
                             >
                               <div className="w-9 h-9 rounded-xl bg-white border border-neutral-200/60 flex items-center justify-center shrink-0 shadow-sm">
                                 <Icon className={`w-4 h-4 ${color}`} />
@@ -490,9 +490,9 @@ We're working on ${projectName}. The shoot is planned for ${shootDate}. Just wan
                   })()}
 
                   {isVendor && (
-                    <motion.div variants={itemVariants} className="rounded-3xl bg-white shadow-soft border border-neutral-100 p-6 sm:p-8">
+                    <motion.div variants={itemVariants} className="rounded-3xl bg-white shadow-soft border border-neutral-100 hover:border-[#3678F1] transition-colors duration-200 p-6 sm:p-8">
                       <h2 className="text-base font-bold text-neutral-900 mb-5 flex items-center gap-2">
-                        <span className="w-1 h-5 rounded-full bg-[#F4C430]" /> Vendor details
+                        <span className="w-1 h-5 rounded-full bg-[#3678F1]" /> Vendor details
                       </h2>
                       <dl className="space-y-2 text-sm text-neutral-700">
                         <div>
@@ -535,12 +535,12 @@ We're working on ${projectName}. The shoot is planned for ${shootDate}. Just wan
 
                   {(isIndividual || isVendor) && (
                   <>
-                  <motion.div variants={itemVariants} className="rounded-3xl bg-white shadow-soft border border-neutral-100 p-5 sm:p-6">
+                  <motion.div variants={itemVariants} className="rounded-3xl bg-white shadow-soft border border-neutral-100 hover:border-[#3678F1] transition-colors duration-200 p-5 sm:p-6">
                     {/* Header: title + month navigation */}
                     <div className="flex items-start justify-between gap-3 flex-wrap mb-4">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#EEF4FF] to-[#DBEAFE] border border-[#3B5BDB]/10 flex items-center justify-center shrink-0">
-                          <FaCalendarDays className="w-4 h-4 text-[#3B5BDB]" />
+                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#E8F0FE] to-[#DBEAFE] border border-[#3678F1]/10 flex items-center justify-center shrink-0">
+                          <FaCalendarDays className="w-4 h-4 text-[#3678F1]" />
                         </div>
                         <div>
                           <h2 className="text-sm font-bold text-neutral-900 leading-tight">Schedule &amp; Availability</h2>
@@ -552,7 +552,7 @@ We're working on ${projectName}. The shoot is planned for ${shootDate}. Just wan
                           type="button"
                           onClick={goPrevMonth}
                           aria-label="Previous month"
-                          className="w-9 h-9 rounded-xl border border-neutral-200 bg-white text-neutral-600 hover:bg-[#EEF4FF] hover:border-[#3B5BDB]/30 hover:text-[#3B5BDB] flex items-center justify-center transition-all"
+                          className="w-9 h-9 rounded-xl border border-neutral-200 bg-white text-neutral-600 hover:bg-[#E8F0FE] hover:border-[#3678F1]/30 hover:text-[#3678F1] flex items-center justify-center transition-all"
                         >
                           <FaChevronLeft className="w-3 h-3" />
                         </button>
@@ -564,7 +564,7 @@ We're working on ${projectName}. The shoot is planned for ${shootDate}. Just wan
                             <button
                               type="button"
                               onClick={goToday}
-                              className="text-[10px] text-[#3B5BDB] font-bold hover:underline"
+                              className="text-[10px] text-[#3678F1] font-bold hover:underline"
                             >
                               Jump to today
                             </button>
@@ -577,7 +577,7 @@ We're working on ${projectName}. The shoot is planned for ${shootDate}. Just wan
                           type="button"
                           onClick={goNextMonth}
                           aria-label="Next month"
-                          className="w-9 h-9 rounded-xl border border-neutral-200 bg-white text-neutral-600 hover:bg-[#EEF4FF] hover:border-[#3B5BDB]/30 hover:text-[#3B5BDB] flex items-center justify-center transition-all"
+                          className="w-9 h-9 rounded-xl border border-neutral-200 bg-white text-neutral-600 hover:bg-[#E8F0FE] hover:border-[#3678F1]/30 hover:text-[#3678F1] flex items-center justify-center transition-all"
                         >
                           <FaChevronRight className="w-3 h-3" />
                         </button>
@@ -597,15 +597,15 @@ We're working on ${projectName}. The shoot is planned for ${shootDate}. Just wan
                       </span>
                       {calLoading && (
                         <span className="text-[11px] text-neutral-400 font-medium inline-flex items-center gap-1.5">
-                          <span className="w-3 h-3 border-2 border-[#3B5BDB]/30 border-t-[#3B5BDB] rounded-full animate-spin" />
+                          <span className="w-6 h-6 border-[2.5px] border-[#3678F1]/15 border-t-[#3678F1] border-r-[#3678F1] rounded-full animate-spin" />
                           Loading…
                         </span>
                       )}
                     </div>
                     {calError ? (
-                      <div className="flex items-center gap-2 rounded-xl bg-red-50 border border-red-200 px-3 py-2 mb-3">
-                        <FaTriangleExclamation className="text-red-500 text-xs" />
-                        <p className="text-xs text-red-700">{calError}</p>
+                      <div className="flex items-center gap-2 rounded-xl bg-[#FEEBEA] border border-[#F40F02]/30 px-3 py-2 mb-3">
+                        <FaTriangleExclamation className="text-[#F40F02] text-xs" />
+                        <p className="text-xs text-[#991B1B]">{calError}</p>
                       </div>
                     ) : (
                       <>
@@ -634,13 +634,13 @@ We're working on ${projectName}. The shoot is planned for ${shootDate}. Just wan
                                     'relative h-9 rounded-md text-[11px] font-semibold flex items-center justify-center border transition-all overflow-hidden';
                                   const interactivity = isBlocked
                                     ? 'cursor-not-allowed'
-                                    : 'cursor-pointer hover:ring-2 hover:ring-[#3B5BDB]/25';
+                                    : 'cursor-pointer hover:ring-2 hover:ring-[#3678F1]/25';
                                   let bg = 'bg-neutral-50 text-neutral-700 border-neutral-100';
                                   if (status === 'available')      bg = 'bg-[#DCFCE7] text-[#15803D] border-[#86EFAC] hover:bg-[#BBF7D0]';
                                   else if (status === 'booked')    bg = 'bg-[#FCD34D] text-[#78350F] border-[#D97706] hover:bg-[#FBBF24]';
                                   else if (status === 'past_work') bg = 'bg-[#60A5FA] text-[#0F1F4D] border-[#1D4ED8] hover:bg-[#3B82F6]';
                                   else if (isBlocked)              bg = 'bg-[#FCA5A5] text-[#7F1D1D] border-[#DC2626]';
-                                  const todayRing = isToday ? 'ring-2 ring-[#3B5BDB]/50 ring-offset-1' : '';
+                                  const todayRing = isToday ? 'ring-2 ring-[#3678F1]/50 ring-offset-1' : '';
                                   return (
                                     <button
                                       key={key}
@@ -668,7 +668,7 @@ We're working on ${projectName}. The shoot is planned for ${shootDate}. Just wan
                                       <span className="relative flex flex-col items-center gap-0.5">
                                         <span className={isBlocked ? 'line-through decoration-[1.5px] decoration-[#7F1D1D]/70' : ''}>{day}</span>
                                         {hasBooking ? (
-                                          <span className="w-1 h-1 rounded-full bg-[#3B5BDB]" />
+                                          <span className="w-1 h-1 rounded-full bg-[#3678F1]" />
                                         ) : null}
                                       </span>
                                       {isBlocked && (
@@ -733,7 +733,7 @@ We're working on ${projectName}. The shoot is planned for ${shootDate}. Just wan
               {profile && (
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="mt-8 space-y-4">
                   <div className="flex items-center gap-3 mb-2">
-                    <span className="w-1 h-5 rounded-full bg-[#3B5BDB]" />
+                    <span className="w-1 h-5 rounded-full bg-[#3678F1]" />
                     <h2 className="text-base font-bold text-neutral-900">Ratings & Reviews</h2>
                   </div>
                   {viewer?.role === 'company' && (isIndividual || isVendor) && (

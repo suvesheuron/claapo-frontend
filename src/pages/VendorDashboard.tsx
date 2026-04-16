@@ -345,32 +345,42 @@ export default function VendorDashboard() {
           <div className="flex-1 min-h-0 overflow-auto">
             <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-6 xl:px-8 py-5">
 
-              <div className="mb-5">
-                <h1 className="text-xl font-bold text-neutral-900">Vendor Dashboard</h1>
-                <p className="text-sm text-neutral-500 mt-0.5">Equipment availability and rental management</p>
+              <div className="relative rounded-2xl bg-white border border-neutral-200/70 px-6 sm:px-8 py-6 mb-5 overflow-hidden shadow-soft">
+                <div className="absolute inset-y-0 right-0 w-1/2 bg-gradient-to-l from-[#E8F0FE]/60 to-transparent pointer-events-none" />
+                <span aria-hidden className="absolute left-0 top-6 bottom-6 w-1 rounded-r-full bg-gradient-to-b from-[#3678F1] to-[#5B9DF9]" />
+                <div className="relative pl-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#3678F1]">Vendor</p>
+                  <h1 className="text-[26px] sm:text-[28px] font-extrabold text-neutral-900 tracking-tight leading-tight mt-1">Vendor Dashboard</h1>
+                  <p className="text-sm text-neutral-500 mt-1.5">Equipment availability and rental management</p>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
                 {/* Calendar — left, 3/4 width on desktop */}
                 <div className="lg:col-span-3 order-2 lg:order-1">
-                    <div className="rounded-2xl bg-white border border-neutral-200 p-4 sm:p-5 min-w-0">
+                    <div className="rounded-2xl bg-white border border-neutral-200/70 shadow-soft p-4 sm:p-5 min-w-0 hover:border-[#3678F1] transition-colors duration-200">
                       <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
-                        <h2 className="text-base font-bold text-neutral-900">Equipment Calendar</h2>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-xl bg-[#E8F0FE] flex items-center justify-center ring-1 ring-[#3678F1]/15">
+                            <FaCalendar className="text-[#3678F1] text-sm" />
+                          </div>
+                          <h2 className="text-base font-bold text-neutral-900">Equipment Calendar</h2>
+                        </div>
+                        <div className="flex items-center gap-1">
                           <button
                             type="button"
                             onClick={() => setMonthOffset((o) => o - 1)}
-                            className="w-8 h-8 rounded-lg border border-neutral-200 flex items-center justify-center text-neutral-600 hover:bg-neutral-100 transition-colors"
+                            className="w-9 h-9 rounded-lg border border-neutral-200/80 bg-white text-neutral-600 hover:bg-[#E8F0FE] hover:border-[#3678F1]/30 hover:text-[#3678F1] flex items-center justify-center transition-colors"
                           >
                             <FaChevronLeft className="text-xs" />
                           </button>
-                          <span className="text-sm font-semibold text-neutral-900 min-w-[120px] text-center">
+                          <span className="text-sm font-semibold text-neutral-900 min-w-[130px] text-center tabular-nums px-1">
                             {monthLabel} {yearLabel}
                           </span>
                           <button
                             type="button"
                             onClick={() => setMonthOffset((o) => o + 1)}
-                            className="w-8 h-8 rounded-lg border border-neutral-200 flex items-center justify-center text-neutral-600 hover:bg-neutral-100 transition-colors"
+                            className="w-9 h-9 rounded-lg border border-neutral-200/80 bg-white text-neutral-600 hover:bg-[#E8F0FE] hover:border-[#3678F1]/30 hover:text-[#3678F1] flex items-center justify-center transition-colors"
                           >
                             <FaChevronRight className="text-xs" />
                           </button>
@@ -400,7 +410,7 @@ export default function VendorDashboard() {
                                 : cell.status && cellStyle[cell.status]
                                   ? `${cellStyle[cell.status]} cursor-pointer`
                                   : 'bg-white border-neutral-200 text-neutral-600 hover:bg-[#F3F4F6] cursor-pointer'}
-                              ${!cell.muted && detailDate === getDateStr(cell.d) ? 'ring-2 ring-[#3B5BDB] ring-offset-1' : ''}
+                              ${!cell.muted && detailDate === getDateStr(cell.d) ? 'ring-2 ring-[#3678F1] ring-offset-1' : ''}
                             `}
                           >
                             <span className="text-[11px] sm:text-xs font-semibold leading-none">{cell.d}</span>
@@ -428,24 +438,24 @@ export default function VendorDashboard() {
                         ))}
                       </div>
 
-                      <div className="flex flex-wrap gap-4 mt-4 pt-4 border-t border-neutral-100">
+                      <div className="flex flex-wrap gap-x-5 gap-y-1.5 mt-4 pt-4 border-t border-neutral-100">
                         {availLoading && (
                           <span className="text-[10px] text-neutral-400 w-full">Syncing availability…</span>
                         )}
                         {[
                           { color: 'bg-[#22C55E]', label: 'Available' },
-                          { color: 'bg-[#D97706]', label: 'Ongoing' },
-                          { color: 'bg-[#1D4ED8]', label: 'Completed' },
-                          { color: 'bg-[#DC2626]', label: 'Unavailable' },
+                          { color: 'bg-[#3678F1]', label: 'Ongoing' },
+                          { color: 'bg-[#A3A3A3]', label: 'Completed' },
+                          { color: 'bg-[#F40F02]', label: 'Unavailable' },
                         ].map(({ color, label }) => (
                           <div key={label} className="flex items-center gap-2">
-                            <div className={`w-2.5 h-2.5 rounded-full ${color}`} />
-                            <span className="text-xs text-neutral-500">{label}</span>
+                            <div className={`w-2 h-2 rounded-full ${color}`} />
+                            <span className="text-[11px] text-neutral-500 font-medium">{label}</span>
                           </div>
                         ))}
                       </div>
                       <p className="mt-3 text-[11px] text-neutral-400">
-                        Go to <Link to="/dashboard/vendor-availability" className="text-[#3B5BDB] hover:underline">Availability</Link> to manage your schedule.
+                        Go to <Link to="/vendor-availability" className="text-[#3678F1] hover:underline">Availability</Link> to manage your schedule.
                       </p>
                     </div>
                 </div>
@@ -453,10 +463,10 @@ export default function VendorDashboard() {
                 {/* Right column — Booking Requests, Recent Rentals, Quick Actions */}
                 <div className="space-y-4 order-1 lg:order-2">
                   {/* Booking Requests */}
-                  <div className="rounded-2xl bg-white border border-neutral-200 p-4">
+                  <div className="rounded-2xl bg-white border border-neutral-200/70 shadow-soft p-4 hover:border-[#3678F1] transition-colors duration-200">
                     <div className="flex items-center gap-2 mb-3">
-                      <div className="w-6 h-6 rounded-lg bg-[#FEF9E6] flex items-center justify-center">
-                        <FaBell className="text-[#F4C430] text-xs" />
+                      <div className="w-7 h-7 rounded-lg bg-[#E8F0FE] ring-1 ring-[#3678F1]/15 flex items-center justify-center">
+                        <FaBell className="text-[#3678F1] text-xs" />
                       </div>
                       <h3 className="text-sm font-bold text-neutral-900">Booking Requests</h3>
                       {pendingBookings.length > 0 && (
@@ -464,19 +474,19 @@ export default function VendorDashboard() {
                       )}
                     </div>
                     {actionError && (
-                      <div className="flex items-center gap-2 mb-3 p-2.5 bg-red-50 border border-red-200 rounded-xl">
-                        <FaTriangleExclamation className="text-red-500 text-xs shrink-0" />
-                        <p className="text-xs text-red-700">{actionError}</p>
+                      <div className="flex items-center gap-2 mb-3 p-2.5 bg-[#FEEBEA] border border-[#F40F02]/30 rounded-xl">
+                        <FaTriangleExclamation className="text-[#F40F02] text-xs shrink-0" />
+                        <p className="text-xs text-[#991B1B]">{actionError}</p>
                       </div>
                     )}
                     {bookingsLoading ? (
-                      <div className="space-y-2">{[1,2].map(i => <div key={i} className="h-16 rounded-xl bg-neutral-100 animate-pulse" />)}</div>
+                      <div className="space-y-2">{[1,2].map(i => <div key={i} className="skeleton h-16 rounded-xl" />)}</div>
                     ) : pendingBookings.length === 0 ? (
                       <p className="text-xs text-neutral-400 text-center py-4">No pending requests</p>
                     ) : (
                       <div className="space-y-2">
                         {pendingBookings.map((b) => (
-                          <div key={b.id} className="rounded-xl border border-neutral-200 p-3 bg-[#FAFAFA]">
+                          <div key={b.id} className="rounded-xl border border-neutral-200/70 p-3 bg-white hover:border-[#3678F1] transition-colors duration-200">
                             <p className="text-xs font-semibold text-neutral-900 mb-0.5 truncate">{b.project.title}</p>
                             <p className="text-[11px] text-neutral-500 mb-1.5 truncate">{b.requester.companyProfile?.companyName ?? b.requester.email}{b.rateOffered ? ` · ${formatPaise(b.rateOffered)}` : ''}</p>
                             <div className="flex gap-1.5">
@@ -487,21 +497,24 @@ export default function VendorDashboard() {
                         ))}
                       </div>
                     )}
-                    <Link to="/dashboard/bookings" className="mt-3 rounded-xl block w-full py-2 text-xs text-[#3B5BDB] bg-[#EEF4FF] hover:bg-[#DBEAFE] text-center font-semibold transition-colors">View All Bookings</Link>
+                    <Link to="/bookings" className="mt-3 rounded-xl block w-full py-2.5 text-xs text-[#2563EB] bg-[#E8F0FE] hover:bg-[#DBEAFE] text-center font-bold transition-colors duration-200">View All Bookings</Link>
                   </div>
 
                   {/* Recent Rentals */}
-                  <div className="rounded-2xl bg-white border border-neutral-200 p-4">
+                  <div className="rounded-2xl bg-white border border-neutral-200/70 shadow-soft p-4 hover:border-[#3678F1] transition-colors duration-200">
                     <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-sm font-bold text-neutral-900">Recent Rentals</h3>
-                      <Link to="/dashboard/past-rentals" className="text-xs text-[#3B5BDB] hover:underline font-medium">View all</Link>
+                      <h3 className="text-sm font-bold text-neutral-900 flex items-center gap-2">
+                        <span className="w-1 h-4 rounded-full bg-[#3678F1]" />
+                        Recent Rentals
+                      </h3>
+                      <Link to="/past-rentals" className="text-[11px] text-[#3678F1] hover:text-[#2563EB] font-semibold transition-colors">View all</Link>
                     </div>
                     {pastItems.length === 0 ? (
                       <p className="text-xs text-neutral-400 text-center py-4">No past rentals yet</p>
                     ) : (
                       <div className="space-y-2">
                         {pastItems.slice(0, 4).map((b) => (
-                          <Link key={b.id} to={`/dashboard/projects/${b.project.id}`} className="block rounded-xl border border-neutral-200 p-3 bg-[#FAFAFA] hover:border-[#3B5BDB]/50 transition-colors">
+                          <Link key={b.id} to={`/projects/${b.project.id}`} className="block rounded-xl border border-neutral-200/70 p-3 bg-white hover:border-[#3678F1] transition-colors duration-200">
                             <p className="text-xs font-semibold text-neutral-900 truncate">{b.project.title}</p>
                             <p className="text-[11px] text-neutral-500 truncate">{b.requester.companyProfile?.companyName ?? '—'}</p>
                           </Link>
@@ -512,26 +525,29 @@ export default function VendorDashboard() {
 
                   {/* Stats — same column as individual dashboard */}
                   <div className="grid grid-cols-2 gap-2">
-                    <div className="rounded-2xl bg-white border border-neutral-200 p-3">
+                    <div className="rounded-2xl bg-white border border-neutral-200/70 shadow-soft p-3 hover:border-[#3678F1] transition-colors duration-200">
                       <p className="text-[11px] text-neutral-500">Active Bookings</p>
-                      <p className="text-lg font-bold text-[#3B5BDB]">{activeCount}</p>
+                      <p className="text-lg font-bold text-[#3678F1]">{activeCount}</p>
                     </div>
-                    <div className="rounded-2xl bg-white border border-neutral-200 p-3">
+                    <div className="rounded-2xl bg-white border border-neutral-200/70 shadow-soft p-3 hover:border-[#3678F1] transition-colors duration-200">
                       <p className="text-[11px] text-neutral-500">Past Rentals</p>
-                      <p className="text-lg font-bold text-[#3B5BDB]">{pastCount}</p>
+                      <p className="text-lg font-bold text-[#3678F1]">{pastCount}</p>
                     </div>
                   </div>
 
                   {/* Equipment summary — in sidebar when present */}
                   {equipmentArray.length > 0 && (
-                    <div className="rounded-2xl bg-white border border-neutral-200 p-4">
+                    <div className="rounded-2xl bg-white border border-neutral-200/70 shadow-soft p-4 hover:border-[#3678F1] transition-colors duration-200">
                       <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-sm font-bold text-neutral-900">Equipment</h3>
-                        <Link to="/dashboard/equipment" className="text-xs text-[#3B5BDB] hover:underline font-medium">View all</Link>
+                        <h3 className="text-sm font-bold text-neutral-900 flex items-center gap-2">
+                          <span className="w-1 h-4 rounded-full bg-[#3678F1]" />
+                          Equipment
+                        </h3>
+                        <Link to="/equipment" className="text-[11px] text-[#3678F1] hover:text-[#2563EB] font-semibold transition-colors">View all</Link>
                       </div>
                       <div className="space-y-2">
                         {equipmentArray.slice(0, 3).map((item) => (
-                          <Link key={item.id} to="/dashboard/equipment" className="block rounded-xl border border-neutral-200 p-2.5 bg-[#FAFAFA] hover:border-[#3B5BDB]/50 transition-colors">
+                          <Link key={item.id} to="/equipment" className="block rounded-xl border border-neutral-200/70 p-2.5 bg-white hover:border-[#3678F1] transition-colors duration-200">
                             <p className="text-xs font-semibold text-neutral-900 truncate">{item.name}</p>
                             <p className="text-[10px] text-neutral-500">{item.dailyBudget != null ? formatRateRange(item.dailyBudget) : '—'}</p>
                           </Link>
@@ -542,20 +558,35 @@ export default function VendorDashboard() {
                   )}
 
                   {/* Quick Actions */}
-                  <div className="rounded-2xl bg-white border border-neutral-200 p-4">
-                    <h3 className="text-sm font-bold text-neutral-900 mb-3">Quick Actions</h3>
+                  <div className="rounded-2xl bg-white border border-neutral-200/70 shadow-soft p-4 hover:border-[#3678F1] transition-colors duration-200">
+                    <h3 className="text-sm font-bold text-neutral-900 mb-3 flex items-center gap-2">
+                      <span className="w-1 h-4 rounded-full bg-[#3678F1]" />
+                      Quick Actions
+                    </h3>
                     <div className="space-y-1.5">
-                      <Link to="/dashboard/vendor-availability" className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#F3F4F6] text-neutral-700 text-xs font-semibold hover:bg-[#EEF4FF] hover:text-[#3B5BDB] transition-colors">
-                        <FaCalendar className="w-3 h-3" /> Manage Availability
+                      <Link to="/vendor-availability" className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-neutral-200/70 text-neutral-700 text-[13px] font-semibold hover:border-[#3678F1] transition-colors duration-200">
+                        <div className="w-8 h-8 rounded-lg bg-[#E8F0FE] ring-1 ring-[#3678F1]/15 flex items-center justify-center shrink-0">
+                          <FaCalendar className="w-3.5 h-3.5 text-[#3678F1]" />
+                        </div>
+                        <span className="flex-1 truncate">Manage Availability</span>
                       </Link>
-                      <Link to="/dashboard/conversations" className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#F3F4F6] text-neutral-700 text-xs font-semibold hover:bg-[#EEF4FF] hover:text-[#3B5BDB] transition-colors">
-                        <FaMessage className="w-3 h-3" /> Open Chat
+                      <Link to="/conversations" className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-neutral-200/70 text-neutral-700 text-[13px] font-semibold hover:border-[#3678F1] transition-colors duration-200">
+                        <div className="w-8 h-8 rounded-lg bg-[#E8F0FE] ring-1 ring-[#3678F1]/15 flex items-center justify-center shrink-0">
+                          <FaMessage className="w-3.5 h-3.5 text-[#3678F1]" />
+                        </div>
+                        <span className="flex-1 truncate">Open Chat</span>
                       </Link>
-                      <Link to="/dashboard/equipment" className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#F3F4F6] text-neutral-700 text-xs font-semibold hover:bg-[#EEF4FF] hover:text-[#3B5BDB] transition-colors">
-                        <FaTruck className="w-3 h-3" /> Equipment
+                      <Link to="/equipment" className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-neutral-200/70 text-neutral-700 text-[13px] font-semibold hover:border-[#3678F1] transition-colors duration-200">
+                        <div className="w-8 h-8 rounded-lg bg-[#E8F0FE] ring-1 ring-[#3678F1]/15 flex items-center justify-center shrink-0">
+                          <FaTruck className="w-3.5 h-3.5 text-[#3678F1]" />
+                        </div>
+                        <span className="flex-1 truncate">Equipment</span>
                       </Link>
-                      <Link to="/dashboard/vendor-profile" className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#F3F4F6] text-neutral-700 text-xs font-semibold hover:bg-[#EEF4FF] hover:text-[#3B5BDB] transition-colors">
-                        <FaUser className="w-3 h-3" /> Edit Profile
+                      <Link to="/vendor-profile" className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-neutral-200/70 text-neutral-700 text-[13px] font-semibold hover:border-[#3678F1] transition-colors duration-200">
+                        <div className="w-8 h-8 rounded-lg bg-[#E8F0FE] ring-1 ring-[#3678F1]/15 flex items-center justify-center shrink-0">
+                          <FaUser className="w-3.5 h-3.5 text-[#3678F1]" />
+                        </div>
+                        <span className="flex-1 truncate">Edit Profile</span>
                       </Link>
                     </div>
                   </div>
@@ -612,13 +643,13 @@ export default function VendorDashboard() {
                   onChange={(e) => setCancelReason(e.target.value)}
                   rows={3}
                   placeholder="e.g., Equipment conflict…"
-                  className="w-full px-4 py-2.5 border border-neutral-300 rounded-xl text-sm bg-[#F3F4F6] focus:bg-white focus:outline-none focus:border-[#3B5BDB] resize-none"
+                  className="w-full px-4 py-2.5 border border-neutral-300 rounded-xl text-sm bg-[#F3F4F6] focus:bg-white focus:outline-none focus:border-[#3678F1] resize-none"
                 />
               </div>
               {actionError && (
-                <div className="flex items-center gap-2 mb-4 p-3 bg-red-50 border border-red-200 rounded-xl">
-                  <FaTriangleExclamation className="text-red-500 text-xs shrink-0" />
-                  <p className="text-xs text-red-700">{actionError}</p>
+                <div className="flex items-center gap-2 mb-4 p-3 bg-[#FEEBEA] border border-[#F40F02]/30 rounded-xl">
+                  <FaTriangleExclamation className="text-[#F40F02] text-xs shrink-0" />
+                  <p className="text-xs text-[#991B1B]">{actionError}</p>
                 </div>
               )}
               <div className="flex gap-3">
@@ -634,10 +665,10 @@ export default function VendorDashboard() {
                   type="button"
                   onClick={() => void doRequestCancel()}
                   disabled={!!actioning}
-                  className="flex-1 py-2.5 rounded-xl bg-amber-600 text-white text-sm font-semibold hover:bg-amber-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="flex-1 py-2.5 rounded-xl bg-[#F40F02] text-white text-sm font-semibold hover:bg-[#C70D02] disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {actioning?.endsWith('req-cancel') ? (
-                    <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Sending…</>
+                    <><span className="w-6 h-6 border-[2.5px] border-white/30 border-t-white border-r-white rounded-full animate-spin" /> Sending…</>
                   ) : (
                     'Send request'
                   )}

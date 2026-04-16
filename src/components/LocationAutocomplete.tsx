@@ -5,7 +5,7 @@
  */
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { FaLocationDot, FaXmark, FaSpinner } from 'react-icons/fa6';
+import { FaLocationDot, FaXmark } from 'react-icons/fa6';
 
 interface LocationResult {
   displayName: string;
@@ -200,7 +200,7 @@ export default function LocationAutocomplete({
             onFocus={handleFocus}
             placeholder={placeholder}
             disabled={disabled}
-            className="w-full pl-9 pr-8 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3B5BDB] focus:ring-2 focus:ring-[#3B5BDB]/10 disabled:bg-neutral-50 transition-all"
+            className="w-full pl-9 pr-8 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3678F1] focus:ring-2 focus:ring-[#3678F1]/10 disabled:bg-neutral-50 transition-all"
           />
           {displayValue && !disabled && (
             <button type="button" onClick={handleClear} className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-neutral-400 hover:text-neutral-600">
@@ -208,7 +208,7 @@ export default function LocationAutocomplete({
             </button>
           )}
           {loading && (
-            <FaSpinner className="absolute right-8 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-400 animate-spin" />
+            <span className="absolute right-8 top-1/2 -translate-y-1/2 w-3.5 h-3.5 border-[2px] border-[#3678F1]/15 border-t-[#3678F1] border-r-[#3678F1] rounded-full animate-spin" />
           )}
         </div>
 
@@ -221,7 +221,7 @@ export default function LocationAutocomplete({
                 onClick={() => handleSelect(r)}
                 className="w-full text-left px-3 py-2.5 hover:bg-[#F0F7FF] transition-colors flex items-start gap-2.5 border-b border-neutral-100 last:border-b-0"
               >
-                <FaLocationDot className="w-3.5 h-3.5 text-[#3B5BDB] mt-0.5 shrink-0" />
+                <FaLocationDot className="w-3.5 h-3.5 text-[#3678F1] mt-0.5 shrink-0" />
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-neutral-900 truncate">{r.city}</p>
                   <p className="text-xs text-neutral-500 truncate">
@@ -249,7 +249,7 @@ export default function LocationAutocomplete({
       {label && <label className="block text-xs font-medium text-neutral-600 mb-1">{label}</label>}
 
       <div className="relative">
-        <FaLocationDot className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#3B5BDB] pointer-events-none" />
+        <FaLocationDot className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#3678F1] pointer-events-none" />
         <input
           ref={inputRef}
           type="text"
@@ -258,7 +258,7 @@ export default function LocationAutocomplete({
           onFocus={handleFocus}
           placeholder={placeholder}
           disabled={disabled}
-          className="w-full pl-9 pr-8 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3B5BDB] focus:ring-2 focus:ring-[#3B5BDB]/10 disabled:bg-neutral-50 transition-all"
+          className="w-full pl-9 pr-8 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3678F1] focus:ring-2 focus:ring-[#3678F1]/10 disabled:bg-neutral-50 transition-all"
         />
         {displayValue && !disabled && (
           <button type="button" onClick={handleClear} className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-neutral-400 hover:text-neutral-600">
@@ -266,7 +266,7 @@ export default function LocationAutocomplete({
           </button>
         )}
         {loading && (
-          <FaSpinner className="absolute right-8 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-400 animate-spin" />
+          <span className="absolute right-8 top-1/2 -translate-y-1/2 w-3.5 h-3.5 border-[2px] border-[#3678F1]/15 border-t-[#3678F1] border-r-[#3678F1] rounded-full animate-spin" />
         )}
       </div>
 
@@ -280,8 +280,8 @@ export default function LocationAutocomplete({
               onClick={() => handleSelect(r)}
               className="w-full text-left px-4 py-3 hover:bg-[#F0F7FF] transition-colors flex items-start gap-3 border-b border-neutral-100 last:border-b-0 last:rounded-b-2xl first:rounded-t-2xl"
             >
-              <div className="w-8 h-8 rounded-lg bg-[#EEF4FF] flex items-center justify-center shrink-0 mt-0.5">
-                <FaLocationDot className="w-3.5 h-3.5 text-[#3B5BDB]" />
+              <div className="w-8 h-8 rounded-lg bg-[#E8F0FE] flex items-center justify-center shrink-0 mt-0.5">
+                <FaLocationDot className="w-3.5 h-3.5 text-[#3678F1]" />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-neutral-900">{r.city}</p>

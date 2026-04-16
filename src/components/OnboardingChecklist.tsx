@@ -31,25 +31,25 @@ function getSteps(role: string, profile: ProfileMe | null): Step[] {
 
   if (role === 'individual') {
     return [
-      { label: 'Complete your profile', done: hasName, to: '/dashboard/profile' },
-      { label: 'Add your skills & budget', done: hasSkills && hasRate, to: '/dashboard/profile' },
-      { label: 'Set your availability', done: hasAvailability, to: '/dashboard/availability' },
+      { label: 'Complete your profile', done: hasName, to: '/profile' },
+      { label: 'Add your skills & budget', done: hasSkills && hasRate, to: '/profile' },
+      { label: 'Set your availability', done: hasAvailability, to: '/availability' },
       { label: "You're ready to get hired!", done: hasName && hasSkills && hasRate && hasAvailability, to: '/dashboard' },
     ];
   }
   if (role === 'vendor') {
     return [
-      { label: 'Complete vendor profile', done: hasName, to: '/dashboard/vendor-profile' },
-      { label: 'Add your equipment', done: false, to: '/dashboard/equipment' },
-      { label: 'Set availability', done: hasAvailability, to: '/dashboard/vendor-availability' },
+      { label: 'Complete vendor profile', done: hasName, to: '/vendor-profile' },
+      { label: 'Add your equipment', done: false, to: '/equipment' },
+      { label: 'Set availability', done: hasAvailability, to: '/vendor-availability' },
       { label: 'Start accepting bookings!', done: hasName && hasAvailability, to: '/dashboard' },
     ];
   }
   // company
   return [
-    { label: 'Complete company profile', done: hasName, to: '/dashboard/company-profile' },
-    { label: 'Create your first project', done: false, to: '/dashboard/projects/new' },
-    { label: 'Search & hire crew', done: false, to: '/dashboard/search' },
+    { label: 'Complete company profile', done: hasName, to: '/company-profile' },
+    { label: 'Create your first project', done: false, to: '/projects/new' },
+    { label: 'Search & hire crew', done: false, to: '/search' },
     { label: 'Lock your team!', done: false, to: '/dashboard' },
   ];
 }
@@ -96,7 +96,7 @@ export default function OnboardingChecklist() {
   return (
     <div className="fixed bottom-4 right-4 z-40 w-80 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl shadow-black/10 border border-neutral-200/60 overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4 bg-gradient-to-r from-[#3B5BDB] via-[#4E6AE0] to-[#5B9DF9] relative overflow-hidden">
+      <div className="flex items-center justify-between px-5 py-4 bg-gradient-to-r from-[#2563EB] via-[#3678F1] to-[#5B9DF9] relative overflow-hidden">
         <div className="absolute top-0 right-0 w-24 h-24 bg-white/[0.06] rounded-full -translate-y-1/2 translate-x-1/3" />
         <div className="absolute bottom-0 left-8 w-16 h-16 bg-white/[0.04] rounded-full translate-y-1/2" />
         <div className="flex items-center gap-3 relative">
@@ -146,7 +146,7 @@ export default function OnboardingChecklist() {
       {/* Progress bar */}
       <div className="h-0.5 bg-neutral-100">
         <div
-          className="h-0.5 bg-gradient-to-r from-[#3B5BDB] to-[#5B9DF9] transition-all duration-700 ease-out"
+          className="h-0.5 bg-gradient-to-r from-[#3678F1] to-[#5B9DF9] transition-all duration-700 ease-out"
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -158,16 +158,16 @@ export default function OnboardingChecklist() {
             <Link
               key={i}
               to={step.to}
-              className={`flex items-center gap-3 p-2.5 rounded-xl transition-all duration-150 group ${step.done ? 'opacity-50' : 'hover:bg-[#EEF4FF]/60'}`}
+              className={`flex items-center gap-3 p-2.5 rounded-xl transition-all duration-150 group ${step.done ? 'opacity-50' : 'hover:bg-[#E8F0FE]/60'}`}
             >
               <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-[10px] font-bold transition-all duration-200 ${
                 step.done
-                  ? 'bg-gradient-to-br from-[#3B5BDB] to-[#5B9DF9] text-white shadow-sm shadow-[#3B5BDB]/20'
-                  : 'bg-neutral-100 text-neutral-400 border border-neutral-200/60 group-hover:border-[#3B5BDB]/30 group-hover:bg-[#EEF4FF] group-hover:text-[#3B5BDB]'
+                  ? 'bg-gradient-to-br from-[#3678F1] to-[#5B9DF9] text-white shadow-sm shadow-[#3678F1]/20'
+                  : 'bg-neutral-100 text-neutral-400 border border-neutral-200/60 group-hover:border-[#3678F1]/30 group-hover:bg-[#E8F0FE] group-hover:text-[#2563EB]'
               }`}>
                 {step.done ? <FaCheck className="text-[9px]" /> : <span>{i + 1}</span>}
               </div>
-              <span className={`text-xs font-medium leading-tight ${step.done ? 'text-neutral-400 line-through' : 'text-neutral-700 group-hover:text-[#3B5BDB]'}`}>
+              <span className={`text-xs font-medium leading-tight ${step.done ? 'text-neutral-400 line-through' : 'text-neutral-700 group-hover:text-[#2563EB]'}`}>
                 {step.label}
               </span>
             </Link>

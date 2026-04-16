@@ -239,7 +239,7 @@ export default function CompanyProfile() {
   const improvementTips = me?.profile ? getProfileImprovementTips('company', liveProfileSnapshot as any) : [];
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-[#F8F9FB] w-full">
+    <div className="h-screen flex flex-col overflow-hidden bg-[#F3F4F6] w-full">
       <DashboardHeader />
       <div className="flex-1 flex min-h-0 overflow-hidden">
         <DashboardSidebar links={companyNavLinks} />
@@ -256,7 +256,7 @@ export default function CompanyProfile() {
                   <button
                     type="button"
                     onClick={() => setEditing(true)}
-                    className="px-4 py-2.5 bg-brand-primary text-white rounded-xl text-sm font-semibold hover:bg-brand-primary/90 transition-colors flex items-center gap-2 shadow-sm"
+                    className="px-4 py-2.5 bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white rounded-xl text-sm font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] transition-colors flex items-center gap-2 shadow-brand"
                   >
                     <FaPen className="w-3.5 h-3.5" /> Edit Profile
                   </button>
@@ -264,9 +264,9 @@ export default function CompanyProfile() {
               </div>
 
               {meLoading ? (
-                <div className="animate-pulse space-y-6">
-                  <div className="h-64 bg-neutral-200 rounded-2xl" />
-                  <div className="h-96 bg-neutral-200 rounded-2xl" />
+                <div className="space-y-6">
+                  <div className="skeleton h-64 rounded-2xl" />
+                  <div className="skeleton h-96 rounded-2xl" />
                 </div>
               ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -274,9 +274,9 @@ export default function CompanyProfile() {
                   {/* Left Sidebar - Profile Card & Completion */}
                   <div className="lg:col-span-1 space-y-6">
                     {/* Profile Card */}
-                    <div className="rounded-2xl bg-white border border-neutral-200 shadow-sm overflow-hidden">
+                    <div className="rounded-2xl bg-white border border-neutral-200 shadow-sm hover:border-[#3678F1] transition-colors duration-200 overflow-hidden">
                       {/* Gradient Banner */}
-                      <div className="h-32 bg-gradient-to-br from-brand-primary via-brand-primary/90 to-brand-primary/80 relative overflow-hidden">
+                      <div className="h-32 bg-gradient-to-br from-[#3678F1] via-[#3678F1]/90 to-[#2563EB] relative overflow-hidden">
                         <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(255,255,255,0.3) 0%, transparent 50%), radial-gradient(circle at 80% 30%, rgba(255,255,255,0.2) 0%, transparent 50%)' }} />
                       </div>
                       
@@ -286,7 +286,7 @@ export default function CompanyProfile() {
                           <Avatar src={avatarUrl ?? undefined} name={companyName || 'Co'} size="lg" />
                           <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                             {avatarUploading
-                              ? <span className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                              ? <span className="w-6 h-6 border-[2.5px] border-white/40 border-t-white border-r-white rounded-full animate-spin" />
                               : <FaCamera className="text-white text-sm" />}
                           </div>
                           <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
@@ -304,7 +304,7 @@ export default function CompanyProfile() {
                             </span>
                           )}
                           {profile?.isGstVerified && (
-                            <span className="inline-flex items-center gap-1.5 text-xs px-3 py-1 rounded-full bg-blue-50 text-blue-700 font-semibold border border-blue-200/60">
+                            <span className="inline-flex items-center gap-1.5 text-xs px-3 py-1 rounded-full bg-[#E8F0FE] text-[#2563EB] font-semibold border border-[#3678F1]/20">
                               <FaIdCard className="w-3 h-3" /> GST Verified
                             </span>
                           )}
@@ -320,10 +320,10 @@ export default function CompanyProfile() {
 
                         {/* Edit Button */}
                         {!editing && (
-                          <button 
-                            type="button" 
-                            onClick={() => setEditing(true)} 
-                            className="mt-5 w-full px-4 py-2.5 bg-brand-primary text-white rounded-xl text-sm font-semibold hover:bg-brand-primary/90 transition-colors flex items-center justify-center gap-2 shadow-sm"
+                          <button
+                            type="button"
+                            onClick={() => setEditing(true)}
+                            className="mt-5 w-full px-4 py-2.5 bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white rounded-xl text-sm font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] transition-colors flex items-center justify-center gap-2 shadow-brand"
                           >
                             <FaPen className="w-3.5 h-3.5" /> Edit Profile
                           </button>
@@ -332,7 +332,7 @@ export default function CompanyProfile() {
                     </div>
 
                     {/* Profile Completion */}
-                    <div className="rounded-2xl bg-white border border-neutral-200 shadow-sm p-5">
+                    <div className="rounded-2xl bg-white border border-neutral-200 shadow-sm hover:border-[#3678F1] transition-colors duration-200 p-5">
                       <ProfileCompletionBadge percentage={profileCompletion} size="lg" />
                       {improvementTips.length > 0 && editing && (
                         <div className="mt-4 space-y-2">
@@ -340,7 +340,7 @@ export default function CompanyProfile() {
                           <ul className="space-y-1.5">
                             {improvementTips.slice(0, 3).map((tip, idx) => (
                               <li key={idx} className="flex items-start gap-2 text-xs text-neutral-600">
-                                <span className="text-brand-primary mt-0.5">•</span>
+                                <span className="text-[#3678F1] mt-0.5">•</span>
                                 {tip}
                               </li>
                             ))}
@@ -350,10 +350,10 @@ export default function CompanyProfile() {
                     </div>
 
                     {/* Quick Stats */}
-                    <div className="rounded-2xl bg-white border border-neutral-200 shadow-sm p-5 space-y-3">
+                    <div className="rounded-2xl bg-white border border-neutral-200 shadow-sm hover:border-[#3678F1] transition-colors duration-200 p-5 space-y-3">
                       <div className="flex items-center gap-3 text-sm text-neutral-600">
-                        <div className="w-8 h-8 rounded-lg bg-brand-primary/10 flex items-center justify-center shrink-0">
-                          <FaUser className="w-4 h-4 text-brand-primary" />
+                        <div className="w-8 h-8 rounded-lg bg-[#E8F0FE] flex items-center justify-center shrink-0">
+                          <FaUser className="w-4 h-4 text-[#3678F1]" />
                         </div>
                         <div>
                           <p className="text-xs text-neutral-500">Team Members</p>
@@ -375,9 +375,9 @@ export default function CompanyProfile() {
                   {/* Main Content */}
                   <div className="lg:col-span-2 space-y-6">
                     {error && (
-                      <div className="flex items-start gap-2 rounded-xl bg-red-50 border border-red-200 px-4 py-3">
-                        <FaTriangleExclamation className="text-red-500 text-sm shrink-0 mt-0.5" />
-                        <p className="text-sm text-red-700">{error}</p>
+                      <div className="flex items-start gap-2 rounded-xl bg-[#FEEBEA] border border-[#F40F02]/30 px-4 py-3">
+                        <FaTriangleExclamation className="text-[#F40F02] text-sm shrink-0 mt-0.5" />
+                        <p className="text-sm text-[#991B1B]">{error}</p>
                       </div>
                     )}
                     {saved && (
@@ -478,7 +478,7 @@ export default function CompanyProfile() {
                           <button
                             type="button"
                             onClick={() => setShowPasswordSection(!showPasswordSection)}
-                            className="text-sm text-brand-primary font-medium hover:text-brand-primary/80 flex items-center gap-2"
+                            className="text-sm text-[#3678F1] font-medium hover:text-[#2563EB] flex items-center gap-2"
                           >
                             {showPasswordSection ? 'Hide' : 'Change'} Password
                             <FaPen className="w-3.5 h-3.5" />
@@ -500,7 +500,7 @@ export default function CompanyProfile() {
                                       onChange={(e) => set(e.target.value)} 
                                       placeholder="••••••••" 
                                       disabled={pwSaving}
-                                      className="w-full px-3 py-2.5 pr-11 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary disabled:bg-neutral-50"
+                                      className="w-full px-3 py-2.5 pr-11 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#3678F1]/20 focus:border-[#3678F1] disabled:bg-neutral-50"
                                     />
                                     <button 
                                       type="button" 
@@ -513,9 +513,9 @@ export default function CompanyProfile() {
                                 </div>
                               ))}
                               {pwError && (
-                                <div className="flex items-start gap-2 rounded-xl bg-red-50 border border-red-200 px-3 py-2.5">
-                                  <FaTriangleExclamation className="text-red-500 text-xs shrink-0 mt-0.5" />
-                                  <p className="text-xs text-red-700">{pwError}</p>
+                                <div className="flex items-start gap-2 rounded-xl bg-[#FEEBEA] border border-[#F40F02]/30 px-3 py-2.5">
+                                  <FaTriangleExclamation className="text-[#F40F02] text-xs shrink-0 mt-0.5" />
+                                  <p className="text-xs text-[#991B1B]">{pwError}</p>
                                 </div>
                               )}
                               {pwSaved && (
@@ -524,11 +524,11 @@ export default function CompanyProfile() {
                                 </div>
                               )}
                               <div className="flex justify-end">
-                                <button 
-                                  type="button" 
-                                  onClick={handlePasswordChange} 
+                                <button
+                                  type="button"
+                                  onClick={handlePasswordChange}
                                   disabled={pwSaving}
-                                  className="px-5 py-2.5 bg-brand-primary text-white rounded-xl text-sm font-semibold hover:bg-brand-primary/90 transition-colors disabled:opacity-60"
+                                  className="px-5 py-2.5 bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white rounded-xl text-sm font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] transition-colors disabled:opacity-60 shadow-brand"
                                 >
                                   {pwSaving ? 'Updating…' : 'Update Password'}
                                 </button>
@@ -714,11 +714,11 @@ export default function CompanyProfile() {
                             type="button"
                             onClick={handleSave}
                             disabled={saving}
-                            className="px-6 py-2.5 bg-brand-primary text-white rounded-xl text-sm font-semibold hover:bg-brand-primary/90 disabled:opacity-60 transition-colors flex items-center gap-2"
+                            className="px-6 py-2.5 bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white rounded-xl text-sm font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] disabled:opacity-60 transition-colors flex items-center gap-2 shadow-brand"
                           >
                             {saving ? (
                               <>
-                                <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                                <span className="w-4 h-4 border-[2.5px] border-white/40 border-t-white border-r-white rounded-full animate-spin" />
                                 Saving…
                               </>
                             ) : (

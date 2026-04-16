@@ -62,14 +62,14 @@ const accountTypes: AccountType[] = [
     cta: 'Continue as Company',
     to: '/register/company',
     accent: {
-      ring: 'hover:border-[#3B5BDB]/60',
-      iconBg: 'bg-blue-100',
-      iconText: 'text-[#3B5BDB]',
-      check: 'text-[#3B5BDB]',
-      badge: 'text-[#3B5BDB]',
-      btnBg: 'bg-[#3B5BDB]',
-      btnHover: 'hover:bg-[#2f4ac2]',
-      shadow: 'shadow-[#3B5BDB]/25',
+      ring: 'hover:border-[#3678F1]',
+      iconBg: 'bg-[#E8F0FE]',
+      iconText: 'text-[#3678F1]',
+      check: 'text-[#3678F1]',
+      badge: 'text-[#3678F1]',
+      btnBg: 'bg-gradient-to-br from-[#3678F1] to-[#2563EB]',
+      btnHover: 'hover:from-[#2563EB] hover:to-[#1D4ED8]',
+      shadow: 'shadow-brand',
     },
   },
   {
@@ -89,14 +89,14 @@ const accountTypes: AccountType[] = [
     cta: 'Continue as Individual',
     to: '/register/individual',
     accent: {
-      ring: 'hover:border-emerald-500/60',
-      iconBg: 'bg-emerald-100',
-      iconText: 'text-emerald-600',
-      check: 'text-emerald-600',
-      badge: 'text-emerald-600',
-      btnBg: 'bg-emerald-600',
-      btnHover: 'hover:bg-emerald-700',
-      shadow: 'shadow-emerald-500/25',
+      ring: 'hover:border-[#3678F1]',
+      iconBg: 'bg-[#DCFCE7]',
+      iconText: 'text-[#22C55E]',
+      check: 'text-[#3678F1]',
+      badge: 'text-[#3678F1]',
+      btnBg: 'bg-gradient-to-br from-[#3678F1] to-[#2563EB]',
+      btnHover: 'hover:from-[#2563EB] hover:to-[#1D4ED8]',
+      shadow: 'shadow-brand',
     },
   },
   {
@@ -116,19 +116,19 @@ const accountTypes: AccountType[] = [
     cta: 'Continue as Vendor',
     to: '/register/vendor',
     accent: {
-      ring: 'hover:border-purple-500/60',
-      iconBg: 'bg-purple-100',
-      iconText: 'text-purple-600',
-      check: 'text-purple-600',
-      badge: 'text-purple-600',
-      btnBg: 'bg-purple-600',
-      btnHover: 'hover:bg-purple-700',
-      shadow: 'shadow-purple-500/25',
+      ring: 'hover:border-[#3678F1]',
+      iconBg: 'bg-[#FEF7E0]',
+      iconText: 'text-[#8A6508]',
+      check: 'text-[#3678F1]',
+      badge: 'text-[#3678F1]',
+      btnBg: 'bg-gradient-to-br from-[#3678F1] to-[#2563EB]',
+      btnHover: 'hover:from-[#2563EB] hover:to-[#1D4ED8]',
+      shadow: 'shadow-brand',
     },
   },
 ];
 
-const avatarColors = ['bg-blue-500', 'bg-emerald-500', 'bg-purple-500'];
+const avatarColors = ['bg-[#3678F1]', 'bg-[#22C55E]', 'bg-[#F4C430]'];
 const avatarInitials = ['Co', 'In', 'Vd'];
 
 export default function UserTypeSelect() {
@@ -161,8 +161,8 @@ export default function UserTypeSelect() {
         <div className={`max-w-4xl mx-auto px-6 text-center relative z-10 transition-all duration-700 ${hero.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
           {/* Step indicator */}
           <div className="inline-flex items-center gap-2.5 mb-6">
-            <span className="flex items-center gap-2 text-[11px] font-bold tracking-[0.18em] uppercase text-[#3B5BDB]">
-              <span className="w-6 h-6 rounded-full bg-[#3B5BDB] text-white flex items-center justify-center text-[11px] font-bold">1</span>
+            <span className="flex items-center gap-2 text-[11px] font-bold tracking-[0.18em] uppercase text-[#3678F1]">
+              <span className="w-6 h-6 rounded-full bg-[#3678F1] text-white flex items-center justify-center text-[11px] font-bold">1</span>
               Choose Account
             </span>
             <span className="w-8 h-px bg-slate-300" />
@@ -173,7 +173,7 @@ export default function UserTypeSelect() {
           </div>
 
           <h1 className="text-4xl sm:text-5xl lg:text-[56px] font-extrabold text-[#0f172a] leading-[1.08] mb-5 tracking-tight">
-            Join <span className="text-[#3B5BDB]">Claapo</span>
+            Join <span className="text-[#3678F1]">Claapo</span>
           </h1>
           <p className="text-base sm:text-lg text-slate-500 leading-relaxed max-w-xl mx-auto mb-8">
             Pick the account that best describes you. Companies, Individuals, and Vendors all get
@@ -188,7 +188,7 @@ export default function UserTypeSelect() {
                   {init}
                 </div>
               ))}
-              <div className="w-7 h-7 rounded-full border-2 border-white bg-[#3B5BDB] flex items-center justify-center text-[8px] font-bold text-white shadow-sm">+3k</div>
+              <div className="w-7 h-7 rounded-full border-2 border-white bg-[#3678F1] flex items-center justify-center text-[8px] font-bold text-white shadow-sm">+3k</div>
             </div>
             <div className="text-left">
               <p className="text-sm font-semibold text-slate-700">3,000+ members</p>
@@ -213,8 +213,8 @@ export default function UserTypeSelect() {
                 key={type.key}
                 className={`
                   group relative rounded-2xl bg-white border border-slate-100 p-7 sm:p-8 flex flex-col
-                  shadow-sm hover:shadow-xl hover:shadow-slate-200/60 hover:-translate-y-1
-                  transition-all duration-500 ${type.accent.ring}
+                  shadow-sm
+                  transition-colors duration-200 ${type.accent.ring}
                   ${cards.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}
                 `}
                 style={{ transitionDelay: `${idx * 120}ms` }}
@@ -260,7 +260,7 @@ export default function UserTypeSelect() {
                   to={type.to}
                   className={`
                     inline-flex items-center justify-center gap-2 rounded-xl w-full py-3.5 text-sm font-bold text-white
-                    transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5
+                    transition-colors duration-200
                     ${type.accent.btnBg} ${type.accent.btnHover} ${type.accent.shadow}
                   `}
                 >
@@ -296,8 +296,8 @@ export default function UserTypeSelect() {
               { Icon: FaGift,          title: '100% Free to Start', desc: 'No credit card. No hidden fees.' },
             ].map(({ Icon, title, desc }) => (
               <div key={title} className="flex items-start gap-3 bg-white/60 backdrop-blur rounded-xl border border-white px-5 py-4">
-                <div className="w-9 h-9 rounded-lg bg-[#3B5BDB]/10 flex items-center justify-center shrink-0">
-                  <Icon className="text-[#3B5BDB] text-sm" />
+                <div className="w-9 h-9 rounded-lg bg-[#3678F1]/10 flex items-center justify-center shrink-0">
+                  <Icon className="text-[#3678F1] text-sm" />
                 </div>
                 <div className="text-left">
                   <p className="text-sm font-semibold text-slate-800">{title}</p>
@@ -313,7 +313,7 @@ export default function UserTypeSelect() {
               <p className="text-sm text-slate-600">Already have an account?</p>
               <Link
                 to="/login"
-                className="inline-flex items-center gap-1.5 text-sm text-[#3B5BDB] font-bold hover:gap-2 transition-all"
+                className="inline-flex items-center gap-1.5 text-sm text-[#3678F1] font-bold hover:gap-2 transition-all"
               >
                 Sign in <FaArrowRight className="text-[10px]" />
               </Link>

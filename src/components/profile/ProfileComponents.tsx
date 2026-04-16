@@ -21,11 +21,11 @@ export function ProfileSection({
   className = '' 
 }: ProfileSectionProps) {
   return (
-    <div className={`rounded-2xl bg-white border border-neutral-200 shadow-sm hover:shadow-md transition-shadow ${className}`}>
+    <div className={`rounded-2xl bg-white border border-neutral-200 hover:border-[#3678F1] transition-colors duration-200 ${className}`}>
       {(title || description) && (
         <div className="px-5 py-4 border-b border-neutral-100 flex items-start gap-3">
           {icon && (
-            <div className="w-8 h-8 rounded-lg bg-brand-primary/10 flex items-center justify-center shrink-0 text-brand-primary">
+            <div className="w-8 h-8 rounded-lg bg-[#E8F0FE] flex items-center justify-center shrink-0 text-[#3678F1]">
               {icon}
             </div>
           )}
@@ -95,7 +95,7 @@ export function InfoRow({
         <button
           type="button"
           onClick={handleCopy}
-          className="text-[11px] text-brand-primary hover:text-brand-primary/80 font-semibold px-2 py-1 rounded-md hover:bg-brand-primary/5 transition-colors shrink-0"
+          className="text-[11px] text-[#3678F1] hover:text-[#2563EB] font-semibold px-2 py-1 rounded-md hover:bg-[#E8F0FE] transition-colors shrink-0"
         >
           {copied ? 'Copied' : 'Copy'}
         </button>
@@ -144,11 +144,11 @@ export function EditableField({
   disabled = false,
   className = '',
 }: EditableFieldProps) {
-  const inputClass = `w-full px-3 py-2.5 border rounded-xl text-sm transition-all focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary disabled:bg-neutral-50 disabled:text-neutral-400 placeholder:text-neutral-400 ${
+  const inputClass = `w-full px-3 py-2.5 border rounded-xl text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-[#3678F1]/20 focus:border-[#3678F1] disabled:bg-neutral-50 disabled:text-neutral-400 placeholder:text-neutral-400 ${
     readOnly 
       ? 'border-neutral-100 bg-neutral-50/80 text-neutral-500 cursor-not-allowed' 
       : error 
-        ? 'border-red-300 focus:border-red-500' 
+        ? 'border-[#F40F02]/40 focus:border-[#F40F02]'
         : 'border-neutral-300 bg-white'
   } ${icon ? (iconPosition === 'left' ? 'pl-10' : 'pr-10') : ''} ${className}`;
 
@@ -184,7 +184,7 @@ export function EditableField({
     <div className={className}>
       <label className="block text-xs font-medium text-neutral-700 mb-1.5">
         {label}
-        {required && <span className="text-red-500 ml-1">*</span>}
+        {required && <span className="text-[#F40F02] ml-1">*</span>}
         {readOnly && readOnlyReason && (
           <span className="text-neutral-400 font-normal ml-2">({readOnlyReason})</span>
         )}
@@ -206,7 +206,7 @@ export function EditableField({
         <p className="text-[10px] text-neutral-400 mt-1">{helpText}</p>
       )}
       {error && (
-        <p className="text-[10px] text-red-600 mt-1">{error}</p>
+        <p className="text-[10px] text-[#F40F02] mt-1">{error}</p>
       )}
     </div>
   );
@@ -223,13 +223,13 @@ interface SkillTagProps {
  */
 export function SkillTag({ skill, onRemove, className = '' }: SkillTagProps) {
   return (
-    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-brand-primary/10 text-brand-primary border border-brand-primary/20 ${className}`}>
+    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-[#E8F0FE] text-[#3678F1] border border-[#3678F1]/20 ${className}`}>
       {skill}
       {onRemove && (
         <button
           type="button"
           onClick={onRemove}
-          className="hover:bg-brand-primary/20 rounded-full p-0.5 transition-colors"
+          className="hover:bg-[#3678F1]/20 rounded-full p-0.5 transition-colors"
           aria-label={`Remove ${skill}`}
         >
           <svg className="w-3 h-3" viewBox="0 0 20 20" fill="currentColor">
@@ -263,7 +263,7 @@ interface SocialLinksProps {
  */
 export function SocialLinks({ links, editable = false, onChange, disabled = false }: SocialLinksProps) {
   const socialPlatforms: { key: keyof SocialLinksData; label: string; Icon: React.ComponentType<{ className?: string }>; placeholder: string; color: string; bg: string }[] = [
-    { key: 'website', label: 'Website', Icon: FaGlobe, placeholder: 'https://your-site.com', color: 'text-[#3B5BDB]', bg: 'bg-[#3B5BDB]/10' },
+    { key: 'website', label: 'Website', Icon: FaGlobe, placeholder: 'https://your-site.com', color: 'text-[#3678F1]', bg: 'bg-[#3678F1]/10' },
     { key: 'instagramUrl', label: 'Instagram', Icon: FaInstagram, placeholder: 'https://instagram.com/username', color: 'text-[#E4405F]', bg: 'bg-[#E4405F]/10' },
     { key: 'youtubeUrl', label: 'YouTube', Icon: FaYoutube, placeholder: 'https://youtube.com/@channel', color: 'text-[#FF0000]', bg: 'bg-[#FF0000]/10' },
     { key: 'vimeoUrl', label: 'Vimeo', Icon: FaVimeoV, placeholder: 'https://vimeo.com/username', color: 'text-[#1AB7EA]', bg: 'bg-[#1AB7EA]/10' },

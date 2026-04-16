@@ -41,10 +41,10 @@ function timeAgo(iso: string): string {
 }
 
 const ROLE_LABELS: Record<string, { label: string; bg: string; text: string }> = {
-  company:    { label: 'Company',    bg: 'bg-blue-50',    text: 'text-[#3B5BDB]'    },
+  company:    { label: 'Company',    bg: 'bg-[#E8F0FE]',  text: 'text-[#3678F1]'    },
   individual: { label: 'Individual', bg: 'bg-emerald-50', text: 'text-emerald-700'  },
-  vendor:     { label: 'Vendor',     bg: 'bg-purple-50',  text: 'text-purple-700'   },
-  admin:      { label: 'Admin',      bg: 'bg-amber-50',   text: 'text-amber-700'    },
+  vendor:     { label: 'Vendor',     bg: 'bg-[#FEF7E0]',  text: 'text-[#8A6508]'    },
+  admin:      { label: 'Admin',      bg: 'bg-[#FEF6DA]',  text: 'text-[#946A00]'    },
 };
 
 export default function DashboardHeader({ userName: propUserName, userAvatar: propUserAvatar }: DashboardHeaderProps) {
@@ -57,13 +57,13 @@ export default function DashboardHeader({ userName: propUserName, userAvatar: pr
   const { open: sidebarOpen, toggleSidebar } = useSidebar();
 
   const profilePath =
-    user?.role === 'company' ? '/dashboard/company-profile' : user?.role === 'vendor' ? '/dashboard/vendor-profile' : '/dashboard/profile';
+    user?.role === 'company' ? '/company-profile' : user?.role === 'vendor' ? '/vendor-profile' : '/profile';
   const schedulePath =
     user?.role === 'company'
-      ? '/dashboard/company-availability'
+      ? '/company-availability'
       : user?.role === 'vendor'
-        ? '/dashboard/vendor-availability'
-        : '/dashboard/availability';
+        ? '/vendor-availability'
+        : '/availability';
 
   const { data: notifData, refetch: refetchNotifs } = useApiQuery<NotificationsResponse>(isAuthenticated ? '/notifications?limit=20' : null);
   const notifications = notifData?.items ?? [];
@@ -172,7 +172,7 @@ export default function DashboardHeader({ userName: propUserName, userAvatar: pr
                   )}
                 </div>
                 {unreadCount > 0 && (
-                  <button type="button" onClick={markAllRead} className="text-[11px] text-[#3B5BDB] hover:text-[#2B4BC9] font-semibold transition-colors">
+                  <button type="button" onClick={markAllRead} className="text-[11px] text-[#3678F1] hover:text-[#2563EB] font-semibold transition-colors">
                     Mark all read
                   </button>
                 )}
@@ -191,11 +191,11 @@ export default function DashboardHeader({ userName: propUserName, userAvatar: pr
                   notifications.map((n) => (
                     <div
                       key={n.id}
-                      className={`flex gap-3 px-5 py-3.5 transition-all duration-150 cursor-default hover:bg-neutral-50 ${!n.readAt ? 'bg-[#F8FAFF]' : 'bg-white'}`}
+                      className={`flex gap-3 px-5 py-3.5 transition-all duration-150 cursor-default hover:bg-neutral-50 ${!n.readAt ? 'bg-[#F4F8FE]' : 'bg-white'}`}
                     >
                       <div className="shrink-0 mt-1.5">
                         {!n.readAt
-                          ? <FaCircle className="text-[#3B5BDB] text-[8px]" />
+                          ? <FaCircle className="text-[#3678F1] text-[8px]" />
                           : <FaCircle className="text-neutral-200 text-[8px]" />}
                       </div>
                       <div className="min-w-0 flex-1">
@@ -255,7 +255,7 @@ export default function DashboardHeader({ userName: propUserName, userAvatar: pr
           {userOpen && (
             <div className="absolute right-0 top-[calc(100%+10px)] w-64 bg-white rounded-2xl border border-neutral-200/80 shadow-xl shadow-neutral-900/10 overflow-hidden z-50 animate-[fadeIn_150ms_ease-out]">
               {/* Gradient header with avatar + role */}
-              <div className="px-5 pt-5 pb-4 bg-gradient-to-br from-[#EEF4FF] via-[#F8FAFF] to-white border-b border-neutral-100">
+              <div className="px-5 pt-5 pb-4 bg-gradient-to-br from-[#E8F0FE] via-[#F4F8FE] to-white border-b border-neutral-100">
                 <div className="flex items-center gap-3">
                   <div className="relative shrink-0">
                     <Avatar src={userAvatar} name={displayName} size="md" />
@@ -272,7 +272,7 @@ export default function DashboardHeader({ userName: propUserName, userAvatar: pr
                       {roleInfo.label}
                     </span>
                     {!isMainUser && (
-                      <span className="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700">
+                      <span className="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#FEF6DA] text-[#946A00]">
                         Sub-User
                       </span>
                     )}
@@ -305,7 +305,7 @@ export default function DashboardHeader({ userName: propUserName, userAvatar: pr
                 </Link>
                 {user?.role !== 'admin' && (
                   <Link
-                    to="/dashboard/invoices"
+                    to="/invoices"
                     onClick={() => setUserOpen(false)}
                     role="menuitem"
                     className="w-full flex items-center gap-3 h-10 px-3 rounded-lg text-[13px] text-neutral-700 hover:bg-neutral-100 transition-all duration-150 font-medium"
@@ -334,7 +334,7 @@ export default function DashboardHeader({ userName: propUserName, userAvatar: pr
                   type="button"
                   onClick={handleLogout}
                   role="menuitem"
-                  className="w-full flex items-center gap-3 h-10 px-3 rounded-lg text-[13px] text-red-600 hover:bg-red-50 transition-all duration-150 font-medium"
+                  className="w-full flex items-center gap-3 h-10 px-3 rounded-lg text-[13px] text-[#F40F02] hover:bg-[#FEEBEA] transition-all duration-150 font-medium"
                 >
                   <span className="inline-flex items-center justify-center w-5 h-5">
                     <FaRightFromBracket className="w-[15px] h-[15px]" />

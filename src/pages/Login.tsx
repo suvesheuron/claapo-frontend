@@ -120,7 +120,7 @@ export default function Login() {
             autoComplete="email"
             required
             disabled={loading}
-            className="w-full rounded-xl px-4 py-3 border border-neutral-300 bg-white text-[15px] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3B5BDB] focus:ring-4 focus:ring-[#3B5BDB]/12 transition-all disabled:opacity-50"
+            className="w-full rounded-xl px-4 py-3 border border-neutral-300 bg-white text-[15px] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:ring-2 focus:ring-[#3678F1]/20 transition-all disabled:opacity-50"
           />
         </div>
 
@@ -130,7 +130,7 @@ export default function Login() {
             <label htmlFor="login-password" className="block text-[13px] text-neutral-700 font-semibold">
               Password
             </label>
-            <Link to="/forgot-password" className="text-[12px] text-[#3B5BDB] font-semibold hover:underline">
+            <Link to="/forgot-password" className="text-[12px] text-[#3678F1] font-semibold hover:underline">
               Forgot password?
             </Link>
           </div>
@@ -144,7 +144,7 @@ export default function Login() {
               autoComplete="current-password"
               required
               disabled={loading}
-              className="w-full rounded-xl px-4 py-3 pr-12 border border-neutral-300 bg-white text-[15px] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3B5BDB] focus:ring-4 focus:ring-[#3B5BDB]/12 transition-all disabled:opacity-50"
+              className="w-full rounded-xl px-4 py-3 pr-12 border border-neutral-300 bg-white text-[15px] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:ring-2 focus:ring-[#3678F1]/20 transition-all disabled:opacity-50"
             />
             <button
               type="button"
@@ -163,16 +163,16 @@ export default function Login() {
             type="checkbox"
             checked={remember}
             onChange={(e) => setRemember(e.target.checked)}
-            className="w-4 h-4 rounded border-neutral-300 text-[#3B5BDB] focus:ring-[#3B5BDB]/30"
+            className="w-4 h-4 rounded border-neutral-300 text-[#3678F1] focus:ring-[#3678F1]/30"
           />
           Keep me signed in on this device
         </label>
 
         {/* Inline error */}
         {error && (
-          <div className="flex items-start gap-2.5 rounded-xl bg-red-50 border border-red-200 px-3.5 py-3">
-            <FaTriangleExclamation className="text-red-500 text-sm shrink-0 mt-0.5" aria-hidden />
-            <p className="text-[13px] text-red-700 leading-snug">{error}</p>
+          <div className="flex items-start gap-2.5 rounded-xl bg-[#FEEBEA] border border-[#F40F02]/30 px-3.5 py-3">
+            <FaTriangleExclamation className="text-[#991B1B] text-sm shrink-0 mt-0.5" aria-hidden />
+            <p className="text-[13px] text-[#991B1B] leading-snug">{error}</p>
           </div>
         )}
 
@@ -180,11 +180,11 @@ export default function Login() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full inline-flex items-center justify-center gap-2 rounded-xl py-3.5 bg-[#3B5BDB] text-white text-[15px] font-semibold hover:bg-[#2f4ac2] transition-all shadow-[0_8px_24px_-8px_rgba(59,91,219,0.6)] hover:shadow-[0_12px_28px_-8px_rgba(59,91,219,0.7)] hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+          className="w-full inline-flex items-center justify-center gap-2 rounded-xl py-3.5 bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white text-[15px] font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] transition-colors shadow-brand disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {loading ? (
             <>
-              <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+              <span className="w-6 h-6 border-[2.5px] border-white/30 border-t-white border-r-white rounded-full animate-spin" />
               Signing in…
             </>
           ) : (
@@ -208,7 +208,7 @@ export default function Login() {
 
       <p className="text-center text-[14px] text-neutral-600">
         New to Claapo?{' '}
-        <Link to="/register" className="text-[#3B5BDB] font-semibold hover:underline">
+        <Link to="/register" className="text-[#3678F1] font-semibold hover:underline">
           Create a free account
         </Link>
       </p>

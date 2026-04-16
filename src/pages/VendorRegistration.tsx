@@ -140,9 +140,9 @@ export default function VendorRegistration() {
   };
 
   const borderClass = (name: keyof FieldErrors) => {
-    if (fieldErrors[name]) return 'border-red-400 focus:border-red-500 focus:ring-red-500/12';
-    if (touched[name] && !fieldErrors[name]) return 'border-emerald-400 focus:border-emerald-500 focus:ring-emerald-500/12';
-    return 'border-neutral-300 focus:border-[#3B5BDB] focus:ring-[#3B5BDB]/12';
+    if (fieldErrors[name]) return 'border-[#F40F02]/40 focus:border-[#F40F02] focus:ring-[#F40F02]/15';
+    if (touched[name] && !fieldErrors[name]) return 'border-emerald-400 focus:border-emerald-500 focus:ring-emerald-500/20';
+    return 'border-neutral-300 focus:border-[#3678F1] focus:ring-[#3678F1]/20';
   };
 
   const passwordStrength = getPasswordStrength(password);
@@ -200,7 +200,7 @@ export default function VendorRegistration() {
   };
 
   const inputBase =
-    'w-full rounded-xl px-4 py-3 border bg-white text-[15px] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-4 transition-all disabled:opacity-50';
+    'w-full rounded-xl px-4 py-3 border bg-white text-[15px] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 transition-all disabled:opacity-50';
 
   return (
     <AuthLayout
@@ -231,7 +231,7 @@ export default function VendorRegistration() {
         {/* Business Name */}
         <div>
           <label className="block text-[13px] text-neutral-700 mb-1.5 font-semibold">
-            Business name <span className="text-red-500">*</span>
+            Business name <span className="text-[#F40F02]">*</span>
           </label>
           <input
             type="text"
@@ -242,13 +242,13 @@ export default function VendorRegistration() {
             disabled={loading}
             className={`${inputBase} ${borderClass('businessName')}`}
           />
-          {fieldErrors.businessName && <p className="text-xs text-red-500 mt-1.5">{fieldErrors.businessName}</p>}
+          {fieldErrors.businessName && <p className="text-xs text-[#F40F02] mt-1.5">{fieldErrors.businessName}</p>}
         </div>
 
         {/* Vendor Category */}
         <div>
           <label className="block text-[13px] text-neutral-700 mb-1.5 font-semibold">
-            Business type <span className="text-red-500">*</span>
+            Business type <span className="text-[#F40F02]">*</span>
           </label>
           <select
             value={vendorCategory}
@@ -262,14 +262,14 @@ export default function VendorRegistration() {
               <option key={c} value={c}>{c}</option>
             ))}
           </select>
-          {fieldErrors.vendorCategory && <p className="text-xs text-red-500 mt-1.5">{fieldErrors.vendorCategory}</p>}
+          {fieldErrors.vendorCategory && <p className="text-xs text-[#F40F02] mt-1.5">{fieldErrors.vendorCategory}</p>}
         </div>
 
         {/* Phone + GST */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-[13px] text-neutral-700 mb-1.5 font-semibold">
-              Phone <span className="text-red-500">*</span>
+              Phone <span className="text-[#F40F02]">*</span>
             </label>
             <div className="flex items-center gap-0">
               <span className="inline-flex items-center px-3 py-3 rounded-l-xl border border-r-0 border-neutral-300 bg-neutral-50 text-neutral-700 text-[15px] font-medium select-none h-[46px]">
@@ -289,7 +289,7 @@ export default function VendorRegistration() {
                 className={`${inputBase} rounded-l-none border-l-0 ${borderClass('phone')}`}
               />
             </div>
-            {fieldErrors.phone && <p className="text-xs text-red-500 mt-1.5">{fieldErrors.phone}</p>}
+            {fieldErrors.phone && <p className="text-xs text-[#F40F02] mt-1.5">{fieldErrors.phone}</p>}
           </div>
           <div>
             <label className="block text-[13px] text-neutral-700 mb-1.5 font-semibold">
@@ -307,14 +307,14 @@ export default function VendorRegistration() {
               disabled={loading}
               className={`${inputBase} ${borderClass('gst')}`}
             />
-            {fieldErrors.gst && <p className="text-xs text-red-500 mt-1.5">{fieldErrors.gst}</p>}
+            {fieldErrors.gst && <p className="text-xs text-[#F40F02] mt-1.5">{fieldErrors.gst}</p>}
           </div>
         </div>
 
         {/* Email */}
         <div>
           <label className="block text-[13px] text-neutral-700 mb-1.5 font-semibold">
-            Email address <span className="text-red-500">*</span>
+            Email address <span className="text-[#F40F02]">*</span>
           </label>
           <input
             type="email"
@@ -325,13 +325,13 @@ export default function VendorRegistration() {
             disabled={loading}
             className={`${inputBase} ${borderClass('email')}`}
           />
-          {fieldErrors.email && <p className="text-xs text-red-500 mt-1.5">{fieldErrors.email}</p>}
+          {fieldErrors.email && <p className="text-xs text-[#F40F02] mt-1.5">{fieldErrors.email}</p>}
         </div>
 
         {/* Password */}
         <div>
           <label className="block text-[13px] text-neutral-700 mb-1.5 font-semibold">
-            Password <span className="text-red-500">*</span>
+            Password <span className="text-[#F40F02]">*</span>
           </label>
           <div className="relative">
             <input
@@ -352,7 +352,7 @@ export default function VendorRegistration() {
               {showPassword ? <FaEyeSlash className="w-4 h-4" /> : <FaEye className="w-4 h-4" />}
             </button>
           </div>
-          {fieldErrors.password && <p className="text-xs text-red-500 mt-1.5">{fieldErrors.password}</p>}
+          {fieldErrors.password && <p className="text-xs text-[#F40F02] mt-1.5">{fieldErrors.password}</p>}
           {password && (
             <div className="mt-2.5">
               <div className="h-1.5 w-full bg-neutral-200 rounded-full overflow-hidden">
@@ -375,21 +375,21 @@ export default function VendorRegistration() {
             checked={agreedTerms}
             onChange={(e) => setAgreedTerms(e.target.checked)}
             disabled={loading}
-            className="w-4 h-4 mt-0.5 rounded border-neutral-300 text-[#3B5BDB] focus:ring-[#3B5BDB]/30 shrink-0"
+            className="w-4 h-4 mt-0.5 rounded border-neutral-300 text-[#3678F1] focus:ring-[#3678F1]/30 shrink-0"
           />
           <span className="leading-snug">
             I agree to the{' '}
-            <Link to="/terms"   className="text-[#3B5BDB] font-semibold hover:underline">Terms</Link>
+            <Link to="/terms"   className="text-[#3678F1] font-semibold hover:underline">Terms</Link>
             {' '}and{' '}
-            <Link to="/privacy" className="text-[#3B5BDB] font-semibold hover:underline">Privacy Policy</Link>.
+            <Link to="/privacy" className="text-[#3678F1] font-semibold hover:underline">Privacy Policy</Link>.
           </span>
         </label>
 
         {/* Global error */}
         {error && (
-          <div className="flex items-start gap-2.5 rounded-xl bg-red-50 border border-red-200 px-3.5 py-3">
-            <FaTriangleExclamation className="text-red-500 text-sm shrink-0 mt-0.5" aria-hidden />
-            <p className="text-[13px] text-red-700 leading-snug">{error}</p>
+          <div className="flex items-start gap-2.5 rounded-xl bg-[#FEEBEA] border border-[#F40F02]/30 px-3.5 py-3">
+            <FaTriangleExclamation className="text-[#991B1B] text-sm shrink-0 mt-0.5" aria-hidden />
+            <p className="text-[13px] text-[#991B1B] leading-snug">{error}</p>
           </div>
         )}
 
@@ -397,11 +397,11 @@ export default function VendorRegistration() {
         <button
           type="submit"
           disabled={loading || !agreedTerms}
-          className="w-full inline-flex items-center justify-center gap-2 rounded-xl py-3.5 bg-[#3B5BDB] text-white text-[15px] font-semibold hover:bg-[#2f4ac2] transition-all shadow-[0_8px_24px_-8px_rgba(59,91,219,0.6)] hover:shadow-[0_12px_28px_-8px_rgba(59,91,219,0.7)] hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+          className="w-full inline-flex items-center justify-center gap-2 rounded-xl py-3.5 bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white text-[15px] font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] transition-colors shadow-brand disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {loading ? (
             <>
-              <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+              <span className="w-6 h-6 border-[2.5px] border-white/30 border-t-white border-r-white rounded-full animate-spin" />
               Creating account…
             </>
           ) : (
@@ -425,7 +425,7 @@ export default function VendorRegistration() {
 
       <p className="text-center text-[14px] text-neutral-600">
         Already have an account?{' '}
-        <Link to="/login" className="text-[#3B5BDB] font-semibold hover:underline">
+        <Link to="/login" className="text-[#3678F1] font-semibold hover:underline">
           Sign in
         </Link>
       </p>

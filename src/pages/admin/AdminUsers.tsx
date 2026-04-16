@@ -86,7 +86,7 @@ export default function AdminUsers() {
   }, [refetch]);
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-[#F8F9FB] w-full">
+    <div className="h-screen flex flex-col overflow-hidden bg-[#F3F4F6] w-full">
       <DashboardHeader />
       <div className="flex-1 flex min-h-0 overflow-hidden">
         <DashboardSidebar links={adminNavLinks} />
@@ -112,13 +112,13 @@ export default function AdminUsers() {
                   placeholder="Search by email or phone..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-neutral-200 bg-white text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#3B5BDB]/20 focus:border-[#3B5BDB]/40 transition-all"
+                  className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-neutral-200 bg-white text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#3678F1]/20 focus:border-[#3678F1]/40 transition-all"
                 />
               </div>
               <select
                 value={role}
                 onChange={(e) => { setRole(e.target.value); setPage(1); }}
-                className="rounded-xl border border-neutral-200 bg-white px-3 py-2.5 text-sm text-neutral-700 focus:outline-none focus:ring-2 focus:ring-[#3B5BDB]/20 focus:border-[#3B5BDB]/40 transition-all"
+                className="rounded-xl border border-neutral-200 bg-white px-3 py-2.5 text-sm text-neutral-700 focus:outline-none focus:ring-2 focus:ring-[#3678F1]/20 focus:border-[#3678F1]/40 transition-all"
               >
                 <option value="">All Roles</option>
                 {ROLES.filter(Boolean).map((r) => (
@@ -128,7 +128,7 @@ export default function AdminUsers() {
             </div>
 
             {error && (
-              <div className="mb-4 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">{error}</div>
+              <div className="mb-4 rounded-xl bg-[#FEEBEA] border border-[#F40F02]/30 px-4 py-3 text-sm text-[#991B1B]">{error}</div>
             )}
 
             {/* Table */}
@@ -151,7 +151,7 @@ export default function AdminUsers() {
                       Array.from({ length: 5 }).map((_, i) => (
                         <tr key={i}>
                           {Array.from({ length: 7 }).map((_, j) => (
-                            <td key={j} className="px-4 py-3.5"><div className="h-4 w-20 rounded bg-neutral-100 animate-pulse" /></td>
+                            <td key={j} className="px-4 py-3.5"><div className="skeleton h-4 w-20 rounded" /></td>
                           ))}
                         </tr>
                       ))
@@ -162,20 +162,26 @@ export default function AdminUsers() {
                     ) : (
                       users.map((u) => {
                         const gst = isGstVerified(u);
+                        const roleBadgeClass =
+                          u.role === 'admin'      ? 'bg-[#FEF6DA] text-[#946A00]'
+                        : u.role === 'company'    ? 'bg-[#E8F0FE] text-[#2563EB]'
+                        : u.role === 'individual' ? 'bg-emerald-50 text-emerald-700'
+                        : u.role === 'vendor'     ? 'bg-[#FEF7E0] text-[#8A6508]'
+                        : 'bg-[#F3F4F6] text-neutral-600';
                         return (
-                          <tr key={u.id} className="hover:bg-neutral-50/50 transition-colors">
+                          <tr key={u.id} className="hover:bg-[#F4F8FE] transition-colors">
                             <td className="px-4 py-3.5 font-medium text-neutral-900 whitespace-nowrap">{getUserName(u)}</td>
                             <td className="px-4 py-3.5 text-neutral-600 whitespace-nowrap">{u.email}</td>
                             <td className="px-4 py-3.5 whitespace-nowrap">
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[#EEF2FF] text-[#3B5BDB]">
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${roleBadgeClass}`}>
                                 {u.role}
                               </span>
                             </td>
                             <td className="px-4 py-3.5 whitespace-nowrap">
                               <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold ${
-                                u.isActive ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'
+                                u.isActive ? 'bg-[#DCFCE7] text-[#15803D]' : 'bg-[#F3F4F6] text-neutral-600'
                               }`}>
-                                <span className={`w-1.5 h-1.5 rounded-full ${u.isActive ? 'bg-green-500' : 'bg-red-400'}`} />
+                                <span className={`w-1.5 h-1.5 rounded-full ${u.isActive ? 'bg-[#22C55E]' : 'bg-neutral-400'}`} />
                                 {u.isActive ? 'Active' : 'Inactive'}
                               </span>
                             </td>
@@ -183,11 +189,11 @@ export default function AdminUsers() {
                               {gst === null ? (
                                 <span className="text-xs text-neutral-300">—</span>
                               ) : gst ? (
-                                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-green-700">
+                                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#15803D]">
                                   <FaCheck className="text-[9px]" /> Verified
                                 </span>
                               ) : (
-                                <span className="text-[11px] font-medium text-amber-600">Pending</span>
+                                <span className="text-[11px] font-medium text-[#946A00]">Pending</span>
                               )}
                             </td>
                             <td className="px-4 py-3.5 text-neutral-500 whitespace-nowrap text-xs">
@@ -201,7 +207,7 @@ export default function AdminUsers() {
                                   title={u.isActive ? 'Deactivate' : 'Activate'}
                                   className={`p-1.5 rounded-lg transition-colors ${
                                     u.isActive
-                                      ? 'text-green-600 hover:bg-green-50'
+                                      ? 'text-[#15803D] hover:bg-[#DCFCE7]'
                                       : 'text-neutral-400 hover:bg-neutral-100'
                                   }`}
                                 >
@@ -212,7 +218,7 @@ export default function AdminUsers() {
                                     type="button"
                                     onClick={() => verifyGst(u.id)}
                                     title="Verify GST"
-                                    className="px-2.5 py-1.5 rounded-lg text-[11px] font-semibold text-[#3B5BDB] bg-[#EEF2FF] hover:bg-[#DBEAFE] transition-colors"
+                                    className="px-2.5 py-1.5 rounded-lg text-[11px] font-semibold text-[#2563EB] bg-[#E8F0FE] hover:bg-[#DBEAFE] transition-colors"
                                   >
                                     Verify GST
                                   </button>

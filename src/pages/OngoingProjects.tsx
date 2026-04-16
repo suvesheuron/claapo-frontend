@@ -43,8 +43,8 @@ interface BookingsResponse {
 
 const STATUS_CONFIG: Record<BookingStatus, { bg: string; text: string; label: string; icon: typeof FaCircleCheck }> = {
   accepted:         { bg: 'bg-[#DCFCE7]',  text: 'text-[#15803D]',  label: 'Accepted',           icon: FaCircleCheck },
-  locked:           { bg: 'bg-[#DBEAFE]',  text: 'text-[#1D4ED8]',  label: 'Locked',             icon: FaLock },
-  cancel_requested: { bg: 'bg-[#FEF3C7]',  text: 'text-[#92400E]',  label: 'Cancel Requested',   icon: FaClock },
+  locked:           { bg: 'bg-[#DBEAFE]',  text: 'text-[#1E3A8A]',  label: 'Locked',             icon: FaLock },
+  cancel_requested: { bg: 'bg-[#E8F0FE]',  text: 'text-[#1E3A8A]',  label: 'Cancel Requested',   icon: FaClock },
 };
 
 function formatDate(iso: string | null): string {
@@ -96,17 +96,21 @@ export default function OngoingProjects() {
           <div className="flex-1 min-h-0 overflow-auto">
             <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-6 xl:px-8 py-5">
 
-              <div className="mb-5">
-                <h1 className="text-xl font-bold text-neutral-900">Ongoing Projects</h1>
-                <p className="text-sm text-neutral-500 mt-0.5">Your accepted and locked bookings. Request cancellation from here if needed.</p>
+              <div className="relative rounded-2xl bg-white border border-neutral-200/70 px-6 sm:px-8 py-6 overflow-hidden shadow-soft mb-5">
+                <div className="absolute inset-y-0 right-0 w-1/2 bg-gradient-to-l from-[#E8F0FE]/60 to-transparent pointer-events-none" />
+                <span aria-hidden className="absolute left-0 top-6 bottom-6 w-1 rounded-r-full bg-gradient-to-b from-[#3678F1] to-[#5B9DF9]" />
+                <div className="relative z-10 pl-3">
+                  <h1 className="text-[22px] sm:text-[24px] font-extrabold text-neutral-900 tracking-tight leading-tight">Ongoing Projects</h1>
+                  <p className="text-sm text-neutral-500 mt-1.5">Your accepted and locked bookings. Request cancellation from here if needed.</p>
+                </div>
               </div>
 
               {/* Error */}
               {(error || actionError) && (
-                <div className="flex items-center gap-3 rounded-2xl bg-red-50 border border-red-200 p-4 mb-4">
-                  <FaTriangleExclamation className="text-red-500 shrink-0" />
-                  <p className="text-sm text-red-700">{error ?? actionError}</p>
-                  {error && <button onClick={refetch} className="ml-auto text-xs text-red-600 font-semibold hover:underline">Retry</button>}
+                <div className="flex items-center gap-3 rounded-2xl bg-[#FEEBEA] border border-[#F40F02]/30 p-4 mb-4">
+                  <FaTriangleExclamation className="text-[#F40F02] shrink-0" />
+                  <p className="text-sm text-[#991B1B]">{error ?? actionError}</p>
+                  {error && <button onClick={refetch} className="ml-auto text-xs text-[#F40F02] font-semibold hover:underline">Retry</button>}
                 </div>
               )}
 
@@ -114,9 +118,9 @@ export default function OngoingProjects() {
               {loading && (
                 <div className="space-y-3">
                   {[1, 2, 3].map((i) => (
-                    <div key={i} className="rounded-2xl bg-white border border-neutral-200 p-5 animate-pulse">
-                      <div className="h-4 bg-neutral-200 rounded w-1/3 mb-3" />
-                      <div className="h-3 bg-neutral-100 rounded w-1/2" />
+                    <div key={i} className="rounded-2xl bg-white border border-neutral-200/70 p-5 overflow-hidden">
+                      <div className="skeleton h-4 rounded w-1/3 mb-3" />
+                      <div className="skeleton h-3 rounded w-1/2" />
                     </div>
                   ))}
                 </div>
@@ -124,9 +128,9 @@ export default function OngoingProjects() {
 
               {/* Empty state */}
               {!loading && !error && ongoingBookings.length === 0 && (
-                <div className="rounded-2xl bg-white border border-neutral-200 p-12 text-center">
-                  <div className="w-14 h-14 rounded-2xl bg-[#EEF4FF] flex items-center justify-center mx-auto mb-4">
-                    <FaClipboardList className="text-[#3B5BDB] text-2xl" />
+                <div className="rounded-2xl bg-white shadow-soft border border-neutral-200/70 p-12 text-center">
+                  <div className="w-14 h-14 rounded-2xl bg-[#E8F0FE] ring-1 ring-[#3678F1]/15 flex items-center justify-center mx-auto mb-4">
+                    <FaClipboardList className="text-[#3678F1] text-2xl" />
                   </div>
                   <h3 className="text-base font-bold text-neutral-900 mb-2">No ongoing projects</h3>
                   <p className="text-sm text-neutral-500">Once you accept a booking, it will appear here.</p>
@@ -142,7 +146,7 @@ export default function OngoingProjects() {
                     const companyName = booking.requester.companyProfile?.companyName ?? booking.requester.email;
                     const StatusIcon = cfg.icon;
                     return (
-                      <div key={booking.id} className="rounded-2xl bg-white border border-neutral-200 p-5 hover:border-neutral-300 transition-all">
+                      <div key={booking.id} className="rounded-2xl bg-white shadow-soft border border-neutral-200/70 p-5 hover:border-[#3678F1] transition-colors duration-200">
                         <div className="flex items-start justify-between gap-4 mb-3">
                           <div className="flex items-start gap-3 flex-1 min-w-0">
                             <Avatar name={companyName} size="md" />
@@ -173,20 +177,20 @@ export default function OngoingProjects() {
 
                         {/* Cancel request info banner */}
                         {booking.status === 'cancel_requested' && (
-                          <div className="rounded-xl bg-[#FEF3C7] border border-[#FCD34D] px-4 py-3 mb-4">
-                            <p className="text-xs font-semibold text-[#92400E] mb-0.5">Cancellation request pending company review</p>
+                          <div className="rounded-xl bg-[#E8F0FE] border border-[#3678F1]/30 px-4 py-3 mb-4">
+                            <p className="text-xs font-semibold text-[#1E3A8A] mb-0.5">Cancellation request pending company review</p>
                             {booking.cancelRequestReason && (
-                              <p className="text-xs text-[#78350F]">Reason: {booking.cancelRequestReason}</p>
+                              <p className="text-xs text-[#1E3A8A]">Reason: {booking.cancelRequestReason}</p>
                             )}
                             {booking.cancelRequestedAt && (
-                              <p className="text-xs text-[#78350F] mt-0.5">Requested on {formatDate(booking.cancelRequestedAt)}</p>
+                              <p className="text-xs text-[#1E3A8A] mt-0.5">Requested on {formatDate(booking.cancelRequestedAt)}</p>
                             )}
                           </div>
                         )}
 
                         <div className="flex items-center gap-2 flex-wrap">
                           <Link
-                            to={`/dashboard/chat/${booking.requester.id}?projectId=${encodeURIComponent(booking.projectId)}`}
+                            to={`/chat/${booking.requester.id}?projectId=${encodeURIComponent(booking.projectId)}`}
                             className="rounded-xl px-4 py-2 border border-neutral-200 text-neutral-700 text-xs font-semibold hover:bg-neutral-50 flex items-center gap-1.5 transition-colors"
                           >
                             <FaMessage className="w-3 h-3" /> Message
@@ -197,7 +201,7 @@ export default function OngoingProjects() {
                               type="button"
                               onClick={() => { setCancellingId(booking.id); setCancelReason(''); }}
                               disabled={!!isActioning}
-                              className="rounded-xl px-4 py-2 bg-[#FEF9E6] text-[#92400E] text-xs font-semibold hover:bg-[#FDE68A] flex items-center gap-1.5 transition-colors disabled:opacity-50 ml-auto"
+                              className="rounded-xl px-4 py-2 bg-[#FEF3C7] border border-[#F4C430]/50 text-[#946A00] text-xs font-semibold hover:bg-[#FDE68A] hover:border-[#F4C430] flex items-center gap-1.5 transition-colors disabled:opacity-50 ml-auto"
                             >
                               <FaBan className="w-3 h-3" /> Request Cancellation
                             </button>
@@ -233,13 +237,13 @@ export default function OngoingProjects() {
                   onChange={(e) => setCancelReason(e.target.value)}
                   rows={3}
                   placeholder="e.g., Already booked for another project during these dates…"
-                  className="w-full px-4 py-2.5 border border-neutral-300 rounded-xl text-sm bg-[#F3F4F6] focus:bg-white focus:outline-none focus:border-[#3B5BDB] resize-none transition-all"
+                  className="w-full px-4 py-2.5 border border-neutral-300 rounded-xl text-sm bg-[#F3F4F6] focus:bg-white focus:outline-none focus:border-[#3678F1] resize-none transition-all"
                 />
               </div>
               {actionError && (
-                <div className="flex items-center gap-2 mb-4 p-3 bg-red-50 border border-red-200 rounded-xl">
-                  <FaTriangleExclamation className="text-red-500 text-xs shrink-0" />
-                  <p className="text-xs text-red-700">{actionError}</p>
+                <div className="flex items-center gap-2 mb-4 p-3 bg-[#FEEBEA] border border-[#F40F02]/30 rounded-xl">
+                  <FaTriangleExclamation className="text-[#F40F02] text-xs shrink-0" />
+                  <p className="text-xs text-[#991B1B]">{actionError}</p>
                 </div>
               )}
               <div className="flex gap-3">
@@ -254,10 +258,10 @@ export default function OngoingProjects() {
                   type="button"
                   onClick={() => doRequestCancel(cancellingId)}
                   disabled={!!actioning}
-                  className="flex-1 rounded-xl py-2.5 bg-[#F59E0B] text-white text-sm font-semibold hover:bg-[#D97706] transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+                  className="flex-1 rounded-xl py-2.5 bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white text-sm font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] shadow-brand transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
                 >
                   {actioning ? (
-                    <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Sending…</>
+                    <><span className="w-6 h-6 border-[2.5px] border-[#3678F1]/15 border-t-white border-r-white rounded-full animate-spin" />Sending…</>
                   ) : (
                     'Send Request'
                   )}

@@ -124,15 +124,15 @@ export default function Conversations() {
           {[1, 2, 3, 4, 5].map((i) => (
             <div
               key={i}
-              className="rounded-2xl bg-white border border-neutral-200/80 px-6 py-5 animate-pulse"
+              className="rounded-2xl bg-white border border-neutral-200/80 px-6 py-5"
               style={{ animationDelay: `${i * 50}ms` }}
             >
               <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-xl bg-neutral-100 shrink-0" />
+                <div className="skeleton w-12 h-12 rounded-xl shrink-0" />
                 <div className="flex-1 space-y-3">
-                  <div className="h-5 bg-neutral-100 rounded-lg w-2/5" />
-                  <div className="h-3 bg-neutral-50 rounded-lg w-1/3" />
-                  <div className="h-3 bg-neutral-50 rounded-lg w-1/4" />
+                  <div className="skeleton h-5 w-2/5 rounded-lg" />
+                  <div className="skeleton h-3 w-1/3 rounded-lg" />
+                  <div className="skeleton h-3 w-1/4 rounded-lg" />
                 </div>
               </div>
             </div>
@@ -144,8 +144,8 @@ export default function Conversations() {
     if (projects.length === 0) {
       return (
         <div className="rounded-3xl bg-white border border-neutral-200/80 py-20 text-center px-6 flex flex-col items-center justify-center mt-4">
-          <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-[#EEF4FF] to-[#DBEAFE] flex items-center justify-center mx-auto mb-5 border border-[#3B5BDB]/10 shadow-sm">
-            <FaFolder className="text-[#3B5BDB] text-2xl" />
+          <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-[#E8F0FE] to-[#DBEAFE] flex items-center justify-center mx-auto mb-5 border border-[#3678F1]/10 shadow-sm">
+            <FaFolder className="text-[#3678F1] text-2xl" />
           </div>
           <p className="text-lg font-bold text-neutral-900 mb-1.5">No projects yet</p>
           <p className="text-sm text-neutral-500 max-w-md mx-auto leading-relaxed">
@@ -162,10 +162,10 @@ export default function Conversations() {
           return (
             <li key={project.id}>
               <Link
-                to={`/dashboard/conversations/${project.id}`}
-                className={`relative flex items-start gap-4 px-6 py-5 rounded-2xl border transition-all group overflow-hidden ${
+                to={`/conversations/${project.id}`}
+                className={`relative flex items-start gap-4 px-6 py-5 rounded-2xl border transition-colors duration-200 group overflow-hidden ${
                   hasConversations
-                    ? 'bg-white border-neutral-200/80 hover:border-[#3B5BDB]/30 hover:shadow-sm'
+                    ? 'bg-white border-neutral-200/80 hover:border-[#3678F1]'
                     : 'bg-white border-neutral-200/80 opacity-60 cursor-not-allowed'
                 }`}
                 onClick={(e) => {
@@ -174,13 +174,13 @@ export default function Conversations() {
                   }
                 }}
               >
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#EEF4FF] to-[#DBEAFE] flex items-center justify-center shrink-0 border border-[#3B5BDB]/10">
-                  <FaComments className="text-[#3B5BDB] text-lg" />
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#E8F0FE] to-[#DBEAFE] flex items-center justify-center shrink-0 border border-[#3678F1]/10">
+                  <FaComments className="text-[#3678F1] text-lg" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-3 mb-2">
                     <div className="min-w-0">
-                      <p className={`text-base font-semibold truncate ${hasConversations ? 'text-neutral-900 group-hover:text-[#3B5BDB]' : 'text-neutral-600'}`}>
+                      <p className={`text-base font-semibold truncate ${hasConversations ? 'text-neutral-900 group-hover:text-[#3678F1]' : 'text-neutral-600'}`}>
                         {project.title}
                       </p>
                       <p className="text-xs text-neutral-500 mt-1">
@@ -189,8 +189,8 @@ export default function Conversations() {
                     </div>
                     <div className="flex flex-col items-end gap-2 shrink-0">
                       <span className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full capitalize ${
-                        project.status === 'active' ? 'bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200' :
-                        project.status === 'completed' ? 'bg-blue-50 text-blue-600 ring-1 ring-blue-200' :
+                        project.status === 'active' ? 'bg-[#DCFCE7] text-[#15803D] ring-1 ring-[#22C55E]/30' :
+                        project.status === 'completed' ? 'bg-[#DBEAFE] text-[#1E3A8A] ring-1 ring-[#3678F1]/30' :
                         project.status === 'draft' ? 'bg-neutral-50 text-neutral-500 ring-1 ring-neutral-200' :
                         'bg-neutral-50 text-neutral-500 ring-1 ring-neutral-200'
                       }`}>
@@ -199,9 +199,9 @@ export default function Conversations() {
                     </div>
                   </div>
                   <div className="flex items-center gap-4 mt-2">
-                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#EEF4FF] border border-[#3B5BDB]/10">
-                      <FaComments className="text-[#3B5BDB] text-xs" />
-                      <span className="text-xs font-semibold text-[#3B5BDB]">{project.conversationCount} {project.conversationCount === 1 ? 'chat' : 'chats'}</span>
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#E8F0FE] border border-[#3678F1]/10">
+                      <FaComments className="text-[#3678F1] text-xs" />
+                      <span className="text-xs font-semibold text-[#3678F1]">{project.conversationCount} {project.conversationCount === 1 ? 'chat' : 'chats'}</span>
                     </div>
                     {project.conversationCount === 0 && (
                       <p className="text-xs text-neutral-400">No conversations yet</p>
@@ -221,68 +221,76 @@ export default function Conversations() {
     <>
       {/* Header with back button and project title */}
       <header className="shrink-0 bg-white border-b border-neutral-200/80">
-        <div className="max-w-5xl mx-auto px-5 sm:px-8 pt-7 pb-5">
-          {isCompanyView && selectedProjectId && (
-            <Link
-              to="/dashboard/conversations"
-              className="inline-flex items-center gap-2 text-sm text-neutral-600 hover:text-[#3B5BDB] font-semibold mb-4 transition-colors"
-            >
-              <FaArrowLeft className="w-3.5 h-3.5" />
-              Back to Projects
-            </Link>
-          )}
-          <div className="flex items-end justify-between gap-4 mb-5 flex-wrap">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-neutral-900 tracking-tight">
-                {isCompanyView && selectedProjectId ? (selectedProject?.title ?? 'Project Messages') : 'Messages'}
-              </h1>
-              <p className="text-sm text-neutral-500 mt-1">
-                {loading
-                  ? 'Loading conversations…'
-                  : conversations.length === 0
-                    ? (isCompanyView && selectedProjectId ? 'No conversations in this project yet.' : 'No conversations yet.')
-                    : (
-                      <>
-                        {conversations.length} {conversations.length === 1 ? 'conversation' : 'conversations'}
-                        {totalUnread > 0 && (
-                          <>
-                            {' · '}
-                            <span className="text-[#F40F02] font-semibold">{totalUnread} unread</span>
-                          </>
-                        )}
-                      </>
-                    )}
-              </p>
+        <div className="max-w-5xl mx-auto px-5 sm:px-8 py-4">
+          {/* Title row */}
+          <div className="flex items-center justify-between gap-3 mb-3">
+            <div className="flex items-center gap-3 min-w-0">
+              {isCompanyView && selectedProjectId ? (
+                <Link
+                  to="/conversations"
+                  className="w-9 h-9 rounded-lg bg-[#F3F4F6] hover:bg-[#E8F0FE] text-neutral-600 hover:text-[#3678F1] flex items-center justify-center transition-colors shrink-0"
+                  aria-label="Back to projects"
+                  title="Back to projects"
+                >
+                  <FaArrowLeft className="w-3.5 h-3.5" />
+                </Link>
+              ) : (
+                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[#E8F0FE] to-[#DBEAFE] border border-[#3678F1]/10 flex items-center justify-center shrink-0">
+                  <FaMessage className="text-[#3678F1] text-sm" />
+                </div>
+              )}
+              <div className="min-w-0">
+                <h1 className="text-lg sm:text-xl font-bold text-neutral-900 tracking-tight truncate">
+                  {isCompanyView && selectedProjectId ? (selectedProject?.title ?? 'Project Messages') : 'Messages'}
+                </h1>
+                <p className="text-xs text-neutral-500 mt-0.5 truncate">
+                  {loading
+                    ? 'Loading conversations…'
+                    : conversations.length === 0
+                      ? (isCompanyView && selectedProjectId ? 'No conversations in this project yet.' : 'No conversations yet.')
+                      : (
+                        <>
+                          {conversations.length} {conversations.length === 1 ? 'conversation' : 'conversations'}
+                          {totalUnread > 0 && (
+                            <>
+                              {' · '}
+                              <span className="text-[#F40F02] font-semibold">{totalUnread} unread</span>
+                            </>
+                          )}
+                        </>
+                      )}
+                </p>
+              </div>
             </div>
             {totalUnread > 0 && (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#F40F02]/10 text-[#F40F02] text-xs font-bold border border-[#F40F02]/20">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#F40F02]/10 text-[#F40F02] text-[11px] font-bold border border-[#F40F02]/20 shrink-0">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#F40F02] animate-pulse" />
                 {totalUnread > 99 ? '99+' : totalUnread} new
               </span>
             )}
           </div>
 
-          {/* Search + filters row */}
-          <div className="flex items-center gap-3 flex-wrap">
-            <div className="relative flex-1 min-w-[240px]">
-              <FaMagnifyingGlass className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+          {/* Filters row — compact */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="relative flex-1 min-w-[200px]">
+              <FaMagnifyingGlass className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-400" />
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search by name…"
-                className="w-full rounded-xl pl-11 pr-4 py-3 text-sm bg-neutral-100/80 text-neutral-900 placeholder-neutral-400 border border-transparent focus:outline-none focus:bg-white focus:ring-2 focus:ring-[#3B5BDB]/20 focus:border-[#3B5BDB]/30 transition-all"
+                className="w-full rounded-lg pl-9 pr-3 py-2 text-sm bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 border border-transparent focus:outline-none focus:bg-white focus:ring-2 focus:ring-[#3678F1]/15 focus:border-[#3678F1]/30 transition-all"
               />
             </div>
-            <div className="flex items-center gap-1.5 p-1 rounded-xl bg-neutral-100/80 border border-neutral-200/60">
+            <div className="flex items-center gap-0.5 p-0.5 rounded-lg bg-[#F3F4F6] border border-neutral-200/60">
               {(['all', 'unread'] as Filter[]).map((f) => (
                 <button
                   key={f}
                   type="button"
                   onClick={() => setFilter(f)}
-                  className={`px-4 py-2 text-xs font-semibold rounded-lg capitalize transition-all ${
+                  className={`px-3 py-1.5 text-[11px] font-semibold rounded-md capitalize transition-all ${
                     filter === f
-                      ? 'bg-white text-[#3B5BDB] shadow-sm'
+                      ? 'bg-white text-[#3678F1] shadow-sm'
                       : 'text-neutral-600 hover:text-neutral-900'
                   }`}
                 >
@@ -290,22 +298,23 @@ export default function Conversations() {
                 </button>
               ))}
             </div>
-            <div className="flex items-center gap-2 p-2 rounded-xl bg-white border border-neutral-200/70">
-              <FaCalendar className="w-3.5 h-3.5 text-neutral-400" />
-              <label className="text-[11px] text-neutral-500 font-medium">From</label>
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white border border-neutral-200/70">
+              <FaCalendar className="w-3 h-3 text-neutral-400 shrink-0" />
               <input
                 type="date"
                 value={dateFrom}
                 onChange={(e) => setDateFrom(e.target.value)}
-                className="text-xs border border-neutral-200 rounded-lg px-2 py-1.5"
+                className="text-[11px] bg-transparent border-0 focus:outline-none text-neutral-700 w-[110px] cursor-pointer"
+                aria-label="From date"
               />
-              <label className="text-[11px] text-neutral-500 font-medium">To</label>
+              <span className="text-neutral-300">–</span>
               <input
                 type="date"
                 min={dateFrom || undefined}
                 value={dateTo}
                 onChange={(e) => setDateTo(e.target.value)}
-                className="text-xs border border-neutral-200 rounded-lg px-2 py-1.5"
+                className="text-[11px] bg-transparent border-0 focus:outline-none text-neutral-700 w-[110px] cursor-pointer"
+                aria-label="To date"
               />
               {(dateFrom || dateTo) && (
                 <button
@@ -314,7 +323,7 @@ export default function Conversations() {
                     setDateFrom('');
                     setDateTo('');
                   }}
-                  className="text-xs text-[#3B5BDB] font-semibold hover:underline"
+                  className="text-[11px] text-[#3678F1] font-semibold hover:underline ml-0.5"
                 >
                   Clear
                 </button>
@@ -326,10 +335,10 @@ export default function Conversations() {
 
       {/* Error */}
       {error && (
-        <div className="shrink-0 bg-red-50 border-b border-red-100">
+        <div className="shrink-0 bg-[#FEEBEA] border-b border-[#F40F02]/20">
           <div className="max-w-5xl mx-auto px-5 sm:px-8 py-3 flex items-center gap-3">
-            <FaTriangleExclamation className="text-red-500 shrink-0 w-4 h-4" />
-            <p className="text-sm text-red-700">{error}</p>
+            <FaTriangleExclamation className="text-[#F40F02] shrink-0 w-4 h-4" />
+            <p className="text-sm text-[#991B1B]">{error}</p>
           </div>
         </div>
       )}
@@ -342,22 +351,22 @@ export default function Conversations() {
               {[1, 2, 3, 4, 5, 6].map((i) => (
                 <div
                   key={i}
-                  className="rounded-2xl bg-white border border-neutral-200/80 px-5 py-4 flex gap-4 animate-pulse"
+                  className="rounded-2xl bg-white border border-neutral-200/80 px-5 py-4 flex gap-4"
                   style={{ animationDelay: `${i * 50}ms` }}
                 >
-                  <div className="w-14 h-14 rounded-full bg-neutral-100 shrink-0" />
+                  <div className="skeleton w-14 h-14 rounded-full shrink-0" />
                   <div className="flex-1 space-y-2.5 py-1">
-                    <div className="h-4 bg-neutral-100 rounded-lg w-1/3" />
-                    <div className="h-3 bg-neutral-50 rounded-lg w-3/5" />
-                    <div className="h-3 bg-neutral-50 rounded-lg w-4/5" />
+                    <div className="skeleton h-4 w-1/3 rounded-lg" />
+                    <div className="skeleton h-3 w-3/5 rounded-lg" />
+                    <div className="skeleton h-3 w-4/5 rounded-lg" />
                   </div>
                 </div>
               ))}
             </div>
           ) : filtered.length === 0 ? (
             <div className="rounded-3xl bg-white border border-neutral-200/80 py-20 text-center px-6 flex flex-col items-center justify-center mt-4">
-              <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-[#EEF4FF] to-[#DBEAFE] flex items-center justify-center mx-auto mb-5 border border-[#3B5BDB]/10 shadow-sm">
-                <FaMessage className="text-[#3B5BDB] text-2xl" />
+              <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-[#E8F0FE] to-[#DBEAFE] flex items-center justify-center mx-auto mb-5 border border-[#3678F1]/10 shadow-sm">
+                <FaMessage className="text-[#3678F1] text-2xl" />
               </div>
               <p className="text-lg font-bold text-neutral-900 mb-1.5">
                 {filter === 'unread' ? "You're all caught up" : search.trim() ? 'No matches found' : 'No conversations yet'}
@@ -378,20 +387,17 @@ export default function Conversations() {
                 const lastMsgTime = conv.lastMessage?.createdAt ?? conv.lastMessageAt ?? null;
                 const lastMsgText = conv.lastMessage?.content ?? null;
                 const hasUnread = (conv.unreadCount ?? 0) > 0;
-                const chatHref = `/dashboard/chat/${other.id}${selectedProjectId ? `?projectId=${selectedProjectId}` : ''}`;
+                const chatHref = `/chat/${other.id}${selectedProjectId ? `?projectId=${selectedProjectId}` : ''}`;
                 return (
                   <li key={conv.id}>
                     <Link
                       to={chatHref}
-                      className={`relative flex items-start gap-4 px-5 py-4 rounded-2xl border transition-all group overflow-hidden ${
+                      className={`relative flex items-start gap-4 px-5 py-4 rounded-2xl border transition-colors duration-200 group overflow-hidden ${
                         hasUnread
-                          ? 'bg-white border-[#3B5BDB]/25 shadow-sm shadow-[#3B5BDB]/10 hover:shadow-md hover:border-[#3B5BDB]/40'
-                          : 'bg-white border-neutral-200/80 hover:border-[#3B5BDB]/30 hover:shadow-sm'
+                          ? 'bg-white border-[#3678F1]/25 shadow-sm shadow-[#3678F1]/10 hover:border-[#3678F1]'
+                          : 'bg-white border-neutral-200/80 hover:border-[#3678F1]'
                       }`}
                     >
-                      {hasUnread && (
-                        <span className="absolute left-0 top-0 bottom-0 w-1 bg-[#3B5BDB]" aria-hidden />
-                      )}
                       <div className="relative shrink-0">
                         <Avatar src={other.avatarUrl} name={getName(other)} size="lg" />
                         {hasUnread && (
@@ -404,18 +410,18 @@ export default function Conversations() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-3 mb-1">
                           <div className="min-w-0">
-                            <p className={`text-base truncate leading-snug ${hasUnread ? 'font-bold text-neutral-900' : 'font-semibold text-neutral-800 group-hover:text-[#3B5BDB]'}`}>
+                            <p className={`text-base truncate leading-snug ${hasUnread ? 'font-bold text-neutral-900' : 'font-semibold text-neutral-800 group-hover:text-[#3678F1]'}`}>
                               {getName(other)}
                             </p>
                           </div>
                           <div className="flex flex-col items-end gap-1.5 shrink-0">
                             {lastMsgTime && (
-                              <span className={`text-[11px] tabular-nums ${hasUnread ? 'text-[#3B5BDB] font-bold' : 'text-neutral-400 font-medium'}`}>
+                              <span className={`text-[11px] tabular-nums ${hasUnread ? 'text-[#3678F1] font-bold' : 'text-neutral-400 font-medium'}`}>
                                 {timeSince(lastMsgTime)}
                               </span>
                             )}
                             {hasUnread && (
-                              <span className="min-w-[22px] h-[22px] px-2 rounded-full bg-[#3B5BDB] text-white text-[11px] font-bold flex items-center justify-center shadow-sm shadow-[#3B5BDB]/30">
+                              <span className="min-w-[22px] h-[22px] px-2 rounded-full bg-[#3678F1] text-white text-[11px] font-bold flex items-center justify-center shadow-sm shadow-[#3678F1]/30">
                                 {(conv.unreadCount ?? 0) > 99 ? '99+' : conv.unreadCount}
                               </span>
                             )}
@@ -423,7 +429,7 @@ export default function Conversations() {
                         </div>
                         <div className="flex items-center gap-2 min-w-0 mt-1.5">
                           {!hasUnread && lastMsgText && (
-                            <FaCheck className="w-3 h-3 text-[#3B5BDB] shrink-0 opacity-70" />
+                            <FaCheck className="w-3 h-3 text-[#3678F1] shrink-0 opacity-70" />
                           )}
                           <p className={`text-sm truncate leading-snug ${hasUnread ? 'text-neutral-800 font-medium' : 'text-neutral-500'}`}>
                             {lastMsgText ?? 'Tap to start the conversation'}
@@ -442,7 +448,7 @@ export default function Conversations() {
   );
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-[#F8F9FB] w-full">
+    <div className="h-screen flex flex-col overflow-hidden bg-[#F3F4F6] w-full">
       <DashboardHeader />
       <div className="flex-1 flex min-h-0 overflow-hidden">
         <DashboardSidebar links={navLinks} />
@@ -452,16 +458,19 @@ export default function Conversations() {
               <>
                 {/* Projects List Header */}
                 <header className="shrink-0 bg-white border-b border-neutral-200/80">
-                  <div className="max-w-5xl mx-auto px-5 sm:px-8 pt-7 pb-5">
-                    <div className="flex items-end justify-between gap-4 mb-2 flex-wrap">
-                      <div>
-                        <h1 className="text-2xl sm:text-3xl font-bold text-neutral-900 tracking-tight">Messages</h1>
-                        <p className="text-sm text-neutral-500 mt-1">
+                  <div className="max-w-5xl mx-auto px-5 sm:px-8 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[#E8F0FE] to-[#DBEAFE] border border-[#3678F1]/10 flex items-center justify-center shrink-0">
+                        <FaMessage className="text-[#3678F1] text-sm" />
+                      </div>
+                      <div className="min-w-0">
+                        <h1 className="text-lg sm:text-xl font-bold text-neutral-900 tracking-tight">Messages</h1>
+                        <p className="text-xs text-neutral-500 mt-0.5 truncate">
                           {projectsLoading
                             ? 'Loading your projects…'
                             : projects.length === 0
                               ? 'No projects yet'
-                              : `Select a project to view conversations`}
+                              : 'Select a project to view conversations'}
                         </p>
                       </div>
                     </div>
@@ -470,10 +479,10 @@ export default function Conversations() {
 
                 {/* Error */}
                 {error && (
-                  <div className="shrink-0 bg-red-50 border-b border-red-100">
+                  <div className="shrink-0 bg-[#FEEBEA] border-b border-[#F40F02]/20">
                     <div className="max-w-5xl mx-auto px-5 sm:px-8 py-3 flex items-center gap-3">
-                      <FaTriangleExclamation className="text-red-500 shrink-0 w-4 h-4" />
-                      <p className="text-sm text-red-700">{error}</p>
+                      <FaTriangleExclamation className="text-[#F40F02] shrink-0 w-4 h-4" />
+                      <p className="text-sm text-[#991B1B]">{error}</p>
                     </div>
                   </div>
                 )}

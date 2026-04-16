@@ -33,9 +33,9 @@ interface InvoicesResponse {
 
 const STATUS_DOT: Record<string, string> = {
   draft: 'bg-neutral-400',
-  sent: 'bg-blue-500',
-  paid: 'bg-emerald-500',
-  overdue: 'bg-red-500',
+  sent: 'bg-[#3678F1]',
+  paid: 'bg-[#22C55E]',
+  overdue: 'bg-[#F40F02]',
   cancelled: 'bg-neutral-300',
 };
 
@@ -97,9 +97,9 @@ export default function EarningsDashboard() {
   const paidCount = paidInvoices.length;
 
   const stats = [
-    { label: 'Total Earnings', value: formatPaise(totalEarnings), icon: FaIndianRupeeSign, accent: 'bg-emerald-50 text-emerald-600' },
-    { label: 'Pending Invoices', value: formatPaise(pendingTotal), icon: FaClock, accent: 'bg-amber-50 text-amber-600', sub: `${pendingInvoices.length} invoices` },
-    { label: 'Paid Invoices', value: String(paidCount), icon: FaCircleCheck, accent: 'bg-blue-50 text-blue-600' },
+    { label: 'Total Earnings', value: formatPaise(totalEarnings), icon: FaIndianRupeeSign, accent: 'bg-[#DCFCE7] text-[#15803D] ring-1 ring-[#22C55E]/20' },
+    { label: 'Pending Invoices', value: formatPaise(pendingTotal), icon: FaClock, accent: 'bg-[#FEF3C7] text-[#946A00] ring-1 ring-[#F4C430]/30', sub: `${pendingInvoices.length} invoices` },
+    { label: 'Paid Invoices', value: String(paidCount), icon: FaCircleCheck, accent: 'bg-[#E8F0FE] text-[#3678F1] ring-1 ring-[#3678F1]/15' },
   ];
 
   const goPrevMonth = () => {
@@ -132,7 +132,7 @@ export default function EarningsDashboard() {
   })();
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-[#F8F9FB] w-full">
+    <div className="h-screen flex flex-col overflow-hidden bg-[#F3F4F6] w-full">
       <DashboardHeader />
       <div className="flex-1 flex min-h-0 overflow-hidden">
         <DashboardSidebar links={navLinks} />
@@ -142,34 +142,38 @@ export default function EarningsDashboard() {
             <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
               {/* Header */}
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h1 className="text-2xl font-bold tracking-tight text-neutral-900 flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-xl bg-[#EEF2FF] flex items-center justify-center">
-                      <FaIndianRupeeSign className="text-[#3B5BDB] text-sm" />
-                    </div>
-                    Earnings
-                  </h1>
-                  <p className="text-sm text-neutral-500 mt-1.5 ml-[46px]">Track your income and invoice history</p>
+              <div className="relative rounded-2xl bg-white border border-neutral-200/70 px-6 sm:px-8 py-6 overflow-hidden shadow-soft mb-6">
+                <div className="absolute inset-y-0 right-0 w-1/2 bg-gradient-to-l from-[#E8F0FE]/60 to-transparent pointer-events-none" />
+                <span aria-hidden className="absolute left-0 top-6 bottom-6 w-1 rounded-r-full bg-gradient-to-b from-[#3678F1] to-[#5B9DF9]" />
+                <div className="relative flex items-center justify-between gap-4 flex-wrap z-10 pl-3">
+                  <div className="min-w-0">
+                    <h1 className="text-[22px] sm:text-[24px] font-extrabold tracking-tight text-neutral-900 flex items-center gap-2.5 leading-tight">
+                      <div className="w-10 h-10 rounded-xl bg-[#E8F0FE] ring-1 ring-[#3678F1]/15 flex items-center justify-center">
+                        <FaIndianRupeeSign className="text-[#3678F1] text-base" />
+                      </div>
+                      Earnings
+                    </h1>
+                    <p className="text-sm text-neutral-500 mt-1.5 ml-[52px]">Track your income and invoice history</p>
+                  </div>
+                  {invoices.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => downloadCSV(invoices)}
+                      className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white rounded-xl text-sm font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] shadow-brand transition-colors"
+                    >
+                      <FaDownload className="w-3.5 h-3.5" /> Export CSV
+                    </button>
+                  )}
                 </div>
-                {invoices.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => downloadCSV(invoices)}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-[#3B5BDB] text-white rounded-xl text-sm font-semibold hover:bg-[#2f4ac2] shadow-sm transition-all"
-                  >
-                    <FaDownload className="w-3.5 h-3.5" /> Export CSV
-                  </button>
-                )}
               </div>
 
               {/* Error */}
               {error && (
-                <div className="flex items-center gap-3 rounded-2xl bg-red-50 border border-red-100 p-4 mb-5 shadow-sm">
-                  <div className="w-9 h-9 rounded-xl bg-red-100 flex items-center justify-center shrink-0">
-                    <FaTriangleExclamation className="text-red-500" />
+                <div className="flex items-center gap-3 rounded-2xl bg-[#FEEBEA] border border-[#F40F02]/20 p-4 mb-5 shadow-sm">
+                  <div className="w-9 h-9 rounded-xl bg-[#F40F02]/15 flex items-center justify-center shrink-0">
+                    <FaTriangleExclamation className="text-[#F40F02]" />
                   </div>
-                  <p className="text-sm text-red-700">{error}</p>
+                  <p className="text-sm text-[#991B1B]">{error}</p>
                 </div>
               )}
 
@@ -177,9 +181,9 @@ export default function EarningsDashboard() {
               {loading ? (
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
                   {[1, 2, 3].map((i) => (
-                    <div key={i} className="rounded-2xl bg-white border border-neutral-200 p-5 animate-pulse">
-                      <div className="h-4 bg-neutral-100 rounded w-1/2 mb-3" />
-                      <div className="h-6 bg-neutral-200 rounded w-2/3" />
+                    <div key={i} className="rounded-2xl bg-white border border-neutral-200/70 p-5 overflow-hidden">
+                      <div className="skeleton h-4 rounded w-1/2 mb-3" />
+                      <div className="skeleton h-6 rounded w-2/3" />
                     </div>
                   ))}
                 </div>
@@ -203,7 +207,7 @@ export default function EarningsDashboard() {
                           <button
                             type="button"
                             onClick={goToday}
-                            className="text-[10px] text-[#3B5BDB] font-bold hover:underline"
+                            className="text-[10px] text-[#3678F1] font-bold hover:underline"
                           >
                             Jump to today
                           </button>
@@ -222,7 +226,7 @@ export default function EarningsDashboard() {
                   {/* Stats Cards */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
                     {stats.map((stat) => (
-                      <div key={stat.label} className="rounded-2xl bg-white border border-neutral-200 p-5 hover:shadow-sm transition-shadow">
+                      <div key={stat.label} className="rounded-2xl bg-white shadow-soft border border-neutral-200/70 p-5 hover:border-[#3678F1] transition-colors duration-200">
                         <div className="flex items-center gap-3 mb-3">
                           <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${stat.accent}`}>
                             <stat.icon className="w-4 h-4" />
@@ -236,15 +240,18 @@ export default function EarningsDashboard() {
                   </div>
 
                   {/* All Invoices for Selected Month */}
-                  <div className="rounded-2xl bg-white border border-neutral-200 overflow-hidden">
+                  <div className="rounded-2xl bg-white shadow-soft border border-neutral-200/70 overflow-hidden">
                     <div className="px-5 py-4 border-b border-neutral-100">
-                      <h2 className="text-sm font-bold text-neutral-900">Invoices — {MONTHS[filterMonth]} {filterYear}</h2>
+                      <h2 className="text-sm font-bold text-neutral-900 flex items-center gap-2">
+                        <span className="w-1 h-4 rounded-full bg-[#3678F1]" />
+                        Invoices — {MONTHS[filterMonth]} {filterYear}
+                      </h2>
                     </div>
 
                     {filteredInvoices.length === 0 ? (
                       <div className="p-12 text-center">
-                        <div className="w-14 h-14 rounded-2xl bg-[#EEF2FF] flex items-center justify-center mx-auto mb-4">
-                          <FaFileInvoice className="text-[#3B5BDB] text-2xl" />
+                        <div className="w-14 h-14 rounded-2xl bg-[#E8F0FE] ring-1 ring-[#3678F1]/15 flex items-center justify-center mx-auto mb-4">
+                          <FaFileInvoice className="text-[#3678F1] text-2xl" />
                         </div>
                         <p className="text-sm font-semibold text-neutral-700 mb-1">No invoices this month</p>
                         <p className="text-xs text-neutral-400">Your invoices will appear here.</p>
@@ -254,9 +261,9 @@ export default function EarningsDashboard() {
                         {filteredInvoices
                           .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
                           .map((inv) => (
-                            <div key={inv.id} className="flex items-center gap-4 px-5 py-4 hover:bg-neutral-50 transition-colors">
-                              <div className="w-9 h-9 rounded-xl bg-[#EEF2FF] flex items-center justify-center shrink-0">
-                                <FaFileInvoice className="text-[#3B5BDB] text-xs" />
+                            <div key={inv.id} className="flex items-center gap-4 px-5 py-4 hover:bg-[#F4F8FE] transition-colors">
+                              <div className="w-9 h-9 rounded-xl bg-[#E8F0FE] ring-1 ring-[#3678F1]/15 flex items-center justify-center shrink-0">
+                                <FaFileInvoice className="text-[#3678F1] text-xs" />
                               </div>
                               <div className="flex-1 min-w-0">
                                 <p className="text-sm font-semibold text-neutral-900 truncate">{inv.invoiceNumber}</p>

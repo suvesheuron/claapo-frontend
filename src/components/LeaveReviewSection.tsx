@@ -42,9 +42,9 @@ export default function LeaveReviewSection({
 
   if (loading) {
     return (
-      <div className="rounded-2xl bg-white border border-neutral-200 p-5 animate-pulse">
-        <div className="h-4 w-1/3 bg-neutral-200 rounded mb-3" />
-        <div className="h-3 w-2/3 bg-neutral-100 rounded" />
+      <div className="rounded-2xl bg-white border border-neutral-200 p-5">
+        <div className="skeleton h-4 w-1/3 rounded mb-3" />
+        <div className="skeleton h-3 w-2/3 rounded" />
       </div>
     );
   }
@@ -72,7 +72,7 @@ export default function LeaveReviewSection({
   if (!open) {
     const projectTitle = eligibleBookings[0]?.project?.title;
     return (
-      <div className="rounded-2xl bg-white border border-neutral-200 p-5 flex items-center justify-between gap-4 flex-wrap">
+      <div className="rounded-2xl bg-white border border-neutral-200 p-5 flex items-center justify-between gap-4 flex-wrap hover:border-[#3678F1] transition-colors duration-200">
         <div className="min-w-0">
           <p className="text-sm font-semibold text-neutral-900">Leave a review for {targetName}</p>
           <p className="text-xs text-neutral-500 mt-1">
@@ -90,7 +90,7 @@ export default function LeaveReviewSection({
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#3B5BDB] text-white text-xs font-semibold hover:bg-[#2f4ac2] shadow-sm transition-colors shrink-0"
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white text-xs font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] shadow-brand transition-colors shrink-0"
         >
           <FaPenToSquare className="w-3.5 h-3.5" />
           Write a review
@@ -107,7 +107,7 @@ export default function LeaveReviewSection({
           <select
             value={activeBookingId}
             onChange={(e) => setSelectedBookingId(e.target.value)}
-            className="w-full rounded-xl border border-neutral-200 px-3 py-2.5 text-sm bg-white focus:outline-none focus:border-[#3B5BDB]/40 focus:ring-2 focus:ring-[#3B5BDB]/10"
+            className="w-full rounded-xl border border-neutral-200 px-3 py-2.5 text-sm bg-white focus:outline-none focus:border-[#3678F1]/40 focus:ring-2 focus:ring-[#3678F1]/10"
           >
             {eligibleBookings.map((b) => (
               <option key={b.id} value={b.id}>

@@ -203,8 +203,8 @@ export default function AvailabilityDateDetailModal({
                       {booking.shootDateLocations.map((pair) => (
                         <div key={pair.date} className="flex items-start gap-2.5 bg-white rounded-lg border border-neutral-200 p-2.5">
                           <div className="flex items-center gap-2 flex-1 min-w-0">
-                            <div className="w-6 h-6 rounded-md bg-blue-50 flex items-center justify-center shrink-0">
-                              <FaCalendarDay className="w-2.5 h-2.5 text-blue-600" />
+                            <div className="w-6 h-6 rounded-md bg-[#E8F0FE] flex items-center justify-center shrink-0">
+                              <FaCalendarDay className="w-2.5 h-2.5 text-[#3678F1]" />
                             </div>
                             <p className="text-xs font-semibold text-neutral-900">
                               {new Date(pair.date + 'T00:00:00').toLocaleDateString('en-IN', {
@@ -215,7 +215,7 @@ export default function AvailabilityDateDetailModal({
                             </p>
                           </div>
                           <div className="flex items-start gap-1.5 flex-1 min-w-0">
-                            <FaLocationDot className="w-2.5 h-2.5 text-blue-600 mt-0.5 shrink-0" />
+                            <FaLocationDot className="w-2.5 h-2.5 text-[#3678F1] mt-0.5 shrink-0" />
                             <p className="text-xs text-neutral-700 font-medium truncate">{pair.location}</p>
                           </div>
                         </div>
@@ -240,9 +240,9 @@ export default function AvailabilityDateDetailModal({
               <div className="flex flex-wrap gap-2 pt-2">
                 {chatUserId && (
                   <Link
-                    to={`/dashboard/chat/${chatUserId}?projectId=${encodeURIComponent(booking.projectId)}`}
+                    to={`/chat/${chatUserId}?projectId=${encodeURIComponent(booking.projectId)}`}
                     onClick={onClose}
-                    className="inline-flex flex-1 min-w-[120px] items-center justify-center gap-2 rounded-xl py-2.5 px-3 bg-[#EEF4FF] text-[#3B5BDB] text-sm font-semibold hover:bg-[#DBEAFE] border border-[#3B5BDB]/20"
+                    className="inline-flex flex-1 min-w-[120px] items-center justify-center gap-2 rounded-xl py-2.5 px-3 bg-[#E8F0FE] text-[#3678F1] text-sm font-semibold hover:bg-[#DBEAFE] border border-[#3678F1]/20"
                   >
                     <FaMessage className="text-sm" /> Chat
                   </Link>
@@ -250,9 +250,9 @@ export default function AvailabilityDateDetailModal({
                 {/* Show Invoice button for completed bookings */}
                 {booking.status === 'completed' && (
                   <Link
-                    to={`/dashboard/invoices?bookingId=${encodeURIComponent(booking.id)}`}
+                    to={`/invoices?bookingId=${encodeURIComponent(booking.id)}`}
                     onClick={onClose}
-                    className="inline-flex flex-1 min-w-[120px] items-center justify-center gap-2 rounded-xl py-2.5 px-3 bg-[#EEF4FF] text-[#3B5BDB] text-sm font-semibold hover:bg-[#DBEAFE] border border-[#3B5BDB]/20"
+                    className="inline-flex flex-1 min-w-[120px] items-center justify-center gap-2 rounded-xl py-2.5 px-3 bg-[#E8F0FE] text-[#3678F1] text-sm font-semibold hover:bg-[#DBEAFE] border border-[#3678F1]/20"
                   >
                     <FaFileInvoice className="text-sm" /> Invoice
                   </Link>
@@ -271,7 +271,7 @@ export default function AvailabilityDateDetailModal({
                     onChatClick?.(selectedDate);
                     onClose();
                   }}
-                  className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl py-2.5 px-3 bg-[#3B5BDB] text-white text-sm font-semibold hover:bg-[#2f4ac2]"
+                  className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl py-2.5 px-3 bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white text-sm font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] shadow-brand transition-colors"
                 >
                   <FaMessage className="text-sm" /> Chat
                 </button>
@@ -281,7 +281,7 @@ export default function AvailabilityDateDetailModal({
                     onBookCrewClick?.(selectedDate);
                     onClose();
                   }}
-                  className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl py-2.5 px-3 bg-[#3B5BDB] text-white text-sm font-semibold hover:bg-[#2f4ac2]"
+                  className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl py-2.5 px-3 bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white text-sm font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] shadow-brand transition-colors"
                 >
                   <FaUserPlus className="text-sm" /> Book Crew
                 </button>
@@ -317,7 +317,7 @@ export default function AvailabilityDateDetailModal({
               type="button"
               onClick={() => onUnblock?.()}
               disabled={blocking}
-              className="w-full rounded-xl py-3 bg-[#3B5BDB] text-white text-sm font-semibold hover:bg-[#2f4ac2] disabled:opacity-60"
+              className="w-full rounded-xl py-3 bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white text-sm font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] shadow-brand disabled:opacity-60 transition-colors"
             >
               {blocking ? 'Saving…' : 'Mark as Available'}
             </button>
@@ -345,7 +345,7 @@ export default function AvailabilityDateDetailModal({
                   <label
                     key={r}
                     className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer ${
-                      blockReason === r ? 'border-[#3B5BDB] bg-[#EEF4FF]' : 'border-neutral-200 hover:bg-neutral-50'
+                      blockReason === r ? 'border-[#3678F1] bg-[#E8F0FE]' : 'border-neutral-200 hover:bg-neutral-50'
                     }`}
                   >
                     <input
@@ -353,7 +353,7 @@ export default function AvailabilityDateDetailModal({
                       name="blockReason"
                       checked={blockReason === r}
                       onChange={() => setBlockReason(r)}
-                      className="accent-[#3B5BDB]"
+                      className="accent-[#3678F1]"
                     />
                     <span className="text-sm font-medium text-neutral-800">{r}</span>
                   </label>
@@ -373,7 +373,7 @@ export default function AvailabilityDateDetailModal({
                   type="button"
                   disabled={blocking}
                   onClick={handleConfirmBlock}
-                  className="flex-1 rounded-xl py-2.5 bg-[#3B5BDB] text-white text-sm font-semibold disabled:opacity-50"
+                  className="flex-1 rounded-xl py-2.5 bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white text-sm font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] shadow-brand disabled:opacity-50 transition-colors"
                 >
                   {blocking ? 'Saving…' : 'Confirm'}
                 </button>
@@ -393,9 +393,9 @@ export default function AvailabilityDateDetailModal({
         <div className="px-5 py-3 border-t border-neutral-100 shrink-0 space-y-2">
           {allShootDates.includes(selectedDate ?? '') ? (
             <Link
-              to={`/dashboard/invoices?issuedOn=${encodeURIComponent(selectedDate ?? '')}`}
+              to={`/invoices?issuedOn=${encodeURIComponent(selectedDate ?? '')}`}
               onClick={onClose}
-              className="w-full flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold bg-[#EEF4FF] text-[#3B5BDB] border border-[#3B5BDB]/20 hover:bg-[#DBEAFE]"
+              className="w-full flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold bg-[#E8F0FE] text-[#3678F1] border border-[#3678F1]/20 hover:bg-[#DBEAFE]"
             >
               <FaFileInvoice className="text-sm" /> Invoices
             </Link>
@@ -409,7 +409,7 @@ export default function AvailabilityDateDetailModal({
                 onRequestCancelBooking?.(booking);
                 onClose();
               }}
-              className="w-full rounded-xl py-2.5 border border-amber-300 bg-amber-50 text-amber-900 text-sm font-semibold hover:bg-amber-100 transition-colors"
+              className="w-full rounded-xl py-2.5 border border-[#F40F02]/30 bg-[#FEEBEA] text-[#991B1B] text-sm font-semibold hover:bg-[#FDD8D5] transition-colors"
             >
               Request cancellation
             </button>

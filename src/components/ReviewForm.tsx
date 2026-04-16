@@ -56,14 +56,14 @@ export default function ReviewForm({ bookingId, onSubmitted }: ReviewFormProps) 
           onChange={(e) => setText(e.target.value)}
           rows={3}
           placeholder="Share your experience…"
-          className="w-full rounded-xl border border-neutral-200 px-4 py-3 text-sm placeholder-neutral-400 focus:outline-none focus:border-[#3B5BDB]/40 focus:ring-2 focus:ring-[#3B5BDB]/10 transition-all resize-none"
+          className="w-full rounded-xl border border-neutral-200 px-4 py-3 text-sm placeholder-neutral-400 focus:outline-none focus:border-[#3678F1]/40 focus:ring-2 focus:ring-[#3678F1]/10 transition-colors resize-none"
         />
       </div>
 
       <button
         type="submit"
         disabled={submitting || rating === 0}
-        className="flex items-center gap-2 px-5 py-2.5 bg-[#3B5BDB] text-white rounded-xl text-sm font-semibold hover:bg-[#2f4ac2] shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+        className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white rounded-xl text-sm font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] shadow-brand transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <FaPaperPlane className="w-3.5 h-3.5" />
         {submitting ? 'Submitting…' : 'Submit Review'}

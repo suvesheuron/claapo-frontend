@@ -2,30 +2,34 @@
 @import "tailwindcss";
 
 /*
-  Claapo Design System
-  Primary:    #3B5BDB  – header, nav, primary actions
-  Accent:     #F4C430  – CTA, highlights
-  Success:    #22C55E  – available state
-  Error:      #F40F02  – booked state
-  White:      #FFFFFF  – background
-  Light Grey: #F3F4F6  – cards, sections
+  CLAAPO Design System
+  Primary (Blue):   #3678F1 – header, nav, primary actions
+  Accent (Yellow):  #F4C430 – CTA, highlights
+  Success (Green):  #22C55E – available state
+  Error   (Red):    #F40F02 – booked/error state
+  White:            #FFFFFF – base background
+  Light Grey:       #F3F4F6 – cards, sections, canvas
 */
 
 @theme {
   --font-sans: 'Outfit', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
-  /* Brand colors */
-  --color-brand-primary:    #3B5BDB;
-  --color-brand-accent:     #F4C430;
-  --color-brand-success:    #22C55E;
-  --color-brand-error:      #F40F02;
-  --color-surface:          #F3F4F6;
-  
+  /* Brand colors — CLAAPO palette */
+  --color-brand-primary:      #3678F1;
+  --color-brand-primary-dark: #2563EB;
+  --color-brand-primary-soft: #E8F0FE;
+  --color-brand-accent:       #F4C430;
+  --color-brand-accent-dark:  #D9A916;
+  --color-brand-success:      #22C55E;
+  --color-brand-error:        #F40F02;
+  --color-surface:            #F3F4F6;
+
   /* Custom shadows */
-  --shadow-soft: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
-  --shadow-glow: 0 0 20px rgba(59, 91, 219, 0.15);
-  --shadow-float: 0 10px 30px -5px rgba(0, 0, 0, 0.08);
-  
+  --shadow-soft:  0 4px 20px -2px rgba(15, 23, 42, 0.05);
+  --shadow-glow:  0 0 20px rgba(54, 120, 241, 0.18);
+  --shadow-float: 0 10px 30px -5px rgba(15, 23, 42, 0.08);
+  --shadow-brand: 0 8px 24px -8px rgba(54, 120, 241, 0.35);
+
   /* Glass utilities */
   --animate-pulse-slow: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
@@ -104,7 +108,33 @@ img, video, svg {
 }
 
 .panel-enter {
-  animation: slideInRight 0.25s ease-out forwards;
+  animation: slideInRight 0.28s cubic-bezier(0.32, 0.72, 0.24, 1) forwards;
+}
+
+.panel-exit {
+  animation: slideOutRight 0.24s cubic-bezier(0.5, 0, 0.75, 0.32) forwards;
+}
+
+/* Backdrop fade — paired with sliding panel */
+@keyframes backdropFadeIn  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes backdropFadeOut { from { opacity: 1; } to { opacity: 0; } }
+.backdrop-enter { animation: backdropFadeIn  0.2s ease-out forwards; }
+.backdrop-exit  { animation: backdropFadeOut 0.22s ease-in  forwards; }
+
+/* Professional shimmer skeleton — used for loading states */
+@keyframes shimmer {
+  0%   { background-position:  200% 0; }
+  100% { background-position: -200% 0; }
+}
+.skeleton {
+  background-image: linear-gradient(
+    90deg,
+    rgba(243, 244, 246, 1)   0%,
+    rgba(232, 240, 254, 0.9) 50%,
+    rgba(243, 244, 246, 1)   100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
 }
 
 /* Flickering animation for vendor role indicator */

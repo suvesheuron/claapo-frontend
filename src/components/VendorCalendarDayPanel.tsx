@@ -96,15 +96,15 @@ export default function VendorCalendarDayPanel({
           : 'rounded-2xl border border-neutral-200 bg-white flex flex-col min-h-[220px] max-h-[min(70vh,520px)] overflow-hidden'
       }
     >
-      <div className={`flex items-start justify-between gap-2 shrink-0 border-b border-neutral-100 ${isDrawer ? 'px-5 py-5' : 'px-4 py-3'}`}>
+      <div className={`flex items-start justify-between gap-2 shrink-0 border-b border-neutral-100 bg-gradient-to-br from-white via-[#F4F8FE] to-[#E8F0FE]/40 ${isDrawer ? 'px-5 py-5' : 'px-4 py-3'}`}>
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400">Selected day</p>
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-[#3678F1]">Selected day</p>
           <p className="text-sm font-bold text-neutral-900">{title}</p>
         </div>
         <button
           type="button"
           onClick={onDismiss}
-          className="shrink-0 w-8 h-8 rounded-lg bg-neutral-100 flex items-center justify-center text-neutral-500 hover:bg-neutral-200"
+          className="shrink-0 w-9 h-9 rounded-xl bg-white border border-neutral-200 flex items-center justify-center text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800 hover:border-neutral-300 shadow-sm transition-colors"
           aria-label="Clear selection"
         >
           <FaXmark className="text-sm" />
@@ -136,8 +136,8 @@ export default function VendorCalendarDayPanel({
           const companyChatId = b?.companyUserId ?? f?.companyUserId;
 
           return (
-            <div key={id ?? idx} className="rounded-xl border border-neutral-200 bg-neutral-50/80 p-3 space-y-2">
-              <p className="text-[11px] font-bold text-neutral-500 uppercase tracking-wide">Project / rental</p>
+            <div key={id ?? idx} className="rounded-xl border border-neutral-200/70 bg-white p-3 space-y-2 hover:border-[#3678F1] transition-colors duration-200">
+              <p className="text-[11px] font-bold text-[#3678F1] uppercase tracking-wide">Project / rental</p>
               <p className="text-sm font-bold text-neutral-900 leading-snug">{titleText}</p>
               <p className="text-xs text-neutral-600">
                 <span className="text-neutral-400">Company</span> · {company}
@@ -159,8 +159,8 @@ export default function VendorCalendarDayPanel({
               <div className="flex flex-wrap gap-2 pt-1">
                 {companyChatId && projectId && (
                   <Link
-                    to={`/dashboard/chat/${companyChatId}?projectId=${encodeURIComponent(projectId)}`}
-                    className="inline-flex flex-1 min-w-[100px] items-center justify-center gap-1.5 rounded-lg py-2 px-2 bg-[#EEF4FF] text-[#3B5BDB] text-xs font-semibold border border-[#3B5BDB]/20"
+                    to={`/chat/${companyChatId}?projectId=${encodeURIComponent(projectId)}`}
+                    className="inline-flex flex-1 min-w-[100px] items-center justify-center gap-1.5 rounded-lg py-2 px-2 bg-[#E8F0FE] text-[#2563EB] text-xs font-bold border border-[#3678F1]/20 hover:bg-[#DBEAFE] transition-colors duration-200"
                   >
                     <FaMessage className="text-xs" /> Chat
                   </Link>
@@ -182,7 +182,7 @@ export default function VendorCalendarDayPanel({
             type="button"
             onClick={() => onUnblock()}
             disabled={saving}
-            className="w-full rounded-xl py-2.5 bg-[#3B5BDB] text-white text-xs font-semibold hover:bg-[#2f4ac2] disabled:opacity-60"
+            className="w-full rounded-xl py-2.5 bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white text-xs font-bold hover:from-[#2563EB] hover:to-[#1D4ED8] shadow-brand disabled:opacity-60 transition-colors duration-200"
           >
             {saving ? 'Saving…' : 'Mark as Available'}
           </button>
@@ -205,7 +205,7 @@ export default function VendorCalendarDayPanel({
                 <div className="space-y-1 max-h-32 overflow-y-auto">
                   {blockReasons.map((r) => (
                     <label key={r} className="flex items-center gap-2 text-xs cursor-pointer">
-                      <input type="radio" name="blk" checked={blockPick === r} onChange={() => setBlockPick(r)} className="accent-[#3B5BDB]" />
+                      <input type="radio" name="blk" checked={blockPick === r} onChange={() => setBlockPick(r)} className="accent-[#3678F1]" />
                       {r}
                     </label>
                   ))}
@@ -220,10 +220,10 @@ export default function VendorCalendarDayPanel({
                   />
                 )}
                 <div className="flex gap-2">
-                  <button type="button" disabled={saving} onClick={runBlock} className="flex-1 py-2 rounded-lg bg-[#3B5BDB] text-white text-xs font-semibold disabled:opacity-50">
+                  <button type="button" disabled={saving} onClick={runBlock} className="flex-1 py-2 rounded-lg bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white text-xs font-bold hover:from-[#2563EB] hover:to-[#1D4ED8] shadow-brand disabled:opacity-50 transition-colors duration-200">
                     {saving ? 'Saving…' : 'Confirm'}
                   </button>
-                  <button type="button" disabled={saving} onClick={() => setBlockMode(false)} className="flex-1 py-2 rounded-lg bg-neutral-100 text-xs font-semibold">
+                  <button type="button" disabled={saving} onClick={() => setBlockMode(false)} className="flex-1 py-2 rounded-lg bg-neutral-100 text-xs font-semibold hover:bg-neutral-200 transition-colors">
                     Cancel
                   </button>
                 </div>
@@ -235,13 +235,13 @@ export default function VendorCalendarDayPanel({
         <div className="border-t border-neutral-100 pt-4 mt-4">
           {allShootDates.includes(selectedDate) ? (
             <Link
-              to={`/dashboard/invoices?issuedOn=${selectedDate}`}
-              className="flex w-full items-center justify-center gap-2 rounded-xl py-2.5 bg-[#EEF4FF] text-[#3B5BDB] text-xs font-semibold border border-[#3B5BDB]/20 hover:bg-[#DBEAFE] transition-colors"
+              to={`/invoices?issuedOn=${selectedDate}`}
+              className="flex w-full items-center justify-center gap-2 rounded-xl py-2.5 bg-[#E8F0FE] text-[#2563EB] text-xs font-bold border border-[#3678F1]/20 hover:bg-[#DBEAFE] transition-colors duration-200"
             >
               <FaFileInvoice className="text-xs" /> Invoices
             </Link>
           ) : null}
-          
+
           {/* Direct cancellation button for booked/hired dates */}
           {(booking || fallbackBookings.some(fb => fb.status === 'accepted' || fb.status === 'locked')) && (
             <button
@@ -250,7 +250,7 @@ export default function VendorCalendarDayPanel({
                 const bookingId = booking?.id ?? fallbackBookings.find(fb => fb.status === 'accepted' || fb.status === 'locked')?.id;
                 if (bookingId) onRequestCancel?.(bookingId);
               }}
-              className="mt-2 w-full rounded-xl py-2.5 border border-amber-300 bg-amber-50 text-amber-900 text-xs font-semibold hover:bg-amber-100 transition-colors"
+              className="mt-2 w-full rounded-xl py-2.5 border border-[#F40F02]/30 bg-[#FEE2E2] text-[#991B1B] text-xs font-semibold hover:bg-[#FECACA] transition-colors duration-200"
             >
               Request cancellation
             </button>

@@ -64,15 +64,15 @@ export default function ProjectChatStartModal({
           {loading && (
             <div className="space-y-2">
               {[1, 2, 3].map((x) => (
-                <div key={x} className="h-16 rounded-xl bg-neutral-100 animate-pulse" />
+                <div key={x} className="skeleton h-16 rounded-xl" />
               ))}
             </div>
           )}
 
           {!loading && error && (
-            <div className="flex items-start gap-2.5 rounded-xl bg-red-50 border border-red-200 px-3.5 py-3">
-              <FaTriangleExclamation className="text-red-500 text-sm shrink-0 mt-0.5" />
-              <p className="text-xs text-red-700 leading-snug">{error}</p>
+            <div className="flex items-start gap-2.5 rounded-xl bg-[#FEEBEA] border border-[#F40F02]/30 px-3.5 py-3">
+              <FaTriangleExclamation className="text-[#F40F02] text-sm shrink-0 mt-0.5" />
+              <p className="text-xs text-[#991B1B] leading-snug">{error}</p>
             </div>
           )}
 
@@ -81,8 +81,8 @@ export default function ProjectChatStartModal({
               <p className="text-sm font-semibold text-neutral-800">No projects available for chat.</p>
               <p className="text-xs text-neutral-500 mt-1 mb-4">Create a project first, then start a project-wise chat.</p>
               <Link
-                to="/dashboard/projects/new"
-                className="rounded-xl inline-flex items-center gap-2 px-5 py-2.5 bg-[#3B5BDB] text-white text-sm font-semibold hover:bg-[#2f4ac2] transition-colors"
+                to="/projects/new"
+                className="rounded-xl inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white text-sm font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] shadow-brand transition-colors"
                 onClick={onClose}
               >
                 <FaPlus className="w-3 h-3" /> Create Project
@@ -97,14 +97,14 @@ export default function ProjectChatStartModal({
                   key={project.id}
                   type="button"
                   onClick={() => onStartChat(project.id)}
-                  className="w-full text-left rounded-xl border border-neutral-200 bg-white px-4 py-3 hover:bg-neutral-50 hover:border-neutral-300 transition-colors"
+                  className="w-full text-left rounded-xl border border-neutral-200 bg-white px-4 py-3 hover:border-[#3678F1] transition-colors duration-200"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="text-sm font-semibold text-neutral-900">{project.title}</p>
                       <p className="text-xs text-neutral-500 mt-0.5">{formatDateRange(project.startDate, project.endDate)}</p>
                     </div>
-                    <span className="inline-flex items-center gap-1 rounded-full bg-[#EEF4FF] text-[#3B5BDB] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-[#E8F0FE] text-[#3678F1] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
                       <FaMessage className="w-2.5 h-2.5" /> Chat
                     </span>
                   </div>

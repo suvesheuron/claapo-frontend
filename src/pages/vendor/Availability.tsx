@@ -333,33 +333,38 @@ export default function VendorAvailability() {
           <div className="flex-1 min-h-0 overflow-auto">
             <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-5">
 
-              <div className="mb-5">
-                <h1 className="text-xl font-bold text-neutral-900">Equipment Availability</h1>
-                <p className="text-sm text-neutral-500 mt-0.5">Manage equipment schedule, block dates, and view rental history</p>
+              <div className="relative rounded-2xl bg-white border border-neutral-200/70 px-6 sm:px-8 py-6 mb-5 overflow-hidden shadow-soft">
+                <div className="absolute inset-y-0 right-0 w-1/2 bg-gradient-to-l from-[#E8F0FE]/60 to-transparent pointer-events-none" />
+                <span aria-hidden className="absolute left-0 top-6 bottom-6 w-1 rounded-r-full bg-gradient-to-b from-[#3678F1] to-[#5B9DF9]" />
+                <div className="relative pl-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#3678F1]">Schedule</p>
+                  <h1 className="text-[26px] sm:text-[28px] font-extrabold text-neutral-900 tracking-tight leading-tight mt-1">Equipment Availability</h1>
+                  <p className="text-sm text-neutral-500 mt-1.5">Manage equipment schedule, block dates, and view rental history</p>
+                </div>
               </div>
 
-              <div className="rounded-2xl bg-white border border-neutral-200 p-5 min-w-0">
+              <div className="rounded-2xl bg-white border border-neutral-200/70 shadow-soft p-5 min-w-0 hover:border-[#3678F1] transition-colors duration-200">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
-                  <div className="flex items-center gap-2">
-                    <button type="button" onClick={() => setMonthOffset((o) => o - 1)} className="w-9 h-9 rounded-xl border border-neutral-200 flex items-center justify-center text-neutral-600 hover:bg-neutral-100 transition-colors">
+                  <div className="flex items-center gap-1">
+                    <button type="button" onClick={() => setMonthOffset((o) => o - 1)} className="w-9 h-9 rounded-lg border border-neutral-200/80 bg-white text-neutral-600 hover:bg-[#E8F0FE] hover:border-[#3678F1]/30 hover:text-[#3678F1] flex items-center justify-center transition-colors">
                       <FaChevronLeft className="text-xs" />
                     </button>
-                    <h2 className="text-base font-bold text-neutral-900 min-w-[150px] text-center">{monthLabel} {yearLabel}</h2>
-                    <button type="button" onClick={() => setMonthOffset((o) => o + 1)} className="w-9 h-9 rounded-xl border border-neutral-200 flex items-center justify-center text-neutral-600 hover:bg-neutral-100 transition-colors">
+                    <h2 className="text-base font-bold text-neutral-900 min-w-[150px] text-center tabular-nums px-1">{monthLabel} {yearLabel}</h2>
+                    <button type="button" onClick={() => setMonthOffset((o) => o + 1)} className="w-9 h-9 rounded-lg border border-neutral-200/80 bg-white text-neutral-600 hover:bg-[#E8F0FE] hover:border-[#3678F1]/30 hover:text-[#3678F1] flex items-center justify-center transition-colors">
                       <FaChevronRight className="text-xs" />
                     </button>
                   </div>
                   <div className="flex items-center gap-3">
                     {slotsLoading && <span className="text-xs text-neutral-400">Loading…</span>}
-                    <button type="button" onClick={() => setMonthOffset(0)} className="text-xs text-[#3B5BDB] hover:underline font-medium">Today</button>
+                    <button type="button" onClick={() => setMonthOffset(0)} className="text-xs text-[#3678F1] hover:text-[#2563EB] font-semibold transition-colors">Today</button>
                   </div>
                 </div>
 
                 {monthOffset < 0 && (
-                  <div className="flex items-center gap-2 mb-4 px-3 py-2 bg-[#EEF4FF] rounded-xl">
-                    <FaCircleInfo className="text-[#3B5BDB] text-xs shrink-0" />
-                    <p className="text-xs text-[#3B5BDB]">Viewing history — click completed dates to see rental details</p>
+                  <div className="flex items-center gap-2 mb-4 px-3 py-2 bg-[#E8F0FE] border border-[#3678F1]/30 rounded-xl">
+                    <FaCircleInfo className="text-[#3678F1] text-xs shrink-0" />
+                    <p className="text-xs text-[#1E3A8A] font-medium">Viewing history — click completed dates to see rental details</p>
                   </div>
                 )}
 
@@ -376,7 +381,7 @@ export default function VendorAvailability() {
                     {Array.from({ length: 42 }).map((_, i) => (
                       <div
                         key={i}
-                        className="min-h-[56px] sm:min-h-[64px] rounded-xl bg-gradient-to-br from-neutral-100 to-neutral-50 border border-neutral-100 animate-pulse"
+                        className="skeleton min-h-[56px] sm:min-h-[64px] rounded-xl"
                         style={{ animationDelay: `${(i % 7) * 60}ms` }}
                       />
                     ))}
@@ -409,7 +414,7 @@ export default function VendorAvailability() {
                             ? 'bg-white border-neutral-100 text-neutral-300 cursor-default'
                             : `${cellStyle[cell.status ?? 'available'] ?? cellStyle.available} cal-cell cursor-pointer`
                           }
-                          ${isSelected ? 'ring-2 ring-[#3B5BDB] ring-offset-1' : ''}
+                          ${isSelected ? 'ring-2 ring-[#3678F1] ring-offset-1' : ''}
                           ${focusUnread ? 'ring-2 ring-[#F40F02]/70 ring-offset-1' : ''}
                           ${secondaryUnread ? 'ring-1 ring-[#F40F02]/30' : ''}
                         `}
@@ -461,10 +466,10 @@ export default function VendorAvailability() {
                 </div>
               </div>
 
-              <div className="mt-4 rounded-2xl bg-[#EEF4FF] border border-[#BFDBFE] p-4 flex items-start gap-3">
-                <FaCircleInfo className="text-[#3B5BDB] mt-0.5 shrink-0" />
-                <div className="text-xs text-[#1D4ED8] space-y-1">
-                  <p className="font-semibold">Managing equipment availability</p>
+              <div className="mt-4 rounded-2xl bg-[#E8F0FE] border border-[#3678F1]/30 p-4 flex items-start gap-3">
+                <FaCircleInfo className="text-[#3678F1] mt-0.5 shrink-0" />
+                <div className="text-xs text-[#1E3A8A] space-y-1">
+                  <p className="font-bold">Managing equipment availability</p>
                   <p>Click <strong>available</strong> dates to block equipment for maintenance or other reasons.</p>
                   <p>Navigate to <strong>past months</strong> to view completed rental history.</p>
                 </div>
@@ -513,14 +518,14 @@ export default function VendorAvailability() {
                 value={cancelReason}
                 onChange={(e) => setCancelReason(e.target.value)}
                 rows={3}
-                className="w-full px-4 py-2.5 border border-neutral-300 rounded-xl text-sm bg-[#F3F4F6] focus:bg-white focus:outline-none focus:border-[#3B5BDB] resize-none mb-4"
+                className="w-full px-4 py-2.5 border border-neutral-300 rounded-xl text-sm bg-[#F3F4F6] focus:bg-white focus:outline-none focus:border-[#3678F1] resize-none mb-4"
               />
               <div className="flex gap-3">
                 <button type="button" disabled={cancelBusy} onClick={() => { setCancellingId(null); setCancelReason(''); }} className="flex-1 py-2.5 rounded-xl border border-neutral-200 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 disabled:opacity-50">
                   Back
                 </button>
-                <button type="button" disabled={cancelBusy} onClick={() => void submitCancelRequest()} className="flex-1 py-2.5 rounded-xl bg-amber-600 text-white text-sm font-semibold hover:bg-amber-700 disabled:opacity-50 flex items-center justify-center gap-2">
-                  {cancelBusy ? <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Sending…</> : 'Send request'}
+                <button type="button" disabled={cancelBusy} onClick={() => void submitCancelRequest()} className="flex-1 py-2.5 rounded-xl bg-[#F40F02] text-white text-sm font-semibold hover:bg-[#C70D02] disabled:opacity-50 flex items-center justify-center gap-2 transition-colors">
+                  {cancelBusy ? <><span className="w-6 h-6 border-[2.5px] border-white/30 border-t-white border-r-white rounded-full animate-spin" /> Sending…</> : 'Send request'}
                 </button>
               </div>
             </div>

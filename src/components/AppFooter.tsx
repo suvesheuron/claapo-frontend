@@ -101,7 +101,7 @@ export default function AppFooter({ variant = 'light' }: AppFooterProps) {
   const inverted = variant === 'inverted';
 
   return (
-    <footer className={`py-3 shrink-0 ${inverted ? 'bg-[#3B5BDB]' : 'border-t border-neutral-200 bg-white'}`}>
+    <footer className={`py-3 shrink-0 ${inverted ? 'bg-[#3678F1]' : 'border-t border-neutral-200 bg-white'}`}>
       <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-8 flex flex-col sm:flex-row items-center justify-between gap-2 min-w-0">
         <p className={`${inverted ? 'text-white' : 'text-neutral-400'} text-xs`}>
           &copy; {currentYear} Claapo. All rights reserved.

@@ -39,14 +39,14 @@ interface BookingsResponse {
 }
 
 const STATUS_CONFIG: Record<BookingStatus, { bg: string; text: string; label: string }> = {
-  pending:          { bg: 'bg-[#FEF9E6]',  text: 'text-[#92400E]',  label: 'Pending' },
+  pending:          { bg: 'bg-[#E8F0FE]',  text: 'text-[#1E3A8A]',  label: 'Pending' },
   accepted:         { bg: 'bg-[#DCFCE7]',  text: 'text-[#15803D]',  label: 'Accepted' },
-  declined:         { bg: 'bg-[#FEE2E2]',  text: 'text-[#B91C1C]',  label: 'Declined' },
-  completed:        { bg: 'bg-[#DBEAFE]',  text: 'text-[#1D4ED8]',  label: 'Completed' },
-  cancelled:        { bg: 'bg-[#F3F4F6]',  text: 'text-neutral-500', label: 'Cancelled' },
-  locked:           { bg: 'bg-[#DBEAFE]',  text: 'text-[#1D4ED8]',  label: 'Locked' },
-  expired:          { bg: 'bg-[#F3F4F6]',  text: 'text-neutral-400', label: 'Expired' },
-  cancel_requested: { bg: 'bg-[#FEF3C7]',  text: 'text-[#92400E]',  label: 'Cancel Requested' },
+  declined:         { bg: 'bg-[#FEE2E2]',  text: 'text-[#991B1B]',  label: 'Declined' },
+  completed:        { bg: 'bg-[#DBEAFE]',  text: 'text-[#1E3A8A]',  label: 'Completed' },
+  cancelled:        { bg: 'bg-[#FEE2E2]',  text: 'text-[#991B1B]',  label: 'Cancelled' },
+  locked:           { bg: 'bg-[#DBEAFE]',  text: 'text-[#1E3A8A]',  label: 'Locked' },
+  expired:          { bg: 'bg-[#F3F4F6]',  text: 'text-neutral-500', label: 'Expired' },
+  cancel_requested: { bg: 'bg-[#E8F0FE]',  text: 'text-[#1E3A8A]',  label: 'Cancel Requested' },
 };
 
 type TabFilter = 'all' | 'pending' | 'accepted' | 'completed';
@@ -112,7 +112,7 @@ export default function Bookings() {
 
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-[#F8F9FB] w-full">
+    <div className="h-screen flex flex-col overflow-hidden bg-[#F3F4F6] w-full">
       <DashboardHeader />
       <div className="flex-1 flex min-h-0 overflow-hidden">
         <DashboardSidebar links={navLinks} />
@@ -121,26 +121,40 @@ export default function Bookings() {
           <div className="flex-1 min-h-0 overflow-auto">
             <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-6 xl:px-8 py-6">
 
-              <div className="mb-6">
-                <h1 className="text-2xl font-bold text-neutral-900 tracking-tight">Project Requests</h1>
-                <p className="text-sm text-neutral-500 mt-1">Review incoming project requests from production companies</p>
+              <div className="relative rounded-2xl bg-white border border-neutral-200/70 px-6 sm:px-8 py-6 overflow-hidden shadow-soft mb-6">
+                <div className="absolute inset-y-0 right-0 w-1/2 bg-gradient-to-l from-[#E8F0FE]/60 to-transparent pointer-events-none" />
+                <span aria-hidden className="absolute left-0 top-6 bottom-6 w-1 rounded-r-full bg-gradient-to-b from-[#3678F1] to-[#5B9DF9]" />
+                <div className="relative z-10 pl-3 flex items-center justify-between gap-4 flex-wrap">
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#3678F1]">Inbox</p>
+                    <h1 className="text-[22px] sm:text-[24px] font-extrabold text-neutral-900 tracking-tight leading-tight mt-1">Project Requests</h1>
+                    <p className="text-sm text-neutral-500 mt-1.5">Review incoming project requests from production companies.</p>
+                  </div>
+                  {!loading && allBookings.filter((b) => b.status === 'pending').length > 0 && (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#F40F02]/10 border border-[#F40F02]/20 text-[#F40F02] text-xs font-bold shrink-0">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#F40F02] animate-pulse" />
+                      {allBookings.filter((b) => b.status === 'pending').length} pending
+                    </span>
+                  )}
+                </div>
               </div>
 
               {/* Tab filter */}
-              <div className="flex items-center gap-1 mb-5 bg-white rounded-xl p-1 border border-neutral-200 w-fit shadow-sm">
+              <div className="flex items-center gap-0.5 mb-5 bg-white rounded-xl p-1 border border-neutral-200 w-fit">
                 {(['all', 'pending', 'accepted', 'completed'] as TabFilter[]).map((t) => {
                   const count = t === 'all' ? allBookings.length : allBookings.filter((b) => b.status === t).length;
+                  const isActive = tab === t;
                   return (
                     <button
                       key={t}
                       type="button"
                       onClick={() => setTab(t)}
-                      className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors capitalize flex items-center gap-2 ${
-                        tab === t ? 'bg-brand-primary text-white shadow-sm' : 'text-neutral-600 hover:bg-neutral-50'
+                      className={`rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-colors capitalize flex items-center gap-1.5 ${
+                        isActive ? 'bg-[#3678F1] text-white shadow-sm' : 'text-neutral-600 hover:bg-[#E8F0FE] hover:text-[#3678F1]'
                       }`}
                     >
                       {t}
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-bold ${tab === t ? 'bg-white/20 text-white' : 'bg-neutral-100 text-neutral-500'}`}>
+                      <span className={`text-[10px] min-w-[18px] h-[18px] px-1.5 rounded-full font-bold flex items-center justify-center tabular-nums ${isActive ? 'bg-white/25 text-white' : 'bg-neutral-100 text-neutral-500'}`}>
                         {count}
                       </span>
                     </button>
@@ -150,20 +164,42 @@ export default function Bookings() {
 
               {/* Error */}
               {(error || actionError) && (
-                <div className="flex items-center gap-3 rounded-2xl bg-red-50 border border-red-200 p-4 mb-4">
-                  <FaTriangleExclamation className="text-red-500 shrink-0" />
-                  <p className="text-sm text-red-700">{error ?? actionError}</p>
-                  {error && <button onClick={refetch} className="ml-auto text-xs text-red-600 font-semibold hover:underline">Retry</button>}
+                <div className="flex items-center gap-3 rounded-2xl bg-[#FEEBEA] border border-[#F40F02]/30 p-4 mb-4">
+                  <FaTriangleExclamation className="text-[#F40F02] shrink-0" />
+                  <p className="text-sm text-[#991B1B]">{error ?? actionError}</p>
+                  {error && <button onClick={refetch} className="ml-auto text-xs text-[#F40F02] font-semibold hover:underline">Retry</button>}
                 </div>
               )}
 
               {/* Loading skeleton */}
               {loading && (
-                <div className="space-y-3">
+                <div className="space-y-3" aria-busy="true" aria-label="Loading booking requests">
                   {[1, 2, 3].map((i) => (
-                    <div key={i} className="rounded-2xl bg-white border border-neutral-200 p-5 animate-pulse">
-                      <div className="h-4 bg-neutral-200 rounded w-1/3 mb-3" />
-                      <div className="h-3 bg-neutral-100 rounded w-1/2" />
+                    <div key={i} className="rounded-2xl bg-white border border-neutral-200/70 overflow-hidden" style={{ animationDelay: `${i * 60}ms` }}>
+                      <div className="px-5 py-4 border-b border-neutral-100 flex items-start justify-between gap-4">
+                        <div className="flex items-start gap-3 flex-1 min-w-0">
+                          <div className="skeleton w-10 h-10 rounded-full shrink-0" />
+                          <div className="flex-1 space-y-2">
+                            <div className="skeleton h-4 rounded-md w-2/5" />
+                            <div className="skeleton h-3 rounded-md w-1/3" />
+                          </div>
+                        </div>
+                        <div className="skeleton w-16 h-5 rounded-full shrink-0" />
+                      </div>
+                      <div className="p-5 space-y-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {[1,2].map((j) => (
+                            <div key={j} className="flex items-start gap-2.5">
+                              <div className="skeleton w-8 h-8 rounded-lg shrink-0" />
+                              <div className="flex-1 space-y-1.5">
+                                <div className="skeleton h-2 w-1/3 rounded" />
+                                <div className="skeleton h-3 w-3/5 rounded-md" />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="skeleton h-10 rounded-xl" />
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -171,9 +207,9 @@ export default function Bookings() {
 
               {/* Empty state */}
               {!loading && !error && bookings.length === 0 && (
-                <div className="rounded-2xl bg-white border border-neutral-200 p-12 text-center shadow-sm">
-                  <div className="w-16 h-16 rounded-2xl bg-brand-primary/10 flex items-center justify-center mx-auto mb-4">
-                    <FaClock className="text-brand-primary text-2xl" />
+                <div className="rounded-2xl bg-white border border-neutral-200/70 p-12 text-center shadow-soft">
+                  <div className="w-16 h-16 rounded-2xl bg-[#E8F0FE] ring-1 ring-[#3678F1]/15 flex items-center justify-center mx-auto mb-4">
+                    <FaClock className="text-[#3678F1] text-2xl" />
                   </div>
                   <h3 className="text-base font-bold text-neutral-900 mb-2">No booking requests</h3>
                   <p className="text-sm text-neutral-500 max-w-sm mx-auto">
@@ -198,7 +234,7 @@ export default function Bookings() {
                     return (
                       <div
                         key={booking.id}
-                        className="rounded-2xl bg-white border border-neutral-200 shadow-sm hover:shadow-md hover:border-neutral-300 transition-all overflow-hidden"
+                        className="rounded-2xl bg-white border border-neutral-200/70 shadow-soft hover:border-[#3678F1] transition-colors duration-200 overflow-hidden"
                       >
                         {/* Header strip */}
                         <div className="px-5 py-4 border-b border-neutral-100 flex items-start justify-between gap-4">
@@ -220,8 +256,8 @@ export default function Bookings() {
                           {/* Quick facts grid */}
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div className="flex items-start gap-2.5">
-                              <div className="w-8 h-8 rounded-lg bg-brand-primary/10 flex items-center justify-center shrink-0">
-                                <FaBriefcase className="w-3.5 h-3.5 text-brand-primary" />
+                              <div className="w-8 h-8 rounded-lg bg-[#E8F0FE] ring-1 ring-[#3678F1]/15 flex items-center justify-center shrink-0">
+                                <FaBriefcase className="w-3.5 h-3.5 text-[#3678F1]" />
                               </div>
                               <div className="min-w-0">
                                 <p className="text-[10px] uppercase tracking-wider font-semibold text-neutral-400">Project</p>
@@ -235,8 +271,8 @@ export default function Bookings() {
 
                             {booking.project.locationCity && (
                               <div className="flex items-start gap-2.5">
-                                <div className="w-8 h-8 rounded-lg bg-brand-primary/10 flex items-center justify-center shrink-0">
-                                  <FaLocationDot className="w-3.5 h-3.5 text-brand-primary" />
+                                <div className="w-8 h-8 rounded-lg bg-[#E8F0FE] ring-1 ring-[#3678F1]/15 flex items-center justify-center shrink-0">
+                                  <FaLocationDot className="w-3.5 h-3.5 text-[#3678F1]" />
                                 </div>
                                 <div className="min-w-0">
                                   <p className="text-[10px] uppercase tracking-wider font-semibold text-neutral-400">Location</p>
@@ -247,8 +283,8 @@ export default function Bookings() {
 
                             {booking.rateOffered != null && (
                               <div className="flex items-start gap-2.5">
-                                <div className="w-8 h-8 rounded-lg bg-brand-primary/10 flex items-center justify-center shrink-0">
-                                  <FaIndianRupeeSign className="w-3.5 h-3.5 text-brand-primary" />
+                                <div className="w-8 h-8 rounded-lg bg-[#E8F0FE] ring-1 ring-[#3678F1]/15 flex items-center justify-center shrink-0">
+                                  <FaIndianRupeeSign className="w-3.5 h-3.5 text-[#3678F1]" />
                                 </div>
                                 <div className="min-w-0">
                                   <p className="text-[10px] uppercase tracking-wider font-semibold text-neutral-400">Rate Offered</p>
@@ -259,8 +295,8 @@ export default function Bookings() {
 
                             {booking.vendorEquipment && (
                               <div className="flex items-start gap-2.5">
-                                <div className="w-8 h-8 rounded-lg bg-brand-primary/10 flex items-center justify-center shrink-0">
-                                  <FaBriefcase className="w-3.5 h-3.5 text-brand-primary" />
+                                <div className="w-8 h-8 rounded-lg bg-[#E8F0FE] ring-1 ring-[#3678F1]/15 flex items-center justify-center shrink-0">
+                                  <FaBriefcase className="w-3.5 h-3.5 text-[#3678F1]" />
                                 </div>
                                 <div className="min-w-0">
                                   <p className="text-[10px] uppercase tracking-wider font-semibold text-neutral-400">Equipment</p>
@@ -272,29 +308,29 @@ export default function Bookings() {
 
                           {/* Shoot dates with locations */}
                           {shootDates.length > 0 && (
-                            <div className="rounded-xl bg-brand-primary/5 border border-brand-primary/15 p-3.5">
+                            <div className="rounded-xl bg-[#F4F8FE] border border-[#3678F1]/15 p-3.5">
                               <div className="flex items-center gap-2 mb-2">
-                                <FaCalendarDay className="w-3.5 h-3.5 text-brand-primary" />
-                                <p className="text-[10px] uppercase tracking-wider font-bold text-brand-primary">
+                                <FaCalendarDay className="w-3.5 h-3.5 text-[#3678F1]" />
+                                <p className="text-[10px] uppercase tracking-wider font-bold text-[#3678F1]">
                                   Hire dates · {shootDates.length} {shootDates.length === 1 ? 'day' : 'days'}
                                 </p>
                               </div>
-                              
+
                               {/* Check if we have location data */}
                               {booking.shootDateLocations && booking.shootDateLocations.length > 0 ? (
                                 <div className="space-y-2">
                                   {booking.shootDateLocations.map((pair) => (
-                                    <div key={pair.date} className="flex items-start gap-2.5 bg-white rounded-lg border border-brand-primary/20 p-2.5">
+                                    <div key={pair.date} className="flex items-start gap-2.5 bg-white rounded-lg border border-[#3678F1]/20 p-2.5">
                                       <div className="flex items-center gap-2 flex-1 min-w-0">
-                                        <div className="w-7 h-7 rounded-md bg-brand-primary/10 flex items-center justify-center shrink-0">
-                                          <FaCalendarDay className="w-3 h-3 text-brand-primary" />
+                                        <div className="w-7 h-7 rounded-md bg-[#E8F0FE] ring-1 ring-[#3678F1]/15 flex items-center justify-center shrink-0">
+                                          <FaCalendarDay className="w-3 h-3 text-[#3678F1]" />
                                         </div>
                                         <div className="min-w-0 flex-1">
                                           <p className="text-xs font-semibold text-neutral-900">{formatShootDate(pair.date)}</p>
                                         </div>
                                       </div>
                                       <div className="flex items-start gap-1.5 flex-1 min-w-0">
-                                        <FaLocationDot className="w-3 h-3 text-brand-primary mt-0.5 shrink-0" />
+                                        <FaLocationDot className="w-3 h-3 text-[#3678F1] mt-0.5 shrink-0" />
                                         <p className="text-xs text-neutral-700 font-medium truncate">{pair.location}</p>
                                       </div>
                                     </div>
@@ -306,7 +342,7 @@ export default function Bookings() {
                                   {shootDates.map((d) => (
                                     <li
                                       key={d}
-                                      className="inline-flex items-center text-[11px] font-semibold bg-white text-brand-primary px-2.5 py-1 rounded-lg border border-brand-primary/30 shadow-sm"
+                                      className="inline-flex items-center text-[11px] font-semibold bg-white text-[#3678F1] px-2.5 py-1 rounded-lg border border-[#3678F1]/30 shadow-sm"
                                     >
                                       {formatShootDate(d)}
                                     </li>
@@ -326,15 +362,15 @@ export default function Bookings() {
 
                           {/* Equipment conflict warning */}
                           {booking.equipmentAlreadyBookedFor && (
-                            <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 flex items-start gap-2.5">
-                              <FaTriangleExclamation className="text-amber-600 shrink-0 mt-0.5" />
+                            <div className="rounded-xl bg-[#FEF3C7] border border-[#F4C430] px-4 py-3 flex items-start gap-2.5">
+                              <FaTriangleExclamation className="text-[#946A00] shrink-0 mt-0.5" />
                               <div className="min-w-0">
-                                <p className="text-xs font-semibold text-amber-800">This equipment is already committed to another shoot</p>
-                                <p className="text-xs text-amber-700 mt-0.5">
+                                <p className="text-xs font-semibold text-[#946A00]">This equipment is already committed to another shoot</p>
+                                <p className="text-xs text-[#946A00] mt-0.5">
                                   {booking.equipmentAlreadyBookedFor.projectTitle} ({formatDate(booking.equipmentAlreadyBookedFor.startDate)}
                                   {booking.equipmentAlreadyBookedFor.endDate !== booking.equipmentAlreadyBookedFor.startDate && ` – ${formatDate(booking.equipmentAlreadyBookedFor.endDate)}`})
                                 </p>
-                                <p className="text-[11px] text-amber-600 mt-1">Decline this request or offer an alternative if you have another unit.</p>
+                                <p className="text-[11px] text-[#946A00] mt-1">Decline this request or offer an alternative if you have another unit.</p>
                               </div>
                             </div>
                           )}
@@ -342,7 +378,7 @@ export default function Bookings() {
                           {/* Actions */}
                           <div className="flex items-center gap-2 flex-wrap pt-1">
                             <Link
-                              to={`/dashboard/chat/${booking.requester.id}?projectId=${encodeURIComponent(booking.projectId)}`}
+                              to={`/chat/${booking.requester.id}?projectId=${encodeURIComponent(booking.projectId)}`}
                               className="rounded-xl px-4 py-2 border border-neutral-300 text-neutral-700 text-xs font-semibold hover:bg-neutral-50 flex items-center gap-1.5 transition-colors"
                             >
                               <FaMessage className="w-3 h-3" /> Message
@@ -354,7 +390,7 @@ export default function Bookings() {
                                   type="button"
                                   onClick={() => doAction(booking.id, 'accept')}
                                   disabled={!!isActioning}
-                                  className="rounded-xl px-4 py-2 bg-brand-primary text-white text-xs font-semibold hover:bg-brand-primary/90 flex items-center gap-1.5 transition-colors disabled:opacity-50 shadow-sm"
+                                  className="rounded-xl px-4 py-2 bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white text-xs font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] flex items-center gap-1.5 transition-colors disabled:opacity-50 shadow-brand"
                                 >
                                   <FaCircleCheck className="w-3 h-3" />
                                   {actioning === booking.id + 'accept' ? 'Accepting…' : 'Accept'}
@@ -363,7 +399,7 @@ export default function Bookings() {
                                   type="button"
                                   onClick={() => doAction(booking.id, 'decline')}
                                   disabled={!!isActioning}
-                                  className="rounded-xl px-4 py-2 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold hover:bg-red-100 flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                                  className="rounded-xl px-4 py-2 bg-[#FEEBEA] border border-[#F40F02]/30 text-[#991B1B] text-xs font-semibold hover:bg-[#FDD8D5] flex items-center gap-1.5 transition-colors disabled:opacity-50"
                                 >
                                   <FaXmark className="w-3 h-3" />
                                   {actioning === booking.id + 'decline' ? 'Declining…' : 'Decline'}
@@ -375,7 +411,7 @@ export default function Bookings() {
                               <button
                                 type="button"
                                 onClick={() => setReviewBookingId(reviewBookingId === booking.id ? null : booking.id)}
-                                className="rounded-xl px-4 py-2 border border-amber-300 text-amber-700 text-xs font-semibold hover:bg-amber-50 flex items-center gap-1.5 transition-colors"
+                                className="rounded-xl px-4 py-2 border border-[#F4C430] text-[#946A00] text-xs font-semibold hover:bg-[#FEF3C7] flex items-center gap-1.5 transition-colors"
                               >
                                 <FaStar className="w-3 h-3" /> Leave Review
                               </button>

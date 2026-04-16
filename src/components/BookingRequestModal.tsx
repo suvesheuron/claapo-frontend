@@ -195,14 +195,14 @@ function MultiDatePicker({ selected, onChange, minDate, maxDate, disabled }: Mul
               onClick={() => toggle(d)}
               disabled={isDis}
               className={`
-                relative h-9 rounded-lg text-xs font-semibold transition-all
+                relative h-9 rounded-lg text-xs font-semibold transition-colors
                 ${isSel
-                  ? 'bg-brand-primary text-white shadow-sm hover:bg-brand-primary/90'
+                  ? 'bg-[#3678F1] text-white shadow-sm hover:bg-[#2563EB]'
                   : isDis
                     ? 'text-neutral-300 cursor-not-allowed'
-                    : 'text-neutral-700 hover:bg-brand-primary/10 hover:text-brand-primary'
+                    : 'text-neutral-700 hover:bg-[#E8F0FE] hover:text-[#3678F1]'
                 }
-                ${isToday && !isSel ? 'ring-1 ring-brand-primary/40' : ''}
+                ${isToday && !isSel ? 'ring-1 ring-[#3678F1]/40' : ''}
               `}
             >
               {d.getDate()}
@@ -391,8 +391,8 @@ export default function BookingRequestModal({
         {/* Body */}
         {sent ? (
           <div className="p-8 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center mx-auto mb-4">
-              <FaCircleCheck className="text-emerald-500 text-3xl" />
+            <div className="w-16 h-16 rounded-2xl bg-[#DCFCE7] border border-[#86EFAC] flex items-center justify-center mx-auto mb-4">
+              <FaCircleCheck className="text-[#22C55E] text-3xl" />
             </div>
             <h3 className="text-lg font-bold text-neutral-900 mb-1">Request Sent!</h3>
             <p className="text-sm text-neutral-500 mb-6">
@@ -401,7 +401,7 @@ export default function BookingRequestModal({
             </p>
             <button
               onClick={onClose}
-              className="rounded-xl w-full py-2.5 bg-brand-primary text-white text-sm font-semibold hover:bg-brand-primary/90 transition-colors"
+              className="rounded-xl w-full py-2.5 bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white text-sm font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] shadow-brand transition-colors"
             >
               Done
             </button>
@@ -411,9 +411,9 @@ export default function BookingRequestModal({
             <div className="p-6 space-y-5">
 
               {/* Target user info */}
-              <div className="rounded-2xl bg-gradient-to-br from-brand-primary/5 to-brand-primary/[0.02] border border-brand-primary/15 p-4">
+              <div className="rounded-2xl bg-[#F4F8FE] border border-[#3678F1]/15 p-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-brand-primary text-white flex items-center justify-center font-bold text-sm shrink-0">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-brand">
                     {initials || <FaUser className="w-5 h-5" />}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -422,12 +422,12 @@ export default function BookingRequestModal({
                   </div>
                   <div className="text-right shrink-0">
                     <p className="text-[10px] uppercase tracking-wider text-neutral-400 font-semibold">Rate</p>
-                    <p className="text-sm font-bold text-brand-primary">{vendorRateDisplay}</p>
+                    <p className="text-sm font-bold text-[#3678F1]">{vendorRateDisplay}</p>
                   </div>
                 </div>
 
                 {isVendor && (
-                  <div className="mt-3 pt-3 border-t border-brand-primary/15">
+                  <div className="mt-3 pt-3 border-t border-[#3678F1]/15">
                     <p className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider mb-2">Equipment & daily rate</p>
                     {equipmentLoading ? (
                       <p className="text-xs text-neutral-500">Loading equipment…</p>
@@ -442,7 +442,7 @@ export default function BookingRequestModal({
                           return (
                             <li key={(eq.id as string) || idx} className="text-xs flex justify-between items-center gap-3">
                               <span className="truncate font-medium text-neutral-700">{String(eq.name ?? '')}</span>
-                              <span className="shrink-0 font-semibold text-brand-primary">{rateStr}</span>
+                              <span className="shrink-0 font-semibold text-[#3678F1]">{rateStr}</span>
                             </li>
                           );
                         })}
@@ -464,7 +464,7 @@ export default function BookingRequestModal({
                     value={selectedEquipmentId}
                     onChange={(e) => setSelectedEquipmentId(e.target.value)}
                     disabled={loading || equipmentLoading}
-                    className="w-full px-3.5 py-2.5 border border-neutral-300 rounded-xl bg-white text-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all disabled:opacity-50"
+                    className="w-full px-3.5 py-2.5 border border-neutral-300 rounded-xl bg-white text-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#3678F1]/20 focus:border-[#3678F1] transition-colors disabled:opacity-50"
                   >
                     <option value="">— Any equipment —</option>
                     {equipmentList.map((eq, idx) => (
@@ -477,8 +477,8 @@ export default function BookingRequestModal({
               {/* Project selector */}
               <div>
                 <label className="block text-xs font-semibold text-neutral-700 mb-1.5 uppercase tracking-wide flex items-center gap-1.5">
-                  <FaBriefcase className="w-3 h-3 text-brand-primary" />
-                  Project <span className="text-red-500">*</span>
+                  <FaBriefcase className="w-3 h-3 text-[#3678F1]" />
+                  Project <span className="text-[#F40F02]">*</span>
                 </label>
                 <select
                   value={projectId}
@@ -489,7 +489,7 @@ export default function BookingRequestModal({
                   }}
                   required
                   disabled={loading || projectsLoading}
-                  className="w-full px-3.5 py-2.5 border border-neutral-300 rounded-xl bg-white text-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all disabled:opacity-50"
+                  className="w-full px-3.5 py-2.5 border border-neutral-300 rounded-xl bg-white text-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#3678F1]/20 focus:border-[#3678F1] transition-colors disabled:opacity-50"
                 >
                   <option value="">
                     {projectsLoading ? 'Loading projects…' : '— Select a project —'}
@@ -499,12 +499,12 @@ export default function BookingRequestModal({
                   ))}
                 </select>
                 {projectsError && (
-                  <p className="text-xs text-red-600 mt-1.5">{projectsError}</p>
+                  <p className="text-xs text-[#F40F02] mt-1.5">{projectsError}</p>
                 )}
                 {!projectsLoading && !projectsError && activeProjects.length === 0 && (projectsData !== undefined || rawItems !== undefined) && (
                   <p className="text-xs text-neutral-500 mt-1.5">
                     No active projects.{' '}
-                    <Link to="/dashboard/projects/new" className="text-brand-primary font-semibold hover:underline">Create one first.</Link>
+                    <Link to="/projects/new" className="text-[#3678F1] font-semibold hover:underline">Create one first.</Link>
                   </p>
                 )}
                 {selectedProject && (
@@ -517,8 +517,8 @@ export default function BookingRequestModal({
               {/* Calendar */}
               <div>
                 <label className="block text-xs font-semibold text-neutral-700 mb-1.5 uppercase tracking-wide flex items-center gap-1.5">
-                  <FaCalendarDay className="w-3 h-3 text-brand-primary" />
-                  Dates needed <span className="text-red-500">*</span>
+                  <FaCalendarDay className="w-3 h-3 text-[#3678F1]" />
+                  Dates needed <span className="text-[#F40F02]">*</span>
                 </label>
                 <p className="text-[11px] text-neutral-500 mb-2 leading-snug">
                   Click any day to add or remove it. After selecting dates, specify the location for each date.
@@ -566,7 +566,7 @@ export default function BookingRequestModal({
 
                 {bookingDates.length > 0 && (
                   <div className="mt-3 space-y-3">
-                    <p className="text-[10px] font-bold text-brand-primary uppercase tracking-wider">
+                    <p className="text-[10px] font-bold text-[#3678F1] uppercase tracking-wider">
                       Selected Dates & Locations
                     </p>
                     <div className="space-y-2">
@@ -581,15 +581,15 @@ export default function BookingRequestModal({
                               <div className="flex items-center gap-2">
                                 <span className="text-xs font-semibold text-neutral-900">{formatDate(date)}</span>
                                 {hasLocation ? (
-                                  <span className="text-[9px] bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-full font-semibold border border-emerald-200">✓ Location set</span>
+                                  <span className="text-[9px] bg-[#DCFCE7] text-[#15803D] px-2 py-0.5 rounded-full font-semibold border border-[#86EFAC]">✓ Location set</span>
                                 ) : (
-                                  <span className="text-[9px] bg-amber-50 text-amber-600 px-2 py-0.5 rounded-full font-semibold border border-amber-200">⚠ Location needed</span>
+                                  <span className="text-[9px] bg-[#E8F0FE] text-[#3678F1] px-2 py-0.5 rounded-full font-semibold border border-[#3678F1]/30">⚠ Location needed</span>
                                 )}
                               </div>
                               <button
                                 type="button"
                                 onClick={() => setBookingDates((prev) => prev.filter((x) => x !== date))}
-                                className="text-neutral-400 hover:text-red-500 transition-colors"
+                                className="text-neutral-400 hover:text-[#F40F02] transition-colors"
                                 aria-label={`Remove ${date}`}
                               >
                                 <FaXmark className="w-3 h-3" />
@@ -598,14 +598,14 @@ export default function BookingRequestModal({
 
                             {hasLocation ? (
                               <div className="flex items-center gap-2">
-                                <FaLocationDot className="w-3 h-3 text-brand-primary shrink-0" />
+                                <FaLocationDot className="w-3 h-3 text-[#3678F1] shrink-0" />
                                 <span className="text-xs text-neutral-700 font-medium flex-1">{existingPair.location}</span>
                                 <button
                                   type="button"
                                   onClick={() => {
                                     setShootDateLocations((prev) => prev.filter((p) => p.date !== date));
                                   }}
-                                  className="text-[10px] text-brand-primary font-semibold hover:underline"
+                                  className="text-[10px] text-[#3678F1] font-semibold hover:underline"
                                 >
                                   Change
                                 </button>
@@ -617,7 +617,7 @@ export default function BookingRequestModal({
                                   value={inputValue}
                                   onChange={(e) => setLocationInputs((prev) => ({ ...prev, [date]: e.target.value }))}
                                   placeholder="e.g., Mumbai, Film City"
-                                  className="flex-1 px-3 py-2 border border-neutral-300 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary"
+                                  className="flex-1 px-3 py-2 border border-neutral-300 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#3678F1]/20 focus:border-[#3678F1]"
                                   onKeyDown={(e) => {
                                     if (e.key === 'Enter') {
                                       e.preventDefault();
@@ -643,7 +643,7 @@ export default function BookingRequestModal({
                                     }
                                   }}
                                   disabled={!inputValue.trim()}
-                                  className="px-3 py-2 bg-brand-primary text-white rounded-lg text-xs font-semibold hover:bg-brand-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                                  className="px-3 py-2 bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white rounded-lg text-xs font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] shadow-brand disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 transition-colors"
                                 >
                                   <FaPlus className="w-2.5 h-2.5" />
                                   Add
@@ -661,7 +661,7 @@ export default function BookingRequestModal({
               {/* Optional rate */}
               <div>
                 <label className="block text-xs font-semibold text-neutral-700 mb-1.5 uppercase tracking-wide flex items-center gap-1.5">
-                  <FaIndianRupeeSign className="w-3 h-3 text-brand-primary" />
+                  <FaIndianRupeeSign className="w-3 h-3 text-[#3678F1]" />
                   Offered Rate (₹/day)
                   <span className="ml-1 text-[9px] font-normal text-neutral-400 normal-case">(Optional)</span>
                 </label>
@@ -673,7 +673,7 @@ export default function BookingRequestModal({
                     onChange={(e) => setRateOffered(e.target.value)}
                     placeholder="e.g., 25000"
                     disabled={loading}
-                    className="w-full pl-8 pr-3.5 py-2.5 border border-neutral-300 rounded-xl bg-white text-neutral-900 placeholder-neutral-400 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all disabled:opacity-50"
+                    className="w-full pl-8 pr-3.5 py-2.5 border border-neutral-300 rounded-xl bg-white text-neutral-900 placeholder-neutral-400 text-sm focus:outline-none focus:ring-2 focus:ring-[#3678F1]/20 focus:border-[#3678F1] transition-colors disabled:opacity-50"
                   />
                 </div>
               </div>
@@ -681,7 +681,7 @@ export default function BookingRequestModal({
               {/* Message */}
               <div>
                 <label className="block text-xs font-semibold text-neutral-700 mb-1.5 uppercase tracking-wide flex items-center gap-1.5">
-                  <FaRegMessage className="w-3 h-3 text-brand-primary" />
+                  <FaRegMessage className="w-3 h-3 text-[#3678F1]" />
                   Message
                   <span className="ml-1 text-[9px] font-normal text-neutral-400 normal-case">(Optional)</span>
                 </label>
@@ -697,9 +697,9 @@ export default function BookingRequestModal({
 
               {/* Error */}
               {error && (
-                <div className="flex items-start gap-2.5 rounded-xl bg-red-50 border border-red-200 px-3.5 py-3">
-                  <FaTriangleExclamation className="text-red-500 text-sm shrink-0 mt-0.5" />
-                  <p className="text-xs text-red-700 leading-snug">{error}</p>
+                <div className="flex items-start gap-2.5 rounded-xl bg-[#FEEBEA] border border-[#F40F02]/30 px-3.5 py-3">
+                  <FaTriangleExclamation className="text-[#F40F02] text-sm shrink-0 mt-0.5" />
+                  <p className="text-xs text-[#991B1B] leading-snug">{error}</p>
                 </div>
               )}
             </div>
@@ -717,10 +717,10 @@ export default function BookingRequestModal({
               <button
                 type="submit"
                 disabled={loading || !projectId || bookingDates.length === 0}
-                className="flex-1 rounded-xl py-2.5 bg-brand-primary text-white text-sm font-semibold hover:bg-brand-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm"
+                className="flex-1 rounded-xl py-2.5 bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white text-sm font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-brand"
               >
                 {loading ? (
-                  <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Sending…</>
+                  <><span className="w-4 h-4 border-[2.5px] border-white/40 border-t-white border-r-white rounded-full animate-spin" />Sending…</>
                 ) : 'Send Request'}
               </button>
             </div>

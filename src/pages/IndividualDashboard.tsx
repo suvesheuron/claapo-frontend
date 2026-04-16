@@ -14,7 +14,7 @@ import { individualNavLinks } from '../navigation/dashboardNav';
 import toast from 'react-hot-toast';
 import type { BookingWithDetails, SlotStatus } from '../types/availability';
 import { parseAvailabilityMonthResponse } from '../utils/parseAvailabilityResponse';
-import { CELL_STYLE_COMPACT, type CellStatus as CellStatusKey } from '../utils/slotStatusStyles';
+import { CELL_STYLE_COMPACT, LEGEND_SWATCHES, type CellStatus as CellStatusKey } from '../utils/slotStatusStyles';
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -94,6 +94,7 @@ export default function IndividualDashboard() {
 
   const [monthOffset, setMonthOffset] = useState(0);
   const [detailDate, setDetailDate] = useState<string | null>(null);
+  const [panelClosing, setPanelClosing] = useState(false);
   const [actioning, setActioning] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [monthSlotDetails, setMonthSlotDetails] = useState<
@@ -275,6 +276,15 @@ export default function IndividualDashboard() {
 
   useEffect(() => { loadAvailability(); }, [loadAvailability]);
 
+  const closeDetailPanel = useCallback(() => {
+    if (panelClosing) return;
+    setPanelClosing(true);
+    window.setTimeout(() => {
+      setDetailDate(null);
+      setPanelClosing(false);
+    }, 240);
+  }, [panelClosing]);
+
   const doAction = useCallback(async (id: string, action: 'accept' | 'decline') => {
     setActioning(id);
     setActionError(null);
@@ -299,7 +309,7 @@ export default function IndividualDashboard() {
     try {
       await api.put('/availability/bulk', { slots: [{ date: detailDate, status: 'blocked', notes: reason }] });
       await loadAvailability();
-      setDetailDate(null);
+      closeDetailPanel();
     } catch (err) {
       toast.error(err instanceof ApiException ? err.payload.message : 'Failed to block date.');
     } finally {
@@ -313,7 +323,7 @@ export default function IndividualDashboard() {
     try {
       await api.put('/availability/bulk', { slots: [{ date: detailDate, status: 'available' }] });
       await loadAvailability();
-      setDetailDate(null);
+      closeDetailPanel();
     } catch (err) {
       toast.error(err instanceof ApiException ? err.payload.message : 'Failed to unblock date.');
     } finally {
@@ -350,34 +360,44 @@ export default function IndividualDashboard() {
           <div className="flex-1 min-h-0 overflow-auto">
             <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-6 xl:px-8 py-5">
 
-              <div className="flex items-center justify-between mb-5">
-                <div>
-                  <h1 className="text-xl font-bold text-neutral-900">My Dashboard</h1>
-                  <p className="text-sm text-neutral-500 mt-0.5">Your availability and booking overview</p>
+              <div className="relative rounded-2xl bg-white border border-neutral-200/70 px-6 sm:px-8 py-6 overflow-hidden shadow-soft mb-5">
+                <div className="absolute inset-y-0 right-0 w-1/2 bg-gradient-to-l from-[#E8F0FE]/60 to-transparent pointer-events-none" />
+                <span aria-hidden className="absolute left-0 top-6 bottom-6 w-1 rounded-r-full bg-gradient-to-b from-[#3678F1] to-[#5B9DF9]" />
+                <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 z-10 pl-3">
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#3678F1]">
+                      {today.toLocaleDateString('en-IN', { weekday: 'long', day: '2-digit', month: 'short' })}
+                    </p>
+                    <h1 className="text-[22px] sm:text-[24px] font-extrabold text-neutral-900 tracking-tight leading-tight mt-1">My Dashboard</h1>
+                    <p className="text-sm text-neutral-500 mt-1.5">Your availability and booking overview</p>
+                  </div>
+                  <RoleIndicator />
                 </div>
-                <RoleIndicator />
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
                 <div className="lg:col-span-3 order-2 lg:order-1">
-                  <div className="rounded-2xl bg-white border border-neutral-200 p-4 sm:p-5 min-w-0 relative">
+                  <div className="rounded-2xl bg-white shadow-soft border border-neutral-200/70 p-4 sm:p-5 min-w-0 relative hover:border-[#3678F1] transition-colors duration-200">
                     <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
-                      <h2 className="text-base font-bold text-neutral-900">Availability Calendar</h2>
-                      <div className="flex items-center gap-2">
-                        <button type="button" onClick={() => setMonthOffset((o) => o - 1)} className="w-8 h-8 rounded-lg border border-neutral-200 flex items-center justify-center text-neutral-600 hover:bg-neutral-100 transition-colors">
+                      <h2 className="text-base font-bold text-neutral-900 flex items-center gap-2">
+                        <span className="w-1 h-4 rounded-full bg-[#3678F1]" />
+                        Availability Calendar
+                      </h2>
+                      <div className="flex items-center gap-1.5">
+                        <button type="button" onClick={() => setMonthOffset((o) => o - 1)} className="w-8 h-8 rounded-lg border border-neutral-200 flex items-center justify-center text-neutral-600 hover:bg-[#E8F0FE] hover:text-[#3678F1] hover:border-[#3678F1]/30 transition-colors">
                           <FaChevronLeft className="text-xs" />
                         </button>
-                        <span className="text-sm font-semibold text-neutral-900 min-w-[130px] text-center">{monthLabel} {yearLabel}</span>
-                        <button type="button" onClick={() => setMonthOffset((o) => o + 1)} className="w-8 h-8 rounded-lg border border-neutral-200 flex items-center justify-center text-neutral-600 hover:bg-neutral-100 transition-colors">
+                        <span className="text-sm font-semibold text-neutral-900 min-w-[130px] text-center tabular-nums">{monthLabel} {yearLabel}</span>
+                        <button type="button" onClick={() => setMonthOffset((o) => o + 1)} className="w-8 h-8 rounded-lg border border-neutral-200 flex items-center justify-center text-neutral-600 hover:bg-[#E8F0FE] hover:text-[#3678F1] hover:border-[#3678F1]/30 transition-colors">
                           <FaChevronRight className="text-xs" />
                         </button>
                       </div>
                     </div>
 
                     {monthOffset < 0 && (
-                      <div className="flex items-center gap-2 mb-3 px-3 py-2 bg-[#EEF4FF] rounded-xl">
-                        <FaCircleInfo className="text-[#3B5BDB] text-xs shrink-0" />
-                        <p className="text-xs text-[#3B5BDB]">Viewing history — go to <Link to="/dashboard/availability" className="underline">Availability</Link> to manage dates</p>
+                      <div className="flex items-center gap-2 mb-3 px-3 py-2 bg-[#E8F0FE] rounded-xl">
+                        <FaCircleInfo className="text-[#3678F1] text-xs shrink-0" />
+                        <p className="text-xs text-[#3678F1]">Viewing history — go to <Link to="/availability" className="underline">Availability</Link> to manage dates</p>
                       </div>
                     )}
 
@@ -399,7 +419,7 @@ export default function IndividualDashboard() {
                               : cell.status && cellStyle[cell.status]
                                 ? `${cellStyle[cell.status]} cursor-pointer`
                                 : 'bg-white border-neutral-200 text-neutral-600 hover:bg-[#F3F4F6] cursor-pointer'}
-                            ${!cell.muted && detailDate === getDateStr(cell.d) ? 'ring-2 ring-[#3B5BDB] ring-offset-1' : ''}
+                            ${!cell.muted && detailDate === getDateStr(cell.d) ? 'ring-2 ring-[#3678F1] ring-offset-1' : ''}
                           `}
                         >
                           <span className="text-[11px] sm:text-xs font-semibold leading-none">{cell.d}</span>
@@ -426,67 +446,68 @@ export default function IndividualDashboard() {
                         </button>
                       ))}
                     </div>
-                    <div className="flex flex-wrap gap-4 mt-4 pt-4 border-t border-neutral-100">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-4 pt-4 border-t border-neutral-100">
                       {availLoading && (
-                        <span className="text-[10px] text-neutral-400 w-full">Syncing availability…</span>
+                        <span className="inline-flex items-center gap-1.5 text-[11px] text-neutral-400 mr-2">
+                          <span className="w-3 h-3 border-[1.5px] border-[#3678F1]/15 border-t-[#3678F1] border-r-[#3678F1] rounded-full animate-spin" />
+                          Syncing availability…
+                        </span>
                       )}
-                      {[
-                        { color: 'bg-[#22C55E]', label: 'Available' },
-                        { color: 'bg-[#D97706]', label: 'Ongoing' },
-                        { color: 'bg-[#1D4ED8]', label: 'Completed' },
-                        { color: 'bg-[#DC2626]', label: 'Unavailable' },
-                      ].map(({ color, label }) => (
-                        <div key={label} className="flex items-center gap-2">
-                          <div className={`w-2.5 h-2.5 rounded-full ${color}`} />
-                          <span className="text-xs text-neutral-500">{label}</span>
+                      {LEGEND_SWATCHES.map(({ key, swatch, label }) => (
+                        <div key={key} className="flex items-center gap-1.5">
+                          <span className={`w-3 h-3 rounded ${swatch}`} />
+                          <span className="text-[11px] font-medium text-neutral-500">{label}</span>
                         </div>
                       ))}
                     </div>
                     <p className="mt-3 text-[11px] text-neutral-400">
                       Tap a date for details. Full schedule:{' '}
-                      <Link to="/dashboard/availability" className="text-[#3B5BDB] hover:underline">Availability</Link>.
+                      <Link to="/availability" className="text-[#3678F1] hover:underline">Availability</Link>.
                     </p>
                   </div>
                 </div>
 
                 <div className="space-y-4 order-1 lg:order-2">
-                  <div className="rounded-2xl bg-white border border-neutral-200 p-4">
+                  <div className="rounded-2xl bg-white shadow-soft border border-neutral-200/70 p-4 hover:border-[#3678F1] transition-colors duration-200">
                     <div className="flex items-center gap-2 mb-3">
-                      <div className="w-6 h-6 rounded-lg bg-[#FEF9E6] flex items-center justify-center">
-                        <FaBell className="text-[#F4C430] text-xs" />
+                      <div className="w-7 h-7 rounded-lg bg-[#E8F0FE] ring-1 ring-[#3678F1]/15 flex items-center justify-center shrink-0">
+                        <FaBell className="text-[#3678F1] text-xs" />
                       </div>
                       <h3 className="text-sm font-bold text-neutral-900">Booking Requests</h3>
                       {pendingBookings.length > 0 && (
-                        <span className="ml-auto text-xs font-bold text-white bg-[#F40F02] rounded-full w-5 h-5 flex items-center justify-center">
+                        <span className="ml-auto text-[10px] font-bold text-white bg-[#F40F02] rounded-full min-w-5 h-5 px-1.5 flex items-center justify-center tabular-nums">
                           {pendingBookings.length}
                         </span>
                       )}
                     </div>
 
                     {actionError && (
-                      <div className="flex items-center gap-2 mb-3 p-2.5 bg-red-50 border border-red-200 rounded-xl">
-                        <FaTriangleExclamation className="text-red-500 text-xs shrink-0" />
-                        <p className="text-xs text-red-700">{actionError}</p>
+                      <div className="flex items-center gap-2 mb-3 p-2.5 bg-[#FEEBEA] border border-[#F40F02]/30 rounded-xl">
+                        <FaTriangleExclamation className="text-[#F40F02] text-xs shrink-0" />
+                        <p className="text-xs text-[#991B1B]">{actionError}</p>
                       </div>
                     )}
 
                     {bookingsLoading ? (
                       <div className="space-y-2">
-                        {[1,2].map(i => <div key={i} className="h-16 rounded-xl bg-neutral-100 animate-pulse" />)}
+                        {[1,2].map(i => <div key={i} className="skeleton h-16 rounded-xl" />)}
                       </div>
                     ) : pendingBookings.length === 0 ? (
-                      <p className="text-xs text-neutral-400 text-center py-4">No pending requests</p>
+                      <div className="text-center py-6 rounded-xl border border-dashed border-neutral-200 bg-neutral-50/50">
+                        <p className="text-xs font-semibold text-neutral-600">You're all caught up</p>
+                        <p className="text-[11px] text-neutral-400 mt-0.5">No pending requests</p>
+                      </div>
                     ) : (
                       <div className="space-y-2">
                         {pendingBookings.map((b) => (
-                          <div key={b.id} className="rounded-xl border border-neutral-200 p-3 bg-[#FAFAFA]">
+                          <div key={b.id} className="rounded-xl border border-neutral-200/70 p-3 bg-white hover:border-[#3678F1] transition-colors duration-200">
                             <p className="text-xs font-semibold text-neutral-900 mb-0.5 truncate">{b.project.title}</p>
-                            <p className="text-[11px] text-neutral-500 mb-1.5 truncate">
+                            <p className="text-[11px] text-neutral-500 mb-2 truncate">
                               {b.requester.companyProfile?.companyName ?? b.requester.email}
                               {b.rateOffered ? ` · ${formatPaise(b.rateOffered)}` : ''}
                             </p>
                             <div className="flex gap-1.5">
-                              <button disabled={actioning === b.id} onClick={() => doAction(b.id, 'accept')} className="flex-1 text-[11px] py-1.5 bg-[#22C55E] text-white rounded-lg hover:bg-[#16a34a] font-semibold transition-colors disabled:opacity-60">Accept</button>
+                              <button disabled={actioning === b.id} onClick={() => doAction(b.id, 'accept')} className="flex-1 text-[11px] py-1.5 bg-[#22C55E] text-white rounded-lg hover:bg-[#16A34A] font-semibold transition-colors disabled:opacity-60">Accept</button>
                               <button disabled={actioning === b.id} onClick={() => doAction(b.id, 'decline')} className="flex-1 text-[11px] py-1.5 bg-[#F3F4F6] text-neutral-600 rounded-lg hover:bg-neutral-200 font-medium transition-colors disabled:opacity-60">Decline</button>
                             </div>
                           </div>
@@ -494,22 +515,29 @@ export default function IndividualDashboard() {
                       </div>
                     )}
 
-                    <Link to="/dashboard/bookings" className="mt-3 rounded-xl block w-full py-2 text-xs text-[#3B5BDB] bg-[#EEF4FF] hover:bg-[#DBEAFE] text-center font-semibold transition-colors">
+                    <Link to="/bookings" className="mt-3 rounded-xl flex items-center justify-center gap-1.5 w-full py-2.5 text-xs text-[#3678F1] bg-[#E8F0FE] hover:bg-[#DBEAFE] text-center font-bold transition-colors duration-200">
                       View All Bookings
+                      <FaChevronRight className="text-[10px]" />
                     </Link>
                   </div>
 
-                  <div className="rounded-2xl bg-white border border-neutral-200 p-4">
+                  <div className="rounded-2xl bg-white shadow-soft border border-neutral-200/70 p-4 hover:border-[#3678F1] transition-colors duration-200">
                     <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-sm font-bold text-neutral-900">Recent projects</h3>
-                      <Link to="/dashboard/bookings" className="text-xs text-[#3B5BDB] hover:underline font-medium">View all</Link>
+                      <h3 className="text-sm font-bold text-neutral-900 flex items-center gap-2">
+                        <span className="w-1 h-4 rounded-full bg-[#3678F1]" />
+                        Recent projects
+                      </h3>
+                      <Link to="/bookings" className="text-[11px] text-[#3678F1] hover:text-[#2563EB] font-semibold transition-colors">View all</Link>
                     </div>
                     {pastItems.length === 0 ? (
-                      <p className="text-xs text-neutral-400 text-center py-4">No completed projects yet</p>
+                      <div className="text-center py-6 rounded-xl border border-dashed border-neutral-200 bg-neutral-50/50">
+                        <p className="text-xs font-semibold text-neutral-600">No completed projects yet</p>
+                        <p className="text-[11px] text-neutral-400 mt-0.5">Finished shoots will appear here</p>
+                      </div>
                     ) : (
                       <div className="space-y-2">
                         {pastItems.slice(0, 4).map((b) => (
-                          <Link key={b.id} to={`/dashboard/projects/${b.project.id}`} className="block rounded-xl border border-neutral-200 p-3 bg-[#FAFAFA] hover:border-[#3B5BDB]/50 transition-colors">
+                          <Link key={b.id} to={`/projects/${b.project.id}`} className="block rounded-xl border border-neutral-200/70 p-3 bg-white hover:border-[#3678F1] transition-colors duration-200">
                             <p className="text-xs font-semibold text-neutral-900 truncate">{b.project.title}</p>
                             <p className="text-[11px] text-neutral-500 truncate">{b.requester.companyProfile?.companyName ?? '—'}</p>
                           </Link>
@@ -519,27 +547,50 @@ export default function IndividualDashboard() {
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">
-                    <div className="rounded-2xl bg-white border border-neutral-200 p-3">
-                      <p className="text-[11px] text-neutral-500">Active bookings</p>
-                      <p className="text-lg font-bold text-[#3B5BDB]">{activeCount}</p>
+                    <div className="rounded-2xl bg-white shadow-soft border border-neutral-200/70 p-3 hover:border-[#3678F1] transition-colors duration-200">
+                      <p className="text-[11px] font-medium text-neutral-500">Active bookings</p>
+                      {bookingsLoading ? (
+                        <div className="skeleton h-6 w-10 rounded-md mt-1" />
+                      ) : (
+                        <p className="text-xl font-extrabold text-[#3678F1] tabular-nums mt-0.5">{activeCount}</p>
+                      )}
                     </div>
-                    <div className="rounded-2xl bg-white border border-neutral-200 p-3">
-                      <p className="text-[11px] text-neutral-500">Completed</p>
-                      <p className="text-lg font-bold text-[#3B5BDB]">{pastCount}</p>
+                    <div className="rounded-2xl bg-white shadow-soft border border-neutral-200/70 p-3 hover:border-[#3678F1] transition-colors duration-200">
+                      <p className="text-[11px] font-medium text-neutral-500">Completed</p>
+                      {bookingsLoading ? (
+                        <div className="skeleton h-6 w-10 rounded-md mt-1" />
+                      ) : (
+                        <p className="text-xl font-extrabold text-[#3678F1] tabular-nums mt-0.5">{pastCount}</p>
+                      )}
                     </div>
                   </div>
 
-                  <div className="rounded-2xl bg-white border border-neutral-200 p-4">
-                    <h3 className="text-sm font-bold text-neutral-900 mb-3">Quick Actions</h3>
+                  <div className="rounded-2xl bg-white shadow-soft border border-neutral-200/70 p-4 hover:border-[#3678F1] transition-colors duration-200">
+                    <h3 className="text-sm font-bold text-neutral-900 mb-3 flex items-center gap-2">
+                      <span className="w-1 h-4 rounded-full bg-[#3678F1]" />
+                      Quick Actions
+                    </h3>
                     <div className="space-y-1.5">
-                      <Link to="/dashboard/availability" className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#F3F4F6] text-neutral-700 text-xs font-semibold hover:bg-[#EEF4FF] hover:text-[#3B5BDB] transition-colors">
-                        <FaCalendar className="w-3 h-3" /> Manage Availability
+                      <Link to="/availability" className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-neutral-200/70 text-neutral-700 text-[13px] font-semibold hover:border-[#3678F1] transition-colors duration-200">
+                        <div className="w-8 h-8 rounded-lg bg-[#E8F0FE] ring-1 ring-[#3678F1]/15 flex items-center justify-center shrink-0">
+                          <FaCalendar className="w-3.5 h-3.5 text-[#3678F1]" />
+                        </div>
+                        <span className="flex-1 truncate">Manage Availability</span>
+                        <FaChevronRight className="text-[10px] text-neutral-300" />
                       </Link>
-                      <Link to="/dashboard/conversations" className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#F3F4F6] text-neutral-700 text-xs font-semibold hover:bg-[#EEF4FF] hover:text-[#3B5BDB] transition-colors">
-                        <FaMessage className="w-3 h-3" /> Open Chat
+                      <Link to="/conversations" className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-neutral-200/70 text-neutral-700 text-[13px] font-semibold hover:border-[#3678F1] transition-colors duration-200">
+                        <div className="w-8 h-8 rounded-lg bg-[#E8F0FE] ring-1 ring-[#3678F1]/15 flex items-center justify-center shrink-0">
+                          <FaMessage className="w-3.5 h-3.5 text-[#3678F1]" />
+                        </div>
+                        <span className="flex-1 truncate">Open Chat</span>
+                        <FaChevronRight className="text-[10px] text-neutral-300" />
                       </Link>
-                      <Link to="/dashboard/profile" className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#F3F4F6] text-neutral-700 text-xs font-semibold hover:bg-[#EEF4FF] hover:text-[#3B5BDB] transition-colors">
-                        <FaUser className="w-3 h-3" /> Edit Profile
+                      <Link to="/profile" className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-neutral-200/70 text-neutral-700 text-[13px] font-semibold hover:border-[#3678F1] transition-colors duration-200">
+                        <div className="w-8 h-8 rounded-lg bg-[#E8F0FE] ring-1 ring-[#3678F1]/15 flex items-center justify-center shrink-0">
+                          <FaUser className="w-3.5 h-3.5 text-[#3678F1]" />
+                        </div>
+                        <span className="flex-1 truncate">Edit Profile</span>
+                        <FaChevronRight className="text-[10px] text-neutral-300" />
                       </Link>
                     </div>
                   </div>
@@ -555,15 +606,15 @@ export default function IndividualDashboard() {
       {detailDate && (
         <>
           <div
-            className="fixed inset-0 bg-black/25 backdrop-blur-[2px] z-40 lg:bg-black/10 lg:backdrop-blur-[1px]"
-            onClick={() => setDetailDate(null)}
+            className={`fixed inset-0 bg-black/40 backdrop-blur-[2px] z-40 ${panelClosing ? 'backdrop-exit' : 'backdrop-enter'}`}
+            onClick={closeDetailPanel}
             aria-hidden
           />
-          <aside className="fixed right-0 top-0 h-full w-full max-w-[380px] sm:max-w-[400px] bg-white/95 backdrop-blur-xl border-l border-neutral-200/60 shadow-2xl z-50 flex flex-col panel-enter rounded-l-3xl">
+          <aside className={`fixed right-0 top-0 h-full w-full sm:w-[420px] md:w-[440px] lg:w-[460px] bg-white border-l border-neutral-200/60 shadow-2xl z-50 flex flex-col sm:rounded-l-3xl overflow-hidden ${panelClosing ? 'panel-exit' : 'panel-enter'}`}>
             <VendorCalendarDayPanel
               variant="drawer"
               selectedDate={detailDate}
-              onDismiss={() => setDetailDate(null)}
+              onDismiss={closeDetailPanel}
               slot={slotForDetailPanel}
               booking={bookingDetails[detailDate]}
               fallbackBookings={fallbackBookingsForDay}
@@ -594,13 +645,13 @@ export default function IndividualDashboard() {
                   onChange={(e) => setCancelReason(e.target.value)}
                   rows={3}
                   placeholder="e.g., Schedule conflict…"
-                  className="w-full px-4 py-2.5 border border-neutral-300 rounded-xl text-sm bg-[#F3F4F6] focus:bg-white focus:outline-none focus:border-[#3B5BDB] resize-none"
+                  className="w-full px-4 py-2.5 border border-neutral-300 rounded-xl text-sm bg-[#F3F4F6] focus:bg-white focus:outline-none focus:border-[#3678F1] resize-none"
                 />
               </div>
               {actionError && (
-                <div className="flex items-center gap-2 mb-4 p-3 bg-red-50 border border-red-200 rounded-xl">
-                  <FaTriangleExclamation className="text-red-500 text-xs shrink-0" />
-                  <p className="text-xs text-red-700">{actionError}</p>
+                <div className="flex items-center gap-2 mb-4 p-3 bg-[#FEEBEA] border border-[#F40F02]/30 rounded-xl">
+                  <FaTriangleExclamation className="text-[#F40F02] text-xs shrink-0" />
+                  <p className="text-xs text-[#991B1B]">{actionError}</p>
                 </div>
               )}
               <div className="flex gap-3">
@@ -616,10 +667,10 @@ export default function IndividualDashboard() {
                   type="button"
                   onClick={() => void doRequestCancel()}
                   disabled={!!actioning}
-                  className="flex-1 py-2.5 rounded-xl bg-amber-600 text-white text-sm font-semibold hover:bg-amber-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="flex-1 py-2.5 rounded-xl bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white text-sm font-semibold shadow-brand hover:from-[#2563EB] hover:to-[#1D4ED8] disabled:opacity-50 flex items-center justify-center gap-2 transition-colors"
                 >
                   {actioning?.endsWith('req-cancel') ? (
-                    <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Sending…</>
+                    <><span className="w-6 h-6 border-[2.5px] border-white/30 border-t-white border-r-white rounded-full animate-spin" /> Sending…</>
                   ) : (
                     'Send request'
                   )}

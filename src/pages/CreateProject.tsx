@@ -83,7 +83,7 @@ export default function CreateProject() {
         shootLocations: validDates.map(d => d.location.trim()),
       });
 
-      navigate('/dashboard/projects');
+      navigate('/projects');
     } catch (err) {
       setError(err instanceof ApiException ? err.payload.message : 'Failed to create project.');
     } finally {
@@ -112,12 +112,12 @@ export default function CreateProject() {
           <div className="flex-1 min-h-0 overflow-auto">
             <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-5">
 
-              <Link to="/dashboard/projects" className="inline-flex items-center gap-2 text-neutral-500 hover:text-[#3B5BDB] mb-5 text-sm transition-colors">
+              <Link to="/projects" className="inline-flex items-center gap-2 text-neutral-500 hover:text-[#3678F1] mb-5 text-sm transition-colors">
                 <FaArrowLeft className="w-3.5 h-3.5" /> Back to Projects
               </Link>
 
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-11 h-11 rounded-2xl bg-[#3B5BDB] flex items-center justify-center shrink-0">
+                <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#3678F1] to-[#2563EB] flex items-center justify-center shrink-0 shadow-brand">
                   <FaFolderPlus className="text-white text-lg" />
                 </div>
                 <div>
@@ -130,9 +130,9 @@ export default function CreateProject() {
                 {/* Left: form */}
                 <div className="lg:col-span-2 space-y-4">
                   {/* Project Info */}
-                  <div className="rounded-2xl bg-white border border-neutral-200 p-5">
+                  <div className="rounded-2xl bg-white border border-neutral-200 p-5 hover:border-[#3678F1] transition-colors duration-200">
                     <h2 className="text-sm font-bold text-neutral-900 mb-4 flex items-center gap-2">
-                      <FaCircleInfo className="text-[#3B5BDB]" /> Project Information
+                      <FaCircleInfo className="text-[#3678F1]" /> Project Information
                     </h2>
                     <div className="space-y-4">
                       <div>
@@ -143,7 +143,7 @@ export default function CreateProject() {
                           onChange={(e) => setTitle(e.target.value)}
                           placeholder="e.g., Summer Commercial Campaign 2025"
                           disabled={loading}
-                          className="rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3B5BDB] focus:bg-white text-sm transition-all disabled:opacity-50"
+                          className="rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all disabled:opacity-50"
                         />
                       </div>
                       <div>
@@ -154,7 +154,7 @@ export default function CreateProject() {
                           onChange={(e) => setDescription(e.target.value)}
                           placeholder="Brief description of the project, genre, and requirements..."
                           disabled={loading}
-                          className="rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3B5BDB] focus:bg-white text-sm transition-all resize-none disabled:opacity-50"
+                          className="rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all resize-none disabled:opacity-50"
                         />
                       </div>
                       <div className="grid grid-cols-2 gap-4">
@@ -167,7 +167,7 @@ export default function CreateProject() {
                               onChange={(e) => setStartDate(e.target.value)}
                               disabled={loading}
                               required
-                              className="date-input-no-native-icon rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 focus:outline-none focus:border-[#3B5BDB] focus:bg-white text-sm transition-all disabled:opacity-50"
+                              className="date-input-no-native-icon rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all disabled:opacity-50"
                             />
                             <FaCalendar className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 text-xs pointer-events-none" />
                           </div>
@@ -182,7 +182,7 @@ export default function CreateProject() {
                               onChange={(e) => setEndDate(e.target.value)}
                               disabled={loading}
                               required
-                              className="date-input-no-native-icon rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 focus:outline-none focus:border-[#3B5BDB] focus:bg-white text-sm transition-all disabled:opacity-50"
+                              className="date-input-no-native-icon rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all disabled:opacity-50"
                             />
                             <FaCalendar className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 text-xs pointer-events-none" />
                           </div>
@@ -194,7 +194,7 @@ export default function CreateProject() {
                           <button
                             type="button"
                             onClick={addProjectDate}
-                            className="text-xs text-[#3B5BDB] hover:underline flex items-center gap-1"
+                            className="text-xs text-[#3678F1] hover:underline flex items-center gap-1"
                           >
                             <FaPlus className="w-2.5 h-2.5" /> Add Date
                           </button>
@@ -208,11 +208,11 @@ export default function CreateProject() {
                                     {pair.date ? formatDate(pair.date) : 'Select a date'}
                                   </span>
                                   {pair.location.trim() ? (
-                                    <span className="text-[9px] bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-full font-semibold border border-emerald-200">
+                                    <span className="text-[9px] bg-[#DCFCE7] text-[#15803D] px-2 py-0.5 rounded-full font-semibold border border-[#86EFAC]">
                                       ✓ Location set
                                     </span>
                                   ) : (
-                                    <span className="text-[9px] bg-amber-50 text-amber-600 px-2 py-0.5 rounded-full font-semibold border border-amber-200">
+                                    <span className="text-[9px] bg-[#FEF3C7] text-[#946A00] px-2 py-0.5 rounded-full font-semibold border border-[#F4C430]">
                                       ⚠ Location needed
                                     </span>
                                   )}
@@ -221,7 +221,7 @@ export default function CreateProject() {
                                   <button
                                     type="button"
                                     onClick={() => removeProjectDate(i)}
-                                    className="text-neutral-400 hover:text-red-500 transition-colors"
+                                    className="text-neutral-400 hover:text-[#F40F02] transition-colors"
                                     aria-label={`Remove date ${i + 1}`}
                                   >
                                     <FaXmark className="w-3 h-3" />
@@ -238,7 +238,7 @@ export default function CreateProject() {
                                     disabled={loading}
                                     min={startDate}
                                     max={endDate}
-                                    className="rounded-lg w-full px-3 py-2 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#3B5BDB]/20 focus:border-[#3B5BDB] text-xs transition-all disabled:opacity-50"
+                                    className="rounded-lg w-full px-3 py-2 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#3678F1]/20 focus:border-[#3678F1] text-xs transition-all disabled:opacity-50"
                                   />
                                 </div>
                                 <div className="relative flex-[2]">
@@ -249,7 +249,7 @@ export default function CreateProject() {
                                     onChange={(e) => updateProjectDate(i, 'location', e.target.value)}
                                     placeholder="e.g., Mumbai, Film City"
                                     disabled={loading}
-                                    className="rounded-lg w-full pl-9 pr-3 py-2 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#3B5BDB]/20 focus:border-[#3B5BDB] text-xs transition-all disabled:opacity-50"
+                                    className="rounded-lg w-full pl-9 pr-3 py-2 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#3678F1]/20 focus:border-[#3678F1] text-xs transition-all disabled:opacity-50"
                                     onKeyDown={(e) => {
                                       if (e.key === 'Enter') {
                                         e.preventDefault();
@@ -273,9 +273,9 @@ export default function CreateProject() {
 
                 {/* Right: summary */}
                 <div>
-                  <div className="rounded-2xl bg-white border border-neutral-200 p-5 lg:sticky lg:top-5">
+                  <div className="rounded-2xl bg-white border border-neutral-200 p-5 lg:sticky lg:top-5 hover:border-[#3678F1] transition-colors duration-200">
                     <h3 className="text-sm font-bold text-neutral-900 mb-4 flex items-center gap-2">
-                      <FaClipboardCheck className="text-[#3B5BDB]" /> Project Summary
+                      <FaClipboardCheck className="text-[#3678F1]" /> Project Summary
                     </h3>
                     <div className="space-y-3 mb-5">
                       {[
@@ -298,7 +298,7 @@ export default function CreateProject() {
                       <ul className="space-y-2">
                         {['Search & filter crew members', 'Send booking requests', 'Lock confirmed team'].map((step) => (
                           <li key={step} className="flex items-center gap-2">
-                            <div className="w-1.5 h-1.5 rounded-full bg-[#3B5BDB] shrink-0" />
+                            <div className="w-1.5 h-1.5 rounded-full bg-[#3678F1] shrink-0" />
                             <span className="text-xs text-neutral-500">{step}</span>
                           </li>
                         ))}
@@ -306,18 +306,18 @@ export default function CreateProject() {
                     </div>
 
                     {error && (
-                      <div className="flex items-start gap-2 rounded-xl bg-red-50 border border-red-200 px-3 py-2.5 mb-2">
-                        <FaTriangleExclamation className="text-red-500 text-xs shrink-0 mt-0.5" />
-                        <p className="text-xs text-red-700 leading-snug">{error}</p>
+                      <div className="flex items-start gap-2 rounded-xl bg-[#FEE2E2] border border-[#F40F02]/30 px-3 py-2.5 mb-2">
+                        <FaTriangleExclamation className="text-[#F40F02] text-xs shrink-0 mt-0.5" />
+                        <p className="text-xs text-[#991B1B] leading-snug">{error}</p>
                       </div>
                     )}
                     <button
                       type="button"
                       onClick={() => handleCreate()}
                       disabled={loading}
-                      className="rounded-xl w-full py-3 bg-[#3B5BDB] text-white font-semibold text-sm hover:bg-[#2f4ac2] mb-2 flex items-center justify-center gap-2 transition-colors shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                      className="rounded-xl w-full py-3 bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white font-semibold text-sm hover:from-[#2563EB] hover:to-[#1D4ED8] mb-2 flex items-center justify-center gap-2 transition-colors duration-200 shadow-brand disabled:opacity-60 disabled:cursor-not-allowed"
                     >
-                      {loading ? <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Creating…</> : <><FaClipboardCheck /> Create Project</>}
+                      {loading ? <><span className="w-6 h-6 border-[2.5px] border-white/30 border-t-white border-r-white rounded-full animate-spin" />Creating…</> : <><FaClipboardCheck /> Create Project</>}
                     </button>
                   </div>
                 </div>

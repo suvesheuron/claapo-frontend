@@ -65,7 +65,7 @@ export default function AuthLayout({
       <aside
         className="hidden lg:flex relative flex-col justify-between p-12 xl:p-16 overflow-hidden text-white lg:h-screen"
         style={{
-          background: 'linear-gradient(155deg, #1e3aa8 0%, #3B5BDB 45%, #5b78e8 100%)',
+          background: 'linear-gradient(155deg, #1e3aa8 0%, #3678F1 45%, #5b78e8 100%)',
         }}
       >
         {/* Decorative blobs */}
@@ -125,7 +125,7 @@ export default function AuthLayout({
         {brand.bottomText && (
           <div className="relative z-10 flex items-center gap-3 text-xs text-white/65">
             <div className="flex -space-x-2">
-              {['bg-purple-400', 'bg-emerald-400', 'bg-amber-400'].map((c, i) => (
+              {['bg-[#3678F1]', 'bg-[#5B9DF9]', 'bg-[#E8F0FE]'].map((c, i) => (
                 <span
                   key={i}
                   className={`w-7 h-7 rounded-full border-2 border-white/40 ${c}`}
@@ -162,7 +162,7 @@ export default function AuthLayout({
             <div className="mb-5 -ml-1">
               <Link
                 to={backTo}
-                className="inline-flex items-center gap-2 px-2.5 py-1.5 -my-1 rounded-lg text-[13px] font-semibold text-neutral-500 hover:text-[#3B5BDB] hover:bg-neutral-100 transition-colors"
+                className="inline-flex items-center gap-2 px-2.5 py-1.5 -my-1 rounded-lg text-[13px] font-semibold text-neutral-500 hover:text-[#3678F1] hover:bg-neutral-100 transition-colors"
               >
                 <FaArrowLeft className="w-3 h-3" aria-hidden />
                 {backLabel}

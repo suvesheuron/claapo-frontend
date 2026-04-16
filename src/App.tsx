@@ -116,8 +116,9 @@ function ScrollToTop() {
 
 function PageFallback() {
   return (
-    <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
-      <p className="text-neutral-600">Loading…</p>
+    <div className="min-h-screen bg-[#F3F4F6] flex flex-col items-center justify-center gap-4">
+      <span className="w-10 h-10 border-[2.5px] border-[#3678F1]/15 border-t-[#3678F1] border-r-[#3678F1] rounded-full animate-spin" />
+      <p className="text-sm text-neutral-500 font-medium">Loading…</p>
     </div>
   );
 }
@@ -129,13 +130,25 @@ function PageFallback() {
 function SubuserRestrictedCreateProject() {
   const { user } = useAuth();
   const isSubuser = user?.mainUserId != null;
-  
+
   if (isSubuser) {
     // Redirect subusers to the projects list page
-    return <Navigate to="/dashboard/projects" replace />;
+    return <Navigate to="/projects" replace />;
   }
-  
+
   return <CreateProject />;
+}
+
+/**
+ * Catches legacy `/dashboard/<sub>` URLs (bookmarks, in-flight links, external
+ * shares) and 301s them to the new flat path. The exact `/dashboard` route is
+ * matched first by the router's specificity ranking and renders the dashboard.
+ */
+function LegacyDashboardRedirect() {
+  const location = useLocation();
+  const sub = location.pathname.replace(/^\/dashboard\/?/, '');
+  const to = sub ? `/${sub}${location.search}${location.hash}` : '/dashboard';
+  return <Navigate to={to} replace />;
 }
 
 export default function App() {
@@ -162,54 +175,57 @@ export default function App() {
           <Route path="/register/individual" element={<IndividualRegistration />} />
           <Route path="/register/vendor" element={<VendorRegistration />} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          <Route path="/dashboard/projects" element={<ProtectedRoute allowedRoles={['company', 'admin']}><Projects /></ProtectedRoute>} />
-          <Route path="/dashboard/projects/:id" element={<ProtectedRoute><ProjectDetail /></ProtectedRoute>} />
-          <Route path="/dashboard/company-availability" element={<ProtectedRoute allowedRoles={['company', 'admin']}><CompanyAvailability /></ProtectedRoute>} />
-          <Route path="/dashboard/projects/new" element={<ProtectedRoute allowedRoles={['company', 'admin']}>
+          <Route path="/projects" element={<ProtectedRoute allowedRoles={['company', 'admin']}><Projects /></ProtectedRoute>} />
+          <Route path="/projects/:id" element={<ProtectedRoute><ProjectDetail /></ProtectedRoute>} />
+          <Route path="/company-availability" element={<ProtectedRoute allowedRoles={['company', 'admin']}><CompanyAvailability /></ProtectedRoute>} />
+          <Route path="/projects/new" element={<ProtectedRoute allowedRoles={['company', 'admin']}>
             <SubuserRestrictedCreateProject />
           </ProtectedRoute>} />
-          <Route path="/dashboard/projects/:id/edit" element={<ProtectedRoute allowedRoles={['company', 'admin']}><EditProject /></ProtectedRoute>} />
-          <Route path="/dashboard/search" element={<ProtectedRoute allowedRoles={['company', 'admin']}><SearchFilter /></ProtectedRoute>} />
-          <Route path="/dashboard/profile/:userId" element={<ProtectedRoute allowedRoles={['company', 'admin']}><OtherUserProfile /></ProtectedRoute>} />
+          <Route path="/projects/:id/edit" element={<ProtectedRoute allowedRoles={['company', 'admin']}><EditProject /></ProtectedRoute>} />
+          <Route path="/search" element={<ProtectedRoute allowedRoles={['company', 'admin']}><SearchFilter /></ProtectedRoute>} />
+          <Route path="/profile/:userId" element={<ProtectedRoute allowedRoles={['company', 'admin']}><OtherUserProfile /></ProtectedRoute>} />
 
           {/* Shared routes */}
-          <Route path="/dashboard/chat/:userId" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
-          <Route path="/dashboard/conversations" element={<ProtectedRoute><Conversations /></ProtectedRoute>} />
-          <Route path="/dashboard/conversations/:projectId" element={<ProtectedRoute><Conversations /></ProtectedRoute>} />
-          <Route path="/dashboard/invoices" element={<ProtectedRoute><InvoicesList /></ProtectedRoute>} />
-          <Route path="/dashboard/invoices/:projectId" element={<ProtectedRoute><InvoicesList /></ProtectedRoute>} />
-          <Route path="/dashboard/invoice/new" element={<ProtectedRoute allowedRoles={['individual', 'vendor']}><CreateInvoice /></ProtectedRoute>} />
-          <Route path="/dashboard/invoice/:invoiceId" element={<ProtectedRoute><Invoice /></ProtectedRoute>} />
-          <Route path="/dashboard/bookings" element={<ProtectedRoute allowedRoles={['individual', 'vendor']}><Bookings /></ProtectedRoute>} />
-          <Route path="/dashboard/project-details" element={<ProtectedRoute allowedRoles={['individual', 'vendor']}><ProjectDetails /></ProtectedRoute>} />
-          <Route path="/dashboard/ongoing-projects" element={<ProtectedRoute allowedRoles={['individual', 'vendor']}><OngoingProjects /></ProtectedRoute>} />
-          <Route path="/dashboard/team" element={<ProtectedRoute allowedRoles={['company', 'admin']}><TeamPage /></ProtectedRoute>} />
+          <Route path="/chat/:userId" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
+          <Route path="/conversations" element={<ProtectedRoute><Conversations /></ProtectedRoute>} />
+          <Route path="/conversations/:projectId" element={<ProtectedRoute><Conversations /></ProtectedRoute>} />
+          <Route path="/invoices" element={<ProtectedRoute><InvoicesList /></ProtectedRoute>} />
+          <Route path="/invoices/:projectId" element={<ProtectedRoute><InvoicesList /></ProtectedRoute>} />
+          <Route path="/invoice/new" element={<ProtectedRoute allowedRoles={['individual', 'vendor']}><CreateInvoice /></ProtectedRoute>} />
+          <Route path="/invoice/:invoiceId" element={<ProtectedRoute><Invoice /></ProtectedRoute>} />
+          <Route path="/bookings" element={<ProtectedRoute allowedRoles={['individual', 'vendor']}><Bookings /></ProtectedRoute>} />
+          <Route path="/project-details" element={<ProtectedRoute allowedRoles={['individual', 'vendor']}><ProjectDetails /></ProtectedRoute>} />
+          <Route path="/ongoing-projects" element={<ProtectedRoute allowedRoles={['individual', 'vendor']}><OngoingProjects /></ProtectedRoute>} />
+          <Route path="/team" element={<ProtectedRoute allowedRoles={['company', 'admin']}><TeamPage /></ProtectedRoute>} />
 
           {/* Reports */}
-          <Route path="/dashboard/earnings" element={<ProtectedRoute allowedRoles={['individual', 'vendor']}><EarningsDashboard /></ProtectedRoute>} />
-          <Route path="/dashboard/spending" element={<ProtectedRoute allowedRoles={['company', 'admin']}><SpendingDashboard /></ProtectedRoute>} />
+          <Route path="/earnings" element={<ProtectedRoute allowedRoles={['individual', 'vendor']}><EarningsDashboard /></ProtectedRoute>} />
+          <Route path="/spending" element={<ProtectedRoute allowedRoles={['company', 'admin']}><SpendingDashboard /></ProtectedRoute>} />
 
           {/* Individual routes */}
-          <Route path="/dashboard/availability" element={<ProtectedRoute allowedRoles={['individual']}><IndividualAvailability /></ProtectedRoute>} />
-          <Route path="/dashboard/past-projects" element={<ProtectedRoute allowedRoles={['individual']}><IndividualPastProjects /></ProtectedRoute>} />
-          <Route path="/dashboard/profile" element={<ProtectedRoute allowedRoles={['individual']}><IndividualProfile /></ProtectedRoute>} />
+          <Route path="/availability" element={<ProtectedRoute allowedRoles={['individual']}><IndividualAvailability /></ProtectedRoute>} />
+          <Route path="/past-projects" element={<ProtectedRoute allowedRoles={['individual']}><IndividualPastProjects /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute allowedRoles={['individual']}><IndividualProfile /></ProtectedRoute>} />
 
           {/* Vendor routes */}
-          <Route path="/dashboard/equipment" element={<ProtectedRoute allowedRoles={['vendor']}><VendorEquipment /></ProtectedRoute>} />
-          <Route path="/dashboard/vendor-availability" element={<ProtectedRoute allowedRoles={['vendor']}><VendorAvailability /></ProtectedRoute>} />
-          <Route path="/dashboard/past-rentals" element={<ProtectedRoute allowedRoles={['vendor']}><VendorPastRentals /></ProtectedRoute>} />
-          <Route path="/dashboard/vendor-profile" element={<ProtectedRoute allowedRoles={['vendor']}><VendorProfile /></ProtectedRoute>} />
+          <Route path="/equipment" element={<ProtectedRoute allowedRoles={['vendor']}><VendorEquipment /></ProtectedRoute>} />
+          <Route path="/vendor-availability" element={<ProtectedRoute allowedRoles={['vendor']}><VendorAvailability /></ProtectedRoute>} />
+          <Route path="/past-rentals" element={<ProtectedRoute allowedRoles={['vendor']}><VendorPastRentals /></ProtectedRoute>} />
+          <Route path="/vendor-profile" element={<ProtectedRoute allowedRoles={['vendor']}><VendorProfile /></ProtectedRoute>} />
 
           {/* Company extended routes */}
-          <Route path="/dashboard/company-past-projects" element={<ProtectedRoute allowedRoles={['company', 'admin']}><CompanyPastProjects /></ProtectedRoute>} />
-          <Route path="/dashboard/company-profile" element={<ProtectedRoute allowedRoles={['company', 'admin']}><CompanyProfile /></ProtectedRoute>} />
-          <Route path="/dashboard/cancel-requests" element={<ProtectedRoute allowedRoles={['company', 'admin']}><CancelRequests /></ProtectedRoute>} />
+          <Route path="/company-past-projects" element={<ProtectedRoute allowedRoles={['company', 'admin']}><CompanyPastProjects /></ProtectedRoute>} />
+          <Route path="/company-profile" element={<ProtectedRoute allowedRoles={['company', 'admin']}><CompanyProfile /></ProtectedRoute>} />
+          <Route path="/cancel-requests" element={<ProtectedRoute allowedRoles={['company', 'admin']}><CancelRequests /></ProtectedRoute>} />
 
           {/* Admin routes */}
           <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>} />
           <Route path="/admin/users" element={<ProtectedRoute allowedRoles={['admin']}><AdminUsers /></ProtectedRoute>} />
           <Route path="/admin/projects" element={<ProtectedRoute allowedRoles={['admin']}><AdminProjects /></ProtectedRoute>} />
           <Route path="/admin/invoices" element={<ProtectedRoute allowedRoles={['admin']}><AdminInvoices /></ProtectedRoute>} />
+
+          {/* Legacy redirect — old /dashboard/<sub> URLs → flat /<sub> */}
+          <Route path="/dashboard/*" element={<LegacyDashboardRedirect />} />
           </Routes>
         </Suspense>
         </SidebarProvider>

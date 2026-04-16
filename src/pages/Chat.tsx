@@ -1,9 +1,9 @@
 /**
  * Chat page — WhatsApp-style direct messages with Claapo brand colors.
- * Route: /dashboard/chat/:targetUserId
+ * Route: /chat/:targetUserId
  *
  * Features:
- *   - Brand color theme (#3B5BDB)
+ *   - Brand color theme (#3678F1)
  *   - DashboardSidebar + full-width layout (like other dashboard pages)
  *   - Message bubbles with timestamps & read receipts
  *   - Attachment support (images, files)
@@ -94,13 +94,13 @@ const POLL_INTERVAL_MS = 4000;
 
 // Brand color palette
 const BRAND = {
-  primary: '#3B5BDB',
+  primary: '#3678F1',
   primaryDark: '#364FC7',
   primaryLight: '#EEF2FF',
   chatBg: '#F0F2F5',
   outgoing: '#EEF2FF',
   incoming: '#FFFFFF',
-  headerBg: '#3B5BDB',
+  headerBg: '#3678F1',
   inputBg: '#F0F2F5',
   textPrimary: '#111B21',
   textSecondary: '#667781',
@@ -525,7 +525,7 @@ export default function Chat() {
   const emojiList = ['😀','😂','😍','🤔','👍','👎','❤️','🔥','🎉','👏','😢','😮','🙏','💯','✅','⭐','🎬','🎥','📸','🎵'];
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-[#F8F9FB] w-full">
+    <div className="h-screen flex flex-col overflow-hidden bg-[#F3F4F6] w-full">
       <DashboardHeader />
 
       <div className="flex-1 flex min-h-0 overflow-hidden">
@@ -539,10 +539,10 @@ export default function Chat() {
         >
           {/* Drag-and-drop overlay */}
           {dragOver && (
-            <div className="absolute inset-0 bg-[#3B5BDB]/10 border-2 border-dashed border-[#3B5BDB] z-50 flex items-center justify-center pointer-events-none">
+            <div className="absolute inset-0 bg-[#3678F1]/10 border-2 border-dashed border-[#3678F1] z-50 flex items-center justify-center pointer-events-none">
               <div className="bg-white rounded-xl px-8 py-6 shadow-xl text-center">
-                <FaPaperclip className="w-8 h-8 text-[#3B5BDB] mx-auto mb-2" />
-                <p className="text-lg font-semibold text-[#3B5BDB]">Drop file to send</p>
+                <FaPaperclip className="w-8 h-8 text-[#3678F1] mx-auto mb-2" />
+                <p className="text-lg font-semibold text-[#3678F1]">Drop file to send</p>
               </div>
             </div>
           )}
@@ -551,12 +551,11 @@ export default function Chat() {
 
             {/* ── Header ── */}
             <div
-              className="px-4 sm:px-5 py-3 flex items-center gap-3 shrink-0 relative overflow-hidden border-b border-white/10"
-              style={{ background: 'linear-gradient(135deg, #2f4ac2 0%, #3B5BDB 50%, #4f6ee8 100%)' }}
+              className="px-4 sm:px-5 py-3 flex items-center gap-3 shrink-0 relative overflow-hidden border-b border-white/10 bg-gradient-to-br from-[#3678F1] to-[#2563EB]"
             >
               <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_120%_at_100%_-20%,rgba(255,255,255,0.15),transparent)] pointer-events-none" />
               <Link
-                to="/dashboard/conversations"
+                to="/conversations"
                 className="relative p-2 hover:bg-white/15 rounded-xl transition-colors shrink-0"
                 aria-label="Back to conversations"
               >
@@ -567,13 +566,13 @@ export default function Chat() {
                   <Avatar src={otherAvatar} name={otherName} size="md" />
                 </div>
                 {otherUser?.isOnline && (
-                  <div className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-[#22C55E] ring-2 ring-[#3B5BDB]" />
+                  <div className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-[#22C55E] ring-2 ring-[#3678F1]" />
                 )}
               </div>
               <div className="relative flex-1 min-w-0">
                 {targetUserId && (user?.role === 'company' || user?.role === 'admin') ? (
                   <Link
-                    to={`/dashboard/profile/${targetUserId}`}
+                    to={`/profile/${targetUserId}`}
                     className="block text-left hover:underline decoration-white/80 underline-offset-2"
                   >
                     <h2 className="text-base font-bold text-white truncate leading-tight">{otherName}</h2>
@@ -655,7 +654,7 @@ export default function Chat() {
             {/* ── Pinned message banner ── */}
             {pinnedMessages.length > 0 && !showSearch && (
               <div className="px-4 py-2 bg-white/90 border-b border-neutral-200 flex items-center gap-2 cursor-pointer hover:bg-white transition-colors">
-                <FaThumbtack className="w-3 h-3 text-[#3B5BDB] rotate-45" />
+                <FaThumbtack className="w-3 h-3 text-[#3678F1] rotate-45" />
                 <p className="text-xs text-neutral-700 truncate flex-1">
                   <span className="font-semibold">Pinned: </span>
                   {pinnedMessages[pinnedMessages.length - 1].content}
@@ -684,7 +683,7 @@ export default function Chat() {
                   ].map((row, i) => (
                     <div key={i} className={`flex ${row.side === 'right' ? 'justify-end' : 'justify-start'}`}>
                       <div
-                        className={`rounded-2xl bg-white/70 ${row.width} h-10 animate-pulse`}
+                        className={`skeleton rounded-2xl ${row.width} h-10`}
                         style={{ animationDelay: `${i * 80}ms` }}
                       />
                     </div>
@@ -693,15 +692,15 @@ export default function Chat() {
               )}
 
               {loadError && (
-                <div className="flex items-center gap-3 rounded-lg bg-red-50 border border-red-200 p-3 mx-auto max-w-md">
-                  <FaTriangleExclamation className="text-red-500 shrink-0" />
-                  <p className="text-sm text-red-700">{loadError}</p>
+                <div className="flex items-center gap-3 rounded-lg bg-[#FEEBEA] border border-[#F40F02]/30 p-3 mx-auto max-w-md">
+                  <FaTriangleExclamation className="text-[#F40F02] shrink-0" />
+                  <p className="text-sm text-[#991B1B]">{loadError}</p>
                 </div>
               )}
 
               {!loadingInit && !loadError && messages.length === 0 && (
                 <div className="flex justify-center py-8">
-                  <div className="bg-[#EEF2FF] rounded-lg px-4 py-2 shadow-sm max-w-sm text-center">
+                  <div className="bg-[#E8F0FE] rounded-lg px-4 py-2 shadow-sm max-w-sm text-center">
                     {noConversation ? (
                       <p className="text-xs text-neutral-600">
                         You can only chat with crew or vendors you have a shared project with. Send a booking request to start a conversation.
@@ -758,25 +757,18 @@ export default function Chat() {
                         <div className="flex flex-col max-w-[80%] sm:max-w-[70%]">
                           {/* Sender name label: shows who sent the message when it's not the current user */}
                           {showSenderLabel && (
-                            <span className={`text-[10px] font-semibold mb-0.5 ${isMe ? 'text-right text-[#3B5BDB]' : 'text-neutral-500'}`}>
+                            <span className={`text-[10px] font-semibold mb-0.5 ${isMe ? 'text-right text-[#3678F1]' : 'text-neutral-500'}`}>
                               {senderLabel}
                             </span>
                           )}
                           <div
                             className={`relative px-3.5 py-2.5 rounded-2xl shadow-sm group ${
                               isDeleted
-                                ? 'bg-neutral-100 italic'
+                                ? 'bg-neutral-100 italic text-neutral-600'
                                 : isMe
-                                  ? 'rounded-br-sm'
-                                  : 'rounded-bl-sm border border-neutral-100'
+                                  ? 'bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white rounded-br-sm'
+                                  : 'bg-white border border-neutral-200/70 text-neutral-800 rounded-bl-sm'
                             }`}
-                            style={
-                              isDeleted
-                                ? { backgroundColor: '#f0f0f0' }
-                                : isMe
-                                  ? { background: 'linear-gradient(135deg, #3B5BDB, #5B9DF9)', color: '#fff' }
-                                  : { backgroundColor: BRAND.incoming }
-                            }
                           >
                         {/* Forwarded label */}
                         {msg.forwardedFromId && !isDeleted && (
@@ -787,8 +779,8 @@ export default function Chat() {
 
                         {/* Reply reference */}
                         {msg.replyTo && !isDeleted && (
-                          <div className="mb-1 px-2 py-1 bg-[#3B5BDB]/5 border-l-2 border-[#3B5BDB] rounded-r text-[11px]">
-                            <p className="font-semibold text-[#3B5BDB] text-[10px]">
+                          <div className="mb-1 px-2 py-1 bg-[#3678F1]/5 border-l-2 border-[#3678F1] rounded-r text-[11px]">
+                            <p className="font-semibold text-[#3678F1] text-[10px]">
                               {msg.replyTo.senderId === user?.id ? 'You' : otherName}
                             </p>
                             <p className="text-neutral-600 truncate">{msg.replyTo.content}</p>
@@ -797,7 +789,7 @@ export default function Chat() {
 
                         {/* Pin indicator */}
                         {msg.isPinned && !isDeleted && (
-                          <FaThumbtack className="absolute -top-1.5 -right-1.5 w-3 h-3 text-[#3B5BDB] rotate-45 drop-shadow-sm" />
+                          <FaThumbtack className="absolute -top-1.5 -right-1.5 w-3 h-3 text-[#3678F1] rotate-45 drop-shadow-sm" />
                         )}
 
                         {/* Message content */}
@@ -825,7 +817,7 @@ export default function Chat() {
                         <span className={`absolute bottom-1 right-2 flex items-center gap-0.5 text-[10px] ${isMe ? 'text-white/80' : 'text-neutral-400'}`}>
                           {formatTime(msg.createdAt)}
                           {isMe && !isDeleted && (
-                            <span className={`ml-0.5 ${msg.readAt || msg.isRead ? 'text-blue-200' : 'opacity-70'}`}>
+                            <span className={`ml-0.5 ${msg.readAt || msg.isRead ? 'text-[#A8C6F7]' : 'opacity-70'}`}>
                               {msg.readAt || msg.isRead ? '✓✓' : '✓✓'}
                             </span>
                           )}
@@ -866,22 +858,22 @@ export default function Chat() {
                   style={{ left: Math.min(contextMenu.x, window.innerWidth - 200), top: Math.min(contextMenu.y, window.innerHeight - 300) }}
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <button className="w-full text-left px-4 py-2.5 text-sm text-neutral-700 hover:bg-[#EEF2FF] flex items-center gap-3" onClick={() => handleReply(msg)}>
+                  <button className="w-full text-left px-4 py-2.5 text-sm text-neutral-700 hover:bg-[#E8F0FE] flex items-center gap-3" onClick={() => handleReply(msg)}>
                     <FaReply className="w-4 h-4 text-neutral-500" /> Reply
                   </button>
-                  <button className="w-full text-left px-4 py-2.5 text-sm text-neutral-700 hover:bg-[#EEF2FF] flex items-center gap-3" onClick={() => handleForward(msg)}>
+                  <button className="w-full text-left px-4 py-2.5 text-sm text-neutral-700 hover:bg-[#E8F0FE] flex items-center gap-3" onClick={() => handleForward(msg)}>
                     <FaShareFromSquare className="w-4 h-4 text-neutral-500" /> Forward
                   </button>
-                  <button className="w-full text-left px-4 py-2.5 text-sm text-neutral-700 hover:bg-[#EEF2FF] flex items-center gap-3" onClick={() => handleCopy(msg)}>
+                  <button className="w-full text-left px-4 py-2.5 text-sm text-neutral-700 hover:bg-[#E8F0FE] flex items-center gap-3" onClick={() => handleCopy(msg)}>
                     <FaCopy className="w-4 h-4 text-neutral-500" /> Copy
                   </button>
-                  <button className="w-full text-left px-4 py-2.5 text-sm text-neutral-700 hover:bg-[#EEF2FF] flex items-center gap-3" onClick={() => handlePin(msg.id)}>
+                  <button className="w-full text-left px-4 py-2.5 text-sm text-neutral-700 hover:bg-[#E8F0FE] flex items-center gap-3" onClick={() => handlePin(msg.id)}>
                     <FaThumbtack className="w-4 h-4 text-neutral-500" /> {msg.isPinned ? 'Unpin' : 'Pin'}
                   </button>
                   {isMe && (
                     <>
                       <hr className="my-1 border-neutral-200" />
-                      <button className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 flex items-center gap-3" onClick={() => handleDelete(msg.id)}>
+                      <button className="w-full text-left px-4 py-2.5 text-sm text-[#F40F02] hover:bg-[#FEEBEA] flex items-center gap-3" onClick={() => handleDelete(msg.id)}>
                         <FaTrash className="w-4 h-4" /> Delete
                       </button>
                     </>
@@ -906,7 +898,7 @@ export default function Chat() {
                       value={forwardSearch}
                       onChange={(e) => setForwardSearch(e.target.value)}
                       placeholder="Search conversations..."
-                      className="w-full px-3 py-2 text-sm rounded-lg bg-neutral-50 border border-neutral-200 focus:outline-none focus:ring-1 focus:ring-[#3B5BDB]"
+                      className="w-full px-3 py-2 text-sm rounded-lg bg-neutral-50 border border-neutral-200 focus:outline-none focus:ring-1 focus:ring-[#3678F1]"
                     />
                   </div>
                   <div className="max-h-64 overflow-auto">
@@ -920,7 +912,7 @@ export default function Chat() {
                         <button
                           key={conv.id}
                           onClick={() => doForward(conv.id)}
-                          className="w-full text-left px-4 py-3 hover:bg-[#EEF2FF] flex items-center gap-3 border-b border-neutral-50"
+                          className="w-full text-left px-4 py-3 hover:bg-[#E8F0FE] flex items-center gap-3 border-b border-neutral-50"
                         >
                           <Avatar name={conv.otherParticipant?.displayName ?? 'User'} size="sm" />
                           <div className="min-w-0">
@@ -951,8 +943,8 @@ export default function Chat() {
             {/* ── Reply preview bar ── */}
             {replyTo && (
               <div className="bg-[#F0F2F5] border-t border-neutral-200 px-4 py-2 flex items-center gap-3">
-                <div className="flex-1 min-w-0 border-l-4 border-[#3B5BDB] pl-3">
-                  <p className="text-xs font-semibold text-[#3B5BDB]">
+                <div className="flex-1 min-w-0 border-l-4 border-[#3678F1] pl-3">
+                  <p className="text-xs font-semibold text-[#3678F1]">
                     {replyTo.senderId === user?.id ? 'You' : otherName}
                   </p>
                   <p className="text-xs text-neutral-500 truncate">{replyTo.content}</p>
@@ -973,7 +965,7 @@ export default function Chat() {
                         key={emoji}
                         type="button"
                         onClick={() => insertEmoji(emoji)}
-                        className="w-10 h-10 flex items-center justify-center text-2xl hover:bg-neutral-100 rounded-xl transition-colors hover:scale-110 active:scale-95"
+                        className="w-10 h-10 flex items-center justify-center text-2xl hover:bg-[#E8F0FE] rounded-xl transition-colors"
                       >
                         {emoji}
                       </button>
@@ -991,7 +983,7 @@ export default function Chat() {
                   <button
                     type="button"
                     onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                    className={`p-2 transition-colors rounded-full hover:bg-white hover:shadow-sm ${showEmojiPicker ? 'text-[#3B5BDB]' : 'text-neutral-500 hover:text-[#3B5BDB]'}`}
+                    className={`p-2 transition-colors rounded-full hover:bg-white hover:shadow-sm ${showEmojiPicker ? 'text-[#3678F1]' : 'text-neutral-500 hover:text-[#3678F1]'}`}
                   >
                     <FaFaceSmile className="w-5 h-5" />
                   </button>
@@ -999,7 +991,7 @@ export default function Chat() {
                     <button
                       type="button"
                       onClick={(e) => { e.stopPropagation(); setShowAttachMenu(!showAttachMenu); }}
-                      className="p-2 text-neutral-500 hover:text-[#3B5BDB] transition-colors rounded-full hover:bg-white hover:shadow-sm"
+                      className="p-2 text-neutral-500 hover:text-[#3678F1] transition-colors rounded-full hover:bg-white hover:shadow-sm"
                     >
                       <FaPaperclip className="w-5 h-5 " />
                     </button>
@@ -1011,7 +1003,7 @@ export default function Chat() {
                           <button
                             type="button"
                             onClick={() => imageInputRef.current?.click()}
-                            className="w-12 h-12 rounded-full bg-gradient-to-br from-[#BF59CF] to-[#9c3eb0] text-white flex items-center justify-center shadow-lg hover:shadow-xl hover:scale-105 transition-all"
+                            className="w-12 h-12 rounded-full bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white flex items-center justify-center shadow-brand transition-colors"
                             title="Photos"
                           >
                             <FaImage className="w-5 h-5" />
@@ -1019,7 +1011,7 @@ export default function Chat() {
                           <button
                             type="button"
                             onClick={() => fileInputRef.current?.click()}
-                            className="w-12 h-12 rounded-full bg-gradient-to-br from-[#3B5BDB] to-[#5B9DF9] text-white flex items-center justify-center shadow-lg hover:shadow-xl hover:scale-105 transition-all"
+                            className="w-12 h-12 rounded-full bg-white border border-[#3678F1]/20 text-[#3678F1] flex items-center justify-center shadow-sm transition-colors hover:border-[#3678F1]"
                             title="Document"
                           >
                             <FaFile className="w-5 h-5" />
@@ -1048,17 +1040,17 @@ export default function Chat() {
                     <button
                       type="submit"
                       disabled={sending}
-                      className="w-11 h-11 rounded-full flex items-center justify-center transition-all shadow-md disabled:opacity-50 bg-[#3B5BDB] hover:bg-[#2f4ac2] hover:scale-105 active:scale-95"
+                      className="w-11 h-11 rounded-full flex items-center justify-center transition-colors shadow-brand disabled:opacity-50 bg-gradient-to-br from-[#3678F1] to-[#2563EB] hover:from-[#2563EB] hover:to-[#1D4ED8] text-white"
                     >
                       {sending
-                        ? <span className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                        ? <span className="w-6 h-6 border-[2.5px] border-white/30 border-t-white border-r-white rounded-full animate-spin" />
                         : <FaPaperPlane className="w-4 h-4 text-white ml-0.5" />
                       }
                     </button>
                   ) : (
                     <button
                       type="button"
-                      className="w-11 h-11 rounded-full flex items-center justify-center transition-all bg-neutral-100 hover:bg-neutral-200 text-neutral-600 hover:text-[#3B5BDB] hover:scale-105 active:scale-95 border border-neutral-200"
+                      className="w-11 h-11 rounded-full flex items-center justify-center transition-colors bg-white text-neutral-600 hover:text-[#3678F1] border border-neutral-200 hover:border-[#3678F1]"
                     >
                       <FaMicrophone className="w-4 h-4" />
                     </button>

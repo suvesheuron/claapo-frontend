@@ -32,9 +32,9 @@ interface InvoicesResponse {
 
 const STATUS_DOT: Record<string, string> = {
   draft: 'bg-neutral-400',
-  sent: 'bg-blue-500',
-  paid: 'bg-emerald-500',
-  overdue: 'bg-red-500',
+  sent: 'bg-[#3678F1]',
+  paid: 'bg-[#22C55E]',
+  overdue: 'bg-[#F40F02]',
   cancelled: 'bg-neutral-300',
 };
 
@@ -101,11 +101,11 @@ export default function SpendingDashboard() {
   const uniqueInvoiceNumbers = new Set(filteredInvoices.map((i) => i.invoiceNumber));
   const teamSize = uniqueInvoiceNumbers.size;
 
-  const stats = [
-    { label: 'Total Spent', value: formatPaise(totalSpent), icon: FaIndianRupeeSign, accent: 'bg-emerald-50 text-emerald-600' },
-    { label: 'Pending Payments', value: formatPaise(pendingTotal), icon: FaClock, accent: 'bg-amber-50 text-amber-600', sub: `${pendingPayments.length} invoices` },
-    { label: 'Active Projects', value: String(activeProjectTitles.size), icon: FaFolderOpen, accent: 'bg-blue-50 text-blue-600' },
-    { label: 'Team Size', value: String(teamSize), icon: FaPeopleGroup, accent: 'bg-[#EEF2FF] text-[#3B5BDB]' },
+  const stats: Array<{ label: string; value: string; icon: typeof FaIndianRupeeSign; accent: string; sub?: string }> = [
+    { label: 'Total Spent',      value: formatPaise(totalSpent),                icon: FaIndianRupeeSign, accent: 'bg-[#E8F0FE] text-[#3678F1] ring-1 ring-[#3678F1]/15' },
+    { label: 'Pending Payments', value: formatPaise(pendingTotal),              icon: FaClock,           accent: 'bg-[#E8F0FE] text-[#3678F1] ring-1 ring-[#3678F1]/15', sub: `${pendingPayments.length} invoices` },
+    { label: 'Active Projects',  value: String(activeProjectTitles.size),       icon: FaFolderOpen,      accent: 'bg-[#E8F0FE] text-[#3678F1] ring-1 ring-[#3678F1]/15' },
+    { label: 'Team Size',        value: String(teamSize),                       icon: FaPeopleGroup,     accent: 'bg-[#E8F0FE] text-[#3678F1] ring-1 ring-[#3678F1]/15' },
   ];
 
   const recentPayments = [...filteredInvoices]
@@ -127,7 +127,7 @@ export default function SpendingDashboard() {
   }, [filteredInvoices]);
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-[#F8F9FB] w-full">
+    <div className="h-screen flex flex-col overflow-hidden bg-[#F3F4F6] w-full">
       <DashboardHeader />
       <div className="flex-1 flex min-h-0 overflow-hidden">
         <DashboardSidebar links={navLinks} />
@@ -137,47 +137,52 @@ export default function SpendingDashboard() {
             <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
               {/* Header */}
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h1 className="text-2xl font-bold tracking-tight text-neutral-900 flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-xl bg-[#EEF2FF] flex items-center justify-center">
-                      <FaIndianRupeeSign className="text-[#3B5BDB] text-sm" />
-                    </div>
-                    Spending
-                  </h1>
-                  <p className="text-sm text-neutral-500 mt-1.5 ml-[46px]">Track company expenses and payments</p>
+              <div className="relative rounded-2xl bg-white border border-neutral-200/70 px-6 sm:px-8 py-6 mb-6 overflow-hidden shadow-soft">
+                <div className="absolute inset-y-0 right-0 w-1/2 bg-gradient-to-l from-[#E8F0FE]/60 to-transparent pointer-events-none" />
+                <span aria-hidden className="absolute left-0 top-6 bottom-6 w-1 rounded-r-full bg-gradient-to-b from-[#3678F1] to-[#5B9DF9]" />
+                <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pl-3">
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#3678F1]">Reports</p>
+                    <h1 className="text-[26px] sm:text-[28px] font-extrabold text-neutral-900 tracking-tight leading-tight mt-1 flex items-center gap-2.5">
+                      <div className="w-9 h-9 rounded-xl bg-[#E8F0FE] ring-1 ring-[#3678F1]/15 flex items-center justify-center">
+                        <FaIndianRupeeSign className="text-[#3678F1] text-sm" />
+                      </div>
+                      Spending
+                    </h1>
+                    <p className="text-sm text-neutral-500 mt-1.5 ml-[46px]">Track company expenses and payments</p>
+                  </div>
+                  {filteredInvoices.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => downloadCSV(filteredInvoices)}
+                      className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white rounded-xl text-sm font-bold hover:from-[#2563EB] hover:to-[#1D4ED8] shadow-brand transition-colors duration-200 shrink-0"
+                    >
+                      <FaDownload className="w-3.5 h-3.5" /> Export CSV
+                    </button>
+                  )}
                 </div>
-                {filteredInvoices.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => downloadCSV(filteredInvoices)}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-[#3B5BDB] text-white rounded-xl text-sm font-semibold hover:bg-[#2f4ac2] shadow-sm transition-all"
-                  >
-                    <FaDownload className="w-3.5 h-3.5" /> Export CSV
-                  </button>
-                )}
               </div>
 
               {/* Error */}
               {error && (
-                <div className="flex items-center gap-3 rounded-2xl bg-red-50 border border-red-100 p-4 mb-5 shadow-sm">
-                  <div className="w-9 h-9 rounded-xl bg-red-100 flex items-center justify-center shrink-0">
-                    <FaTriangleExclamation className="text-red-500" />
+                <div className="flex items-center gap-3 rounded-2xl bg-[#FEEBEA] border border-[#F40F02]/30 p-4 mb-5">
+                  <div className="w-9 h-9 rounded-xl bg-white/60 flex items-center justify-center shrink-0">
+                    <FaTriangleExclamation className="text-[#F40F02]" />
                   </div>
-                  <p className="text-sm text-red-700">{error}</p>
+                  <p className="text-sm text-[#991B1B]">{error}</p>
                 </div>
               )}
 
               {/* Date filters */}
               {!loading && (
-                <div className="mb-5 flex flex-wrap items-center gap-3 p-3 bg-white rounded-xl border border-neutral-200">
-                  <FaClock className="text-neutral-400 w-4 h-4" />
+                <div className="mb-5 flex flex-wrap items-center gap-3 p-3.5 bg-white rounded-2xl border border-neutral-200/70 shadow-sm">
+                  <FaClock className="text-[#3678F1] w-4 h-4" />
                   <label className="text-xs text-neutral-500 font-medium">From</label>
                   <input
                     type="date"
                     value={dateFrom}
                     onChange={(e) => setDateFrom(e.target.value)}
-                    className="rounded-lg border border-neutral-200 px-2.5 py-2 text-sm"
+                    className="rounded-xl border border-neutral-200 px-3 py-2 text-sm focus:outline-none focus:border-[#3678F1] focus:ring-2 focus:ring-[#3678F1]/20 transition-colors"
                   />
                   <label className="text-xs text-neutral-500 font-medium">To</label>
                   <input
@@ -185,7 +190,7 @@ export default function SpendingDashboard() {
                     value={dateTo}
                     min={dateFrom || undefined}
                     onChange={(e) => setDateTo(e.target.value)}
-                    className="rounded-lg border border-neutral-200 px-2.5 py-2 text-sm"
+                    className="rounded-xl border border-neutral-200 px-3 py-2 text-sm focus:outline-none focus:border-[#3678F1] focus:ring-2 focus:ring-[#3678F1]/20 transition-colors"
                   />
                   {(dateFrom || dateTo) && (
                     <button
@@ -194,7 +199,7 @@ export default function SpendingDashboard() {
                         setDateFrom('');
                         setDateTo('');
                       }}
-                      className="text-xs text-[#3B5BDB] font-semibold hover:underline ml-auto"
+                      className="text-xs text-[#3678F1] font-bold hover:text-[#2563EB] transition-colors ml-auto"
                     >
                       Clear dates
                     </button>
@@ -206,9 +211,14 @@ export default function SpendingDashboard() {
               {loading ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                   {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="rounded-2xl bg-white border border-neutral-200 p-5 animate-pulse">
-                      <div className="h-4 bg-neutral-100 rounded w-1/2 mb-3" />
-                      <div className="h-6 bg-neutral-200 rounded w-2/3" />
+                    <div key={i} className="rounded-2xl bg-white border border-neutral-200/70 p-5 h-[104px] overflow-hidden">
+                      <div className="flex items-center gap-4 h-full">
+                        <div className="skeleton w-12 h-12 rounded-xl shrink-0" />
+                        <div className="flex-1 space-y-2.5">
+                          <div className="skeleton h-2.5 w-24 rounded-full" />
+                          <div className="skeleton h-7 w-20 rounded-md" />
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -217,37 +227,45 @@ export default function SpendingDashboard() {
                   {/* Stats Cards */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                     {stats.map((stat) => (
-                      <div key={stat.label} className="rounded-2xl bg-white border border-neutral-200 p-5 hover:shadow-sm transition-shadow">
-                        <div className="flex items-center gap-3 mb-3">
-                          <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${stat.accent}`}>
-                            <stat.icon className="w-4 h-4" />
-                          </div>
-                          <span className="text-xs font-medium text-neutral-500">{stat.label}</span>
+                      <div
+                        key={stat.label}
+                        className="rounded-2xl bg-white border border-neutral-200/70 shadow-sm p-5 flex items-center gap-4 hover:border-[#3678F1] transition-colors duration-200"
+                      >
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${stat.accent}`}>
+                          <stat.icon className="w-4 h-4" />
                         </div>
-                        <p className="text-xl font-bold text-neutral-900">{stat.value}</p>
-                        {stat.sub && <p className="text-[11px] text-neutral-400 mt-1">{stat.sub}</p>}
+                        <div className="min-w-0">
+                          <p className="text-[10.5px] uppercase tracking-[0.15em] text-neutral-500 font-bold">{stat.label}</p>
+                          <p className="text-[20px] font-extrabold text-neutral-900 tabular-nums leading-none mt-1.5 truncate">{stat.value}</p>
+                          {stat.sub && <p className="text-[11px] text-neutral-400 mt-1">{stat.sub}</p>}
+                        </div>
                       </div>
                     ))}
                   </div>
 
-                  {/* Recent Payments */}
-                  <div className="rounded-2xl bg-white border border-neutral-200 overflow-hidden mb-5">
+                  {/* Project-wise Spending */}
+                  <div className="rounded-2xl bg-white border border-neutral-200/70 shadow-sm overflow-hidden mb-5">
                     <div className="px-5 py-4 border-b border-neutral-100">
-                      <h2 className="text-sm font-bold text-neutral-900">Project-wise Spending</h2>
+                      <h2 className="text-sm font-bold text-neutral-900 flex items-center gap-2">
+                        <span className="w-1 h-4 rounded-full bg-[#3678F1]" />
+                        Project-wise Spending
+                      </h2>
                     </div>
                     {projectWise.length === 0 ? (
-                      <div className="p-6 text-sm text-neutral-500">No project data in selected range.</div>
+                      <div className="p-8 text-sm text-neutral-500 text-center">No project data in selected range.</div>
                     ) : (
                       <div className="divide-y divide-neutral-100">
                         {projectWise.map((row) => (
-                          <div key={row.projectTitle} className="px-5 py-3.5 flex items-center justify-between gap-4">
+                          <div key={row.projectTitle} className="px-5 py-3.5 flex items-center justify-between gap-4 hover:bg-[#F4F8FE] transition-colors">
                             <div className="min-w-0">
                               <p className="text-sm font-semibold text-neutral-900 truncate">{row.projectTitle}</p>
-                              <p className="text-xs text-neutral-500">{row.invoiceCount} invoices</p>
+                              <p className="text-xs text-neutral-500 mt-0.5">{row.invoiceCount} invoice{row.invoiceCount !== 1 ? 's' : ''}</p>
                             </div>
                             <div className="text-right shrink-0">
-                              <p className="text-sm font-bold text-neutral-900">{formatPaise(row.total)}</p>
-                              <p className="text-[11px] text-neutral-500">Paid {formatPaise(row.paidTotal)} · Pending {formatPaise(row.pendingTotal)}</p>
+                              <p className="text-sm font-bold text-neutral-900 tabular-nums">{formatPaise(row.total)}</p>
+                              <p className="text-[11px] text-neutral-500 mt-0.5">
+                                Paid {formatPaise(row.paidTotal)} · Pending {formatPaise(row.pendingTotal)}
+                              </p>
                             </div>
                           </div>
                         ))}
@@ -255,37 +273,41 @@ export default function SpendingDashboard() {
                     )}
                   </div>
 
-                  <div className="rounded-2xl bg-white border border-neutral-200 overflow-hidden">
+                  {/* Recent Payments */}
+                  <div className="rounded-2xl bg-white border border-neutral-200/70 shadow-sm overflow-hidden">
                     <div className="px-5 py-4 border-b border-neutral-100">
-                      <h2 className="text-sm font-bold text-neutral-900">Recent Payments</h2>
+                      <h2 className="text-sm font-bold text-neutral-900 flex items-center gap-2">
+                        <span className="w-1 h-4 rounded-full bg-[#3678F1]" />
+                        Recent Payments
+                      </h2>
                     </div>
 
                     {recentPayments.length === 0 ? (
                       <div className="p-12 text-center">
-                        <div className="w-14 h-14 rounded-2xl bg-[#EEF2FF] flex items-center justify-center mx-auto mb-4">
-                          <FaFileInvoice className="text-[#3B5BDB] text-2xl" />
+                        <div className="w-14 h-14 rounded-2xl bg-[#E8F0FE] ring-1 ring-[#3678F1]/15 flex items-center justify-center mx-auto mb-4">
+                          <FaFileInvoice className="text-[#3678F1] text-xl" />
                         </div>
-                        <p className="text-sm font-semibold text-neutral-700 mb-1">No payments yet</p>
-                        <p className="text-xs text-neutral-400">Payments will appear here once invoices are received.</p>
+                        <p className="text-sm font-bold text-neutral-900 mb-1">No payments yet</p>
+                        <p className="text-xs text-neutral-500">Payments will appear here once invoices are received.</p>
                       </div>
                     ) : (
                       <div className="divide-y divide-neutral-100">
                         {recentPayments.map((inv) => (
-                          <div key={inv.id} className="flex items-center gap-4 px-5 py-4 hover:bg-neutral-50 transition-colors">
-                            <div className="w-9 h-9 rounded-xl bg-[#EEF2FF] flex items-center justify-center shrink-0">
-                              <FaFileInvoice className="text-[#3B5BDB] text-xs" />
+                          <div key={inv.id} className="flex items-center gap-4 px-5 py-3.5 hover:bg-[#F4F8FE] transition-colors">
+                            <div className="w-9 h-9 rounded-xl bg-[#E8F0FE] ring-1 ring-[#3678F1]/15 flex items-center justify-center shrink-0">
+                              <FaFileInvoice className="text-[#3678F1] text-xs" />
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-semibold text-neutral-900 truncate">{inv.invoiceNumber}</p>
-                              <p className="text-xs text-neutral-500 truncate">{inv.project?.title ?? 'No project'}</p>
+                              <p className="text-xs text-neutral-500 truncate mt-0.5">{inv.project?.title ?? 'No project'}</p>
                             </div>
-                            <div className="flex items-center gap-2 shrink-0">
-                              <span className={`w-2 h-2 rounded-full ${STATUS_DOT[inv.status] ?? 'bg-neutral-300'}`} />
-                              <span className="text-[11px] text-neutral-500 capitalize">{inv.status}</span>
+                            <div className="hidden sm:flex items-center gap-1.5 shrink-0">
+                              <span className={`w-1.5 h-1.5 rounded-full ${STATUS_DOT[inv.status] ?? 'bg-neutral-300'}`} />
+                              <span className="text-[11px] text-neutral-600 capitalize font-semibold">{inv.status}</span>
                             </div>
                             <div className="text-right shrink-0">
                               <p className="text-sm font-bold text-neutral-900 tabular-nums">{formatPaise(inv.totalAmount)}</p>
-                              <p className="text-[10px] text-neutral-400 tabular-nums">{formatDate(inv.createdAt)}</p>
+                              <p className="text-[10px] text-neutral-400 tabular-nums mt-0.5">{formatDate(inv.createdAt)}</p>
                             </div>
                           </div>
                         ))}

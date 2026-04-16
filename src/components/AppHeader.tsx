@@ -88,11 +88,11 @@ export default function AppHeader({
                   key={link.label}
                   onClick={() => scrollToSection(link.target)}
                   className="
-                    relative text-[13.5px] text-neutral-600 hover:text-neutral-900
+                    relative text-[13.5px] text-neutral-600 hover:text-[#3678F1]
                     font-semibold px-4 py-2 rounded-lg
-                    hover:bg-neutral-100 transition-colors
+                    hover:bg-[#E8F0FE] transition-colors
                     cursor-pointer bg-transparent border-none
-                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B5BDB]/30
+                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3678F1]/30
                   "
                 >
                   {link.label}
@@ -105,9 +105,9 @@ export default function AppHeader({
               <Link
                 to="/login"
                 className="
-                  text-[13.5px] text-neutral-700 hover:text-neutral-900
+                  text-[13.5px] text-neutral-700 hover:text-[#3678F1]
                   font-semibold px-3 py-2 rounded-lg transition-colors
-                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B5BDB]/30
+                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3678F1]/30
                 "
               >
                 Log in
@@ -121,16 +121,14 @@ export default function AppHeader({
                 className="
                   group inline-flex items-center gap-2 rounded-full
                   pl-5 pr-4 py-2.5
-                  bg-[#3B5BDB] text-white text-[13.5px] font-semibold
-                  hover:bg-[#2f4ac2] transition-all
-                  shadow-[0_8px_24px_-8px_rgba(59,91,219,0.55)]
-                  hover:shadow-[0_12px_28px_-8px_rgba(59,91,219,0.7)]
-                  hover:-translate-y-0.5
-                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B5BDB]/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white
+                  bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white text-[13.5px] font-semibold
+                  hover:from-[#2563EB] hover:to-[#1D4ED8] transition-colors
+                  shadow-brand
+                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3678F1]/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white
                 "
               >
                 Get Started
-                <FaArrowRightLong className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" aria-hidden />
+                <FaArrowRightLong className="w-3.5 h-3.5" aria-hidden />
               </Link>
             </div>
 
@@ -141,8 +139,8 @@ export default function AppHeader({
                 className="
                   inline-flex items-center justify-center w-10 h-10 rounded-xl shrink-0
                   text-neutral-700 border border-neutral-200
-                  hover:bg-neutral-100 hover:border-neutral-300 transition-colors
-                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B5BDB]/30
+                  hover:bg-[#E8F0FE] hover:border-[#3678F1] transition-colors
+                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3678F1]/30
                 "
                 onClick={() => setMobileOpen(v => !v)}
                 aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
@@ -164,9 +162,9 @@ export default function AppHeader({
               to={backTo}
               className="
                 inline-flex items-center gap-2 px-3.5 py-2 rounded-lg
-                text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100
+                text-neutral-600 hover:text-[#3678F1] hover:bg-[#E8F0FE]
                 text-[13.5px] font-semibold transition-colors
-                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B5BDB]/30
+                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3678F1]/30
               "
             >
               <FaArrowLeft className="w-3.5 h-3.5 shrink-0" aria-hidden />
@@ -185,9 +183,9 @@ export default function AppHeader({
                 key={link.label}
                 onClick={() => scrollToSection(link.target)}
                 className="
-                  w-full text-left text-[15px] text-neutral-700 hover:text-neutral-900
+                  w-full text-left text-[15px] text-neutral-700 hover:text-[#3678F1]
                   font-semibold px-3.5 py-3 rounded-xl
-                  hover:bg-neutral-100 transition-colors
+                  hover:bg-[#E8F0FE] transition-colors
                 "
               >
                 {link.label}
@@ -198,8 +196,8 @@ export default function AppHeader({
                 to="/login"
                 className="
                   w-full inline-flex items-center justify-center px-4 py-3 rounded-xl
-                  border border-neutral-300 text-neutral-800 text-sm font-semibold
-                  hover:bg-neutral-50 transition-colors
+                  bg-white border border-neutral-200/70 text-neutral-700 text-sm font-semibold
+                  hover:border-[#3678F1] hover:text-[#3678F1] transition-colors
                 "
               >
                 Log in
@@ -208,9 +206,9 @@ export default function AppHeader({
                 to="/register"
                 className="
                   w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl
-                  bg-[#3B5BDB] text-white text-sm font-semibold
-                  hover:bg-[#2f4ac2] transition-colors
-                  shadow-[0_8px_24px_-8px_rgba(59,91,219,0.55)]
+                  bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white text-sm font-semibold
+                  hover:from-[#2563EB] hover:to-[#1D4ED8] transition-colors
+                  shadow-brand
                 "
               >
                 Get Started

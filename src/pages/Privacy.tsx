@@ -23,9 +23,9 @@ export default function Privacy() {
           <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8 sm:p-12 space-y-8">
 
             <div>
-              <h2 className="text-xl font-bold text-slate-900 mb-3">1. Information We Collect</h2>
-              <p className="text-sm text-slate-600 leading-relaxed mb-3">We collect information you provide directly to us, including:</p>
-              <ul className="list-disc list-inside text-sm text-slate-600 space-y-1.5 ml-2">
+              <h2 className="text-xl font-bold text-neutral-900 mb-3">1. Information We Collect</h2>
+              <p className="text-sm text-neutral-600 leading-relaxed mb-3">We collect information you provide directly to us, including:</p>
+              <ul className="list-disc list-inside text-sm text-neutral-600 space-y-1.5 ml-2">
                 <li><strong>Account Information:</strong> Name, email address, phone number, and role (freelancer, company, or vendor) when you create an account.</li>
                 <li><strong>Profile Information:</strong> Professional details such as skills, daily rates, location, bio, IMDB/Instagram links, and portfolio information.</li>
                 <li><strong>Financial Information:</strong> PAN number, GST number, and bank account details for invoicing and payment processing.</li>
@@ -35,9 +35,9 @@ export default function Privacy() {
             </div>
 
             <div>
-              <h2 className="text-xl font-bold text-slate-900 mb-3">2. How We Use Your Information</h2>
-              <p className="text-sm text-slate-600 leading-relaxed mb-3">We use the information we collect to:</p>
-              <ul className="list-disc list-inside text-sm text-slate-600 space-y-1.5 ml-2">
+              <h2 className="text-xl font-bold text-neutral-900 mb-3">2. How We Use Your Information</h2>
+              <p className="text-sm text-neutral-600 leading-relaxed mb-3">We use the information we collect to:</p>
+              <ul className="list-disc list-inside text-sm text-neutral-600 space-y-1.5 ml-2">
                 <li>Provide, maintain, and improve our platform services.</li>
                 <li>Process booking requests and facilitate connections between production companies, freelancers, and vendors.</li>
                 <li>Generate and process invoices and payment transactions.</li>
@@ -48,9 +48,9 @@ export default function Privacy() {
             </div>
 
             <div>
-              <h2 className="text-xl font-bold text-slate-900 mb-3">3. Information Sharing</h2>
-              <p className="text-sm text-slate-600 leading-relaxed mb-3">We do not sell your personal information. We share your information only in the following circumstances:</p>
-              <ul className="list-disc list-inside text-sm text-slate-600 space-y-1.5 ml-2">
+              <h2 className="text-xl font-bold text-neutral-900 mb-3">3. Information Sharing</h2>
+              <p className="text-sm text-neutral-600 leading-relaxed mb-3">We do not sell your personal information. We share your information only in the following circumstances:</p>
+              <ul className="list-disc list-inside text-sm text-neutral-600 space-y-1.5 ml-2">
                 <li><strong>With Other Users:</strong> Your professional profile information (name, skills, rates, availability) is visible to other platform users to facilitate hiring and bookings.</li>
                 <li><strong>Payment Processors:</strong> We share necessary financial information with Razorpay to process payments securely.</li>
                 <li><strong>Cloud Services:</strong> We use AWS services for file storage (S3) and email delivery (SES).</li>
@@ -59,23 +59,23 @@ export default function Privacy() {
             </div>
 
             <div>
-              <h2 className="text-xl font-bold text-slate-900 mb-3">4. Data Security</h2>
-              <p className="text-sm text-slate-600 leading-relaxed">
+              <h2 className="text-xl font-bold text-neutral-900 mb-3">4. Data Security</h2>
+              <p className="text-sm text-neutral-600 leading-relaxed">
                 We implement industry-standard security measures to protect your data. This includes encryption of data in transit (TLS/SSL), secure authentication using JWT tokens, password hashing with bcrypt, and role-based access controls. Sensitive financial information is handled with the highest level of care and is never stored in plain text.
               </p>
             </div>
 
             <div>
-              <h2 className="text-xl font-bold text-slate-900 mb-3">5. Data Retention</h2>
-              <p className="text-sm text-slate-600 leading-relaxed">
+              <h2 className="text-xl font-bold text-neutral-900 mb-3">5. Data Retention</h2>
+              <p className="text-sm text-neutral-600 leading-relaxed">
                 We retain your account information for as long as your account is active or as needed to provide services. If you request account deletion, we will remove your personal data within 30 days, except where retention is required by law or for legitimate business purposes such as dispute resolution.
               </p>
             </div>
 
             <div>
-              <h2 className="text-xl font-bold text-slate-900 mb-3">6. Your Rights</h2>
-              <p className="text-sm text-slate-600 leading-relaxed mb-3">You have the right to:</p>
-              <ul className="list-disc list-inside text-sm text-slate-600 space-y-1.5 ml-2">
+              <h2 className="text-xl font-bold text-neutral-900 mb-3">6. Your Rights</h2>
+              <p className="text-sm text-neutral-600 leading-relaxed mb-3">You have the right to:</p>
+              <ul className="list-disc list-inside text-sm text-neutral-600 space-y-1.5 ml-2">
                 <li>Access and download your personal data.</li>
                 <li>Update or correct your profile information at any time.</li>
                 <li>Request deletion of your account and associated data.</li>
@@ -85,18 +85,18 @@ export default function Privacy() {
             </div>
 
             <div>
-              <h2 className="text-xl font-bold text-slate-900 mb-3">7. Cookies &amp; Tracking</h2>
-              <p className="text-sm text-slate-600 leading-relaxed">
+              <h2 className="text-xl font-bold text-neutral-900 mb-3">7. Cookies &amp; Tracking</h2>
+              <p className="text-sm text-neutral-600 leading-relaxed">
                 We use essential cookies to maintain your session and authentication state. We may use analytics tools to understand platform usage patterns and improve the user experience. You can control cookie preferences through your browser settings.
               </p>
             </div>
 
             <div>
-              <h2 className="text-xl font-bold text-slate-900 mb-3">8. Contact Us</h2>
-              <p className="text-sm text-slate-600 leading-relaxed">
+              <h2 className="text-xl font-bold text-neutral-900 mb-3">8. Contact Us</h2>
+              <p className="text-sm text-neutral-600 leading-relaxed">
                 If you have any questions about this Privacy Policy or our data practices, please contact us at{' '}
-                <a href="mailto:hello@crewcall.in" className="text-[#3B5BDB] hover:underline">hello@crewcall.in</a> or visit our{' '}
-                <a href="/contact" className="text-[#3B5BDB] hover:underline">Contact page</a>.
+                <a href="mailto:hello@crewcall.in" className="text-[#3678F1] hover:text-[#2563EB] transition-colors">hello@crewcall.in</a> or visit our{' '}
+                <a href="/contact" className="text-[#3678F1] hover:text-[#2563EB] transition-colors">Contact page</a>.
               </p>
             </div>
 

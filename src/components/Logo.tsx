@@ -27,9 +27,9 @@ const COLOR_MAP: Record<LogoVariant, {
   mark: string;
   text: string;
 }> = {
-  default:      { tileTop: '#4B6CF7', tileBottom: '#2F4AC2', mark: '#FFFFFF', text: 'text-neutral-900' },
+  default:      { tileTop: '#3678F1', tileBottom: '#2563EB', mark: '#FFFFFF', text: 'text-neutral-900' },
   'mono-dark':  { tileTop: '#1E293B', tileBottom: '#0F172A', mark: '#FFFFFF', text: 'text-neutral-900' },
-  'mono-light': { tileTop: '#FFFFFF', tileBottom: '#F1F5F9', mark: '#3B5BDB', text: 'text-white'       },
+  'mono-light': { tileTop: '#FFFFFF', tileBottom: '#F1F5F9', mark: '#3678F1', text: 'text-white'       },
 };
 
 /**
@@ -138,7 +138,7 @@ export default function Logo({
   return (
     <Link
       to={to}
-      className="inline-flex items-center shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-[#3B5BDB]/40 rounded-lg transition-transform hover:-translate-y-px"
+      className="inline-flex items-center shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-[#3678F1]/40 rounded-lg transition-transform hover:-translate-y-px"
     >
       {inner}
     </Link>

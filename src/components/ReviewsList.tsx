@@ -57,9 +57,9 @@ export default function ReviewsList({ userId, refreshKey = 0 }: ReviewsListProps
     return (
       <div className="space-y-3">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="rounded-2xl bg-white border border-neutral-200 p-5 animate-pulse">
-            <div className="h-4 bg-neutral-200 rounded w-1/3 mb-3" />
-            <div className="h-3 bg-neutral-100 rounded w-2/3" />
+          <div key={i} className="rounded-2xl bg-white border border-neutral-200 p-5">
+            <div className="skeleton h-4 w-1/3 rounded mb-3" />
+            <div className="skeleton h-3 w-2/3 rounded" />
           </div>
         ))}
       </div>
@@ -68,9 +68,9 @@ export default function ReviewsList({ userId, refreshKey = 0 }: ReviewsListProps
 
   if (error) {
     return (
-      <div className="flex items-center gap-3 rounded-2xl bg-red-50 border border-red-200 p-4">
-        <FaTriangleExclamation className="text-red-500 shrink-0" />
-        <p className="text-sm text-red-700">{error}</p>
+      <div className="flex items-center gap-3 rounded-2xl bg-[#FEEBEA] border border-[#F40F02]/30 p-4">
+        <FaTriangleExclamation className="text-[#F40F02] shrink-0" />
+        <p className="text-sm text-[#991B1B]">{error}</p>
       </div>
     );
   }
@@ -78,8 +78,8 @@ export default function ReviewsList({ userId, refreshKey = 0 }: ReviewsListProps
   if (reviews.length === 0) {
     return (
       <div className="rounded-2xl bg-white border border-neutral-200 p-12 text-center">
-        <div className="w-14 h-14 rounded-2xl bg-[#EEF2FF] flex items-center justify-center mx-auto mb-4">
-          <FaStar className="text-[#3B5BDB] text-2xl" />
+        <div className="w-14 h-14 rounded-2xl bg-[#E8F0FE] flex items-center justify-center mx-auto mb-4">
+          <FaStar className="text-[#3678F1] text-2xl" />
         </div>
         <h3 className="text-base font-bold text-neutral-900 mb-2">No reviews yet</h3>
         <p className="text-sm text-neutral-500">Reviews will appear here once they are submitted.</p>
@@ -91,8 +91,8 @@ export default function ReviewsList({ userId, refreshKey = 0 }: ReviewsListProps
     <div className="space-y-4">
       {/* Average rating header */}
       <div className="rounded-2xl bg-white border border-neutral-200 p-5 flex items-center gap-4">
-        <div className="w-14 h-14 rounded-2xl bg-[#EEF2FF] flex items-center justify-center">
-          <span className="text-lg font-bold text-[#3B5BDB]">{avgRating}</span>
+        <div className="w-14 h-14 rounded-2xl bg-[#E8F0FE] flex items-center justify-center">
+          <span className="text-lg font-bold text-[#3678F1]">{avgRating}</span>
         </div>
         <div>
           <StarRating rating={Math.round(avgRating * 2) / 2} size="md" />
@@ -104,7 +104,7 @@ export default function ReviewsList({ userId, refreshKey = 0 }: ReviewsListProps
 
       {/* Individual reviews */}
       {reviews.map((review) => (
-        <div key={review.id} className="rounded-2xl bg-white border border-neutral-200 p-5">
+        <div key={review.id} className="rounded-2xl bg-white border border-neutral-200 p-5 hover:border-[#3678F1] transition-colors duration-200">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-3">
               <StarRating rating={review.rating} size="sm" />
