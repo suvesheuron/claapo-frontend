@@ -67,9 +67,9 @@ function buildCalendar(monthOffset: number, bookingsByDay?: Record<string, { sta
   const month = d.getMonth();
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const prevDays = new Date(year, month, 0).getDate();
   const cells: CalendarCell[] = [];
-  for (let i = firstDay - 1; i >= 0; i--) cells.push({ d: prevDays - i, muted: true, status: null });
+  // Empty placeholder cells (no prev-month numbers) to align first row to the right weekday
+  for (let i = 0; i < firstDay; i++) cells.push({ d: 0, muted: true, status: null });
   const monthData = bookingsByDay ?? {};
   for (let day = 1; day <= daysInMonth; day++) {
     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
@@ -77,7 +77,7 @@ function buildCalendar(monthOffset: number, bookingsByDay?: Record<string, { sta
     cells.push({ d: day, muted: false, ...(override ?? { status: 'available' as CellStatus }) });
   }
   const rem = 7 - (cells.length % 7);
-  if (rem < 7) for (let d2 = 1; d2 <= rem; d2++) cells.push({ d: d2, muted: true, status: null });
+  if (rem < 7) for (let d2 = 0; d2 < rem; d2++) cells.push({ d: 0, muted: true, status: null });
   return cells;
 }
 
@@ -422,7 +422,7 @@ export default function IndividualDashboard() {
                             ${!cell.muted && detailDate === getDateStr(cell.d) ? 'ring-2 ring-[#3678F1] ring-offset-1' : ''}
                           `}
                         >
-                          <span className="text-[11px] sm:text-xs font-semibold leading-none">{cell.d}</span>
+                          <span className="text-[11px] sm:text-xs font-semibold leading-none">{cell.muted ? '' : cell.d}</span>
                           {/* Pending booking request indicator */}
                           {pendingDates.has(getDateStr(cell.d)) && (
                             <span className="absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-[#F40F02] animate-pulse" />

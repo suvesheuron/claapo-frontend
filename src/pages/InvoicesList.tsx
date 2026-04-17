@@ -121,6 +121,25 @@ export default function InvoicesList() {
   // Find selected project details
   const selectedProject = projects.find(p => p.id === selectedProjectId);
 
+  // Filter projects by date range (overlap between project dates and selected range)
+  const filteredProjects = projects.filter((project) => {
+    if (!dateFrom && !dateTo) return true;
+    const projStart = new Date(project.startDate).setHours(0, 0, 0, 0);
+    const projEnd = new Date(project.endDate).setHours(23, 59, 59, 999);
+    const filterFrom = dateFrom ? new Date(dateFrom + 'T00:00:00').getTime() : -Infinity;
+    const filterTo = dateTo ? new Date(dateTo + 'T23:59:59').getTime() : Infinity;
+    return projStart <= filterTo && projEnd >= filterFrom;
+  });
+
+  function clearProjectListDates() {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete('dateFrom');
+      next.delete('dateTo');
+      return next;
+    });
+  }
+
   function formatProjectDate(dateStr: string) {
     return new Date(dateStr).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' });
   }
@@ -164,9 +183,28 @@ export default function InvoicesList() {
       );
     }
 
+    if (filteredProjects.length === 0) {
+      return (
+        <div className="rounded-2xl bg-white border border-dashed border-neutral-200 py-12 text-center px-6">
+          <div className="w-12 h-12 rounded-2xl bg-[#E8F0FE] ring-1 ring-[#3678F1]/15 flex items-center justify-center mx-auto mb-3">
+            <FaCalendar className="text-[#3678F1] text-base" />
+          </div>
+          <p className="text-sm font-bold text-neutral-900 mb-1">No projects in this date range</p>
+          <p className="text-xs text-neutral-500 mb-4">Try widening the range or clear the filter.</p>
+          <button
+            type="button"
+            onClick={clearProjectListDates}
+            className="text-xs text-[#3678F1] font-bold hover:underline"
+          >
+            Clear date filter
+          </button>
+        </div>
+      );
+    }
+
     return (
       <ul className="space-y-2">
-        {projects.map((project) => {
+        {filteredProjects.map((project) => {
           const hasInvoices = project.invoiceCount > 0;
           return (
             <li key={project.id}>
@@ -495,20 +533,75 @@ export default function InvoicesList() {
               ) : (
                 <>
                   {/* Projects List Header */}
-                  <div className="mb-6">
-                    <h1 className="text-2xl font-bold tracking-tight text-neutral-900 flex items-center gap-2.5">
-                      <div className="w-9 h-9 rounded-xl bg-[#E8F0FE] flex items-center justify-center">
-                        <FaFileInvoice className="text-[#3678F1] text-sm" />
+                  <div className="mb-6 flex items-start justify-between gap-4 flex-wrap">
+                    <div>
+                      <h1 className="text-2xl font-bold tracking-tight text-neutral-900 flex items-center gap-2.5">
+                        <div className="w-9 h-9 rounded-xl bg-[#E8F0FE] flex items-center justify-center">
+                          <FaFileInvoice className="text-[#3678F1] text-sm" />
+                        </div>
+                        Invoices
+                      </h1>
+                      <p className="text-sm text-neutral-500 mt-1.5 ml-[46px]">
+                        {projectsLoading
+                          ? 'Loading your projects…'
+                          : projects.length === 0
+                            ? 'No projects yet'
+                            : (dateFrom || dateTo)
+                              ? `${filteredProjects.length} of ${projects.length} project${projects.length === 1 ? '' : 's'} in range`
+                              : 'Select a project to view invoices'}
+                      </p>
+                    </div>
+                    {projects.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-3 p-3 bg-white rounded-xl border border-neutral-200/70 shadow-sm">
+                        <FaCalendar className="text-neutral-400 w-4 h-4" />
+                        <label htmlFor="project-date-from" className="text-xs font-medium text-neutral-600 whitespace-nowrap">
+                          From
+                        </label>
+                        <input
+                          id="project-date-from"
+                          type="date"
+                          value={dateFrom}
+                          className="rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5 text-sm text-neutral-900 focus:outline-none focus:border-[#3678F1] focus:ring-2 focus:ring-[#3678F1]/20 transition-colors"
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            setSearchParams((prev) => {
+                              const next = new URLSearchParams(prev);
+                              if (v) next.set('dateFrom', v);
+                              else next.delete('dateFrom');
+                              return next;
+                            });
+                          }}
+                        />
+                        <label htmlFor="project-date-to" className="text-xs font-medium text-neutral-600 whitespace-nowrap">
+                          To
+                        </label>
+                        <input
+                          id="project-date-to"
+                          type="date"
+                          value={dateTo}
+                          min={dateFrom || undefined}
+                          className="rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5 text-sm text-neutral-900 focus:outline-none focus:border-[#3678F1] focus:ring-2 focus:ring-[#3678F1]/20 transition-colors"
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            setSearchParams((prev) => {
+                              const next = new URLSearchParams(prev);
+                              if (v) next.set('dateTo', v);
+                              else next.delete('dateTo');
+                              return next;
+                            });
+                          }}
+                        />
+                        {(dateFrom || dateTo) && (
+                          <button
+                            type="button"
+                            onClick={clearProjectListDates}
+                            className="text-xs text-[#3678F1] font-semibold hover:underline"
+                          >
+                            Clear
+                          </button>
+                        )}
                       </div>
-                      Invoices
-                    </h1>
-                    <p className="text-sm text-neutral-500 mt-1.5 ml-[46px]">
-                      {projectsLoading
-                        ? 'Loading your projects…'
-                        : projects.length === 0
-                          ? 'No projects yet'
-                          : 'Select a project to view invoices'}
-                    </p>
+                    )}
                   </div>
 
                   {/* Error */}

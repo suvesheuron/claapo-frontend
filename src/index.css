@@ -137,6 +137,20 @@
 .dark .bg-neutral-50:where(:not([class*="dark:bg-"])) { background-color: #101828; }
 .dark .bg-neutral-100:where(:not([class*="dark:bg-"])) { background-color: #162543; }
 .dark .bg-neutral-200:where(:not([class*="dark:bg-"])) { background-color: #1E3158; }
+
+/* Hover-state fallbacks — Tailwind generates separate classes for `hover:bg-X`
+   that the bare `.bg-X` selector doesn't match. Mirror the dark fills here so
+   hover states don't flash white/light-grey in dark mode. */
+.dark .hover\:bg-white:hover:where(:not([class*="dark:hover:bg-"])) { background-color: #1E2640; }
+.dark .hover\:bg-neutral-50:hover:where(:not([class*="dark:hover:bg-"])) { background-color: #1E2640; }
+.dark .hover\:bg-neutral-100:hover:where(:not([class*="dark:hover:bg-"])) { background-color: #243155; }
+.dark .hover\:bg-neutral-200:hover:where(:not([class*="dark:hover:bg-"])) { background-color: #2A3350; }
+.dark .hover\:bg-slate-50:hover:where(:not([class*="dark:hover:bg-"])) { background-color: #1E2640; }
+.dark .hover\:bg-slate-100:hover:where(:not([class*="dark:hover:bg-"])) { background-color: #243155; }
+.dark .hover\:bg-\[\#F4F8FE\]:hover:where(:not([class*="dark:hover:bg-"])) { background-color: #15264A; }
+.dark .hover\:bg-\[\#F3F4F6\]:hover:where(:not([class*="dark:hover:bg-"])) { background-color: #15264A; }
+.dark .hover\:bg-\[\#E8F0FE\]:hover:where(:not([class*="dark:hover:bg-"])) { background-color: #1E3568; }
+.dark .hover\:bg-\[\#DBEAFE\]:hover:where(:not([class*="dark:hover:bg-"])) { background-color: #1E3568; }
 .dark .bg-slate-50:where(:not([class*="dark:bg-"])) { background-color: #101828; }
 .dark .bg-slate-100:where(:not([class*="dark:bg-"])) { background-color: #162543; }
 .dark .bg-slate-200:where(:not([class*="dark:bg-"])) { background-color: #1E3158; }

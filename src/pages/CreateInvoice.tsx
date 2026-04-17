@@ -89,10 +89,9 @@ export default function CreateInvoice() {
   };
 
   const hasValidGst = useMemo(() => {
-    const gst =
-      myProfile?.individualProfile?.gstNumber
-      ?? myProfile?.vendorProfile?.gstNumber
-      ?? null;
+    // /profile/me returns { ..., profile: { gstNumber, ... } } — a single `profile` key
+    // populated from the user's role-specific profile (individual/vendor).
+    const gst = myProfile?.profile?.gstNumber ?? null;
     if (!gst || typeof gst !== 'string') return false;
     return /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test(gst.trim().toUpperCase());
   }, [myProfile]);
@@ -283,10 +282,12 @@ export default function CreateInvoice() {
                   <span className="text-neutral-500">Subtotal</span>
                   <span className="font-semibold">{formatPaise(subtotalPaise)}</span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-neutral-500">{hasValidGst ? 'GST (18%)' : 'GST (Not Applied)'}</span>
-                  <span className="font-semibold">{formatPaise(gstPaise)}</span>
-                </div>
+                {hasValidGst && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-neutral-500">GST (18%)</span>
+                    <span className="font-semibold">{formatPaise(gstPaise)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-base pt-2 border-t border-neutral-200">
                   <span className="font-bold text-neutral-900">Total</span>
                   <span className="font-bold text-[#3678F1]">{formatPaise(totalPaise)}</span>

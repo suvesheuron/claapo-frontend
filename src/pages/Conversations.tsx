@@ -116,6 +116,16 @@ export default function Conversations() {
   // Find selected project details
   const selectedProject = projects.find(p => p.id === selectedProjectId);
 
+  // Filter projects by date range (overlap between project dates and selected range)
+  const filteredProjects = projects.filter((project) => {
+    if (!dateFrom && !dateTo) return true;
+    const projStart = new Date(project.startDate).setHours(0, 0, 0, 0);
+    const projEnd = new Date(project.endDate).setHours(23, 59, 59, 999);
+    const filterFrom = dateFrom ? new Date(dateFrom + 'T00:00:00').getTime() : -Infinity;
+    const filterTo = dateTo ? new Date(dateTo + 'T23:59:59').getTime() : Infinity;
+    return projStart <= filterTo && projEnd >= filterFrom;
+  });
+
   // Project List View
   const renderProjectList = () => {
     if (projectsLoading) {
@@ -155,9 +165,28 @@ export default function Conversations() {
       );
     }
 
+    if (filteredProjects.length === 0) {
+      return (
+        <div className="rounded-2xl bg-white border border-dashed border-neutral-200 py-12 text-center px-6">
+          <div className="w-12 h-12 rounded-2xl bg-[#E8F0FE] ring-1 ring-[#3678F1]/15 flex items-center justify-center mx-auto mb-3">
+            <FaCalendar className="text-[#3678F1] text-base" />
+          </div>
+          <p className="text-sm font-bold text-neutral-900 mb-1">No projects in this date range</p>
+          <p className="text-xs text-neutral-500 mb-4">Try widening the range or clear the filter.</p>
+          <button
+            type="button"
+            onClick={() => { setDateFrom(''); setDateTo(''); }}
+            className="text-xs text-[#3678F1] font-bold hover:underline"
+          >
+            Clear date filter
+          </button>
+        </div>
+      );
+    }
+
     return (
       <ul className="space-y-2">
-        {projects.map((project) => {
+        {filteredProjects.map((project) => {
           const hasConversations = project.conversationCount > 0;
           return (
             <li key={project.id}>
@@ -459,20 +488,54 @@ export default function Conversations() {
                 {/* Projects List Header */}
                 <header className="shrink-0 bg-white border-b border-neutral-200/80">
                   <div className="max-w-5xl mx-auto px-5 sm:px-8 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[#E8F0FE] to-[#DBEAFE] border border-[#3678F1]/10 flex items-center justify-center shrink-0">
-                        <FaMessage className="text-[#3678F1] text-sm" />
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[#E8F0FE] to-[#DBEAFE] border border-[#3678F1]/10 flex items-center justify-center shrink-0">
+                          <FaMessage className="text-[#3678F1] text-sm" />
+                        </div>
+                        <div className="min-w-0">
+                          <h1 className="text-lg sm:text-xl font-bold text-neutral-900 tracking-tight">Messages</h1>
+                          <p className="text-xs text-neutral-500 mt-0.5 truncate">
+                            {projectsLoading
+                              ? 'Loading your projects…'
+                              : projects.length === 0
+                                ? 'No projects yet'
+                                : (dateFrom || dateTo)
+                                  ? `${filteredProjects.length} of ${projects.length} project${projects.length === 1 ? '' : 's'} in range`
+                                  : 'Select a project to view conversations'}
+                          </p>
+                        </div>
                       </div>
-                      <div className="min-w-0">
-                        <h1 className="text-lg sm:text-xl font-bold text-neutral-900 tracking-tight">Messages</h1>
-                        <p className="text-xs text-neutral-500 mt-0.5 truncate">
-                          {projectsLoading
-                            ? 'Loading your projects…'
-                            : projects.length === 0
-                              ? 'No projects yet'
-                              : 'Select a project to view conversations'}
-                        </p>
-                      </div>
+                      {projects.length > 0 && (
+                        <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white border border-neutral-200/70">
+                          <FaCalendar className="w-3 h-3 text-neutral-400 shrink-0" />
+                          <input
+                            type="date"
+                            value={dateFrom}
+                            onChange={(e) => setDateFrom(e.target.value)}
+                            className="text-[11px] bg-transparent border-0 focus:outline-none text-neutral-700 w-[110px] cursor-pointer"
+                            aria-label="From date"
+                          />
+                          <span className="text-neutral-300">–</span>
+                          <input
+                            type="date"
+                            min={dateFrom || undefined}
+                            value={dateTo}
+                            onChange={(e) => setDateTo(e.target.value)}
+                            className="text-[11px] bg-transparent border-0 focus:outline-none text-neutral-700 w-[110px] cursor-pointer"
+                            aria-label="To date"
+                          />
+                          {(dateFrom || dateTo) && (
+                            <button
+                              type="button"
+                              onClick={() => { setDateFrom(''); setDateTo(''); }}
+                              className="text-[11px] text-[#3678F1] font-semibold hover:underline ml-0.5"
+                            >
+                              Clear
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </header>

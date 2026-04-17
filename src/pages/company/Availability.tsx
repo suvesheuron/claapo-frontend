@@ -51,7 +51,6 @@ const statusConfig: Record<string, { bg: string; border: string; text: string; d
 function buildCalendar(year: number, month: number, projects: ProjectItem[]): CalendarCell[] {
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const prevDays = new Date(year, month, 0).getDate();
   const dayMap: Record<number, ProjectItem> = {};
   
   // Only highlight actual shoot dates, not the entire project timeline
@@ -76,10 +75,11 @@ function buildCalendar(year: number, month: number, projects: ProjectItem[]): Ca
   }
   
   const cells: CalendarCell[] = [];
-  for (let i = firstDay - 1; i >= 0; i--) cells.push({ d: prevDays - i, muted: true });
+  // Empty placeholder cells (no prev-month numbers) to align first row to the right weekday
+  for (let i = 0; i < firstDay; i++) cells.push({ d: 0, muted: true });
   for (let day = 1; day <= daysInMonth; day++) cells.push({ d: day, muted: false, project: dayMap[day] ?? null });
   const rem = 7 - (cells.length % 7);
-  if (rem < 7) for (let d2 = 1; d2 <= rem; d2++) cells.push({ d: d2, muted: true });
+  if (rem < 7) for (let d2 = 0; d2 < rem; d2++) cells.push({ d: 0, muted: true });
   return cells;
 }
 
@@ -222,7 +222,7 @@ export default function CompanyAvailability() {
                           <span className="absolute top-1 right-1.5 w-1.5 h-1.5 rounded-full bg-[#3678F1]" />
                         )}
                         <span className={`text-xs font-semibold leading-none ${cell.muted ? 'text-neutral-300' : proj ? cfg!.text : todayCell ? 'text-[#3678F1]' : 'text-neutral-700'}`}>
-                          {cell.d}
+                          {cell.muted ? '' : cell.d}
                         </span>
                         {proj && !cell.muted && (
                           <span className={`text-[9px] font-medium leading-tight text-center line-clamp-2 w-full ${cfg!.text} opacity-80`}>

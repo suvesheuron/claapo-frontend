@@ -55,9 +55,9 @@ function buildCalendar(
 ): CalendarCell[] {
   const firstDay    = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const prevDays    = new Date(year, month, 0).getDate();
   const cells: CalendarCell[] = [];
-  for (let i = firstDay - 1; i >= 0; i--) cells.push({ d: prevDays - i, muted: true, status: null });
+  // Empty placeholder cells (no prev-month numbers) to align first row to the right weekday
+  for (let i = 0; i < firstDay; i++) cells.push({ d: 0, muted: true, status: null });
   for (let day = 1; day <= daysInMonth; day++) {
     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     const slot = slots[dateStr];
@@ -79,7 +79,7 @@ function buildCalendar(
     }
   }
   const rem = 7 - (cells.length % 7);
-  if (rem < 7) for (let d2 = 1; d2 <= rem; d2++) cells.push({ d: d2, muted: true, status: null });
+  if (rem < 7) for (let d2 = 0; d2 < rem; d2++) cells.push({ d: 0, muted: true, status: null });
   return cells;
 }
 
@@ -440,7 +440,7 @@ export default function VendorAvailability() {
                             <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#F40F02]/70" />
                           </span>
                         )}
-                        <span className="text-xs font-bold leading-none">{cell.d}</span>
+                        <span className="text-xs font-bold leading-none">{cell.muted ? '' : cell.d}</span>
                         {!cell.muted && cell.status && (
                           <span className="text-[9px] leading-tight truncate w-full font-medium opacity-80">
                             {cell.status === 'available' && CELL_STATUS_LABEL.available}

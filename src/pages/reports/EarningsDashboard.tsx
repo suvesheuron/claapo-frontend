@@ -8,6 +8,7 @@ import {
   FaTriangleExclamation,
   FaChevronLeft,
   FaChevronRight,
+  FaCalendar,
 } from 'react-icons/fa6';
 import DashboardHeader from '../../components/DashboardHeader';
 import DashboardSidebar from '../../components/DashboardSidebar';
@@ -74,17 +75,27 @@ export default function EarningsDashboard() {
 
   const [filterMonth, setFilterMonth] = useState(new Date().getMonth());
   const [filterYear, setFilterYear] = useState(new Date().getFullYear());
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
 
   const { data, loading, error } = useApiQuery<InvoicesResponse>('/invoices?limit=100');
   const invoices = data?.items ?? [];
 
-  // Filter invoices by selected month/year
+  const isCustomRange = !!(dateFrom || dateTo);
+
+  // Filter invoices: custom date range overrides month/year picker when active
   const filteredInvoices = useMemo(() => {
     return invoices.filter((inv) => {
       const invDate = new Date(inv.createdAt);
+      if (isCustomRange) {
+        const ts = invDate.setHours(0, 0, 0, 0);
+        const from = dateFrom ? new Date(dateFrom + 'T00:00:00').getTime() : -Infinity;
+        const to = dateTo ? new Date(dateTo + 'T23:59:59').getTime() : Infinity;
+        return ts >= from && ts <= to;
+      }
       return invDate.getMonth() === filterMonth && invDate.getFullYear() === filterYear;
     });
-  }, [invoices, filterMonth, filterYear]);
+  }, [invoices, filterMonth, filterYear, dateFrom, dateTo, isCustomRange]);
 
   const totalEarnings = filteredInvoices
     .filter((i) => i.status === 'paid')
@@ -189,21 +200,23 @@ export default function EarningsDashboard() {
                 </div>
               ) : (
                 <>
-                  {/* Month Filter */}
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="flex items-center gap-2 bg-white rounded-xl border border-neutral-200 p-1 shadow-sm">
+                  {/* Filters: month picker + custom from/to date range */}
+                  <div className="flex items-center gap-3 mb-6 flex-wrap">
+                    <div className={`flex items-center gap-1 bg-white rounded-xl border border-neutral-200 p-1 shadow-sm transition-opacity ${isCustomRange ? 'opacity-50' : ''}`}>
                       <button
                         type="button"
                         onClick={goPrevMonth}
-                        className="w-8 h-8 rounded-lg flex items-center justify-center text-neutral-600 hover:bg-neutral-50"
+                        disabled={isCustomRange}
+                        aria-label="Previous month"
+                        className="w-8 h-8 rounded-lg flex items-center justify-center text-neutral-600 hover:bg-[#E8F0FE] hover:text-[#3678F1] disabled:hover:bg-transparent disabled:hover:text-neutral-600 disabled:cursor-not-allowed transition-colors"
                       >
                         <FaChevronLeft className="text-xs" />
                       </button>
-                      <div className="min-w-[160px] text-center">
+                      <div className="min-w-[160px] text-center px-2">
                         <p className="text-sm font-bold text-neutral-900">
                           {MONTHS[filterMonth]} {filterYear}
                         </p>
-                        {!isCurrentMonth && (
+                        {!isCurrentMonth && !isCustomRange && (
                           <button
                             type="button"
                             onClick={goToday}
@@ -216,10 +229,43 @@ export default function EarningsDashboard() {
                       <button
                         type="button"
                         onClick={goNextMonth}
-                        className="w-8 h-8 rounded-lg flex items-center justify-center text-neutral-600 hover:bg-neutral-50"
+                        disabled={isCustomRange}
+                        aria-label="Next month"
+                        className="w-8 h-8 rounded-lg flex items-center justify-center text-neutral-600 hover:bg-[#E8F0FE] hover:text-[#3678F1] disabled:hover:bg-transparent disabled:hover:text-neutral-600 disabled:cursor-not-allowed transition-colors"
                       >
                         <FaChevronRight className="text-xs" />
                       </button>
+                    </div>
+
+                    {/* Custom from-to date filter */}
+                    <div className="flex flex-wrap items-center gap-2 p-1.5 bg-white rounded-xl border border-neutral-200 shadow-sm">
+                      <FaCalendar className="text-[#3678F1] w-3.5 h-3.5 ml-1.5" />
+                      <label htmlFor="earnings-date-from" className="text-xs font-medium text-neutral-600">From</label>
+                      <input
+                        id="earnings-date-from"
+                        type="date"
+                        value={dateFrom}
+                        onChange={(e) => setDateFrom(e.target.value)}
+                        className="rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5 text-sm text-neutral-900 focus:outline-none focus:border-[#3678F1] focus:ring-2 focus:ring-[#3678F1]/20 transition-colors"
+                      />
+                      <label htmlFor="earnings-date-to" className="text-xs font-medium text-neutral-600">To</label>
+                      <input
+                        id="earnings-date-to"
+                        type="date"
+                        value={dateTo}
+                        min={dateFrom || undefined}
+                        onChange={(e) => setDateTo(e.target.value)}
+                        className="rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5 text-sm text-neutral-900 focus:outline-none focus:border-[#3678F1] focus:ring-2 focus:ring-[#3678F1]/20 transition-colors"
+                      />
+                      {isCustomRange && (
+                        <button
+                          type="button"
+                          onClick={() => { setDateFrom(''); setDateTo(''); }}
+                          className="text-xs text-[#3678F1] font-bold hover:text-[#2563EB] hover:underline px-1.5"
+                        >
+                          Clear
+                        </button>
+                      )}
                     </div>
                   </div>
 
@@ -239,12 +285,14 @@ export default function EarningsDashboard() {
                     ))}
                   </div>
 
-                  {/* All Invoices for Selected Month */}
+                  {/* All Invoices for Selected Range */}
                   <div className="rounded-2xl bg-white shadow-soft border border-neutral-200/70 overflow-hidden">
                     <div className="px-5 py-4 border-b border-neutral-100">
                       <h2 className="text-sm font-bold text-neutral-900 flex items-center gap-2">
                         <span className="w-1 h-4 rounded-full bg-[#3678F1]" />
-                        Invoices — {MONTHS[filterMonth]} {filterYear}
+                        Invoices — {isCustomRange
+                          ? `${dateFrom ? formatDate(dateFrom + 'T12:00:00') : '—'} to ${dateTo ? formatDate(dateTo + 'T12:00:00') : '—'}`
+                          : `${MONTHS[filterMonth]} ${filterYear}`}
                       </h2>
                     </div>
 
