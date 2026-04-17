@@ -11,6 +11,7 @@ import {
 import AppHeader from '../components/AppHeader';
 import AppFooter from '../components/AppFooter';
 import speakerImg from '../assets/speaker.png';
+import { useTheme } from '../contexts/ThemeContext';
 
 /* ── Intersection observer hook ── */
 function useInView(threshold = 0.12) {
@@ -84,6 +85,33 @@ const faqs = [
 export default function LandingPage() {
   useEffect(() => { document.title = 'Claapo \u2013 Where Companies, Individuals & Vendors Meet'; }, []);
 
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+  const bg = {
+    page:       isDark ? '#0A0E17' : '#eef5fd',
+    hero:       isDark ? 'linear-gradient(145deg, #0F1A2E 0%, #0D1326 40%, #0A0E17 100%)'
+                       : 'linear-gradient(145deg, #a8c8f0 0%, #c2dcf7 30%, #d8eaf9 60%, #eaf3fd 100%)',
+    heroBlob:   isDark ? 'radial-gradient(circle, rgba(96,165,250,0.10) 0%, transparent 70%)'
+                       : 'radial-gradient(circle, rgba(168,200,240,0.5) 0%, transparent 70%)',
+    trusted:    isDark ? '#0D1326' : '#f0f6fd',
+    stats:      isDark ? 'linear-gradient(180deg, #0D1326 0%, #0A0E17 100%)'
+                       : 'linear-gradient(180deg, #f0f6fd 0%, #e5f0fc 100%)',
+    ecosystem:  isDark ? 'linear-gradient(180deg, #0A0E17 0%, #0D1326 100%)'
+                       : 'linear-gradient(180deg, #e5f0fc 0%, #eef5fd 100%)',
+    features:   isDark ? 'linear-gradient(180deg, #0D1326 0%, #0A0E17 50%, #0D1326 100%)'
+                       : 'linear-gradient(180deg, #eef5fd 0%, #e8f2fb 50%, #eef5fd 100%)',
+    moreFeat:   isDark ? 'linear-gradient(180deg, #0A0E17 0%, #0D1326 100%)'
+                       : 'linear-gradient(180deg, #e8f2fb 0%, #e5f0fc 100%)',
+    hiw:        isDark ? 'linear-gradient(180deg, #0D1326 0%, #0A0E17 100%)'
+                       : 'linear-gradient(180deg, #e5f0fc 0%, #eef5fd 100%)',
+    reviews:    isDark ? 'linear-gradient(180deg, #0A0E17 0%, #0D1326 100%)'
+                       : 'linear-gradient(180deg, #e8f2fb 0%, #eef5fd 100%)',
+    faq:        isDark ? 'linear-gradient(180deg, #0D1326 0%, #0A0E17 100%)'
+                       : 'linear-gradient(180deg, #eef5fd 0%, #e8f2fb 100%)',
+    cta:        isDark ? 'linear-gradient(180deg, #0A0E17 0%, #0D1326 100%)'
+                       : 'linear-gradient(180deg, #e8f2fb 0%, #eef5fd 100%)',
+  };
+
   const hero      = useInView(0.05);
   const trusted   = useInView(0.1);
   const stats     = useInView(0.15);
@@ -107,7 +135,7 @@ export default function LandingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
   return (
-    <div className="flex flex-col w-full" style={{ background: '#eef5fd' }}>
+    <div className="flex flex-col w-full" style={{ background: bg.page }}>
       <AppHeader variant="landing" />
 
       {/* ══════════════════════════════════════════════════════
@@ -116,17 +144,17 @@ export default function LandingPage() {
       <section
         ref={hero.ref}
         className="relative overflow-hidden py-20 lg:py-28"
-        style={{ background: 'linear-gradient(145deg, #a8c8f0 0%, #c2dcf7 30%, #d8eaf9 60%, #eaf3fd 100%)' }}
+        style={{ background: bg.hero }}
       >
         <div className="absolute -top-24 -left-24 w-[500px] h-[500px] rounded-full pointer-events-none"
-          style={{ background: 'radial-gradient(circle, rgba(168,200,240,0.5) 0%, transparent 70%)' }} />
+          style={{ background: bg.heroBlob }} />
 
         <div className="max-w-6xl mx-auto px-6 relative z-10">
           <div className={`flex flex-col lg:flex-row lg:items-center lg:justify-between gap-10 transition-all duration-700 ${hero.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
 
             {/* Left */}
             <div className="max-w-xl">
-              <div className="inline-flex items-center gap-2 bg-white/60 backdrop-blur rounded-full px-4 py-1.5 mb-6 border border-white/80">
+              <div className="inline-flex items-center gap-2 bg-white/60 dark:bg-white/5 backdrop-blur rounded-full px-4 py-1.5 mb-6 border border-white/80 dark:border-white/10">
                 <FaBolt className="text-[#F4C430] text-xs" />
                 <span className="text-xs font-semibold text-slate-700">India's Complete Film &amp; Media Ecosystem</span>
               </div>
@@ -151,7 +179,7 @@ export default function LandingPage() {
                 </Link>
                 <Link
                   to="/dashboard"
-                  className="inline-flex items-center justify-center gap-2.5 rounded-xl bg-white border border-neutral-200/70 text-neutral-700 px-7 py-3.5 text-sm font-bold hover:border-[#3678F1] hover:text-[#3678F1] transition-colors"
+                  className="inline-flex items-center justify-center gap-2.5 rounded-xl bg-white dark:bg-[#141A28] border border-neutral-200/70 dark:border-[#1F2940] text-neutral-700 dark:text-neutral-200 px-7 py-3.5 text-sm font-bold hover:border-[#3678F1] dark:hover:border-[#60A5FA] hover:text-[#3678F1] dark:hover:text-[#60A5FA] transition-colors"
                 >
                   <div className="w-5 h-5 rounded-full bg-[#3678F1] flex items-center justify-center shrink-0">
                     <FaPlay className="text-white text-[8px] ml-[1px]" />
@@ -193,7 +221,7 @@ export default function LandingPage() {
       {/* ══════════════════════════════════════════════════════
           TRUSTED BY
          ══════════════════════════════════════════════════════ */}
-      <section ref={trusted.ref} className="py-10 border-b border-slate-200/60" style={{ background: '#f0f6fd' }}>
+      <section ref={trusted.ref} className="py-10 border-b border-slate-200/60 dark:border-[#1F2940]" style={{ background: bg.trusted }}>
         <div className={`max-w-5xl mx-auto px-6 transition-all duration-700 ${trusted.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
           <p className="text-center text-xs font-semibold text-slate-400 tracking-[0.15em] uppercase mb-8">Trusted by companies, individuals &amp; vendors across India</p>
           <div className="flex flex-wrap items-center justify-center gap-x-12 gap-y-4">
@@ -210,7 +238,7 @@ export default function LandingPage() {
       {/* ══════════════════════════════════════════════════════
           STATS
          ══════════════════════════════════════════════════════ */}
-      <section ref={stats.ref} className="py-16" style={{ background: 'linear-gradient(180deg, #f0f6fd 0%, #e5f0fc 100%)' }}>
+      <section ref={stats.ref} className="py-16" style={{ background: bg.stats }}>
         <div className={`max-w-5xl mx-auto px-6 transition-all duration-700 ${stats.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`}>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {[
@@ -231,7 +259,7 @@ export default function LandingPage() {
       {/* ══════════════════════════════════════════════════════
           ECOSYSTEM
          ══════════════════════════════════════════════════════ */}
-      <section id="ecosystem" ref={ecosystem.ref} className="py-20" style={{ background: 'linear-gradient(180deg, #e5f0fc 0%, #eef5fd 100%)' }}>
+      <section id="ecosystem" ref={ecosystem.ref} className="py-20" style={{ background: bg.ecosystem }}>
         <div className="max-w-6xl mx-auto px-6">
           <div className={`text-center mb-14 transition-all duration-700 ${ecosystem.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`}>
             <p className="text-xs font-bold tracking-[0.2em] text-[#3678F1] uppercase mb-3">The Ecosystem</p>
@@ -322,7 +350,7 @@ export default function LandingPage() {
       {/* ══════════════════════════════════════════════════════
           FEATURES
          ══════════════════════════════════════════════════════ */}
-      <section id="features" className="py-24" style={{ background: 'linear-gradient(180deg, #eef5fd 0%, #e8f2fb 50%, #eef5fd 100%)' }}>
+      <section id="features" className="py-24" style={{ background: bg.features }}>
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-20">
             <p className="text-xs font-bold tracking-[0.2em] text-[#3678F1] uppercase mb-3">Features</p>
@@ -572,7 +600,7 @@ export default function LandingPage() {
       {/* ══════════════════════════════════════════════════════
           MORE FEATURES GRID
          ══════════════════════════════════════════════════════ */}
-      <section className="py-20" style={{ background: 'linear-gradient(180deg, #e8f2fb 0%, #e5f0fc 100%)' }}>
+      <section className="py-20" style={{ background: bg.moreFeat }}>
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-14">
             <h2 className="text-2xl sm:text-3xl font-bold text-[#0f172a] mb-3">And so much more...</h2>
@@ -608,7 +636,7 @@ export default function LandingPage() {
       {/* ══════════════════════════════════════════════════════
           HOW IT WORKS
          ══════════════════════════════════════════════════════ */}
-      <section id="how-it-works" ref={hiw.ref} className="py-24" style={{ background: 'linear-gradient(180deg, #e5f0fc 0%, #eef5fd 100%)' }}>
+      <section id="how-it-works" ref={hiw.ref} className="py-24" style={{ background: bg.hiw }}>
         <div className="max-w-5xl mx-auto px-6">
           <div className={`text-center mb-16 transition-all duration-700 ${hiw.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`}>
             <p className="text-xs font-bold tracking-[0.2em] text-[#3678F1] uppercase mb-3">How It Works</p>
@@ -634,7 +662,7 @@ export default function LandingPage() {
 
           {/* CTA */}
           <div className="mt-14 text-center">
-            <Link to="/register" className="inline-flex items-center gap-2 rounded-xl bg-white border border-neutral-200/70 text-neutral-700 px-8 py-3.5 text-sm font-bold hover:border-[#3678F1] hover:text-[#3678F1] transition-colors">
+            <Link to="/register" className="inline-flex items-center gap-2 rounded-xl bg-white dark:bg-[#141A28] border border-neutral-200/70 dark:border-[#1F2940] text-neutral-700 dark:text-neutral-200 px-8 py-3.5 text-sm font-bold hover:border-[#3678F1] dark:hover:border-[#60A5FA] hover:text-[#3678F1] dark:hover:text-[#60A5FA] transition-colors">
               Try It Now <FaArrowRight className="text-xs" />
             </Link>
           </div>
@@ -644,7 +672,7 @@ export default function LandingPage() {
       {/* ══════════════════════════════════════════════════════
           TESTIMONIALS
          ══════════════════════════════════════════════════════ */}
-      <section ref={reviews.ref} className="py-24" style={{ background: 'linear-gradient(180deg, #e8f2fb 0%, #eef5fd 100%)' }}>
+      <section ref={reviews.ref} className="py-24" style={{ background: bg.reviews }}>
         <div className="max-w-6xl mx-auto px-6">
           <div className={`text-center mb-14 transition-all duration-700 ${reviews.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`}>
             <p className="text-xs font-bold tracking-[0.2em] text-[#3678F1] uppercase mb-3">Testimonials</p>
@@ -681,7 +709,7 @@ export default function LandingPage() {
       {/* ══════════════════════════════════════════════════════
           FAQ
          ══════════════════════════════════════════════════════ */}
-      <section ref={faqRef.ref} className="py-24" style={{ background: 'linear-gradient(180deg, #eef5fd 0%, #e8f2fb 100%)' }}>
+      <section ref={faqRef.ref} className="py-24" style={{ background: bg.faq }}>
         <div className="max-w-3xl mx-auto px-6">
           <div className={`text-center mb-14 transition-all duration-700 ${faqRef.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`}>
             <p className="text-xs font-bold tracking-[0.2em] text-[#3678F1] uppercase mb-3">FAQ</p>
@@ -720,7 +748,7 @@ export default function LandingPage() {
       {/* ══════════════════════════════════════════════════════
           FINAL CTA
          ══════════════════════════════════════════════════════ */}
-      <section ref={ctaRef.ref} className="py-6 pb-24" style={{ background: 'linear-gradient(180deg, #e8f2fb 0%, #eef5fd 100%)' }}>
+      <section ref={ctaRef.ref} className="py-6 pb-24" style={{ background: bg.cta }}>
         <div className="max-w-3xl mx-auto px-6">
           <div className={`rounded-3xl p-14 text-center transition-all duration-700 ${ctaRef.visible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`} style={{ background: 'linear-gradient(135deg, #3678F1 0%, #2563EB 100%)' }}>
             <h2 className="text-3xl font-bold text-white mb-4 leading-snug">

@@ -1,7 +1,8 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { FaArrowLeft, FaBars, FaXmark, FaArrowRightLong } from 'react-icons/fa6';
+import { FaArrowLeft, FaBars, FaXmark, FaArrowRightLong, FaSun, FaMoon } from 'react-icons/fa6';
 import { useCallback, useEffect, useState } from 'react';
 import Logo from './Logo';
+import { useTheme } from '../contexts/ThemeContext';
 
 type AppHeaderProps = {
   variant?: 'landing' | 'back';
@@ -26,6 +27,9 @@ export default function AppHeader({
   const navigate = useNavigate();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { theme, toggleTheme } = useTheme();
+  const ThemeIcon = theme === 'dark' ? FaSun : FaMoon;
+  const themeLabel = theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
 
   // Subtle elevation when the page is scrolled
   useEffect(() => {
@@ -68,8 +72,8 @@ export default function AppHeader({
         'sticky top-0 z-50 shrink-0 w-full',
         'transition-[background-color,border-color,box-shadow,backdrop-filter] duration-200',
         scrolled
-          ? 'bg-white/90 backdrop-blur-md border-b border-neutral-200/80 shadow-[0_1px_0_0_rgba(15,23,42,0.04),0_8px_24px_-12px_rgba(15,23,42,0.12)]'
-          : 'bg-white/75 backdrop-blur-sm border-b border-transparent',
+          ? 'bg-white/90 dark:bg-[#05070D]/90 backdrop-blur-md border-b border-neutral-200/80 dark:border-[#1F2940] shadow-[0_1px_0_0_rgba(15,23,42,0.04),0_8px_24px_-12px_rgba(15,23,42,0.12)] dark:shadow-[0_1px_0_0_rgba(0,0,0,0.4),0_8px_24px_-12px_rgba(0,0,0,0.6)]'
+          : 'bg-white/75 dark:bg-[#0A0E17]/70 backdrop-blur-sm border-b border-transparent',
       ].join(' ')}
     >
       <div className="w-full max-w-7xl mx-auto h-16 md:h-[72px] px-4 sm:px-6 lg:px-8 flex items-center gap-4">
@@ -88,9 +92,9 @@ export default function AppHeader({
                   key={link.label}
                   onClick={() => scrollToSection(link.target)}
                   className="
-                    relative text-[13.5px] text-neutral-600 hover:text-[#3678F1]
+                    relative text-[13.5px] text-neutral-600 dark:text-neutral-300 hover:text-[#3678F1] dark:hover:text-[#60A5FA]
                     font-semibold px-4 py-2 rounded-lg
-                    hover:bg-[#E8F0FE] transition-colors
+                    hover:bg-[#E8F0FE] dark:hover:bg-[#15264A] transition-colors
                     cursor-pointer bg-transparent border-none
                     focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3678F1]/30
                   "
@@ -102,10 +106,25 @@ export default function AppHeader({
 
             {/* Right: CTAs (desktop) */}
             <div className="hidden md:flex flex-1 items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={toggleTheme}
+                aria-label={themeLabel}
+                title={themeLabel}
+                className="
+                  inline-flex items-center justify-center w-10 h-10 rounded-lg
+                  text-neutral-600 dark:text-neutral-300 hover:text-[#3678F1] dark:hover:text-[#60A5FA]
+                  hover:bg-[#E8F0FE] dark:hover:bg-[#15264A]
+                  transition-colors
+                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3678F1]/30
+                "
+              >
+                <ThemeIcon className="w-[16px] h-[16px]" aria-hidden />
+              </button>
               <Link
                 to="/login"
                 className="
-                  text-[13.5px] text-neutral-700 hover:text-[#3678F1]
+                  text-[13.5px] text-neutral-700 dark:text-neutral-300 hover:text-[#3678F1] dark:hover:text-[#60A5FA]
                   font-semibold px-3 py-2 rounded-lg transition-colors
                   focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3678F1]/30
                 "
@@ -114,7 +133,7 @@ export default function AppHeader({
               </Link>
 
               {/* Subtle vertical divider */}
-              <span className="w-px h-6 bg-neutral-200" aria-hidden />
+              <span className="w-px h-6 bg-neutral-200 dark:bg-[#1F2940]" aria-hidden />
 
               <Link
                 to="/register"
@@ -132,14 +151,28 @@ export default function AppHeader({
               </Link>
             </div>
 
-            {/* Right: mobile hamburger — fills remaining space, button right-aligned */}
-            <div className="flex flex-1 justify-end md:hidden">
+            {/* Right: theme toggle + mobile hamburger — fills remaining space, button right-aligned */}
+            <div className="flex flex-1 justify-end items-center gap-2 md:hidden">
+              <button
+                type="button"
+                onClick={toggleTheme}
+                aria-label={themeLabel}
+                title={themeLabel}
+                className="
+                  inline-flex items-center justify-center w-10 h-10 rounded-xl shrink-0
+                  text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-[#1F2940]
+                  hover:bg-[#E8F0FE] dark:hover:bg-[#15264A] hover:border-[#3678F1] dark:hover:border-[#60A5FA] transition-colors
+                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3678F1]/30
+                "
+              >
+                <ThemeIcon className="w-[16px] h-[16px]" aria-hidden />
+              </button>
               <button
                 type="button"
                 className="
                   inline-flex items-center justify-center w-10 h-10 rounded-xl shrink-0
-                  text-neutral-700 border border-neutral-200
-                  hover:bg-[#E8F0FE] hover:border-[#3678F1] transition-colors
+                  text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-[#1F2940]
+                  hover:bg-[#E8F0FE] dark:hover:bg-[#15264A] hover:border-[#3678F1] dark:hover:border-[#60A5FA] transition-colors
                   focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3678F1]/30
                 "
                 onClick={() => setMobileOpen(v => !v)}
@@ -158,11 +191,27 @@ export default function AppHeader({
           <>
             <Logo size="md" to="/" ariaLabel="Claapo — back to home" />
             <div className="flex-1" />
+            <button
+              type="button"
+              onClick={toggleTheme}
+              aria-label={themeLabel}
+              title={themeLabel}
+              className="
+                inline-flex items-center justify-center w-10 h-10 rounded-lg
+                text-neutral-600 dark:text-neutral-300 hover:text-[#3678F1] dark:hover:text-[#60A5FA]
+                hover:bg-[#E8F0FE] dark:hover:bg-[#15264A]
+                transition-colors
+                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3678F1]/30
+              "
+            >
+              <ThemeIcon className="w-[16px] h-[16px]" aria-hidden />
+            </button>
             <Link
               to={backTo}
               className="
                 inline-flex items-center gap-2 px-3.5 py-2 rounded-lg
-                text-neutral-600 hover:text-[#3678F1] hover:bg-[#E8F0FE]
+                text-neutral-600 dark:text-neutral-300 hover:text-[#3678F1] dark:hover:text-[#60A5FA]
+                hover:bg-[#E8F0FE] dark:hover:bg-[#15264A]
                 text-[13.5px] font-semibold transition-colors
                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3678F1]/30
               "
@@ -176,28 +225,29 @@ export default function AppHeader({
 
       {/* Mobile menu drawer */}
       {variant === 'landing' && mobileOpen && (
-        <div className="md:hidden border-t border-neutral-200 bg-white/95 backdrop-blur">
+        <div className="md:hidden border-t border-neutral-200 dark:border-[#1F2940] bg-white/95 dark:bg-[#05070D]/95 backdrop-blur">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex flex-col gap-1">
             {navLinks.map(link => (
               <button
                 key={link.label}
                 onClick={() => scrollToSection(link.target)}
                 className="
-                  w-full text-left text-[15px] text-neutral-700 hover:text-[#3678F1]
+                  w-full text-left text-[15px] text-neutral-700 dark:text-neutral-300 hover:text-[#3678F1] dark:hover:text-[#60A5FA]
                   font-semibold px-3.5 py-3 rounded-xl
-                  hover:bg-[#E8F0FE] transition-colors
+                  hover:bg-[#E8F0FE] dark:hover:bg-[#15264A] transition-colors
                 "
               >
                 {link.label}
               </button>
             ))}
-            <div className="mt-3 pt-3 border-t border-neutral-200 flex flex-col gap-2">
+            <div className="mt-3 pt-3 border-t border-neutral-200 dark:border-[#1F2940] flex flex-col gap-2">
               <Link
                 to="/login"
                 className="
                   w-full inline-flex items-center justify-center px-4 py-3 rounded-xl
-                  bg-white border border-neutral-200/70 text-neutral-700 text-sm font-semibold
-                  hover:border-[#3678F1] hover:text-[#3678F1] transition-colors
+                  bg-white dark:bg-[#141A28] border border-neutral-200/70 dark:border-[#1F2940]
+                  text-neutral-700 dark:text-neutral-200 text-sm font-semibold
+                  hover:border-[#3678F1] dark:hover:border-[#60A5FA] hover:text-[#3678F1] dark:hover:text-[#60A5FA] transition-colors
                 "
               >
                 Log in

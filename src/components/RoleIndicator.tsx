@@ -1,9 +1,9 @@
 import { useRole } from '../contexts/RoleContext';
 
 const ROLE_STYLES: Record<string, { dot: string; chip: string; text: string }> = {
-  individual: { dot: 'bg-[#22C55E]', chip: 'bg-emerald-50',  text: 'text-emerald-700' },
-  vendor:     { dot: 'bg-[#F4C430]', chip: 'bg-[#FEF7E0]',  text: 'text-[#8A6508]' },
-  company:    { dot: 'bg-[#3678F1]', chip: 'bg-[#E8F0FE]',  text: 'text-[#2563EB]' },
+  individual: { dot: 'bg-[#22C55E]', chip: 'bg-emerald-50 dark:bg-emerald-900/40',  text: 'text-emerald-700 dark:text-emerald-300' },
+  vendor:     { dot: 'bg-[#F4C430]', chip: 'bg-[#FEF7E0] dark:bg-[#3B2A10]',         text: 'text-[#8A6508] dark:text-[#FBBF24]' },
+  company:    { dot: 'bg-[#3678F1]', chip: 'bg-[#E8F0FE] dark:bg-[#15264A]',         text: 'text-[#2563EB] dark:text-[#60A5FA]' },
 };
 
 export default function RoleIndicator() {

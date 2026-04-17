@@ -1,26 +1,36 @@
 import { useEffect } from 'react';
 import AppHeader from '../components/AppHeader';
 import AppFooter from '../components/AppFooter';
+import { useTheme } from '../contexts/ThemeContext';
 
 const currentYear = new Date().getFullYear();
 
 export default function Privacy() {
   useEffect(() => { document.title = 'Privacy Policy \u2013 Claapo'; }, []);
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+  const bg = {
+    page: isDark ? '#0A0E17' : '#eef5fd',
+    hero: isDark ? 'linear-gradient(145deg, #0F1A2E 0%, #0A0E17 70%, #0A0E17 100%)'
+                 : 'linear-gradient(145deg, #a8c8f0 0%, #d8eaf9 60%, #eaf3fd 100%)',
+    body: isDark ? 'linear-gradient(180deg, #0A0E17 0%, #0D1326 100%)'
+                 : 'linear-gradient(180deg, #e5f0fc 0%, #eef5fd 100%)',
+  };
 
   return (
-    <div className="flex flex-col min-h-screen" style={{ background: '#eef5fd' }}>
+    <div className="flex flex-col min-h-screen" style={{ background: bg.page }}>
       <AppHeader variant="landing" />
 
-      <section className="py-16" style={{ background: 'linear-gradient(145deg, #a8c8f0 0%, #d8eaf9 60%, #eaf3fd 100%)' }}>
+      <section className="py-16" style={{ background: bg.hero }}>
         <div className="max-w-4xl mx-auto px-6 text-center">
-          <h1 className="text-4xl sm:text-5xl font-extrabold text-[#0f172a] mb-4">Privacy Policy</h1>
-          <p className="text-sm text-slate-500">Last updated: January 1, {currentYear}</p>
+          <h1 className="text-4xl sm:text-5xl font-extrabold text-[#0f172a] dark:text-neutral-100 mb-4">Privacy Policy</h1>
+          <p className="text-sm text-slate-500 dark:text-neutral-400">Last updated: January 1, {currentYear}</p>
         </div>
       </section>
 
-      <section className="py-16 flex-1" style={{ background: 'linear-gradient(180deg, #e5f0fc 0%, #eef5fd 100%)' }}>
+      <section className="py-16 flex-1" style={{ background: bg.body }}>
         <div className="max-w-3xl mx-auto px-6">
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8 sm:p-12 space-y-8">
+          <div className="bg-white dark:bg-[#141A28] rounded-2xl shadow-sm dark:shadow-black/30 border border-slate-100 dark:border-[#1F2940] p-8 sm:p-12 space-y-8">
 
             <div>
               <h2 className="text-xl font-bold text-neutral-900 mb-3">1. Information We Collect</h2>
@@ -95,8 +105,8 @@ export default function Privacy() {
               <h2 className="text-xl font-bold text-neutral-900 mb-3">8. Contact Us</h2>
               <p className="text-sm text-neutral-600 leading-relaxed">
                 If you have any questions about this Privacy Policy or our data practices, please contact us at{' '}
-                <a href="mailto:hello@crewcall.in" className="text-[#3678F1] hover:text-[#2563EB] transition-colors">hello@crewcall.in</a> or visit our{' '}
-                <a href="/contact" className="text-[#3678F1] hover:text-[#2563EB] transition-colors">Contact page</a>.
+                <a href="mailto:hello@crewcall.in" className="text-[#3678F1] dark:text-[#60A5FA] hover:text-[#2563EB] dark:hover:text-[#93C5FD] transition-colors">hello@crewcall.in</a> or visit our{' '}
+                <a href="/contact" className="text-[#3678F1] dark:text-[#60A5FA] hover:text-[#2563EB] dark:hover:text-[#93C5FD] transition-colors">Contact page</a>.
               </p>
             </div>
 

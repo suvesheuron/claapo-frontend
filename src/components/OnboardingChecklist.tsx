@@ -94,7 +94,7 @@ export default function OnboardingChecklist() {
   const strokeDashoffset = circumference - (pct / 100) * circumference;
 
   return (
-    <div className="fixed bottom-4 right-4 z-40 w-80 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl shadow-black/10 border border-neutral-200/60 overflow-hidden">
+    <div className="fixed bottom-4 right-4 z-40 w-80 bg-white/95 dark:bg-[#141A28]/95 backdrop-blur-xl rounded-2xl shadow-2xl shadow-black/10 dark:shadow-black/50 border border-neutral-200/60 dark:border-[#1F2940] overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-4 bg-gradient-to-r from-[#2563EB] via-[#3678F1] to-[#5B9DF9] relative overflow-hidden">
         <div className="absolute top-0 right-0 w-24 h-24 bg-white/[0.06] rounded-full -translate-y-1/2 translate-x-1/3" />
@@ -144,7 +144,7 @@ export default function OnboardingChecklist() {
       </div>
 
       {/* Progress bar */}
-      <div className="h-0.5 bg-neutral-100">
+      <div className="h-0.5 bg-neutral-100 dark:bg-[#1F2940]">
         <div
           className="h-0.5 bg-gradient-to-r from-[#3678F1] to-[#5B9DF9] transition-all duration-700 ease-out"
           style={{ width: `${pct}%` }}
@@ -158,16 +158,16 @@ export default function OnboardingChecklist() {
             <Link
               key={i}
               to={step.to}
-              className={`flex items-center gap-3 p-2.5 rounded-xl transition-all duration-150 group ${step.done ? 'opacity-50' : 'hover:bg-[#E8F0FE]/60'}`}
+              className={`flex items-center gap-3 p-2.5 rounded-xl transition-all duration-150 group ${step.done ? 'opacity-50' : 'hover:bg-[#E8F0FE]/60 dark:hover:bg-[#15264A]/60'}`}
             >
               <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-[10px] font-bold transition-all duration-200 ${
                 step.done
                   ? 'bg-gradient-to-br from-[#3678F1] to-[#5B9DF9] text-white shadow-sm shadow-[#3678F1]/20'
-                  : 'bg-neutral-100 text-neutral-400 border border-neutral-200/60 group-hover:border-[#3678F1]/30 group-hover:bg-[#E8F0FE] group-hover:text-[#2563EB]'
+                  : 'bg-neutral-100 dark:bg-[#1E2640] text-neutral-400 dark:text-neutral-500 border border-neutral-200/60 dark:border-[#1F2940] group-hover:border-[#3678F1]/30 group-hover:bg-[#E8F0FE] dark:group-hover:bg-[#15264A] group-hover:text-[#2563EB] dark:group-hover:text-[#60A5FA]'
               }`}>
                 {step.done ? <FaCheck className="text-[9px]" /> : <span>{i + 1}</span>}
               </div>
-              <span className={`text-xs font-medium leading-tight ${step.done ? 'text-neutral-400 line-through' : 'text-neutral-700 group-hover:text-[#2563EB]'}`}>
+              <span className={`text-xs font-medium leading-tight ${step.done ? 'text-neutral-400 dark:text-neutral-500 line-through' : 'text-neutral-700 dark:text-neutral-200 group-hover:text-[#2563EB] dark:group-hover:text-[#60A5FA]'}`}>
                 {step.label}
               </span>
             </Link>
@@ -175,7 +175,7 @@ export default function OnboardingChecklist() {
 
           <button
             onClick={handleDismiss}
-            className="w-full text-center text-[11px] text-neutral-400 hover:text-neutral-600 py-2 mt-2 rounded-lg hover:bg-neutral-50 transition-all font-medium"
+            className="w-full text-center text-[11px] text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300 py-2 mt-2 rounded-lg hover:bg-neutral-50 dark:hover:bg-[#1E2640] transition-all font-medium"
           >
             Dismiss checklist
           </button>

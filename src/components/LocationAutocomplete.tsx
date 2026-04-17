@@ -200,7 +200,7 @@ export default function LocationAutocomplete({
             onFocus={handleFocus}
             placeholder={placeholder}
             disabled={disabled}
-            className="w-full pl-9 pr-8 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3678F1] focus:ring-2 focus:ring-[#3678F1]/10 disabled:bg-neutral-50 transition-all"
+            className="w-full pl-9 pr-8 py-2.5 bg-white dark:bg-[#1E2640] text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 dark:placeholder-neutral-500 border border-neutral-300 dark:border-[#1F2940] rounded-xl text-sm focus:outline-none focus:border-[#3678F1] dark:focus:border-[#60A5FA] focus:ring-2 focus:ring-[#3678F1]/10 disabled:bg-neutral-50 dark:disabled:bg-[#141A28] transition-all"
           />
           {displayValue && !disabled && (
             <button type="button" onClick={handleClear} className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-neutral-400 hover:text-neutral-600">
@@ -213,18 +213,18 @@ export default function LocationAutocomplete({
         </div>
 
         {open && results.length > 0 && (
-          <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-neutral-200 rounded-xl shadow-lg z-50 max-h-64 overflow-y-auto">
+          <div className="absolute left-0 right-0 top-full mt-1 bg-white dark:bg-[#141A28] border border-neutral-200 dark:border-[#1F2940] rounded-xl shadow-lg dark:shadow-black/40 z-50 max-h-64 overflow-y-auto">
             {results.map((r, i) => (
               <button
                 key={`${r.lat}-${r.lng}-${i}`}
                 type="button"
                 onClick={() => handleSelect(r)}
-                className="w-full text-left px-3 py-2.5 hover:bg-[#F0F7FF] transition-colors flex items-start gap-2.5 border-b border-neutral-100 last:border-b-0"
+                className="w-full text-left px-3 py-2.5 hover:bg-[#F0F7FF] dark:hover:bg-[#15264A] transition-colors flex items-start gap-2.5 border-b border-neutral-100 dark:border-[#1F2940] last:border-b-0"
               >
-                <FaLocationDot className="w-3.5 h-3.5 text-[#3678F1] mt-0.5 shrink-0" />
+                <FaLocationDot className="w-3.5 h-3.5 text-[#3678F1] dark:text-[#60A5FA] mt-0.5 shrink-0" />
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-neutral-900 truncate">{r.city}</p>
-                  <p className="text-xs text-neutral-500 truncate">
+                  <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100 truncate">{r.city}</p>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
                     {r.state}
                     {r.pinCode && ` · ${r.pinCode}`}
                   </p>
@@ -235,9 +235,9 @@ export default function LocationAutocomplete({
         )}
 
         {open && query.length >= 2 && !loading && results.length === 0 && (
-          <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-neutral-200 rounded-xl shadow-lg z-50 px-3 py-4 text-center">
-            <p className="text-sm text-neutral-500">No locations found</p>
-            <p className="text-xs text-neutral-400 mt-0.5">Try a different city name or pin code</p>
+          <div className="absolute left-0 right-0 top-full mt-1 bg-white dark:bg-[#141A28] border border-neutral-200 dark:border-[#1F2940] rounded-xl shadow-lg dark:shadow-black/40 z-50 px-3 py-4 text-center">
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">No locations found</p>
+            <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-0.5">Try a different city name or pin code</p>
           </div>
         )}
       </div>
@@ -246,10 +246,10 @@ export default function LocationAutocomplete({
 
   return (
     <div ref={containerRef} className={`relative ${className}`}>
-      {label && <label className="block text-xs font-medium text-neutral-600 mb-1">{label}</label>}
+      {label && <label className="block text-xs font-medium text-neutral-600 dark:text-neutral-300 mb-1">{label}</label>}
 
       <div className="relative">
-        <FaLocationDot className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#3678F1] pointer-events-none" />
+        <FaLocationDot className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#3678F1] dark:text-[#60A5FA] pointer-events-none" />
         <input
           ref={inputRef}
           type="text"
@@ -258,10 +258,10 @@ export default function LocationAutocomplete({
           onFocus={handleFocus}
           placeholder={placeholder}
           disabled={disabled}
-          className="w-full pl-9 pr-8 py-2.5 border border-neutral-300 rounded-xl text-sm focus:outline-none focus:border-[#3678F1] focus:ring-2 focus:ring-[#3678F1]/10 disabled:bg-neutral-50 transition-all"
+          className="w-full pl-9 pr-8 py-2.5 bg-white dark:bg-[#1E2640] text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 dark:placeholder-neutral-500 border border-neutral-300 dark:border-[#1F2940] rounded-xl text-sm focus:outline-none focus:border-[#3678F1] dark:focus:border-[#60A5FA] focus:ring-2 focus:ring-[#3678F1]/10 disabled:bg-neutral-50 dark:disabled:bg-[#141A28] transition-all"
         />
         {displayValue && !disabled && (
-          <button type="button" onClick={handleClear} className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-neutral-400 hover:text-neutral-600">
+          <button type="button" onClick={handleClear} className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300">
             <FaXmark className="w-3 h-3" />
           </button>
         )}
@@ -272,39 +272,39 @@ export default function LocationAutocomplete({
 
       {/* Results dropdown */}
       {open && results.length > 0 && (
-        <div className="absolute left-0 right-0 top-full mt-1.5 bg-white border border-neutral-200 rounded-2xl shadow-xl z-50 max-h-72 overflow-y-auto">
+        <div className="absolute left-0 right-0 top-full mt-1.5 bg-white dark:bg-[#141A28] border border-neutral-200 dark:border-[#1F2940] rounded-2xl shadow-xl dark:shadow-black/40 z-50 max-h-72 overflow-y-auto">
           {results.map((r, i) => (
             <button
               key={`${r.lat}-${r.lng}-${i}`}
               type="button"
               onClick={() => handleSelect(r)}
-              className="w-full text-left px-4 py-3 hover:bg-[#F0F7FF] transition-colors flex items-start gap-3 border-b border-neutral-100 last:border-b-0 last:rounded-b-2xl first:rounded-t-2xl"
+              className="w-full text-left px-4 py-3 hover:bg-[#F0F7FF] dark:hover:bg-[#15264A] transition-colors flex items-start gap-3 border-b border-neutral-100 dark:border-[#1F2940] last:border-b-0 last:rounded-b-2xl first:rounded-t-2xl"
             >
-              <div className="w-8 h-8 rounded-lg bg-[#E8F0FE] flex items-center justify-center shrink-0 mt-0.5">
-                <FaLocationDot className="w-3.5 h-3.5 text-[#3678F1]" />
+              <div className="w-8 h-8 rounded-lg bg-[#E8F0FE] dark:bg-[#15264A] flex items-center justify-center shrink-0 mt-0.5">
+                <FaLocationDot className="w-3.5 h-3.5 text-[#3678F1] dark:text-[#60A5FA]" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-neutral-900">{r.city}</p>
-                <p className="text-xs text-neutral-500 mt-0.5">
+                <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{r.city}</p>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
                   {r.state}, India
                   {r.pinCode && (
-                    <span className="ml-2 px-1.5 py-0.5 bg-neutral-100 rounded text-[10px] font-mono text-neutral-600">{r.pinCode}</span>
+                    <span className="ml-2 px-1.5 py-0.5 bg-neutral-100 dark:bg-[#1E2640] rounded text-[10px] font-mono text-neutral-600 dark:text-neutral-300">{r.pinCode}</span>
                   )}
                 </p>
               </div>
             </button>
           ))}
-          <div className="px-3 py-1.5 bg-neutral-50 rounded-b-2xl border-t border-neutral-100">
-            <p className="text-[10px] text-neutral-400 text-center">Powered by OpenStreetMap</p>
+          <div className="px-3 py-1.5 bg-neutral-50 dark:bg-[#0A0E17] rounded-b-2xl border-t border-neutral-100 dark:border-[#1F2940]">
+            <p className="text-[10px] text-neutral-400 dark:text-neutral-500 text-center">Powered by OpenStreetMap</p>
           </div>
         </div>
       )}
 
       {open && query.length >= 2 && !loading && results.length === 0 && (
-        <div className="absolute left-0 right-0 top-full mt-1.5 bg-white border border-neutral-200 rounded-2xl shadow-xl z-50 px-4 py-5 text-center">
-          <FaLocationDot className="w-6 h-6 text-neutral-300 mx-auto mb-2" />
-          <p className="text-sm text-neutral-500">No locations found</p>
-          <p className="text-xs text-neutral-400 mt-0.5">Try a different city name or pin code</p>
+        <div className="absolute left-0 right-0 top-full mt-1.5 bg-white dark:bg-[#141A28] border border-neutral-200 dark:border-[#1F2940] rounded-2xl shadow-xl dark:shadow-black/40 z-50 px-4 py-5 text-center">
+          <FaLocationDot className="w-6 h-6 text-neutral-300 dark:text-neutral-600 mx-auto mb-2" />
+          <p className="text-sm text-neutral-500 dark:text-neutral-400">No locations found</p>
+          <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-0.5">Try a different city name or pin code</p>
         </div>
       )}
     </div>

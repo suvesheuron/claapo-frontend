@@ -13,18 +13,18 @@ export default function RoleSwitcher() {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 bg-white rounded-lg shadow-lg border border-neutral-200 p-3 max-w-xs">
+    <div className="fixed bottom-4 right-4 z-50 bg-white dark:bg-[#141A28] rounded-lg shadow-lg dark:shadow-black/40 border border-neutral-200 dark:border-[#1F2940] p-3 max-w-xs">
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
         className="w-full flex items-center justify-between gap-2"
       >
         <div className="text-left">
-          <p className="text-xs font-semibold text-neutral-900 mb-0.5">Switch Role (Dev Mode)</p>
-          <p className="text-[10px] text-neutral-500">change roles here</p>
+          <p className="text-xs font-semibold text-neutral-900 dark:text-neutral-100 mb-0.5">Switch Role (Dev Mode)</p>
+          <p className="text-[10px] text-neutral-500 dark:text-neutral-400">change roles here</p>
         </div>
         <FaChevronDown
-          className={`w-3 h-3 text-neutral-500 transition-transform ${open ? 'rotate-180' : ''}`}
+          className={`w-3 h-3 text-neutral-500 dark:text-neutral-400 transition-transform ${open ? 'rotate-180' : ''}`}
         />
       </button>
 
@@ -39,14 +39,14 @@ export default function RoleSwitcher() {
                 onClick={() => setCurrentRole(role.value)}
                 className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition ${
                   isActive
-                    ? 'bg-neutral-900 text-white'
-                    : 'bg-neutral-50 text-neutral-700 hover:bg-neutral-100'
+                    ? 'bg-neutral-900 dark:bg-[#1E2640] text-white'
+                    : 'bg-neutral-50 dark:bg-[#1E2640]/50 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-[#1E2640]'
                 }`}
               >
                 <Icon className="w-4 h-4 shrink-0" />
                 <div className="flex-1 min-w-0">
                   <div className="text-xs font-medium truncate">{role.label}</div>
-                  <div className={`text-[10px] truncate ${isActive ? 'text-neutral-300' : 'text-neutral-500'}`}>
+                  <div className={`text-[10px] truncate ${isActive ? 'text-neutral-300' : 'text-neutral-500 dark:text-neutral-400'}`}>
                     {role.description}
                   </div>
                 </div>

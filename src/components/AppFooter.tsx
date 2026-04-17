@@ -101,9 +101,9 @@ export default function AppFooter({ variant = 'light' }: AppFooterProps) {
   const inverted = variant === 'inverted';
 
   return (
-    <footer className={`py-3 shrink-0 ${inverted ? 'bg-[#3678F1]' : 'border-t border-neutral-200 bg-white'}`}>
+    <footer className={`py-3 shrink-0 ${inverted ? 'bg-[#3678F1]' : 'border-t border-neutral-200 dark:border-[#1F2940] bg-white dark:bg-[#141A28]'}`}>
       <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-8 flex flex-col sm:flex-row items-center justify-between gap-2 min-w-0">
-        <p className={`${inverted ? 'text-white' : 'text-neutral-400'} text-xs`}>
+        <p className={`${inverted ? 'text-white' : 'text-neutral-400 dark:text-neutral-500'} text-xs`}>
           &copy; {currentYear} Claapo. All rights reserved.
         </p>
         <div className="flex items-center gap-5">
@@ -115,7 +115,7 @@ export default function AppFooter({ variant = 'light' }: AppFooterProps) {
             <Link
               key={link.title}
               to={link.to}
-              className={`${inverted ? 'text-white hover:text-white/80' : 'text-neutral-400 hover:text-neutral-600'} text-xs transition-colors`}
+              className={`${inverted ? 'text-white hover:text-white/80' : 'text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300'} text-xs transition-colors`}
             >
               {link.title}
             </Link>

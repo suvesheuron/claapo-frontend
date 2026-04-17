@@ -27,8 +27,8 @@ const COLOR_MAP: Record<LogoVariant, {
   mark: string;
   text: string;
 }> = {
-  default:      { tileTop: '#3678F1', tileBottom: '#2563EB', mark: '#FFFFFF', text: 'text-neutral-900' },
-  'mono-dark':  { tileTop: '#1E293B', tileBottom: '#0F172A', mark: '#FFFFFF', text: 'text-neutral-900' },
+  default:      { tileTop: '#3678F1', tileBottom: '#2563EB', mark: '#FFFFFF', text: 'text-neutral-900 dark:text-neutral-100' },
+  'mono-dark':  { tileTop: '#1E293B', tileBottom: '#0F172A', mark: '#FFFFFF', text: 'text-neutral-900 dark:text-neutral-100' },
   'mono-light': { tileTop: '#FFFFFF', tileBottom: '#F1F5F9', mark: '#3678F1', text: 'text-white'       },
 };
 

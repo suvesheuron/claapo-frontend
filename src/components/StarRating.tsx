@@ -19,7 +19,7 @@ export default function StarRating({ rating, onChange, size = 'md' }: StarRating
         const isHalf = !isFull && rating >= star - 0.5;
 
         const Icon = isHalf ? FaStarHalfStroke : FaStar;
-        const colorClass = isFull || isHalf ? 'text-[#F59E0B]' : 'text-neutral-300';
+        const colorClass = isFull || isHalf ? 'text-[#F59E0B]' : 'text-neutral-300 dark:text-neutral-600';
 
         return (
           <button

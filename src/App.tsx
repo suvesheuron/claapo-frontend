@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-route
 import ProtectedRoute from './components/ProtectedRoute';
 import { useAuth, type BackendRole } from './contexts/AuthContext';
 import { useRole, type UserRole } from './contexts/RoleContext';
+import { useTheme } from './contexts/ThemeContext';
 import { ChatUnreadProvider } from './contexts/ChatUnreadContext';
 import { NavBadgesProvider } from './contexts/NavBadgesContext';
 import { SidebarProvider } from './contexts/SidebarContext';
@@ -116,9 +117,9 @@ function ScrollToTop() {
 
 function PageFallback() {
   return (
-    <div className="min-h-screen bg-[#F3F4F6] flex flex-col items-center justify-center gap-4">
+    <div className="min-h-screen bg-[#F3F4F6] dark:bg-[#0A0E17] flex flex-col items-center justify-center gap-4">
       <span className="w-10 h-10 border-[2.5px] border-[#3678F1]/15 border-t-[#3678F1] border-r-[#3678F1] rounded-full animate-spin" />
-      <p className="text-sm text-neutral-500 font-medium">Loading…</p>
+      <p className="text-sm text-neutral-500 dark:text-neutral-400 font-medium">Loading…</p>
     </div>
   );
 }
@@ -151,6 +152,24 @@ function LegacyDashboardRedirect() {
   return <Navigate to={to} replace />;
 }
 
+function ThemedToaster() {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+  return (
+    <Toaster
+      position="top-center"
+      toastOptions={{
+        duration: 4000,
+        style: {
+          background: isDark ? '#141A28' : '#ffffff',
+          color: isDark ? '#E5E7EB' : '#0f172a',
+          border: `1px solid ${isDark ? '#1F2940' : '#E5E7EB'}`,
+        },
+      }}
+    />
+  );
+}
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -158,7 +177,7 @@ export default function App() {
         <NavBadgesProvider>
         <SidebarProvider>
         <ScrollToTop />
-        <Toaster position="top-center" toastOptions={{ duration: 4000 }} />
+        <ThemedToaster />
         <AuthRoleSyncBridge />
         <Suspense fallback={<PageFallback />}>
           <Routes>

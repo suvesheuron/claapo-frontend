@@ -59,7 +59,7 @@ export default function AuthLayout({
   const cardWidth = wide ? 'max-w-[560px]' : 'max-w-[460px]';
 
   return (
-    <div className="min-h-screen lg:h-screen lg:overflow-hidden w-full grid grid-cols-1 lg:grid-cols-2 bg-white">
+    <div className="min-h-screen lg:h-screen lg:overflow-hidden w-full grid grid-cols-1 lg:grid-cols-2 bg-white dark:bg-[#0A0E17]">
 
       {/* ═════════════════ Left brand panel (lg+) ═════════════════ */}
       <aside
@@ -138,7 +138,7 @@ export default function AuthLayout({
       </aside>
 
       {/* ═════════════════ Right form column ═════════════════ */}
-      <section className="relative flex flex-col items-center px-5 sm:px-8 py-10 sm:py-14 bg-[#F8FAFC] min-h-screen lg:h-screen lg:overflow-y-auto">
+      <section className="relative flex flex-col items-center px-5 sm:px-8 py-10 sm:py-14 bg-[#F8FAFC] dark:bg-[#0A0E17] min-h-screen lg:h-screen lg:overflow-y-auto">
         <div className={`w-full ${cardWidth} lg:my-auto`}>
 
           {/* Mobile-only logo */}
@@ -148,21 +148,21 @@ export default function AuthLayout({
 
           {/* Heading */}
           <div className="mb-6 text-center lg:text-left">
-            <h1 className="text-[28px] sm:text-[32px] font-extrabold tracking-tight text-neutral-900 leading-tight">
+            <h1 className="text-[28px] sm:text-[32px] font-extrabold tracking-tight text-neutral-900 dark:text-neutral-100 leading-tight">
               {title}
             </h1>
             {subtitle && (
-              <p className="text-[15px] text-neutral-500 mt-2">{subtitle}</p>
+              <p className="text-[15px] text-neutral-500 dark:text-neutral-400 mt-2">{subtitle}</p>
             )}
           </div>
 
           {/* Card */}
-          <div className="rounded-2xl bg-white border border-neutral-200/80 p-6 sm:p-8 shadow-[0_1px_0_0_rgba(15,23,42,0.04),0_24px_48px_-24px_rgba(15,23,42,0.18)]">
+          <div className="rounded-2xl bg-white dark:bg-[#141A28] border border-neutral-200/80 dark:border-[#1F2940] p-6 sm:p-8 shadow-[0_1px_0_0_rgba(15,23,42,0.04),0_24px_48px_-24px_rgba(15,23,42,0.18)] dark:shadow-[0_1px_0_0_rgba(0,0,0,0.4),0_24px_48px_-24px_rgba(0,0,0,0.6)]">
             {/* Back link inside card */}
             <div className="mb-5 -ml-1">
               <Link
                 to={backTo}
-                className="inline-flex items-center gap-2 px-2.5 py-1.5 -my-1 rounded-lg text-[13px] font-semibold text-neutral-500 hover:text-[#3678F1] hover:bg-neutral-100 transition-colors"
+                className="inline-flex items-center gap-2 px-2.5 py-1.5 -my-1 rounded-lg text-[13px] font-semibold text-neutral-500 dark:text-neutral-400 hover:text-[#3678F1] dark:hover:text-[#60A5FA] hover:bg-neutral-100 dark:hover:bg-[#1E2640] transition-colors"
               >
                 <FaArrowLeft className="w-3 h-3" aria-hidden />
                 {backLabel}
@@ -173,7 +173,7 @@ export default function AuthLayout({
           </div>
 
           {footer && (
-            <div className="mt-6 text-center text-[11px] text-neutral-400 leading-relaxed">
+            <div className="mt-6 text-center text-[11px] text-neutral-400 dark:text-neutral-500 leading-relaxed">
               {footer}
             </div>
           )}

@@ -7,6 +7,15 @@
     <meta name="description" content="Claapo – Hire film crews and vendors with confidence. Connect production companies with verified freelance crew and equipment vendors. Streamline hiring, manage availability, and lock your team in one platform." />
     <meta name="theme-color" content="#3678F1" />
     <title>Claapo – Hire Film Crews & Vendors</title>
+    <script>
+      // No-flash theme init — runs before React so the correct theme class is set immediately.
+      (function () {
+        try {
+          var t = localStorage.getItem('claapo:theme');
+          if (t === 'dark') document.documentElement.classList.add('dark');
+        } catch (_) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

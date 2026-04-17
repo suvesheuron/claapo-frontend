@@ -1,6 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
+/* Tailwind v4 dark variant — activates utilities like `dark:bg-surface` when <html> has .dark */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /*
   CLAAPO Design System
   Primary (Blue):   #3678F1 – header, nav, primary actions
@@ -14,7 +17,7 @@
 @theme {
   --font-sans: 'Outfit', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
-  /* Brand colors — CLAAPO palette */
+  /* Brand colors — CLAAPO palette (static across themes) */
   --color-brand-primary:      #3678F1;
   --color-brand-primary-dark: #2563EB;
   --color-brand-primary-soft: #E8F0FE;
@@ -23,6 +26,28 @@
   --color-brand-success:      #22C55E;
   --color-brand-error:        #F40F02;
   --color-surface:            #F3F4F6;
+
+  /* Semantic tokens — resolved from CSS variables in :root / .dark below.
+     Exposed to Tailwind as utilities like bg-bg, bg-surface-1, text-app, text-muted,
+     border-app, bg-brand, text-brand, etc. */
+  --color-bg:           var(--ui-bg);
+  --color-surface-1:    var(--ui-surface-1);
+  --color-surface-2:    var(--ui-surface-2);
+  --color-surface-3:    var(--ui-surface-3);
+  --color-app:          var(--ui-text);
+  --color-muted:        var(--ui-text-muted);
+  --color-subtle:       var(--ui-text-subtle);
+  --color-app-border:   var(--ui-border);
+  --color-app-border-strong: var(--ui-border-strong);
+  --color-brand:        var(--ui-brand);
+  --color-brand-hover:  var(--ui-brand-hover);
+  --color-brand-soft:   var(--ui-brand-soft);
+  --color-success-bg:   var(--ui-success-bg);
+  --color-success-fg:   var(--ui-success-fg);
+  --color-warn-bg:      var(--ui-warn-bg);
+  --color-warn-fg:      var(--ui-warn-fg);
+  --color-error-bg:     var(--ui-error-bg);
+  --color-error-fg:     var(--ui-error-fg);
 
   /* Custom shadows */
   --shadow-soft:  0 4px 20px -2px rgba(15, 23, 42, 0.05);
@@ -34,12 +59,254 @@
   --animate-pulse-slow: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
+/* ── Semantic theme tokens ──────────────────────────────────────────
+   Light mode (default). Apply .dark on <html> to switch. */
+:root {
+  --ui-bg:             #F3F4F6;
+  --ui-surface-1:      #FFFFFF;
+  --ui-surface-2:      #F8FAFC;
+  --ui-surface-3:      #EEF2F7;
+  --ui-text:           #0F172A;
+  --ui-text-muted:     #525252;
+  --ui-text-subtle:    #6B7280;
+  --ui-border:         #E5E7EB;
+  --ui-border-strong:  #CBD5E1;
+  --ui-brand:          #3678F1;
+  --ui-brand-hover:    #2563EB;
+  --ui-brand-soft:     #E8F0FE;
+  --ui-success-bg:     #DCFCE7;
+  --ui-success-fg:     #15803D;
+  --ui-warn-bg:        #FEF3C7;
+  --ui-warn-fg:        #92400E;
+  --ui-error-bg:       #FEE2E2;
+  --ui-error-fg:       #991B1B;
+
+  --ui-scroll-thumb:   #CBD5E1;
+  --ui-scroll-thumb-hover: #94A3B8;
+  --ui-shimmer-from:   rgba(243, 244, 246, 1);
+  --ui-shimmer-mid:    rgba(232, 240, 254, 0.9);
+  --ui-glass-panel:    rgba(255, 255, 255, 0.7);
+  --ui-glass-panel-border: rgba(255, 255, 255, 0.4);
+  --ui-glass-input:    rgba(255, 255, 255, 0.85);
+  --ui-glass-input-border: rgba(255, 255, 255, 0.5);
+}
+
+.dark {
+  /* Layered professional dark palette — chrome is darker than canvas, cards lift above canvas */
+  --ui-bg:             #0A0E17;  /* main page canvas */
+  --ui-chrome:         #05070D;  /* navbar / sidebar — recessed frame */
+  --ui-surface-1:      #141A28;  /* cards, popovers, modals (lifted) */
+  --ui-surface-2:      #1E2640;  /* elevated rows / inner cards */
+  --ui-surface-3:      #2A3350;  /* hover state */
+  --ui-text:           #F1F5F9;  /* primary text — crisp */
+  --ui-text-muted:     #A1ADC4;  /* readable paragraph text */
+  --ui-text-subtle:    #7A8499;  /* captions / meta */
+  --ui-border:         #1F2940;  /* subtle divider */
+  --ui-border-strong:  #354763;  /* emphasized border */
+  --ui-brand:          #5C9EFF;  /* on-brand blue, lifted for dark — passes AA */
+  --ui-brand-hover:    #82B6FF;
+  --ui-brand-soft:     #172A4D;  /* warmer navy, pairs with --ui-brand */
+  --ui-success-bg:     #14321F;
+  --ui-success-fg:     #4ADE80;
+  --ui-warn-bg:        #3B2A10;
+  --ui-warn-fg:        #FBBF24;
+  --ui-error-bg:       #3A1414;
+  --ui-error-fg:       #FCA5A5;
+
+  --ui-scroll-thumb:   #2A3350;
+  --ui-scroll-thumb-hover: #3E4A6B;
+  --ui-shimmer-from:   rgba(20, 26, 40, 1);
+  --ui-shimmer-mid:    rgba(42, 51, 80, 0.9);
+  --ui-glass-panel:    rgba(20, 26, 40, 0.72);
+  --ui-glass-panel-border: rgba(255, 255, 255, 0.06);
+  --ui-glass-input:    rgba(30, 38, 64, 0.85);
+  --ui-glass-input-border: rgba(255, 255, 255, 0.08);
+
+  color-scheme: dark;
+}
+
+/* ── Legacy dark-mode fallbacks ──────────────────────────────────────
+   Applies dark equivalents to common light utilities on pages that
+   haven't been explicitly themed yet. Skipped automatically when the
+   element already has its own `dark:<utility>` override (detected via
+   attribute selector). Lets the dashboard and other un-theamed pages
+   render with correct contrast immediately. */
+
+/* Surface backgrounds — neutral fills become brand-tinted navy (not grey) */
+.dark .bg-white:where(:not([class*="dark:bg-"])) { background-color: #141A28; }
+.dark .bg-neutral-50:where(:not([class*="dark:bg-"])) { background-color: #101828; }
+.dark .bg-neutral-100:where(:not([class*="dark:bg-"])) { background-color: #162543; }
+.dark .bg-neutral-200:where(:not([class*="dark:bg-"])) { background-color: #1E3158; }
+.dark .bg-slate-50:where(:not([class*="dark:bg-"])) { background-color: #101828; }
+.dark .bg-slate-100:where(:not([class*="dark:bg-"])) { background-color: #162543; }
+.dark .bg-slate-200:where(:not([class*="dark:bg-"])) { background-color: #1E3158; }
+.dark .border-slate-100:where(:not([class*="dark:border-"])) { border-color: #1F2940; }
+.dark .border-slate-200:where(:not([class*="dark:border-"])) { border-color: #1F2940; }
+
+/* Canvas greys — become main page background */
+.dark .bg-\[\#F3F4F6\]:where(:not([class*="dark:bg-"])) { background-color: #0A0E17; }
+.dark .bg-\[\#F8FAFC\]:where(:not([class*="dark:bg-"])) { background-color: #0A0E17; }
+.dark .bg-\[\#F9FAFB\]:where(:not([class*="dark:bg-"])) { background-color: #0A0E17; }
+.dark .bg-\[\#FAFAFA\]:where(:not([class*="dark:bg-"])) { background-color: #0A0E17; }
+.dark .bg-\[\#F4F8FE\]:where(:not([class*="dark:bg-"])) { background-color: #101830; }
+
+/* Brand-soft fills (blue tints) */
+.dark .bg-\[\#E8F0FE\]:where(:not([class*="dark:bg-"])) { background-color: #172A4D; }
+.dark .bg-\[\#DBEAFE\]:where(:not([class*="dark:bg-"])) { background-color: #172A4D; }
+.dark .bg-\[\#BFDBFE\]:where(:not([class*="dark:bg-"])) { background-color: #213B70; }
+.dark .bg-\[\#EEF5FD\]:where(:not([class*="dark:bg-"])) { background-color: #0F1A2E; }
+.dark .bg-\[\#F0F6FD\]:where(:not([class*="dark:bg-"])) { background-color: #0F1A2E; }
+.dark .bg-\[\#EEF1FF\]:where(:not([class*="dark:bg-"])) { background-color: #172A4D; }
+.dark .bg-\[\#EEF2FF\]:where(:not([class*="dark:bg-"])) { background-color: #172A4D; }
+.dark .from-\[\#EEF1FF\] { --tw-gradient-from: #172A4D; }
+.dark .from-\[\#EEF2FF\] { --tw-gradient-from: #172A4D; }
+
+/* Opacity-suffix neutral surfaces — common in empty states & table headers
+   The bare selector `.bg-neutral-50` doesn't match `.bg-neutral-50\/50`,
+   so we have to enumerate the opacity variants Tailwind generates. */
+.dark .bg-neutral-50\/30:where(:not([class*="dark:bg-"])) { background-color: rgba(16, 24, 40, 0.45); }
+.dark .bg-neutral-50\/50:where(:not([class*="dark:bg-"])) { background-color: rgba(16, 24, 40, 0.6); }
+.dark .bg-neutral-50\/60:where(:not([class*="dark:bg-"])) { background-color: rgba(16, 24, 40, 0.7); }
+.dark .bg-neutral-50\/70:where(:not([class*="dark:bg-"])) { background-color: rgba(16, 24, 40, 0.75); }
+.dark .bg-neutral-50\/80:where(:not([class*="dark:bg-"])) { background-color: rgba(16, 24, 40, 0.85); }
+.dark .bg-neutral-100\/50:where(:not([class*="dark:bg-"])) { background-color: rgba(22, 37, 67, 0.5); }
+.dark .bg-neutral-100\/60:where(:not([class*="dark:bg-"])) { background-color: rgba(22, 37, 67, 0.65); }
+.dark .bg-neutral-100\/70:where(:not([class*="dark:bg-"])) { background-color: rgba(22, 37, 67, 0.75); }
+.dark .bg-neutral-100\/80:where(:not([class*="dark:bg-"])) { background-color: rgba(22, 37, 67, 0.85); }
+.dark .bg-slate-50\/50:where(:not([class*="dark:bg-"])) { background-color: rgba(16, 24, 40, 0.6); }
+.dark .bg-slate-50\/80:where(:not([class*="dark:bg-"])) { background-color: rgba(16, 24, 40, 0.85); }
+
+/* Opacity-suffix brand-soft gradient stops */
+.dark .to-\[\#E8F0FE\]\/40 { --tw-gradient-to: rgba(23, 42, 77, 0.45); }
+.dark .to-\[\#E8F0FE\]\/60 { --tw-gradient-to: rgba(23, 42, 77, 0.6); }
+.dark .via-\[\#E8F0FE\]\/40 { --tw-gradient-via: rgba(23, 42, 77, 0.45); }
+.dark .via-\[\#E8F0FE\]\/60 { --tw-gradient-via: rgba(23, 42, 77, 0.6); }
+
+/* Brand blue text — flip explicit hex usages to the lifted dark-mode brand */
+.dark .text-\[\#3678F1\]:where(:not([class*="dark:text-"])) { color: #5C9EFF; }
+.dark .text-\[\#2563EB\]:where(:not([class*="dark:text-"])) { color: #82B6FF; }
+.dark .text-\[\#1D4ED8\]:where(:not([class*="dark:text-"])) { color: #82B6FF; }
+.dark .text-\[\#1E3A8A\]:where(:not([class*="dark:text-"])) { color: #B0CEFF; }
+
+/* Status-soft fills */
+.dark .bg-\[\#DCFCE7\]:where(:not([class*="dark:bg-"])) { background-color: #14321F; }
+.dark .bg-\[\#BBF7D0\]:where(:not([class*="dark:bg-"])) { background-color: #14321F; }
+.dark .bg-\[\#FEF3C7\]:where(:not([class*="dark:bg-"])) { background-color: #3B2A10; }
+.dark .bg-\[\#FEF7E0\]:where(:not([class*="dark:bg-"])) { background-color: #3B2A10; }
+.dark .bg-\[\#FEF6DA\]:where(:not([class*="dark:bg-"])) { background-color: #3B2A10; }
+.dark .bg-\[\#FEE2E2\]:where(:not([class*="dark:bg-"])) { background-color: #3A1414; }
+.dark .bg-\[\#FEEBEA\]:where(:not([class*="dark:bg-"])) { background-color: #3A1414; }
+
+/* Tailwind named semantic fills */
+.dark .bg-green-50:where(:not([class*="dark:bg-"])) { background-color: #14321F; }
+.dark .bg-green-100:where(:not([class*="dark:bg-"])) { background-color: #14321F; }
+.dark .bg-emerald-50:where(:not([class*="dark:bg-"])) { background-color: #14321F; }
+.dark .bg-emerald-100:where(:not([class*="dark:bg-"])) { background-color: #14321F; }
+.dark .bg-red-50:where(:not([class*="dark:bg-"])) { background-color: #3A1414; }
+.dark .bg-red-100:where(:not([class*="dark:bg-"])) { background-color: #3A1414; }
+.dark .bg-amber-50:where(:not([class*="dark:bg-"])) { background-color: #3B2A10; }
+.dark .bg-amber-100:where(:not([class*="dark:bg-"])) { background-color: #3B2A10; }
+.dark .bg-yellow-50:where(:not([class*="dark:bg-"])) { background-color: #3B2A10; }
+.dark .bg-yellow-100:where(:not([class*="dark:bg-"])) { background-color: #3B2A10; }
+.dark .bg-violet-50:where(:not([class*="dark:bg-"])) { background-color: #2A1F47; }
+.dark .bg-violet-100:where(:not([class*="dark:bg-"])) { background-color: #3B2C66; }
+.dark .bg-purple-50:where(:not([class*="dark:bg-"])) { background-color: #2A1F47; }
+.dark .bg-purple-100:where(:not([class*="dark:bg-"])) { background-color: #3B2C66; }
+.dark .bg-blue-50:where(:not([class*="dark:bg-"])) { background-color: #172A4D; }
+.dark .bg-blue-100:where(:not([class*="dark:bg-"])) { background-color: #213B70; }
+.dark .bg-indigo-50:where(:not([class*="dark:bg-"])) { background-color: #172A4D; }
+.dark .bg-indigo-100:where(:not([class*="dark:bg-"])) { background-color: #213B70; }
+.dark .text-green-700:where(:not([class*="dark:text-"])) { color: #4ADE80; }
+.dark .text-green-600:where(:not([class*="dark:text-"])) { color: #4ADE80; }
+.dark .text-emerald-700:where(:not([class*="dark:text-"])) { color: #4ADE80; }
+.dark .text-red-700:where(:not([class*="dark:text-"])) { color: #FCA5A5; }
+.dark .text-red-600:where(:not([class*="dark:text-"])) { color: #FCA5A5; }
+.dark .text-amber-700:where(:not([class*="dark:text-"])) { color: #FBBF24; }
+.dark .text-yellow-700:where(:not([class*="dark:text-"])) { color: #FBBF24; }
+
+/* Text — dark greys flip to light greys (lifted for max readability on dark) */
+.dark .text-neutral-900:where(:not([class*="dark:text-"])) { color: #F1F5F9; }
+.dark .text-neutral-800:where(:not([class*="dark:text-"])) { color: #E5E7EB; }
+.dark .text-neutral-700:where(:not([class*="dark:text-"])) { color: #D1D9E6; }
+.dark .text-neutral-600:where(:not([class*="dark:text-"])) { color: #B5C2D8; }
+.dark .text-neutral-500:where(:not([class*="dark:text-"])) { color: #A1ADC4; }
+.dark .text-neutral-400:where(:not([class*="dark:text-"])) { color: #94A3B8; }
+.dark .text-neutral-300:where(:not([class*="dark:text-"])) { color: #6B7689; }
+.dark .text-slate-900:where(:not([class*="dark:text-"])) { color: #F1F5F9; }
+.dark .text-slate-800:where(:not([class*="dark:text-"])) { color: #E5E7EB; }
+.dark .text-slate-700:where(:not([class*="dark:text-"])) { color: #D1D9E6; }
+.dark .text-slate-600:where(:not([class*="dark:text-"])) { color: #B5C2D8; }
+.dark .text-slate-500:where(:not([class*="dark:text-"])) { color: #A1ADC4; }
+.dark .text-slate-400:where(:not([class*="dark:text-"])) { color: #94A3B8; }
+.dark .text-slate-300:where(:not([class*="dark:text-"])) { color: #6B7689; }
+.dark .text-\[\#0f172a\]:where(:not([class*="dark:text-"])) { color: #F1F5F9; }
+.dark .text-\[\#0F172A\]:where(:not([class*="dark:text-"])) { color: #F1F5F9; }
+.dark .text-\[\#171717\]:where(:not([class*="dark:text-"])) { color: #F1F5F9; }
+.dark .text-\[\#525252\]:where(:not([class*="dark:text-"])) { color: #B5C2D8; }
+
+/* Status / brand-dark text colors — flip to readable light shades */
+.dark .text-\[\#15803D\]:where(:not([class*="dark:text-"])) { color: #86EFAC; }   /* status-open green */
+.dark .text-\[\#166534\]:where(:not([class*="dark:text-"])) { color: #86EFAC; }
+.dark .text-\[\#946A00\]:where(:not([class*="dark:text-"])) { color: #FDE68A; }   /* status-ongoing yellow */
+.dark .text-\[\#7C5A00\]:where(:not([class*="dark:text-"])) { color: #FDE68A; }
+.dark .text-\[\#92400E\]:where(:not([class*="dark:text-"])) { color: #FDE68A; }
+.dark .text-\[\#8A6508\]:where(:not([class*="dark:text-"])) { color: #FBBF24; }   /* role-vendor yellow */
+.dark .text-\[\#991B1B\]:where(:not([class*="dark:text-"])) { color: #FCA5A5; }   /* status-cancelled red */
+.dark .text-\[\#B91C1C\]:where(:not([class*="dark:text-"])) { color: #FCA5A5; }
+.dark .text-\[\#C20D02\]:where(:not([class*="dark:text-"])) { color: #FCA5A5; }
+.dark .text-\[\#7F1D1D\]:where(:not([class*="dark:text-"])) { color: #FCA5A5; }
+.dark .text-\[\#1E40AF\]:where(:not([class*="dark:text-"])) { color: #B0CEFF; }   /* deep brand blue */
+
+/* Tailwind named semantic text — make sure dark-shade body usages stay readable */
+.dark .text-blue-700:where(:not([class*="dark:text-"])) { color: #82B6FF; }
+.dark .text-blue-600:where(:not([class*="dark:text-"])) { color: #82B6FF; }
+.dark .text-blue-800:where(:not([class*="dark:text-"])) { color: #B0CEFF; }
+.dark .text-blue-900:where(:not([class*="dark:text-"])) { color: #B0CEFF; }
+.dark .text-indigo-700:where(:not([class*="dark:text-"])) { color: #B0CEFF; }
+.dark .text-indigo-600:where(:not([class*="dark:text-"])) { color: #B0CEFF; }
+.dark .text-violet-700:where(:not([class*="dark:text-"])) { color: #DDD6FE; }
+.dark .text-violet-600:where(:not([class*="dark:text-"])) { color: #DDD6FE; }
+.dark .text-purple-700:where(:not([class*="dark:text-"])) { color: #DDD6FE; }
+.dark .text-purple-600:where(:not([class*="dark:text-"])) { color: #DDD6FE; }
+.dark .text-emerald-600:where(:not([class*="dark:text-"])) { color: #4ADE80; }
+.dark .text-emerald-800:where(:not([class*="dark:text-"])) { color: #86EFAC; }
+.dark .text-amber-600:where(:not([class*="dark:text-"])) { color: #FBBF24; }
+.dark .text-amber-800:where(:not([class*="dark:text-"])) { color: #FDE68A; }
+.dark .text-yellow-600:where(:not([class*="dark:text-"])) { color: #FBBF24; }
+.dark .text-yellow-800:where(:not([class*="dark:text-"])) { color: #FDE68A; }
+.dark .text-red-800:where(:not([class*="dark:text-"])) { color: #FCA5A5; }
+.dark .text-red-500:where(:not([class*="dark:text-"])) { color: #FCA5A5; }
+
+/* Borders — subtle neutral borders blend into dark */
+.dark .border-neutral-100:where(:not([class*="dark:border-"])) { border-color: #1F2940; }
+.dark .border-neutral-200:where(:not([class*="dark:border-"])) { border-color: #1F2940; }
+.dark .border-neutral-300:where(:not([class*="dark:border-"])) { border-color: #2A3350; }
+.dark .border-\[\#E5E7EB\]:where(:not([class*="dark:border-"])) { border-color: #1F2940; }
+
+/* Divide colors (divide-y / divide-x) */
+.dark .divide-neutral-100 > :not([hidden]) ~ :not([hidden]):where(:not([class*="dark:divide-"])) { border-color: #1F2940; }
+.dark .divide-neutral-200 > :not([hidden]) ~ :not([hidden]):where(:not([class*="dark:divide-"])) { border-color: #1F2940; }
+
+/* Decorative light-blue gradient stops — kill the "white glow" effect that
+   appears over dark cards (greeting banners, icon tiles, empty states). */
+.dark .from-\[\#E8F0FE\]\/60 { --tw-gradient-from: transparent; }
+.dark .from-\[\#E8F0FE\] { --tw-gradient-from: #172A4D; }
+.dark .from-\[\#DBEAFE\] { --tw-gradient-from: #213B70; }
+.dark .from-\[\#F4F8FE\] { --tw-gradient-from: #0F1A2E; }
+.dark .via-\[\#F4F8FE\] { --tw-gradient-via: #0F1A2E; }
+.dark .to-\[\#E8F0FE\] { --tw-gradient-to: #172A4D; }
+.dark .to-\[\#DBEAFE\] { --tw-gradient-to: #213B70; }
+.dark .to-\[\#F4F8FE\] { --tw-gradient-to: #0F1A2E; }
+.dark .to-white:where(:not([class*="dark:to-"])) { --tw-gradient-to: #141A28; }
+.dark .from-white:where(:not([class*="dark:from-"])) { --tw-gradient-from: #141A28; }
+.dark .via-white:where(:not([class*="dark:via-"])) { --tw-gradient-via: #141A28; }
+
 /* Glassmorphism Classes */
 .glass-panel {
-  background: rgba(255, 255, 255, 0.7);
+  background: var(--ui-glass-panel);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  border: 1px solid var(--ui-glass-panel-border);
 }
 
 .glass-dark {
@@ -50,9 +317,9 @@
 }
 
 .glass-input {
-  background: rgba(255, 255, 255, 0.85);
+  background: var(--ui-glass-input);
   backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.5);
+  border: 1px solid var(--ui-glass-input-border);
   box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
 }
 
@@ -76,11 +343,12 @@ body {
   width: 100%;
   max-width: 100vw;
   font-family: var(--font-sans);
-  color: #171717;
-  background-color: #F3F4F6;
+  color: var(--ui-text);
+  background-color: var(--ui-bg);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
+  transition: background-color 150ms ease, color 150ms ease;
 }
 
 img, video, svg {
@@ -129,9 +397,9 @@ img, video, svg {
 .skeleton {
   background-image: linear-gradient(
     90deg,
-    rgba(243, 244, 246, 1)   0%,
-    rgba(232, 240, 254, 0.9) 50%,
-    rgba(243, 244, 246, 1)   100%
+    var(--ui-shimmer-from)   0%,
+    var(--ui-shimmer-mid)    50%,
+    var(--ui-shimmer-from)   100%
   );
   background-size: 200% 100%;
   animation: shimmer 1.6s ease-in-out infinite;
@@ -176,18 +444,18 @@ img, video, svg {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #CBD5E1;
+  background: var(--ui-scroll-thumb);
   border-radius: 999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94A3B8;
+  background: var(--ui-scroll-thumb-hover);
 }
 
 /* Firefox */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #CBD5E1 transparent;
+  scrollbar-color: var(--ui-scroll-thumb) transparent;
 }
 
 /* ── Landing page sections ────────────────────────────────────────── */
