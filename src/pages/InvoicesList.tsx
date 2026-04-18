@@ -205,21 +205,11 @@ export default function InvoicesList() {
     return (
       <ul className="space-y-2">
         {filteredProjects.map((project) => {
-          const hasInvoices = project.invoiceCount > 0;
           return (
             <li key={project.id}>
               <Link
                 to={`/invoices/${project.id}`}
-                className={`relative flex items-start gap-4 px-6 py-5 rounded-2xl border transition-colors duration-200 group overflow-hidden ${
-                  hasInvoices
-                    ? 'bg-white border-neutral-200/80 hover:border-[#3678F1]'
-                    : 'bg-white border-neutral-200/80 opacity-60 cursor-not-allowed'
-                }`}
-                onClick={(e) => {
-                  if (!hasInvoices) {
-                    e.preventDefault();
-                  }
-                }}
+                className="relative flex items-start gap-4 px-6 py-5 rounded-2xl border transition-colors duration-200 group overflow-hidden bg-white border-neutral-200/80 hover:border-[#3678F1]"
               >
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#EEF1FF] to-[#DBEAFE] flex items-center justify-center shrink-0 border border-[#3678F1]/10">
                   <FaFileInvoice className="text-[#3678F1] text-lg" />
@@ -227,7 +217,7 @@ export default function InvoicesList() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-3 mb-2">
                     <div className="min-w-0">
-                      <p className={`text-base font-semibold truncate ${hasInvoices ? 'text-neutral-900 group-hover:text-[#3678F1]' : 'text-neutral-600'}`}>
+                      <p className="text-base font-semibold truncate text-neutral-900 group-hover:text-[#3678F1]">
                         {project.title}
                       </p>
                       <p className="text-xs text-neutral-500 mt-1">
@@ -550,6 +540,14 @@ export default function InvoicesList() {
                               ? `${filteredProjects.length} of ${projects.length} project${projects.length === 1 ? '' : 's'} in range`
                               : 'Select a project to view invoices'}
                       </p>
+                      {canCreate && (
+                        <Link
+                          to="/invoice/new"
+                          className="mt-3 ml-[46px] inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white rounded-xl text-sm font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] shadow-brand transition-colors duration-200"
+                        >
+                          <FaPlus className="w-3.5 h-3.5" /> Create Invoice
+                        </Link>
+                      )}
                     </div>
                     {projects.length > 0 && (
                       <div className="flex flex-wrap items-center gap-3 p-3 bg-white rounded-xl border border-neutral-200/70 shadow-sm">
