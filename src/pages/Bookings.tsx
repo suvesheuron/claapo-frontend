@@ -51,6 +51,14 @@ const STATUS_CONFIG: Record<BookingStatus, { bg: string; text: string; label: st
 
 type TabFilter = 'all' | 'pending' | 'accepted' | 'completed';
 
+function matchesTab(status: BookingStatus, tab: TabFilter): boolean {
+  if (tab === 'all') return true;
+  if (tab === 'accepted') {
+    return status === 'accepted' || status === 'locked';
+  }
+  return status === tab;
+}
+
 function formatDate(iso: string | null): string {
   if (!iso) return '—';
   return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -92,7 +100,7 @@ export default function Bookings() {
 
   // Exclude cancelled projects (backend also filters; this guards against stale data)
   const allBookings = (data?.items ?? []).filter((b) => b.project?.status !== 'cancelled');
-  const bookings = tab === 'all' ? allBookings : allBookings.filter(b => b.status === tab);
+  const bookings = allBookings.filter((b) => matchesTab(b.status, tab));
 
   const doAction = async (bookingId: string, action: 'accept' | 'decline') => {
     setActioning(bookingId + action);
@@ -142,7 +150,7 @@ export default function Bookings() {
               {/* Tab filter */}
               <div className="flex items-center gap-0.5 mb-5 bg-white rounded-xl p-1 border border-neutral-200 w-fit">
                 {(['all', 'pending', 'accepted', 'completed'] as TabFilter[]).map((t) => {
-                  const count = t === 'all' ? allBookings.length : allBookings.filter((b) => b.status === t).length;
+                  const count = allBookings.filter((b) => matchesTab(b.status, t)).length;
                   const isActive = tab === t;
                   return (
                     <button
