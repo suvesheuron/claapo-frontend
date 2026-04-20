@@ -317,13 +317,13 @@ We're working on ${projectName}. The shoot is planned for ${shootDate}. Just wan
   }, [selectedChatDate]);
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-neutral-50 min-w-0 w-full">
+    <div className="h-screen flex flex-col overflow-hidden bg-neutral-50 dark:bg-bg min-w-0 w-full">
       <DashboardHeader />
       <div className="flex-1 flex min-h-0 overflow-hidden">
         <DashboardSidebar links={companyNavLinks} />
         <main className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden relative">
-          {/* Subtle background mesh */}
-          <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-br from-[#3678F1]/5 via-[#DBEAFE]/30 to-transparent pointer-events-none" />
+          {/* Subtle background mesh — light mode only; dark mode stays clean */}
+          <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-br from-[#3678F1]/5 via-[#DBEAFE]/30 to-transparent pointer-events-none dark:hidden" />
           <div className="flex-1 min-h-0 overflow-auto z-10">
             <div className="max-w-[1100px] mx-auto px-4 sm:px-6 md:px-8 lg:px-6 xl:px-8 py-4 sm:py-6">
               <div className="mb-4 flex items-center gap-3">

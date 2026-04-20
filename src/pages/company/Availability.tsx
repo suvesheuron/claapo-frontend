@@ -212,7 +212,7 @@ export default function CompanyAvailability() {
                           ${proj && !cell.muted
                             ? cfg!.bg + ' ' + 'border-' + cfg!.border.replace('border-', '')
                             : !cell.muted
-                              ? 'border-neutral-100 hover:border-neutral-200 hover:bg-neutral-50/50'
+                              ? 'border-neutral-100 hover:border-neutral-200 hover:bg-neutral-50/50 dark:hover:border-app-border-strong dark:hover:bg-surface-2/60'
                               : 'border-transparent'
                           }
                           ${todayCell && !proj ? 'ring-2 ring-[#3678F1]/20 bg-[#E8F0FE]/50 border-[#3678F1]/20' : ''}

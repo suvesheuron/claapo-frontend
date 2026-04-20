@@ -92,20 +92,6 @@ function shouldShowDateLabel(msgs: ChatMessage[], idx: number): boolean {
 
 const POLL_INTERVAL_MS = 4000;
 
-// Brand color palette
-const BRAND = {
-  primary: '#3678F1',
-  primaryDark: '#364FC7',
-  primaryLight: '#EEF2FF',
-  chatBg: '#F0F2F5',
-  outgoing: '#EEF2FF',
-  incoming: '#FFFFFF',
-  headerBg: '#3678F1',
-  inputBg: '#F0F2F5',
-  textPrimary: '#111B21',
-  textSecondary: '#667781',
-};
-
 export default function Chat() {
   const { userId: targetUserId } = useParams<{ userId: string }>();
   const [searchParams] = useSearchParams();
@@ -525,14 +511,14 @@ export default function Chat() {
   const emojiList = ['😀','😂','😍','🤔','👍','👎','❤️','🔥','🎉','👏','😢','😮','🙏','💯','✅','⭐','🎬','🎥','📸','🎵'];
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-[#F3F4F6] w-full">
+    <div className="h-screen flex flex-col overflow-hidden bg-[#F3F4F6] dark:bg-bg w-full">
       <DashboardHeader />
 
       <div className="flex-1 flex min-h-0 overflow-hidden">
         <DashboardSidebar links={navLinks} />
 
         <main
-          className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden"
+          className="relative flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden"
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
@@ -635,7 +621,7 @@ export default function Chat() {
 
             {/* ── Search bar ── */}
             {showSearch && (
-              <div className="px-3 py-2 bg-white border-b border-neutral-200 flex items-center gap-2">
+              <div className="px-3 py-2 bg-white dark:bg-surface-1 border-b border-neutral-200 dark:border-app-border flex items-center gap-2">
                 <FaMagnifyingGlass className="w-3.5 h-3.5 text-neutral-400" />
                 <input
                   type="text"
@@ -653,7 +639,7 @@ export default function Chat() {
 
             {/* ── Pinned message banner ── */}
             {pinnedMessages.length > 0 && !showSearch && (
-              <div className="px-4 py-2 bg-white/90 border-b border-neutral-200 flex items-center gap-2 cursor-pointer hover:bg-white transition-colors">
+              <div className="px-4 py-2 bg-white/90 dark:bg-surface-1/90 border-b border-neutral-200 dark:border-app-border flex items-center gap-2 cursor-pointer hover:bg-white dark:hover:bg-surface-2 transition-colors">
                 <FaThumbtack className="w-3 h-3 text-[#3678F1] rotate-45" />
                 <p className="text-xs text-neutral-700 truncate flex-1">
                   <span className="font-semibold">Pinned: </span>
@@ -666,11 +652,7 @@ export default function Chat() {
             <div
               ref={chatContainerRef}
               onScroll={handleScroll}
-              className="flex-1 min-h-0 overflow-y-auto px-3 sm:px-4 py-3 pb-24 relative"
-              style={{
-                backgroundColor: BRAND.chatBg,
-                backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23c5bfb0' fill-opacity='0.08'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-              }}
+              className="chat-wallpaper flex-1 min-h-0 overflow-y-auto px-3 sm:px-4 py-3 pb-24 relative"
             >
               {loadingInit && (
                 <div className="space-y-3 py-4 max-w-3xl mx-auto">
@@ -740,7 +722,7 @@ export default function Chat() {
                       {/* Date separator */}
                       {showDate && (
                         <div className="flex justify-center my-4">
-                          <span className="bg-white/80 backdrop-blur-md text-[11px] text-neutral-500 font-medium px-4 py-1.5 rounded-full shadow-sm border border-white/50">
+                          <span className="bg-white/80 dark:bg-surface-2/80 backdrop-blur-md text-[11px] text-neutral-500 font-medium px-4 py-1.5 rounded-full shadow-sm border border-white/50 dark:border-app-border">
                             {formatDateLabel(msg.createdAt)}
                           </span>
                         </div>
@@ -802,7 +784,7 @@ export default function Chat() {
                             {msg.type === 'image' && msg.mediaUrl && (
                               <img src={msg.mediaUrl} alt="Shared image" className="rounded-xl mb-2 max-w-full max-h-60 object-cover shadow-sm border border-black/5" />
                             )}
-                            <p className={`text-[14px] leading-relaxed break-words whitespace-pre-wrap ${isMe ? 'text-white' : 'text-[#111B21]'}`}>
+                            <p className={`text-[14px] leading-relaxed break-words whitespace-pre-wrap ${isMe ? 'text-white' : 'text-[#111B21] dark:text-slate-200'}`}>
                               {msg.content ?? ''}
                               {/* Invisible spacer for timestamp */}
                               <span className="invisible text-[11px] pl-4">
@@ -942,7 +924,7 @@ export default function Chat() {
 
             {/* ── Reply preview bar ── */}
             {replyTo && (
-              <div className="bg-[#F0F2F5] border-t border-neutral-200 px-4 py-2 flex items-center gap-3">
+              <div className="bg-[#F0F2F5] dark:bg-surface-2 border-t border-neutral-200 dark:border-app-border px-4 py-2 flex items-center gap-3">
                 <div className="flex-1 min-w-0 border-l-4 border-[#3678F1] pl-3">
                   <p className="text-xs font-semibold text-[#3678F1]">
                     {replyTo.senderId === user?.id ? 'You' : otherName}
@@ -958,7 +940,7 @@ export default function Chat() {
             {/* ── Emoji picker ── */}
             <AnimatePresence>
               {showEmojiPicker && (
-                <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 20, opacity: 0 }} className="bg-white/90 backdrop-blur-md border-t border-neutral-200 px-4 py-3 shadow-lg">
+                <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 20, opacity: 0 }} className="bg-white/90 dark:bg-surface-1/90 backdrop-blur-md border-t border-neutral-200 dark:border-app-border px-4 py-3 shadow-lg">
                   <div className="flex flex-wrap gap-2 max-w-lg mx-auto">
                     {emojiList.map((emoji) => (
                       <button
@@ -1030,7 +1012,7 @@ export default function Chat() {
                     onChange={(e) => setInput(e.target.value)}
                     placeholder="Message..."
                     disabled={sending}
-                    className="w-full px-4 py-3 bg-transparent text-[15px] font-medium text-[#111B21] placeholder-neutral-400 focus:outline-none disabled:opacity-50"
+                    className="w-full px-4 py-3 bg-transparent text-[15px] font-medium text-[#111B21] dark:text-slate-200 placeholder-neutral-400 focus:outline-none disabled:opacity-50"
                   />
                 </div>
 

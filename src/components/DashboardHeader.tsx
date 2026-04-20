@@ -73,11 +73,23 @@ export default function DashboardHeader({ userName: propUserName, userAvatar: pr
   const unreadCount = notifData?.meta?.unreadCount ?? 0;
 
   interface MeResponse { profile?: { companyName?: string; displayName?: string; avatarUrl?: string | null } | null; isMainUser?: boolean }
-  const { data: meData } = useApiQuery<MeResponse>(isAuthenticated ? '/profile/me' : null);
+  const { data: meData, loading: meLoading } = useApiQuery<MeResponse>(isAuthenticated ? '/profile/me' : null);
   const profile = meData?.profile;
   const isMainUser = meData?.isMainUser !== false;
 
-  const displayName = propUserName ?? user?.displayName ?? profile?.companyName ?? profile?.displayName ?? user?.email?.split('@')[0] ?? 'Account';
+  // Resolve the display name from the freshest source available.
+  // While /profile/me is still in flight we must NOT fall back to the email's
+  // local-part — that flashes a machine-looking handle (e.g. "company1") for a
+  // moment and then swaps to the real name. Keep the name area as a skeleton
+  // until real profile data arrives.
+  const resolvedName =
+    propUserName ??
+    profile?.companyName ??
+    profile?.displayName ??
+    user?.displayName ??
+    null;
+  const showNameSkeleton = meLoading && !propUserName && !resolvedName;
+  const displayName = resolvedName ?? 'My account';
   const userAvatar = propUserAvatar ?? profile?.avatarUrl ?? undefined;
   const roleInfo = user?.role ? ROLE_LABELS[user.role] : undefined;
 
@@ -231,7 +243,7 @@ export default function DashboardHeader({ userName: propUserName, userAvatar: pr
             onClick={() => { setUserOpen((v) => !v); setNotifOpen(false); }}
             aria-expanded={userOpen}
             aria-haspopup="menu"
-            className={`flex items-center gap-2.5 h-10 pl-1.5 pr-3 rounded-xl border transition-all duration-150 min-w-0 ${
+            className={`flex items-center gap-2.5 h-12 py-1.5 pl-2 pr-3.5 rounded-xl border transition-all duration-150 min-w-0 ${
               userOpen
                 ? 'bg-neutral-100 dark:bg-[#1E2640] border-neutral-200 dark:border-[#1F2940] shadow-sm'
                 : 'bg-transparent border-transparent hover:bg-neutral-100 dark:hover:bg-[#1E2640] hover:border-neutral-200/70 dark:hover:border-[#1F2940]'
@@ -242,9 +254,13 @@ export default function DashboardHeader({ userName: propUserName, userAvatar: pr
               <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-[#141A28]" />
             </div>
             <div className="hidden md:flex flex-col items-start leading-tight min-w-0 max-w-[160px] lg:max-w-[200px]">
-              <span className="text-[13px] font-semibold text-neutral-800 dark:text-neutral-100 truncate max-w-full">{displayName}</span>
+              {showNameSkeleton ? (
+                <span className="skeleton h-3 w-24 rounded" aria-label="Loading account" />
+              ) : (
+                <span className="text-[13px] font-semibold text-neutral-800 dark:text-neutral-100 truncate max-w-full">{displayName}</span>
+              )}
               {roleInfo && (
-                <span className="text-[10px] font-medium text-neutral-400 dark:text-neutral-500 truncate max-w-full">
+                <span className="text-[10px] font-medium text-neutral-400 dark:text-neutral-500 truncate max-w-full mt-0.5">
                   {roleInfo.label}{!isMainUser ? ' · Sub-User' : ''}
                 </span>
               )}
@@ -262,7 +278,11 @@ export default function DashboardHeader({ userName: propUserName, userAvatar: pr
                     <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-[#141A28]" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-[13px] font-bold text-neutral-900 dark:text-neutral-100 truncate">{displayName}</p>
+                    {showNameSkeleton ? (
+                      <span className="skeleton block h-3.5 w-28 rounded mb-1.5" aria-label="Loading account" />
+                    ) : (
+                      <p className="text-[13px] font-bold text-neutral-900 dark:text-neutral-100 truncate">{displayName}</p>
+                    )}
                     <p className="text-[11px] text-neutral-500 dark:text-neutral-400 truncate">{user?.email ?? ''}</p>
                   </div>
                 </div>
