@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FaXmark, FaMessage, FaFileInvoice, FaLocationDot, FaCalendarDay, FaUserPlus } from 'react-icons/fa6';
+import { FaXmark, FaMessage, FaFileInvoice, FaUserPlus } from 'react-icons/fa6';
 import type { BookingWithDetails, SlotStatus } from '../types/availability';
 import { formatPaise } from '../utils/currency';
 import { SLOT_STATUS_LABEL, SLOT_STATUS_BADGE } from '../utils/slotStatusStyles';
@@ -10,20 +10,27 @@ const DEFAULT_BLOCK_REASONS = ['Personal', 'Already booked externally', 'Not ava
 const STATUS_LABELS = SLOT_STATUS_LABEL;
 const STATUS_BADGE_STYLE = SLOT_STATUS_BADGE;
 
-function formatDateRange(dateStrings: string[]): string {
-  if (!dateStrings?.length) return '';
-  const dates = dateStrings.map((d) => new Date(d + 'T00:00:00'));
-  if (dates.length === 1) {
-    return dates[0].toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+function formatSingleDate(dateKey: string): string {
+  return new Date(dateKey + 'T00:00:00').toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
+function resolveLocationForDate(
+  dateKey: string,
+  shootDateLocations: Array<{ date: string; location: string }> | null | undefined,
+  shootDates: string[] | undefined,
+  shootLocations: string[] | undefined,
+): string | null {
+  const pair = shootDateLocations?.find((p) => p.date === dateKey);
+  if (pair?.location) return pair.location;
+  if (shootDates && shootLocations) {
+    const idx = shootDates.indexOf(dateKey);
+    if (idx >= 0 && shootLocations[idx]) return shootLocations[idx];
   }
-  const sorted = [...dates].sort((a, b) => a.getTime() - b.getTime());
-  const start = sorted[0];
-  const end = sorted[sorted.length - 1];
-  const sameMonth = start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear();
-  if (sameMonth) {
-    return `${start.toLocaleDateString('en-IN', { day: 'numeric' })} - ${end.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}`;
-  }
-  return `${start.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} - ${end.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}`;
+  return shootLocations?.[0] ?? null;
 }
 
 export interface AvailabilityDateDetailModalProps {
@@ -162,10 +169,23 @@ export default function AvailabilityDateDetailModal({
             <p className="text-sm text-neutral-600">Available (no booking set for this date)</p>
           )}
 
-          {booking && (
+          {booking && (() => {
+            const dateLocation = resolveLocationForDate(
+              selectedDate,
+              booking.shootDateLocations,
+              booking.shootDates,
+              booking.shootLocations,
+            );
+            return (
             <div className="rounded-xl border border-neutral-200 bg-neutral-50/80 p-4 space-y-3">
               <p className="text-xs font-bold text-neutral-800 uppercase tracking-wide">Booking details</p>
               <div className="space-y-2 text-sm">
+                {isCompany && booking.companyName ? (
+                  <div className="flex justify-between gap-3">
+                    <span className="text-neutral-500 shrink-0">Company</span>
+                    <span className="font-semibold text-neutral-900 text-right">{booking.companyName}</span>
+                  </div>
+                ) : null}
                 <div className="flex justify-between gap-3">
                   <span className="text-neutral-500 shrink-0">Project</span>
                   <span className="font-semibold text-neutral-900 text-right">{booking.projectTitle}</span>
@@ -188,45 +208,14 @@ export default function AvailabilityDateDetailModal({
                     <span className="font-semibold text-neutral-900 text-right">{formatPaise(booking.rateOffered)}</span>
                   </div>
                 ) : null}
-                {booking.shootDates?.length > 0 ? (
+                <div className="flex justify-between gap-3">
+                  <span className="text-neutral-500 shrink-0">Date</span>
+                  <span className="font-semibold text-neutral-900 text-right">{formatSingleDate(selectedDate)}</span>
+                </div>
+                {dateLocation ? (
                   <div className="flex justify-between gap-3">
-                    <span className="text-neutral-500 shrink-0">Dates</span>
-                    <span className="font-semibold text-neutral-900 text-right">{formatDateRange(booking.shootDates)}</span>
-                  </div>
-                ) : null}
-                
-                {/* Show date-location pairs if available (new format) */}
-                {booking.shootDateLocations && booking.shootDateLocations.length > 0 ? (
-                  <div>
-                    <span className="text-neutral-500 text-xs mb-2 block">Shoot Locations</span>
-                    <div className="space-y-2">
-                      {booking.shootDateLocations.map((pair) => (
-                        <div key={pair.date} className="flex items-start gap-2.5 bg-white rounded-lg border border-neutral-200 p-2.5">
-                          <div className="flex items-center gap-2 flex-1 min-w-0">
-                            <div className="w-6 h-6 rounded-md bg-[#E8F0FE] flex items-center justify-center shrink-0">
-                              <FaCalendarDay className="w-2.5 h-2.5 text-[#3678F1]" />
-                            </div>
-                            <p className="text-xs font-semibold text-neutral-900">
-                              {new Date(pair.date + 'T00:00:00').toLocaleDateString('en-IN', {
-                                weekday: 'short',
-                                day: 'numeric',
-                                month: 'short',
-                              })}
-                            </p>
-                          </div>
-                          <div className="flex items-start gap-1.5 flex-1 min-w-0">
-                            <FaLocationDot className="w-2.5 h-2.5 text-[#3678F1] mt-0.5 shrink-0" />
-                            <p className="text-xs text-neutral-700 font-medium truncate">{pair.location}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : booking.shootLocations?.length ? (
-                  /* Fallback: show locations without date pairing (old format) */
-                  <div className="flex justify-between gap-3">
-                    <span className="text-neutral-500 shrink-0">Locations</span>
-                    <span className="font-semibold text-neutral-900 text-right">{booking.shootLocations.join(', ')}</span>
+                    <span className="text-neutral-500 shrink-0">Location</span>
+                    <span className="font-semibold text-neutral-900 text-right">{dateLocation}</span>
                   </div>
                 ) : null}
                 {booking.message ? (
@@ -259,7 +248,8 @@ export default function AvailabilityDateDetailModal({
                 )}
               </div>
             </div>
-          )}
+            );
+          })()}
 
           {/* Show Chat and Book Crew buttons for company viewing a date without confirmed booking */}
           {isCompany && !booking && selectedDate && targetUserId && (
