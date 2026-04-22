@@ -6,6 +6,7 @@ import {
 } from 'react-icons/fa6';
 import AppHeader from '../components/AppHeader';
 import AppFooter from '../components/AppFooter';
+import { useTheme } from '../contexts/ThemeContext';
 
 /* ── Intersection observer hook ── */
 function useInView(threshold = 0.12) {
@@ -136,12 +137,32 @@ export default function UserTypeSelect() {
     document.title = 'Join Claapo \u2014 Choose Your Account Type';
   }, []);
 
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
+  const bg = {
+    page:   isDark ? '#0A0E17' : '#eef5fd',
+    hero:   isDark
+      ? 'linear-gradient(145deg, #0F1A2E 0%, #0D1326 40%, #0A0E17 100%)'
+      : 'linear-gradient(145deg, #a8c8f0 0%, #c2dcf7 30%, #d8eaf9 60%, #eaf3fd 100%)',
+    blob1:  isDark
+      ? 'radial-gradient(circle, rgba(96,165,250,0.10) 0%, transparent 70%)'
+      : 'radial-gradient(circle, rgba(168,200,240,0.5) 0%, transparent 70%)',
+    blob2:  isDark
+      ? 'radial-gradient(circle, rgba(59,91,219,0.20) 0%, transparent 70%)'
+      : 'radial-gradient(circle, rgba(59,91,219,0.12) 0%, transparent 70%)',
+    cards:  isDark
+      ? 'linear-gradient(180deg, #0D1326 0%, #0A0E17 100%)'
+      : 'linear-gradient(180deg, #eaf3fd 0%, #eef5fd 100%)',
+    bottom: isDark ? '#0D1326' : '#f0f6fd',
+  };
+
   const hero = useInView(0.05);
   const cards = useInView(0.08);
   const bottom = useInView(0.1);
 
   return (
-    <div className="flex flex-col w-full min-h-screen" style={{ background: '#eef5fd' }}>
+    <div className="flex flex-col w-full min-h-screen" style={{ background: bg.page }}>
       <AppHeader variant="landing" />
 
       {/* ══════════════════════════════════════════════════════
@@ -150,49 +171,49 @@ export default function UserTypeSelect() {
       <section
         ref={hero.ref}
         className="relative overflow-hidden pt-16 pb-10 lg:pt-24 lg:pb-14"
-        style={{ background: 'linear-gradient(145deg, #a8c8f0 0%, #c2dcf7 30%, #d8eaf9 60%, #eaf3fd 100%)' }}
+        style={{ background: bg.hero }}
       >
         {/* Decorative blobs */}
         <div className="absolute -top-24 -left-24 w-[500px] h-[500px] rounded-full pointer-events-none"
-          style={{ background: 'radial-gradient(circle, rgba(168,200,240,0.5) 0%, transparent 70%)' }} />
+          style={{ background: bg.blob1 }} />
         <div className="absolute -bottom-32 -right-32 w-[400px] h-[400px] rounded-full pointer-events-none"
-          style={{ background: 'radial-gradient(circle, rgba(59,91,219,0.12) 0%, transparent 70%)' }} />
+          style={{ background: bg.blob2 }} />
 
         <div className={`max-w-4xl mx-auto px-6 text-center relative z-10 transition-all duration-700 ${hero.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
           {/* Step indicator */}
           <div className="inline-flex items-center gap-2.5 mb-6">
-            <span className="flex items-center gap-2 text-[11px] font-bold tracking-[0.18em] uppercase text-[#3678F1]">
-              <span className="w-6 h-6 rounded-full bg-[#3678F1] text-white flex items-center justify-center text-[11px] font-bold">1</span>
+            <span className="flex items-center gap-2 text-[11px] font-bold tracking-[0.18em] uppercase text-[#3678F1] dark:text-[#5C9EFF]">
+              <span className="w-6 h-6 rounded-full bg-[#3678F1] dark:bg-[#5C9EFF] text-white flex items-center justify-center text-[11px] font-bold">1</span>
               Choose Account
             </span>
-            <span className="w-8 h-px bg-slate-300" />
-            <span className="flex items-center gap-2 text-[11px] font-bold tracking-[0.18em] uppercase text-slate-400">
-              <span className="w-6 h-6 rounded-full border border-slate-300 text-slate-400 flex items-center justify-center text-[11px] font-bold">2</span>
+            <span className="w-8 h-px bg-slate-300 dark:bg-[#354763]" />
+            <span className="flex items-center gap-2 text-[11px] font-bold tracking-[0.18em] uppercase text-slate-400 dark:text-[#7A8499]">
+              <span className="w-6 h-6 rounded-full border border-slate-300 dark:border-[#354763] text-slate-400 dark:text-[#7A8499] flex items-center justify-center text-[11px] font-bold">2</span>
               Create Profile
             </span>
           </div>
 
-          <h1 className="text-4xl sm:text-5xl lg:text-[56px] font-extrabold text-[#0f172a] leading-[1.08] mb-5 tracking-tight">
-            Join <span className="text-[#3678F1]">Claapo</span>
+          <h1 className="text-4xl sm:text-5xl lg:text-[56px] font-extrabold text-[#0f172a] dark:text-[#F1F5F9] leading-[1.08] mb-5 tracking-tight">
+            Join <span className="text-[#3678F1] dark:text-[#5C9EFF]">Claapo</span>
           </h1>
-          <p className="text-base sm:text-lg text-slate-500 leading-relaxed max-w-xl mx-auto mb-8">
+          <p className="text-base sm:text-lg text-slate-500 dark:text-[#A1ADC4] leading-relaxed max-w-xl mx-auto mb-8">
             Pick the account that best describes you. Companies, Individuals, and Vendors all get
             access to the same powerful tools &mdash; tailored for how you work.
           </p>
 
           {/* Social proof — mirrors landing page */}
-          <div className="inline-flex items-center gap-3 bg-white/60 backdrop-blur rounded-full px-5 py-2.5 border border-white/70 shadow-sm">
+          <div className="inline-flex items-center gap-3 bg-white/60 dark:bg-[#141A28]/70 backdrop-blur rounded-full px-5 py-2.5 border border-white/70 dark:border-white/10 shadow-sm">
             <div className="flex -space-x-2">
               {avatarInitials.map((init, i) => (
-                <div key={i} className={`w-7 h-7 rounded-full border-2 border-white flex items-center justify-center text-[9px] font-bold text-white shadow-sm ${avatarColors[i]}`}>
+                <div key={i} className={`w-7 h-7 rounded-full border-2 border-white dark:border-[#141A28] flex items-center justify-center text-[9px] font-bold text-white shadow-sm ${avatarColors[i]}`}>
                   {init}
                 </div>
               ))}
-              <div className="w-7 h-7 rounded-full border-2 border-white bg-[#3678F1] flex items-center justify-center text-[8px] font-bold text-white shadow-sm">+3k</div>
+              <div className="w-7 h-7 rounded-full border-2 border-white dark:border-[#141A28] bg-[#3678F1] flex items-center justify-center text-[8px] font-bold text-white shadow-sm">+3k</div>
             </div>
             <div className="text-left">
-              <p className="text-sm font-semibold text-slate-700">3,000+ members</p>
-              <p className="text-[11px] text-slate-400">Companies &middot; Individuals &middot; Vendors</p>
+              <p className="text-sm font-semibold text-slate-700 dark:text-[#F1F5F9]">3,000+ members</p>
+              <p className="text-[11px] text-slate-400 dark:text-[#7A8499]">Companies &middot; Individuals &middot; Vendors</p>
             </div>
           </div>
         </div>
@@ -204,7 +225,7 @@ export default function UserTypeSelect() {
       <section
         ref={cards.ref}
         className="py-14 lg:py-20 flex-1"
-        style={{ background: 'linear-gradient(180deg, #eaf3fd 0%, #eef5fd 100%)' }}
+        style={{ background: bg.cards }}
       >
         <div className="max-w-6xl mx-auto px-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5 lg:gap-6">
@@ -212,7 +233,7 @@ export default function UserTypeSelect() {
               <div
                 key={type.key}
                 className={`
-                  group relative rounded-2xl bg-white border border-slate-100 p-7 sm:p-8 flex flex-col
+                  group relative rounded-2xl bg-white dark:bg-[#141A28] border border-slate-100 dark:border-[#1F2940] p-7 sm:p-8 flex flex-col
                   shadow-sm
                   transition-colors duration-200 ${type.accent.ring}
                   ${cards.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}
@@ -220,7 +241,7 @@ export default function UserTypeSelect() {
                 style={{ transitionDelay: `${idx * 120}ms` }}
               >
                 {/* Overline label */}
-                <span className={`text-[10px] font-bold tracking-[0.2em] uppercase mb-3 ${type.accent.badge}`}>
+                <span className={`text-[10px] font-bold tracking-[0.2em] uppercase mb-3 ${type.accent.badge} dark:text-[#5C9EFF]`}>
                   {type.label}
                 </span>
 
@@ -230,18 +251,18 @@ export default function UserTypeSelect() {
                 </div>
 
                 {/* Title */}
-                <h3 className="text-2xl font-bold text-slate-900 mb-1 tracking-tight">
+                <h3 className="text-2xl font-bold text-slate-900 dark:text-[#F1F5F9] mb-1 tracking-tight">
                   {type.title}
                 </h3>
-                <p className="text-sm text-slate-400 mb-5">
+                <p className="text-sm text-slate-400 dark:text-[#7A8499] mb-5">
                   {type.subtitle}
                 </p>
 
                 {/* Divider */}
-                <div className="h-px bg-slate-100 mb-5" />
+                <div className="h-px bg-slate-100 dark:bg-[#1F2940] mb-5" />
 
                 {/* Description */}
-                <p className="text-sm text-slate-500 leading-relaxed mb-6">
+                <p className="text-sm text-slate-500 dark:text-[#A1ADC4] leading-relaxed mb-6">
                   {type.description}
                 </p>
 
@@ -249,8 +270,8 @@ export default function UserTypeSelect() {
                 <ul className="space-y-3 mb-8 flex-1">
                   {type.features.map((f) => (
                     <li key={f} className="flex items-start gap-2.5">
-                      <FaCheck className={`${type.accent.check} text-[11px] shrink-0 mt-1`} />
-                      <span className="text-sm text-slate-600 leading-snug">{f}</span>
+                      <FaCheck className={`${type.accent.check} dark:text-[#5C9EFF] text-[11px] shrink-0 mt-1`} />
+                      <span className="text-sm text-slate-600 dark:text-[#A1ADC4] leading-snug">{f}</span>
                     </li>
                   ))}
                 </ul>
@@ -272,8 +293,8 @@ export default function UserTypeSelect() {
           </div>
 
           {/* Help text under cards */}
-          <div className={`mt-10 flex items-center justify-center gap-2 text-xs text-slate-400 transition-all duration-700 ${cards.visible ? 'opacity-100' : 'opacity-0'}`} style={{ transitionDelay: '500ms' }}>
-            <FaCircleQuestion className="text-slate-300" />
+          <div className={`mt-10 flex items-center justify-center gap-2 text-xs text-slate-400 dark:text-[#7A8499] transition-all duration-700 ${cards.visible ? 'opacity-100' : 'opacity-0'}`} style={{ transitionDelay: '500ms' }}>
+            <FaCircleQuestion className="text-slate-300 dark:text-[#4B5676]" />
             <span>Not sure which one fits you? All accounts are free to start &mdash; you can switch anytime.</span>
           </div>
         </div>
@@ -284,8 +305,8 @@ export default function UserTypeSelect() {
          ══════════════════════════════════════════════════════ */}
       <section
         ref={bottom.ref}
-        className="py-16 border-t border-slate-200/60"
-        style={{ background: '#f0f6fd' }}
+        className="py-16 border-t border-slate-200/60 dark:border-[#1F2940]"
+        style={{ background: bg.bottom }}
       >
         <div className={`max-w-4xl mx-auto px-6 transition-all duration-700 ${bottom.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
           {/* Trust indicators */}
@@ -295,13 +316,13 @@ export default function UserTypeSelect() {
               { Icon: FaBolt,          title: 'Setup in 2 Minutes', desc: 'Simple onboarding, no paperwork' },
               { Icon: FaGift,          title: '100% Free to Start', desc: 'No credit card. No hidden fees.' },
             ].map(({ Icon, title, desc }) => (
-              <div key={title} className="flex items-start gap-3 bg-white/60 backdrop-blur rounded-xl border border-white px-5 py-4">
-                <div className="w-9 h-9 rounded-lg bg-[#3678F1]/10 flex items-center justify-center shrink-0">
-                  <Icon className="text-[#3678F1] text-sm" />
+              <div key={title} className="flex items-start gap-3 bg-white/60 dark:bg-[#141A28]/70 backdrop-blur rounded-xl border border-white dark:border-[#1F2940] px-5 py-4">
+                <div className="w-9 h-9 rounded-lg bg-[#3678F1]/10 dark:bg-[#5C9EFF]/15 flex items-center justify-center shrink-0">
+                  <Icon className="text-[#3678F1] dark:text-[#5C9EFF] text-sm" />
                 </div>
                 <div className="text-left">
-                  <p className="text-sm font-semibold text-slate-800">{title}</p>
-                  <p className="text-[11px] text-slate-500 mt-0.5">{desc}</p>
+                  <p className="text-sm font-semibold text-slate-800 dark:text-[#F1F5F9]">{title}</p>
+                  <p className="text-[11px] text-slate-500 dark:text-[#A1ADC4] mt-0.5">{desc}</p>
                 </div>
               </div>
             ))}
@@ -309,11 +330,11 @@ export default function UserTypeSelect() {
 
           {/* Sign in link */}
           <div className="text-center">
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm px-8 py-5 inline-flex items-center gap-3">
-              <p className="text-sm text-slate-600">Already have an account?</p>
+            <div className="bg-white dark:bg-[#141A28] rounded-2xl border border-slate-100 dark:border-[#1F2940] shadow-sm px-8 py-5 inline-flex items-center gap-3">
+              <p className="text-sm text-slate-600 dark:text-[#A1ADC4]">Already have an account?</p>
               <Link
                 to="/login"
-                className="inline-flex items-center gap-1.5 text-sm text-[#3678F1] font-bold hover:gap-2 transition-all"
+                className="inline-flex items-center gap-1.5 text-sm text-[#3678F1] dark:text-[#5C9EFF] font-bold hover:gap-2 transition-all"
               >
                 Sign in <FaArrowRight className="text-[10px]" />
               </Link>
