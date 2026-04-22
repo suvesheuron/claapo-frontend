@@ -29,6 +29,8 @@ interface PendingAttachment {
   uploading: boolean;
 }
 
+type TaxType = 'gst' | 'igst';
+
 export default function CreateInvoice() {
   useEffect(() => { document.title = 'Create Invoice – Claapo'; }, []);
   const navigate = useNavigate();
@@ -45,11 +47,27 @@ export default function CreateInvoice() {
   const [selectedBookingId, setSelectedBookingId] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [lineItems, setLineItems] = useState<LineItem[]>([{ description: '', quantity: '1', unitPrice: '' }]);
+  const [selectedTaxType, setSelectedTaxType] = useState<TaxType>('gst');
+  const [selectedTaxRate, setSelectedTaxRate] = useState<'5' | '18' | '0' | ''>('');
   const [submitting, setSubmitting] = useState(false);
   const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const selectedBooking = bookings.find((b) => b.id === selectedBookingId) ?? null;
+
+  const hasValidGst = useMemo(() => {
+    // /profile/me returns { ..., profile: { gstNumber, ... } } — a single `profile` key
+    // populated from the user's role-specific profile (individual/vendor).
+    const gst = myProfile?.profile?.gstNumber ?? null;
+    if (!gst || typeof gst !== 'string') return false;
+    return /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test(gst.trim().toUpperCase());
+  }, [myProfile]);
+
+  useEffect(() => {
+    if (!hasValidGst && (selectedTaxRate === '5' || selectedTaxRate === '18')) {
+      setSelectedTaxRate('0');
+    }
+  }, [hasValidGst, selectedTaxRate]);
 
   useEffect(() => {
     if (bookingsLoading || !bookingIdFromUrl) return;
@@ -88,21 +106,16 @@ export default function CreateInvoice() {
     setPendingAttachments((prev) => prev.filter((_, idx) => idx !== i));
   };
 
-  const hasValidGst = useMemo(() => {
-    // /profile/me returns { ..., profile: { gstNumber, ... } } — a single `profile` key
-    // populated from the user's role-specific profile (individual/vendor).
-    const gst = myProfile?.profile?.gstNumber ?? null;
-    if (!gst || typeof gst !== 'string') return false;
-    return /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test(gst.trim().toUpperCase());
-  }, [myProfile]);
-
   const subtotalPaise = lineItems.reduce((sum, l) => {
     const qty = parseFloat(l.quantity) || 0;
     const price = rupeesToPaise(l.unitPrice);
     return sum + qty * price;
   }, 0);
-  const gstPaise = hasValidGst ? Math.round(subtotalPaise * 0.18) : 0;
-  const totalPaise = subtotalPaise + gstPaise;
+  const taxRatePct = selectedTaxRate === '' ? null : Number(selectedTaxRate);
+  const taxAmountPaise = taxRatePct && taxRatePct > 0 ? Math.round(subtotalPaise * (taxRatePct / 100)) : 0;
+  const cgstAmountPaise = Math.floor(taxAmountPaise / 2);
+  const sgstAmountPaise = taxAmountPaise - cgstAmountPaise;
+  const totalPaise = subtotalPaise + taxAmountPaise;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -111,12 +124,23 @@ export default function CreateInvoice() {
       toast.error('Please fill in all line item descriptions and prices.');
       return;
     }
+    if (!selectedTaxRate) {
+      toast.error('Please select a tax percentage.');
+      return;
+    }
+    if ((selectedTaxRate === '5' || selectedTaxRate === '18') && !hasValidGst) {
+      toast.error('A valid GST number is required to apply GST/IGST.');
+      return;
+    }
     setSubmitting(true);
     try {
+      const normalizedTaxType = selectedTaxRate === '0' ? 'none' : selectedTaxType;
       const dto = {
         projectId: selectedBooking!.project.id,
         recipientUserId: selectedBooking!.requester.id,
         dueDate: dueDate || undefined,
+        taxType: normalizedTaxType,
+        taxRatePct: Number(selectedTaxRate),
         lineItems: lineItems.map((l) => ({
           description: l.description,
           quantity: Math.max(1, parseInt(l.quantity) || 1),
@@ -276,16 +300,78 @@ export default function CreateInvoice() {
                 ))}
               </div>
 
+              {/* Tax Selection */}
+              <div className="mt-4 pt-4 border-t border-neutral-100">
+                <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-2">Tax Type</p>
+                    <div className="inline-flex rounded-xl border border-neutral-200 overflow-hidden">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedTaxType('gst')}
+                        className={`px-4 py-2 text-sm font-semibold transition-colors ${
+                          selectedTaxType === 'gst'
+                            ? 'bg-[#3678F1] text-white'
+                            : 'bg-white text-neutral-600 hover:bg-neutral-50'
+                        }`}
+                      >
+                        GST
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedTaxType('igst')}
+                        className={`px-4 py-2 text-sm font-semibold transition-colors border-l border-neutral-200 ${
+                          selectedTaxType === 'igst'
+                            ? 'bg-[#3678F1] text-white'
+                            : 'bg-white text-neutral-600 hover:bg-neutral-50'
+                        }`}
+                      >
+                        IGST
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="sm:w-52">
+                    <label className="block text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-2">
+                      Tax Percentage <span className="text-[#F40F02]">*</span>
+                    </label>
+                    <select
+                      value={selectedTaxRate}
+                      onChange={(e) => setSelectedTaxRate(e.target.value as '5' | '18' | '0' | '')}
+                      className="w-full border border-neutral-200 rounded-xl px-3 py-2.5 text-sm text-neutral-700 focus:outline-none focus:ring-2 focus:ring-[#3678F1] focus:border-transparent"
+                      required
+                    >
+                      <option value="">Select tax rate</option>
+                      <option value="5" disabled={!hasValidGst}>5%</option>
+                      <option value="18" disabled={!hasValidGst}>18%</option>
+                      <option value="0">Not Applicable</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
               {/* Totals */}
               <div className="mt-4 pt-4 border-t border-neutral-100 space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-neutral-500">Subtotal</span>
                   <span className="font-semibold">{formatPaise(subtotalPaise)}</span>
                 </div>
-                {hasValidGst && (
+                {taxRatePct && taxRatePct > 0 && selectedTaxType === 'gst' && (
+                  <>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-neutral-500">CGST ({taxRatePct / 2}%)</span>
+                      <span className="font-semibold">{formatPaise(cgstAmountPaise)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-neutral-500">SGST ({taxRatePct / 2}%)</span>
+                      <span className="font-semibold">{formatPaise(sgstAmountPaise)}</span>
+                    </div>
+                  </>
+                )}
+                {taxRatePct && taxRatePct > 0 && selectedTaxType === 'igst' && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-neutral-500">GST (18%)</span>
-                    <span className="font-semibold">{formatPaise(gstPaise)}</span>
+                    <span className="text-neutral-500">IGST ({taxRatePct}%)</span>
+                    <span className="font-semibold">{formatPaise(taxAmountPaise)}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-base pt-2 border-t border-neutral-200">
@@ -298,8 +384,8 @@ export default function CreateInvoice() {
             {/* GST Note */}
             <p className="text-xs text-neutral-400">
               {hasValidGst
-                ? 'GST @ 18% is auto-calculated and added to your invoice total.'
-                : 'GST is not applied because no valid GST number is present on your profile.'}
+                ? 'Select GST/IGST and tax percentage to auto-calculate tax in your invoice total.'
+                : 'No valid GST number found in your profile. Only Not Applicable tax is allowed.'}
               The invoice will be created as a <strong>Draft</strong> — you can review and send it from the invoice detail page.
             </p>
 

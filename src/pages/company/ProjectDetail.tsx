@@ -62,6 +62,7 @@ interface Booking {
   projectRole?: { roleName: string } | null;
   shootDates?: string[];
   shootLocations?: string[];
+  shootDateLocations?: Array<{ date: string; location: string }> | null;
 }
 
 interface SubUserAssignment {
@@ -87,6 +88,28 @@ function formatDateRange(start: string, end: string): string {
     return `${months[s.getMonth()]} ${s.getDate()}–${months[e.getMonth()]} ${e.getDate()}, ${s.getFullYear()}`;
   }
   return `${months[s.getMonth()]} ${s.getDate()}, ${s.getFullYear()} – ${months[e.getMonth()]} ${e.getDate()}, ${e.getFullYear()}`;
+}
+
+function formatDateShort(iso: string): string {
+  return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+}
+
+function getBookingDateLocationSummary(booking: Booking): string {
+  const pairs = booking.shootDateLocations ?? [];
+  if (pairs.length > 0) {
+    return pairs
+      .map((pair) => `${formatDateShort(pair.date)} (${pair.location})`)
+      .join(', ');
+  }
+  const dates = booking.shootDates ?? [];
+  const locations = booking.shootLocations ?? [];
+  if (dates.length > 0 && locations.length > 0) {
+    const fallbackPairs = dates.map((date, idx) => `${formatDateShort(date)} (${locations[idx] ?? locations[0] ?? 'TBD'})`);
+    return fallbackPairs.join(', ');
+  }
+  if (dates.length > 0) return dates.map((d) => formatDateShort(d)).join(', ');
+  if (locations.length > 0) return locations.join(', ');
+  return '';
 }
 
 const ACTIVE_STATUSES = ['pending', 'accepted', 'locked'];
@@ -449,11 +472,9 @@ export default function ProjectDetail() {
                                   {booking.projectRole?.roleName ?? 'Crew'}
                                   {booking.rateOffered ? ` · ₹${(booking.rateOffered / 100).toLocaleString('en-IN')}/day` : ''}
                                 </p>
-                                {(booking.shootDates?.length || booking.shootLocations?.length) ? (
+                                {(booking.shootDates?.length || booking.shootLocations?.length || booking.shootDateLocations?.length) ? (
                                   <p className="text-[10px] text-neutral-400 mt-0.5">
-                                    {booking.shootDates?.length ? booking.shootDates.map((d) => new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })).join(', ') : ''}
-                                    {booking.shootDates?.length && booking.shootLocations?.length ? ' · ' : ''}
-                                    {booking.shootLocations?.length ? booking.shootLocations.join(', ') : ''}
+                                    {getBookingDateLocationSummary(booking)}
                                   </p>
                                 ) : null}
                               </div>
@@ -464,7 +485,7 @@ export default function ProjectDetail() {
                                   <FaMessage className="text-xs" />
                                 </Link>
                                 {booking.status === 'locked' && (
-                                  <Link to="/invoices" title="View Invoices"
+                                  <Link to={`/invoices/${booking.projectId}`} title="View Invoices"
                                     className="w-7 h-7 rounded-lg bg-[#F3F4F6] flex items-center justify-center text-neutral-500 hover:bg-[#E8F0FE] hover:text-[#3678F1] transition-colors">
                                     <FaFileInvoice className="text-xs" />
                                   </Link>
@@ -540,11 +561,9 @@ export default function ProjectDetail() {
                                   {booking.projectRole?.roleName ?? 'Vendor'}
                                   {booking.rateOffered ? ` · ₹${(booking.rateOffered / 100).toLocaleString('en-IN')}/day` : ''}
                                 </p>
-                                {(booking.shootDates?.length || booking.shootLocations?.length) ? (
+                                {(booking.shootDates?.length || booking.shootLocations?.length || booking.shootDateLocations?.length) ? (
                                   <p className="text-[10px] text-neutral-400 mt-0.5">
-                                    {booking.shootDates?.length ? booking.shootDates.map((d) => new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })).join(', ') : ''}
-                                    {booking.shootDates?.length && booking.shootLocations?.length ? ' · ' : ''}
-                                    {booking.shootLocations?.length ? booking.shootLocations.join(', ') : ''}
+                                    {getBookingDateLocationSummary(booking)}
                                   </p>
                                 ) : null}
                               </div>
@@ -554,7 +573,7 @@ export default function ProjectDetail() {
                                   className="w-7 h-7 rounded-lg bg-[#F3F4F6] flex items-center justify-center text-neutral-500 hover:bg-[#E8F0FE] hover:text-[#3678F1] transition-colors">
                                   <FaMessage className="text-xs" />
                                 </Link>
-                                <Link to="/invoices" title="View Invoices"
+                                <Link to={`/invoices/${booking.projectId}`} title="View Invoices"
                                   className="w-7 h-7 rounded-lg bg-[#F3F4F6] flex items-center justify-center text-neutral-500 hover:bg-[#E8F0FE] hover:text-[#3678F1] transition-colors">
                                   <FaFileInvoice className="text-xs" />
                                 </Link>
@@ -580,7 +599,7 @@ export default function ProjectDetail() {
                 <div className="rounded-2xl bg-white border border-neutral-200 p-5 mt-5 hover:border-[#3678F1] transition-colors duration-200">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-sm font-bold text-neutral-900">Budget Summary</h3>
-                    <Link to="/invoices" className="flex items-center gap-1.5 text-xs text-[#3678F1] font-semibold hover:underline">
+                    <Link to={`/invoices/${project.id}`} className="flex items-center gap-1.5 text-xs text-[#3678F1] font-semibold hover:underline">
                       <FaFileInvoice className="w-3 h-3" /> View Invoices
                     </Link>
                   </div>

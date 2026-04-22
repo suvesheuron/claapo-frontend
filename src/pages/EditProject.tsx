@@ -9,6 +9,7 @@ import DashboardSidebar from '../components/DashboardSidebar';
 import AppFooter from '../components/AppFooter';
 import { api, ApiException } from '../services/api';
 import { companyNavLinks } from '../navigation/dashboardNav';
+import { formatRupees, paiseToRupees, rupeesToPaise } from '../utils/currency';
 
 interface ProjectResponse {
   id: string;
@@ -72,7 +73,7 @@ export default function EditProject() {
       const sl = p.shootLocations?.length ? [...p.shootLocations] : [''];
       setShootLocations(sl.length ? sl : ['']);
       const b = p.budget ?? p.budget_min;
-      setBudget(b != null && b > 0 ? String(b) : '');
+      setBudget(b != null && b > 0 ? String(paiseToRupees(b)) : '');
     } catch (err) {
       setError(err instanceof ApiException ? err.payload.message : 'Failed to load project.');
     } finally {
@@ -119,7 +120,7 @@ export default function EditProject() {
         locationCity: locationCity.trim() || undefined,
         shootDates: filteredShootDates,
         shootLocations: shootLocations.filter(s => s.trim()),
-        budget: budget ? Math.round(parseFloat(budget)) : undefined,
+        budget: budget.trim() ? rupeesToPaise(budget) : undefined,
       });
 
       navigate(`/projects/${projectId}`);
@@ -277,7 +278,7 @@ export default function EditProject() {
                         { label: 'Project Name',      value: title.trim() || 'Not set' },
                         { label: 'Production House',  value: productionHouseName.trim() || 'Not set' },
                         { label: 'Duration',          value: duration },
-                        { label: 'Budget',            value: budget ? `₹${budget}` : 'Not set' },
+                        { label: 'Budget',            value: budget.trim() ? formatRupees(Number(budget)) : 'Not set' },
                         { label: 'Shoot dates',       value: shootDates.filter(d => d.trim()).length ? shootDates.filter(d => d.trim()).map(d => new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })).join(', ') : 'Not set' },
                         { label: 'Locations',         value: shootLocations.filter(s => s.trim()).join(', ') || 'Not set' },
                       ].map(({ label, value }) => (

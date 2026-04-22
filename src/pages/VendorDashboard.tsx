@@ -12,7 +12,7 @@ import VendorCalendarDayPanel from '../components/VendorCalendarDayPanel';
 import { vendorNavLinks } from '../navigation/dashboardNav';
 import type { BookingWithDetails, SlotStatus } from '../types/availability';
 import { parseAvailabilityMonthResponse } from '../utils/parseAvailabilityResponse';
-import { CELL_STYLE_COMPACT, type CellStatus as CellStatusKey } from '../utils/slotStatusStyles';
+import { CELL_STYLE_COMPACT, LEGEND_SWATCHES, type CellStatus as CellStatusKey } from '../utils/slotStatusStyles';
 import toast from 'react-hot-toast';
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -442,14 +442,9 @@ export default function VendorDashboard() {
                         {availLoading && (
                           <span className="text-[10px] text-neutral-400 w-full">Syncing availability…</span>
                         )}
-                        {[
-                          { color: 'bg-[#22C55E]', label: 'Available' },
-                          { color: 'bg-[#3678F1]', label: 'Ongoing' },
-                          { color: 'bg-[#A3A3A3]', label: 'Completed' },
-                          { color: 'bg-[#F40F02]', label: 'Unavailable' },
-                        ].map(({ color, label }) => (
-                          <div key={label} className="flex items-center gap-2">
-                            <div className={`w-2 h-2 rounded-full ${color}`} />
+                        {LEGEND_SWATCHES.map(({ key, swatch, label }) => (
+                          <div key={key} className="flex items-center gap-2">
+                            <div className={`w-2.5 h-2.5 rounded-full ${swatch}`} />
                             <span className="text-[11px] text-neutral-500 font-medium">{label}</span>
                           </div>
                         ))}

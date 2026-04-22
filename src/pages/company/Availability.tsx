@@ -43,8 +43,8 @@ interface PanelData {
 const statusConfig: Record<string, { bg: string; border: string; text: string; dot: string; label: string }> = {
   draft:     { bg: 'bg-[#F3F4F6]', border: 'border-neutral-200',  text: 'text-neutral-600', dot: 'bg-neutral-400',  label: 'Draft' },
   open:      { bg: 'bg-[#DCFCE7]', border: 'border-[#86EFAC]',    text: 'text-[#15803D]',   dot: 'bg-[#22C55E]',    label: 'Open' },
-  active:    { bg: 'bg-[#FEF3C7]', border: 'border-[#F4C430]',    text: 'text-[#946A00]',   dot: 'bg-[#F4C430]',    label: 'Ongoing' },
-  completed: { bg: 'bg-[#DBEAFE]', border: 'border-[#3678F1]',    text: 'text-[#1E3A8A]',   dot: 'bg-[#3678F1]',    label: 'Completed' },
+  active:    { bg: 'bg-[#FCD34D]', border: 'border-[#D97706]',    text: 'text-[#78350F]',   dot: 'bg-[#D97706]',    label: 'Ongoing' },
+  completed: { bg: 'bg-[#60A5FA]', border: 'border-[#1D4ED8]',    text: 'text-[#0F1F4D]',   dot: 'bg-[#1D4ED8]',    label: 'Completed' },
   cancelled: { bg: 'bg-[#FEE2E2]', border: 'border-[#F40F02]',    text: 'text-[#991B1B]',   dot: 'bg-[#F40F02]',    label: 'Cancelled' },
 };
 

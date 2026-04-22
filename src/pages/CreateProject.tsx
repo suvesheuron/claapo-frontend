@@ -10,6 +10,7 @@ import AppFooter from '../components/AppFooter';
 import { api, ApiException } from '../services/api';
 import { companyNavLinks } from '../navigation/dashboardNav';
 import { useAuth } from '../contexts/AuthContext';
+import { formatRupees, rupeesToPaise } from '../utils/currency';
 
 interface ProjectResponse {
   id: string;
@@ -33,6 +34,7 @@ export default function CreateProject() {
   const [startDate, setStartDate]             = useState('');
   const [endDate, setEndDate]                 = useState('');
   const [projectDates, setProjectDates] = useState<DateLocation[]>([{ date: '', location: '' }]);
+  const [budget, setBudget]                 = useState('');
 
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState<string | null>(null);
@@ -81,6 +83,7 @@ export default function CreateProject() {
         endDate: endDate || undefined,
         shootDates: validDates.map(d => d.date),
         shootLocations: validDates.map(d => d.location.trim()),
+        budget: budget.trim() ? rupeesToPaise(budget) : undefined,
       });
 
       navigate('/projects');
@@ -189,6 +192,21 @@ export default function CreateProject() {
                         </div>
                       </div>
                       <div>
+                        <label className="block text-neutral-700 text-xs mb-1.5 font-semibold">
+                          Total Budget (₹) <span className="text-neutral-400 font-normal">(optional)</span>
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          step="1"
+                          value={budget}
+                          onChange={(e) => setBudget(e.target.value)}
+                          placeholder="e.g., 500000"
+                          disabled={loading}
+                          className="rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all disabled:opacity-50"
+                        />
+                      </div>
+                      <div>
                         <div className="flex items-center justify-between mb-2">
                           <label className="text-neutral-700 text-xs font-semibold">Project Dates <span className="text-[#F40F02]">*</span></label>
                           <button
@@ -281,6 +299,7 @@ export default function CreateProject() {
                       {[
                         { label: 'Project Name',      value: title.trim() || 'Not set' },
                         { label: 'Duration',          value: duration },
+                        { label: 'Budget',            value: budget.trim() ? formatRupees(Number(budget)) : 'Not set' },
                         { label: 'Project dates',     value: projectDates.filter(d => d.date).length
                           ? projectDates.filter(d => d.date).map(d => `${formatDate(d.date)} · ${d.location || 'TBD'}`).join(', ')
                           : 'Not set'

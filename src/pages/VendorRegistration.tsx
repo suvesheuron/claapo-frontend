@@ -11,14 +11,13 @@ import {
 } from 'react-icons/fa6';
 import AuthLayout from '../components/AuthLayout';
 import { api, ApiException } from '../services/api';
-import { toE164India } from '../utils/phone';
+import { PHONE_COUNTRY_CODES, toE164WithCountryCode } from '../utils/phone';
 import { REGISTRATION_VENDOR_CATEGORIES, vendorCategoryToVendorType } from '../constants/registrationCategories';
 
 /* ── Validation helpers ── */
 
 const GST_REGEX   = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[A-Z0-9]{1}Z[A-Z0-9]{1}$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const PHONE_REGEX = /^[6-9]\d{9}$/;
 
 type FieldErrors = {
   businessName?:   string;
@@ -38,7 +37,7 @@ function validateField(name: keyof FieldErrors, value: string): string | undefin
     case 'phone': {
       const digits = value.replace(/\D/g, '');
       if (!digits) return 'Phone number is required';
-      if (!PHONE_REGEX.test(digits)) return 'Enter a valid 10-digit Indian mobile number';
+      if (digits.length < 6 || digits.length > 14) return 'Enter a valid phone number';
       return undefined;
     }
     case 'gst':
@@ -79,6 +78,12 @@ function getPasswordStrength(pw: string): { label: string; color: string; width:
   return                     { label: 'Strong', color: '#22C55E', width: '100%' };
 }
 
+function validateConfirmPassword(password: string, confirmPassword: string): string | undefined {
+  if (!confirmPassword) return 'Please confirm your password';
+  if (password !== confirmPassword) return 'Passwords do not match';
+  return undefined;
+}
+
 const BENEFITS = [
   { icon: FaCertificate,  title: 'Verified business',     body: 'Optional GST adds a verified badge to your vendor profile.' },
   { icon: FaShieldHalved, title: 'Secure bookings',       body: 'Protected transactions, contracts and clear payment terms.' },
@@ -91,12 +96,15 @@ export default function VendorRegistration() {
   const navigate = useNavigate();
 
   const [businessName,   setBusinessName]   = useState('');
+  const [countryCode,    setCountryCode]    = useState('+91');
   const [phone,          setPhone]          = useState('');
   const [gst,            setGst]            = useState('');
   const [email,          setEmail]          = useState('');
   const [vendorCategory, setVendorCategory] = useState('');
   const [password,       setPassword]       = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword,   setShowPassword]   = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [agreedTerms,    setAgreedTerms]    = useState(false);
   const [loading,        setLoading]        = useState(false);
   const [error,          setError]          = useState<string | null>(null);
@@ -134,6 +142,12 @@ export default function VendorRegistration() {
         valid = false;
       }
     }
+    const confirmErr = validateConfirmPassword(password, confirmPassword);
+    if (confirmErr) {
+      newErrors.confirmPassword = confirmErr;
+      valid = false;
+    }
+    newTouched.confirmPassword = true;
     setFieldErrors(newErrors);
     setTouched((t) => ({ ...t, ...newTouched }));
     return valid;
@@ -153,9 +167,9 @@ export default function VendorRegistration() {
 
     if (!validateAll()) return;
 
-    const e164Phone = toE164India(phone.trim());
-    if (e164Phone.replace(/\D/g, '').length < 10) {
-      setError('Please enter a valid 10-digit mobile number.');
+    const e164Phone = toE164WithCountryCode(phone.trim(), countryCode);
+    if (phone.replace(/\D/g, '').length < 6) {
+      setError('Please enter a valid phone number.');
       return;
     }
 
@@ -272,20 +286,30 @@ export default function VendorRegistration() {
               Phone <span className="text-[#F40F02]">*</span>
             </label>
             <div className="flex items-center gap-0">
-              <span className="inline-flex items-center px-3 py-3 rounded-l-xl border border-r-0 border-neutral-300 bg-neutral-50 text-neutral-700 text-[15px] font-medium select-none h-[46px]">
-                +91
-              </span>
+              <select
+                value={countryCode}
+                onChange={(e) => setCountryCode(e.target.value)}
+                disabled={loading}
+                className="rounded-l-xl border border-r-0 border-neutral-300 bg-neutral-50 text-neutral-700 text-[15px] font-medium h-[46px] px-2 focus:outline-none focus:ring-2 focus:ring-[#3678F1]/20"
+                aria-label="Country code"
+              >
+                {PHONE_COUNTRY_CODES.map((country) => (
+                  <option key={`${country.iso2}-${country.label}`} value={country.dialCode}>
+                    {country.label}
+                  </option>
+                ))}
+              </select>
               <input
                 type="tel"
                 value={phone}
                 onChange={(e) => {
-                  const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                  const val = e.target.value.replace(/\D/g, '').slice(0, 14);
                   setPhone(val);
                 }}
                 onBlur={() => handleBlur('phone', phone)}
-                placeholder="98765 43210"
+                placeholder="Enter phone number"
                 disabled={loading}
-                maxLength={10}
+                maxLength={14}
                 className={`${inputBase} rounded-l-none border-l-0 ${borderClass('phone')}`}
               />
             </div>
@@ -366,6 +390,47 @@ export default function VendorRegistration() {
               </p>
             </div>
           )}
+        </div>
+
+        {/* Confirm Password */}
+        <div>
+          <label className="block text-[13px] text-neutral-700 mb-1.5 font-semibold">
+            Confirm password <span className="text-[#F40F02]">*</span>
+          </label>
+          <div className="relative">
+            <input
+              type={showConfirmPassword ? 'text' : 'password'}
+              value={confirmPassword}
+              onChange={(e) => {
+                setConfirmPassword(e.target.value);
+                if (touched.confirmPassword) {
+                  setFieldErrors((prev) => ({
+                    ...prev,
+                    confirmPassword: validateConfirmPassword(password, e.target.value),
+                  }));
+                }
+              }}
+              onBlur={() => {
+                setTouched((t) => ({ ...t, confirmPassword: true }));
+                setFieldErrors((prev) => ({
+                  ...prev,
+                  confirmPassword: validateConfirmPassword(password, confirmPassword),
+                }));
+              }}
+              placeholder="Re-enter your password"
+              disabled={loading}
+              className={`${inputBase} pr-12 ${borderClass('confirmPassword')}`}
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword((v) => !v)}
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 transition-colors"
+              aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
+            >
+              {showConfirmPassword ? <FaEyeSlash className="w-4 h-4" /> : <FaEye className="w-4 h-4" />}
+            </button>
+          </div>
+          {fieldErrors.confirmPassword && <p className="text-xs text-[#F40F02] mt-1.5">{fieldErrors.confirmPassword}</p>}
         </div>
 
         {/* Terms */}

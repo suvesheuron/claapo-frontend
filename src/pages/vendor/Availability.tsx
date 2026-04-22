@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { FaChevronLeft, FaChevronRight, FaCircleInfo } from 'react-icons/fa6';
+import { FaChevronLeft, FaChevronRight, FaCircleInfo, FaBan, FaLock, FaCircleCheck, FaCalendarCheck } from 'react-icons/fa6';
 import DashboardHeader from '../../components/DashboardHeader';
 import DashboardSidebar from '../../components/DashboardSidebar';
 import AppFooter from '../../components/AppFooter';
@@ -269,6 +269,18 @@ export default function VendorAvailability() {
 
   const calendarDays = buildCalendar(yearLabel, displayDate.getMonth(), apiSlots, equipmentByDate);
 
+  const monthStats = calendarDays.reduce(
+    (acc, c) => {
+      if (c.muted) return acc;
+      if (c.status === 'blocked') acc.blocked += 1;
+      else if (c.status === 'booked') acc.booked += 1;
+      else if (c.status === 'completed') acc.completed += 1;
+      else acc.available += 1;
+      return acc;
+    },
+    { available: 0, booked: 0, completed: 0, blocked: 0 },
+  );
+
   const getDateStr = (d: number): string => {
     const m = String(displayDate.getMonth() + 1).padStart(2, '0');
     return `${yearLabel}-${m}-${String(d).padStart(2, '0')}`;
@@ -336,10 +348,33 @@ export default function VendorAvailability() {
               <div className="relative rounded-2xl bg-white border border-neutral-200/70 px-6 sm:px-8 py-6 mb-5 overflow-hidden shadow-soft">
                 <div className="absolute inset-y-0 right-0 w-1/2 bg-gradient-to-l from-[#E8F0FE]/60 to-transparent pointer-events-none" />
                 <span aria-hidden className="absolute left-0 top-6 bottom-6 w-1 rounded-r-full bg-gradient-to-b from-[#3678F1] to-[#5B9DF9]" />
-                <div className="relative pl-3">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#3678F1]">Schedule</p>
-                  <h1 className="text-[26px] sm:text-[28px] font-extrabold text-neutral-900 tracking-tight leading-tight mt-1">Equipment Availability</h1>
-                  <p className="text-sm text-neutral-500 mt-1.5">Manage equipment schedule, block dates, and view rental history</p>
+                <div className="relative flex items-start justify-between gap-4 flex-wrap z-10 pl-3">
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#3678F1]">Schedule</p>
+                    <h1 className="text-[26px] sm:text-[28px] font-extrabold text-neutral-900 tracking-tight leading-tight mt-1">Equipment Availability</h1>
+                    <p className="text-sm text-neutral-500 mt-1.5">Manage equipment schedule, block dates, and view rental history</p>
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {slotsLoading && !hasLoadedOnce ? (
+                      <>
+                        <div className="skeleton h-7 w-20 rounded-full" />
+                        <div className="skeleton h-7 w-24 rounded-full" />
+                        <div className="skeleton h-7 w-28 rounded-full" />
+                      </>
+                    ) : (
+                      <>
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-[#DCFCE7] border border-[#86EFAC] px-2.5 py-1 text-[11px] font-bold text-[#15803D]">
+                          <FaCircleCheck className="w-2.5 h-2.5" /> {monthStats.available} free
+                        </span>
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-[#DBEAFE] border border-[#3678F1] px-2.5 py-1 text-[11px] font-bold text-[#1E3A8A]">
+                          <FaCalendarCheck className="w-2.5 h-2.5" /> {monthStats.booked + monthStats.completed} booked
+                        </span>
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-[#FEE2E2] border border-[#F40F02] px-2.5 py-1 text-[11px] font-bold text-[#991B1B]">
+                          <FaBan className="w-2.5 h-2.5" /> {monthStats.blocked} unavailable
+                        </span>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -409,7 +444,7 @@ export default function VendorAvailability() {
                         onClick={() => openDay(cell)}
                         title={cell.notes ? `Unavailable: ${cell.notes}` : cell.equipment ?? undefined}
                         className={`
-                          relative rounded-xl border text-center p-1.5 min-h-[56px] sm:min-h-[64px] select-none flex flex-col items-center justify-center gap-0.5
+                          relative rounded-xl border text-center p-1.5 min-h-[56px] sm:min-h-[64px] select-none flex flex-col items-center justify-center gap-0.5 transition-all overflow-hidden
                           ${cell.muted
                             ? 'bg-white border-neutral-100 text-neutral-300 cursor-default'
                             : `${cellStyle[cell.status ?? 'available'] ?? cellStyle.available} cal-cell cursor-pointer`
@@ -440,9 +475,24 @@ export default function VendorAvailability() {
                             <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#F40F02]/70" />
                           </span>
                         )}
-                        <span className="text-xs font-bold leading-none">{cell.muted ? '' : cell.d}</span>
+                        {!cell.muted && cell.status === 'blocked' && (
+                          <span
+                            aria-hidden
+                            className="absolute inset-0 pointer-events-none opacity-30"
+                            style={{
+                              backgroundImage:
+                                'repeating-linear-gradient(45deg, rgba(185,28,28,0.18) 0 4px, transparent 4px 8px)',
+                            }}
+                          />
+                        )}
+                        {!cell.muted && cell.status === 'blocked' && (
+                          <span className="absolute top-0.5 right-0.5 w-3.5 h-3.5 rounded-full bg-[#DC2626] text-white flex items-center justify-center shadow-sm">
+                            <FaLock className="w-1.5 h-1.5" />
+                          </span>
+                        )}
+                        <span className={`text-xs font-bold leading-none ${cell.status === 'blocked' ? 'line-through decoration-[1.5px] decoration-[#991B1B]/60' : ''}`}>{cell.muted ? '' : cell.d}</span>
                         {!cell.muted && cell.status && (
-                          <span className="text-[9px] leading-tight truncate w-full font-medium opacity-80">
+                          <span className="text-[9px] leading-tight truncate w-full font-semibold opacity-90">
                             {cell.status === 'available' && CELL_STATUS_LABEL.available}
                             {cell.status === 'booked'    && (cell.project?.split(' ')[0] ?? CELL_STATUS_LABEL.booked)}
                             {cell.status === 'completed' && (cell.project?.split(' ')[0] ?? CELL_STATUS_LABEL.completed)}

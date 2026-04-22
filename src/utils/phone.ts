@@ -3,6 +3,16 @@
  * The backend requires E.164 format: +919876543210
  */
 
+export const PHONE_COUNTRY_CODES = [
+  { iso2: 'IN', dialCode: '+91', label: 'IN (+91)' },
+  { iso2: 'US', dialCode: '+1', label: 'US (+1)' },
+  { iso2: 'GB', dialCode: '+44', label: 'UK (+44)' },
+  { iso2: 'AE', dialCode: '+971', label: 'UAE (+971)' },
+  { iso2: 'CA', dialCode: '+1', label: 'CA (+1)' },
+  { iso2: 'AU', dialCode: '+61', label: 'AU (+61)' },
+  { iso2: 'SG', dialCode: '+65', label: 'SG (+65)' },
+] as const;
+
 /**
  * Converts a raw phone input (with or without country code / spaces / dashes)
  * into E.164 format, defaulting to India (+91) for 10-digit numbers.
@@ -37,6 +47,15 @@ export function toE164India(input: string): string {
 
   // Fallback: prepend +
   return `+${digits}`;
+}
+
+/**
+ * Converts local phone digits and a selected dial code into E.164.
+ */
+export function toE164WithCountryCode(localInput: string, dialCode: string): string {
+  const localDigits = localInput.replace(/\D/g, '');
+  const countryDigits = dialCode.replace(/\D/g, '');
+  return `+${countryDigits}${localDigits}`;
 }
 
 /** Returns a human-readable masked phone, e.g. "+91 98765 XXXXX" */
