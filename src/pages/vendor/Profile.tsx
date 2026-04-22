@@ -44,6 +44,7 @@ interface VendorProfileData {
   bankName?: string | null;
   gstNumber: string | null;
   isGstVerified: boolean;
+  coverUrl?: string | null;
 }
 
 interface MeResponse {
@@ -58,7 +59,7 @@ interface MeResponse {
 export default function VendorProfile() {
   useEffect(() => { document.title = 'Vendor Profile – Claapo'; }, []);
 
-  const { data: me, loading: meLoading } = useApiQuery<MeResponse>('/profile/me');
+  const { data: me, loading: meLoading, refetch: refetchMe } = useApiQuery<MeResponse>('/profile/me');
 
   const [companyName, setCompanyName] = useState('');
   const [vendorServiceCategory, setVendorServiceCategory] = useState('');
@@ -86,7 +87,10 @@ export default function VendorProfile() {
 
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
+  const [coverUrl, setCoverUrl] = useState<string | null>(null);
+  const [coverUploading, setCoverUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const coverInputRef = useRef<HTMLInputElement>(null);
 
   const [showPasswordSection, setShowPasswordSection] = useState(false);
   const [curPass, setCurPass] = useState('');
@@ -114,10 +118,42 @@ export default function VendorProfile() {
     }
   };
 
+  const handleCoverChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setError('Please upload an image file for cover photo.');
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      setError('Cover photo must be under 8MB.');
+      return;
+    }
+    setError(null);
+    setCoverUploading(true);
+    const previewUrl = URL.createObjectURL(file);
+    setCoverUrl(previewUrl);
+    try {
+      const { uploadUrl, key } = await api.post<{ uploadUrl: string; key: string }>('/profile/cover', {
+        contentType: file.type || 'image/jpeg',
+      });
+      await fetch(uploadUrl, { method: 'PUT', headers: { 'Content-Type': file.type || 'image/jpeg' }, body: file });
+      await api.post('/profile/cover/confirm', { key });
+      refetchMe();
+    } catch {
+      setError('Failed to upload cover photo.');
+    } finally {
+      setCoverUploading(false);
+      URL.revokeObjectURL(previewUrl);
+      if (coverInputRef.current) coverInputRef.current.value = '';
+    }
+  };
+
   useEffect(() => {
     if (!me?.profile) return;
-    const p = me.profile as VendorProfileData & { avatarUrl?: string; logoUrl?: string };
+    const p = me.profile as VendorProfileData & { avatarUrl?: string; logoUrl?: string; coverUrl?: string };
     if (p.logoUrl || p.avatarUrl) setAvatarUrl(p.logoUrl ?? p.avatarUrl ?? null);
+    if (p.coverUrl) setCoverUrl(p.coverUrl);
     setCompanyName(p.companyName ?? '');
     setVendorServiceCategory(p.vendorServiceCategory ?? '');
     setLocationCity(p.locationCity ?? '');
@@ -241,8 +277,33 @@ export default function VendorProfile() {
                     {/* Profile Card */}
                     <div className="rounded-2xl bg-white border border-neutral-200/70 shadow-soft overflow-hidden hover:border-[#3678F1] transition-colors duration-200">
                       {/* Gradient Banner */}
-                      <div className="h-32 bg-gradient-to-br from-[#3678F1] via-[#2563EB] to-[#1D4ED8] relative overflow-hidden">
-                        <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(255,255,255,0.3) 0%, transparent 50%), radial-gradient(circle at 80% 30%, rgba(255,255,255,0.2) 0%, transparent 50%)' }} />
+                      <div
+                        className="h-32 bg-gradient-to-br from-[#3678F1] via-[#2563EB] to-[#1D4ED8] relative overflow-hidden cursor-pointer group"
+                        onClick={() => coverInputRef.current?.click()}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            coverInputRef.current?.click();
+                          }
+                        }}
+                      >
+                        {coverUrl ? (
+                          <img src={coverUrl} alt="Cover" className="absolute inset-0 w-full h-full object-cover" />
+                        ) : (
+                          <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(255,255,255,0.3) 0%, transparent 50%), radial-gradient(circle at 80% 30%, rgba(255,255,255,0.2) 0%, transparent 50%)' }} />
+                        )}
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors flex items-center justify-center">
+                          {coverUploading ? (
+                            <span className="w-6 h-6 border-[2.5px] border-white/40 border-t-white border-r-white rounded-full animate-spin" />
+                          ) : (
+                            <span className="opacity-0 group-hover:opacity-100 transition-opacity inline-flex items-center gap-1.5 text-white text-xs font-semibold bg-black/40 px-2.5 py-1 rounded-md">
+                              <FaCamera className="w-3 h-3" /> Change cover
+                            </span>
+                          )}
+                        </div>
+                        <input ref={coverInputRef} type="file" accept="image/*" className="hidden" onChange={handleCoverChange} />
                       </div>
 
                       {/* Avatar */}

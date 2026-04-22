@@ -11,14 +11,13 @@ import {
 } from 'react-icons/fa6';
 import AuthLayout from '../components/AuthLayout';
 import { api, ApiException } from '../services/api';
-import { toE164India } from '../utils/phone';
+import { PHONE_COUNTRY_CODES, toE164WithCountryCode } from '../utils/phone';
 import { REGISTRATION_COMPANY_TYPES } from '../constants/registrationCategories';
 
 /* ── Validation helpers ── */
 
 const GST_REGEX   = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[A-Z0-9]{1}Z[A-Z0-9]{1}$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const PHONE_REGEX = /^[6-9]\d{9}$/;
 
 type FieldErrors = {
   companyName?: string;
@@ -27,6 +26,7 @@ type FieldErrors = {
   gst?:         string;
   email?:       string;
   password?:    string;
+  confirmPassword?: string;
 };
 
 function validateField(field: keyof FieldErrors, value: string): string | undefined {
@@ -41,7 +41,7 @@ function validateField(field: keyof FieldErrors, value: string): string | undefi
     case 'phone': {
       const digits = value.replace(/\D/g, '');
       if (!digits) return 'Phone number is required';
-      if (!PHONE_REGEX.test(digits)) return 'Enter a valid 10-digit Indian mobile number';
+      if (digits.length < 6 || digits.length > 14) return 'Enter a valid phone number';
       return undefined;
     }
     case 'gst':
@@ -79,6 +79,12 @@ function getPasswordStrength(pw: string): { label: string; color: string; width:
   return                     { label: 'Strong', color: '#22c55e', width: '100%' };
 }
 
+function validateConfirmPassword(password: string, confirmPassword: string): string | undefined {
+  if (!confirmPassword) return 'Please confirm your password';
+  if (password !== confirmPassword) return 'Passwords do not match';
+  return undefined;
+}
+
 const BENEFITS = [
   { icon: FaCertificate,  title: 'GST verification',     body: 'Verified business profiles your crew and vendors can trust.' },
   { icon: FaShieldHalved, title: 'Secure onboarding',    body: 'Enterprise-grade security for your company and project data.' },
@@ -92,11 +98,14 @@ export default function CompanyRegistration() {
 
   const [companyName,  setCompanyName]  = useState('');
   const [companyType,  setCompanyType]  = useState('');
+  const [countryCode,  setCountryCode]  = useState('+91');
   const [phone,        setPhone]        = useState('');
   const [gst,          setGst]          = useState('');
   const [email,        setEmail]        = useState('');
   const [password,     setPassword]     = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [terms,        setTerms]        = useState(false);
   const [loading,      setLoading]      = useState(false);
   const [error,        setError]        = useState<string | null>(null);
@@ -109,6 +118,7 @@ export default function CompanyRegistration() {
     gst: false,
     email: false,
     password: false,
+    confirmPassword: false,
   });
 
   useEffect(() => {
@@ -118,10 +128,13 @@ export default function CompanyRegistration() {
   const handleBlur = useCallback(
     (field: keyof FieldErrors, value: string) => {
       setTouched((t) => ({ ...t, [field]: true }));
-      const err = validateField(field, value);
+      const err =
+        field === 'confirmPassword'
+          ? validateConfirmPassword(password, value)
+          : validateField(field, value);
       setFieldErrors((prev) => ({ ...prev, [field]: err }));
     },
-    [],
+    [password],
   );
 
   const borderClass = (field: keyof FieldErrors) => {
@@ -155,19 +168,22 @@ export default function CompanyRegistration() {
       gst: true,
       email: true,
       password: true,
+      confirmPassword: true,
     };
 
     for (const { key, value } of fields) {
       const err = validateField(key, value);
       if (err) newErrors[key] = err;
     }
+    const confirmErr = validateConfirmPassword(password, confirmPassword);
+    if (confirmErr) newErrors.confirmPassword = confirmErr;
 
     setFieldErrors(newErrors);
     setTouched(newTouched);
 
     if (Object.keys(newErrors).length > 0) return;
 
-    const e164Phone = toE164India(phone.trim());
+    const e164Phone = toE164WithCountryCode(phone.trim(), countryCode);
 
     setLoading(true);
     try {
@@ -277,56 +293,6 @@ export default function CompanyRegistration() {
           {fieldErrors.companyType && <p className="text-xs text-[#F40F02] mt-1.5">{fieldErrors.companyType}</p>}
         </div>
 
-        {/* Phone + GST */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-[13px] text-neutral-700 mb-1.5 font-semibold">
-              Phone <span className="text-[#F40F02]">*</span>
-            </label>
-            <div className="flex items-center gap-0">
-              <span className="inline-flex items-center px-3 py-3 rounded-l-xl border border-r-0 border-neutral-300 bg-neutral-50 text-neutral-700 text-[15px] font-medium select-none h-[46px]">
-                +91
-              </span>
-              <input
-                type="tel"
-                value={phone}
-                onChange={(e) => {
-                  const val = e.target.value.replace(/\D/g, '').slice(0, 10);
-                  setPhone(val);
-                }}
-                onBlur={() => handleBlur('phone', phone)}
-                placeholder="98765 43210"
-                disabled={loading}
-                maxLength={10}
-                className={`${inputBase} rounded-l-none border-l-0 ${borderClass('phone')}`}
-              />
-            </div>
-            {fieldErrors.phone && <p className="text-xs text-[#F40F02] mt-1.5">{fieldErrors.phone}</p>}
-          </div>
-          <div>
-            <label className="block text-[13px] text-neutral-700 mb-1.5 font-semibold">
-              GST{' '}
-              <span className="text-[10px] font-normal text-neutral-400 bg-neutral-100 px-2 py-0.5 rounded-full ml-1">
-                Optional
-              </span>
-            </label>
-            <input
-              type="text"
-              value={gst}
-              onChange={(e) => {
-                setGst(e.target.value);
-                if (touched.gst)
-                  setFieldErrors((p) => ({ ...p, gst: validateField('gst', e.target.value) }));
-              }}
-              onBlur={() => handleBlur('gst', gst)}
-              placeholder="27AABCU9603R1ZM"
-              disabled={loading}
-              className={`${inputBase} ${borderClass('gst')}`}
-            />
-            {fieldErrors.gst && <p className="text-xs text-[#F40F02] mt-1.5">{fieldErrors.gst}</p>}
-          </div>
-        </div>
-
         {/* Email */}
         <div>
           <label className="block text-[13px] text-neutral-700 mb-1.5 font-semibold">
@@ -346,6 +312,66 @@ export default function CompanyRegistration() {
             className={`${inputBase} ${borderClass('email')}`}
           />
           {fieldErrors.email && <p className="text-xs text-[#F40F02] mt-1.5">{fieldErrors.email}</p>}
+        </div>
+
+        {/* Phone */}
+        <div>
+          <label className="block text-[13px] text-neutral-700 mb-1.5 font-semibold">
+            Phone <span className="text-[#F40F02]">*</span>
+          </label>
+          <div className="flex items-center gap-0">
+            <select
+              value={countryCode}
+              onChange={(e) => setCountryCode(e.target.value)}
+              disabled={loading}
+              className="rounded-l-xl border border-r-0 border-neutral-300 bg-neutral-50 text-neutral-700 text-[15px] font-medium h-[46px] px-2 focus:outline-none focus:ring-2 focus:ring-[#3678F1]/20"
+              aria-label="Country code"
+            >
+              {PHONE_COUNTRY_CODES.map((country) => (
+                <option key={`${country.iso2}-${country.label}`} value={country.dialCode}>
+                  {country.label}
+                </option>
+              ))}
+            </select>
+            <input
+              type="tel"
+              value={phone}
+              onChange={(e) => {
+                const val = e.target.value.replace(/\D/g, '').slice(0, 14);
+                setPhone(val);
+              }}
+              onBlur={() => handleBlur('phone', phone)}
+              placeholder="Enter phone number"
+              disabled={loading}
+              maxLength={14}
+              className={`${inputBase} rounded-l-none border-l-0 ${borderClass('phone')}`}
+            />
+          </div>
+          {fieldErrors.phone && <p className="text-xs text-[#F40F02] mt-1.5">{fieldErrors.phone}</p>}
+        </div>
+
+        {/* GST */}
+        <div>
+          <label className="block text-[13px] text-neutral-700 mb-1.5 font-semibold">
+            GST{' '}
+            <span className="text-[10px] font-normal text-neutral-400 bg-neutral-100 px-2 py-0.5 rounded-full ml-1">
+              Optional
+            </span>
+          </label>
+          <input
+            type="text"
+            value={gst}
+            onChange={(e) => {
+              setGst(e.target.value);
+              if (touched.gst)
+                setFieldErrors((p) => ({ ...p, gst: validateField('gst', e.target.value) }));
+            }}
+            onBlur={() => handleBlur('gst', gst)}
+            placeholder="27AABCU9603R1ZM"
+            disabled={loading}
+            className={`${inputBase} ${borderClass('gst')}`}
+          />
+          {fieldErrors.gst && <p className="text-xs text-[#F40F02] mt-1.5">{fieldErrors.gst}</p>}
         </div>
 
         {/* Password */}
@@ -390,6 +416,40 @@ export default function CompanyRegistration() {
               </p>
             </div>
           )}
+        </div>
+
+        {/* Confirm Password */}
+        <div>
+          <label className="block text-[13px] text-neutral-700 mb-1.5 font-semibold">
+            Confirm password <span className="text-[#F40F02]">*</span>
+          </label>
+          <div className="relative">
+            <input
+              type={showConfirmPassword ? 'text' : 'password'}
+              value={confirmPassword}
+              onChange={(e) => {
+                setConfirmPassword(e.target.value);
+                if (touched.confirmPassword)
+                  setFieldErrors((p) => ({
+                    ...p,
+                    confirmPassword: validateConfirmPassword(password, e.target.value),
+                  }));
+              }}
+              onBlur={() => handleBlur('confirmPassword', confirmPassword)}
+              placeholder="Re-enter your password"
+              disabled={loading}
+              className={`${inputBase} pr-12 ${borderClass('confirmPassword')}`}
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword((v) => !v)}
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 transition-colors"
+              aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
+            >
+              {showConfirmPassword ? <FaEyeSlash className="w-4 h-4" /> : <FaEye className="w-4 h-4" />}
+            </button>
+          </div>
+          {fieldErrors.confirmPassword && <p className="text-xs text-[#F40F02] mt-1.5">{fieldErrors.confirmPassword}</p>}
         </div>
 
         {/* Terms */}

@@ -2,6 +2,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { FaTruck, FaMagnifyingGlass, FaChevronLeft, FaChevronRight, FaPlus, FaTriangleExclamation, FaLocationDot } from 'react-icons/fa6';
+import toast from 'react-hot-toast';
 import AppFooter from '../components/AppFooter';
 import Avatar from '../components/Avatar';
 import DashboardHeader from '../components/DashboardHeader';
@@ -37,6 +38,12 @@ interface VendorResult {
   locationCity?: string;
   isGstVerified: boolean;
   equipment?: VendorEquipmentItem[];
+}
+
+interface ProjectItem {
+  id: string;
+  title: string;
+  status: string;
 }
 
 const PAGE_SIZE = 15;
@@ -83,8 +90,15 @@ export default function SearchFilter() {
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedVendorIds, setSelectedVendorIds] = useState<string[]>([]);
+  const [quotationFile, setQuotationFile] = useState<File | null>(null);
+  const [sendingQuotation, setSendingQuotation] = useState(false);
+  const [activeProjects, setActiveProjects] = useState<ProjectItem[]>([]);
+  const [projectsLoading, setProjectsLoading] = useState(false);
+  const [selectedQuotationProjectId, setSelectedQuotationProjectId] = useState('');
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const quotationFileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { document.title = 'Find Crew & Vendors – Claapo'; }, []);
 
@@ -118,8 +132,10 @@ export default function SearchFilter() {
         setError('Budget min cannot be greater than budget max.');
         return;
       }
-      if (rateMinPaise != null) params.rateMin = String(rateMinPaise);
-      if (rateMaxPaise != null) params.rateMax = String(rateMaxPaise);
+      if (type === 'crew') {
+        if (rateMinPaise != null) params.rateMin = String(rateMinPaise);
+        if (rateMaxPaise != null) params.rateMax = String(rateMaxPaise);
+      }
 
       if (sDate) params.startDate = new Date(sDate).toISOString();
       if (eDate) params.endDate = new Date(eDate).toISOString();
@@ -176,6 +192,18 @@ export default function SearchFilter() {
     triggerSearch(query, location, skillFilter, genreFilter, startDate, endDate, budgetMin, budgetMax, page, searchType);
   }, [query, location, skillFilter, genreFilter, startDate, endDate, budgetMin, budgetMax, page, searchType, triggerSearch]);
 
+  useEffect(() => {
+    if (searchType !== 'vendors') return;
+    setProjectsLoading(true);
+    api.get<{ items?: ProjectItem[]; data?: ProjectItem[] }>('/projects?limit=100')
+      .then((res) => {
+        const items = Array.isArray(res?.items) ? res.items : Array.isArray(res?.data) ? res.data : [];
+        setActiveProjects(items.filter((p) => p.status === 'active' || p.status === 'open' || p.status === 'draft'));
+      })
+      .catch(() => setActiveProjects([]))
+      .finally(() => setProjectsLoading(false));
+  }, [searchType]);
+
   const switchType = (type: SearchType) => {
     setSearchType(type);
     setPage(1);
@@ -187,6 +215,87 @@ export default function SearchFilter() {
     setEndDate('');
     setBudgetMin('');
     setBudgetMax('');
+    setSelectedVendorIds([]);
+    setQuotationFile(null);
+    setSelectedQuotationProjectId('');
+  };
+
+  const toggleVendorSelection = (userId: string) => {
+    setSelectedVendorIds((prev) => prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]);
+  };
+
+  const isAllVendorsMarked = vendorResults.length > 0 && vendorResults.every((r) => selectedVendorIds.includes(r.userId));
+
+  const getQuotationTemplate = (projectTitle: string) => {
+    const dateLabel = startDate && endDate
+      ? `${new Date(startDate).toLocaleDateString('en-IN')} to ${new Date(endDate).toLocaleDateString('en-IN')}`
+      : startDate
+        ? new Date(startDate).toLocaleDateString('en-IN')
+        : endDate
+          ? new Date(endDate).toLocaleDateString('en-IN')
+          : 'TBD';
+    const locationLabel = location.trim() || 'TBD';
+    return `Hi, hope you're doing well :)
+
+We are looking for a quotation for project "${projectTitle}".
+
+Project date: ${dateLabel}
+Project location: ${locationLabel}
+
+Please share your best quotation for this requirement.`;
+  };
+
+  const sendQuotationToSelectedVendors = async () => {
+    if (selectedVendorIds.length === 0) {
+      toast.error('Please mark at least one vendor.');
+      return;
+    }
+    if (!quotationFile) {
+      toast.error('Please attach a requirement file.');
+      return;
+    }
+    const project = activeProjects.find((p) => p.id === selectedQuotationProjectId);
+    if (!project) {
+      toast.error('Please select a project for quotation request.');
+      return;
+    }
+
+    setSendingQuotation(true);
+    const toastId = toast.loading('Sending quotation requests...');
+    try {
+      const selectedVendors = vendorResults.filter((r) => selectedVendorIds.includes(r.userId));
+      await Promise.all(selectedVendors.map(async (vendor) => {
+        const conv = await api.post<{ id: string }>('/conversations', {
+          projectId: project.id,
+          otherUserId: vendor.userId,
+        });
+        const media = await api.post<{ uploadUrl: string; key: string }>(`/conversations/${conv.id}/media`, {
+          contentType: quotationFile.type || 'application/octet-stream',
+        });
+        await fetch(media.uploadUrl, {
+          method: 'PUT',
+          body: quotationFile,
+          headers: { 'Content-Type': quotationFile.type || 'application/octet-stream' },
+        });
+        await api.post(`/conversations/${conv.id}/messages`, {
+          type: 'text',
+          content: getQuotationTemplate(project.title),
+        });
+        await api.post(`/conversations/${conv.id}/messages`, {
+          type: 'file',
+          mediaKey: media.key,
+          content: `Requirement file: ${quotationFile.name}`,
+        });
+      }));
+      toast.success(`Quotation request sent to ${selectedVendorIds.length} vendor${selectedVendorIds.length > 1 ? 's' : ''}.`, { id: toastId });
+      setSelectedVendorIds([]);
+      setQuotationFile(null);
+    } catch (err) {
+      const msg = err instanceof ApiException ? err.payload.message : 'Failed to send quotation requests.';
+      toast.error(msg, { id: toastId });
+    } finally {
+      setSendingQuotation(false);
+    }
   };
 
   const results = searchType === 'crew' ? (crewResults ?? []) : (vendorResults ?? []);
@@ -289,31 +398,34 @@ export default function SearchFilter() {
                     </div>
                   )}
 
-                  {/* Budget Min */}
-                  <div>
-                    <label className="block text-[11px] font-bold text-neutral-500 mb-2 uppercase tracking-widest">Budget Min</label>
-                    <input
-                      type="number"
-                      min={0}
-                      value={budgetMin}
-                      onChange={(e) => { setBudgetMin(e.target.value); setPage(1); }}
-                      placeholder="e.g. 15000"
-                      className="w-full px-4 py-3 border border-neutral-200 rounded-xl text-sm bg-neutral-50 focus:bg-white focus:outline-none focus:border-[#3678F1] focus:ring-2 focus:ring-[#3678F1]/20 transition-colors duration-200"
-                    />
-                  </div>
+                  {/* Budget filters for crew only */}
+                  {searchType === 'crew' && (
+                    <div>
+                      <label className="block text-[11px] font-bold text-neutral-500 mb-2 uppercase tracking-widest">Budget Min</label>
+                      <input
+                        type="number"
+                        min={0}
+                        value={budgetMin}
+                        onChange={(e) => { setBudgetMin(e.target.value); setPage(1); }}
+                        placeholder="e.g. 15000"
+                        className="w-full px-4 py-3 border border-neutral-200 rounded-xl text-sm bg-neutral-50 focus:bg-white focus:outline-none focus:border-[#3678F1] focus:ring-2 focus:ring-[#3678F1]/20 transition-colors duration-200"
+                      />
+                    </div>
+                  )}
 
-                  {/* Budget Max */}
-                  <div>
-                    <label className="block text-[11px] font-bold text-neutral-500 mb-2 uppercase tracking-widest">Budget Max </label>
-                    <input
-                      type="number"
-                      min={0}
-                      value={budgetMax}
-                      onChange={(e) => { setBudgetMax(e.target.value); setPage(1); }}
-                      placeholder="e.g. 40000"
-                      className="w-full px-4 py-3 border border-neutral-200 rounded-xl text-sm bg-neutral-50 focus:bg-white focus:outline-none focus:border-[#3678F1] focus:ring-2 focus:ring-[#3678F1]/20 transition-colors duration-200"
-                    />
-                  </div>
+                  {searchType === 'crew' && (
+                    <div>
+                      <label className="block text-[11px] font-bold text-neutral-500 mb-2 uppercase tracking-widest">Budget Max </label>
+                      <input
+                        type="number"
+                        min={0}
+                        value={budgetMax}
+                        onChange={(e) => { setBudgetMax(e.target.value); setPage(1); }}
+                        placeholder="e.g. 40000"
+                        className="w-full px-4 py-3 border border-neutral-200 rounded-xl text-sm bg-neutral-50 focus:bg-white focus:outline-none focus:border-[#3678F1] focus:ring-2 focus:ring-[#3678F1]/20 transition-colors duration-200"
+                      />
+                    </div>
+                  )}
 
                   {/* Row 2 - Start Date, End Date, Reset */}
                   {/* Start Date */}
@@ -332,13 +444,75 @@ export default function SearchFilter() {
 
                   {/* Reset button */}
                   <div className="flex items-end">
-                    <button type="button" onClick={() => { setQuery(''); setLocation(''); setSkillFilter(''); setGenreFilter(''); setStartDate(''); setEndDate(''); setBudgetMin(''); setBudgetMax(''); setPage(1); }}
+                    <button type="button" onClick={() => { setQuery(''); setLocation(''); setSkillFilter(''); setGenreFilter(''); setStartDate(''); setEndDate(''); setBudgetMin(''); setBudgetMax(''); setSelectedVendorIds([]); setQuotationFile(null); setPage(1); }}
                       className="w-full h-[46px] rounded-xl border border-neutral-200 text-sm font-semibold text-neutral-600 hover:text-[#3678F1] hover:border-[#3678F1] transition-colors duration-200 whitespace-nowrap">
                       Reset
                     </button>
                   </div>
                 </div>
               </div>
+
+              {searchType === 'vendors' && (
+                <div className="rounded-2xl bg-white shadow-sm border border-neutral-200/70 p-4 mb-6 space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                    <select
+                      value={selectedQuotationProjectId}
+                      onChange={(e) => setSelectedQuotationProjectId(e.target.value)}
+                      disabled={projectsLoading || activeProjects.length === 0}
+                      className="h-10 min-w-[240px] px-3 rounded-xl border border-neutral-200 text-sm bg-white text-neutral-700 focus:outline-none focus:border-[#3678F1] disabled:opacity-50"
+                    >
+                      <option value="">
+                        {projectsLoading ? 'Loading projects...' : 'Select project'}
+                      </option>
+                      {activeProjects.map((p) => (
+                        <option key={p.id} value={p.id}>{p.title}</option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => quotationFileInputRef.current?.click()}
+                      className="h-10 px-4 rounded-xl border border-neutral-200 text-sm font-semibold text-neutral-700 hover:border-[#3678F1] hover:text-[#3678F1] transition-colors"
+                    >
+                      {quotationFile ? `Attached: ${quotationFile.name}` : 'Attach File'}
+                    </button>
+                    <input
+                      ref={quotationFileInputRef}
+                      type="file"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0] ?? null;
+                        setQuotationFile(file);
+                        e.target.value = '';
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={sendQuotationToSelectedVendors}
+                      disabled={sendingQuotation || selectedVendorIds.length === 0 || !selectedQuotationProjectId}
+                      className="h-10 px-5 rounded-xl bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white text-sm font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] disabled:opacity-50 transition-colors"
+                    >
+                      {sendingQuotation ? 'Sending...' : 'Get Quotation'}
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <label className="inline-flex items-center gap-2 text-sm font-semibold text-neutral-700 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={isAllVendorsMarked}
+                        onChange={(e) => {
+                          if (e.target.checked) setSelectedVendorIds(vendorResults.map((v) => v.userId));
+                          else setSelectedVendorIds([]);
+                        }}
+                        className="w-4 h-4 accent-[#3678F1]"
+                      />
+                      Mark All
+                    </label>
+                    <span className="text-xs text-neutral-500">
+                      {selectedVendorIds.length} selected
+                    </span>
+                  </div>
+                </div>
+              )}
 
               {/* Results count + top pagination */}
               <div className="flex items-center justify-between mb-4">
@@ -474,6 +648,17 @@ export default function SearchFilter() {
                         key={r.userId}
                         className="rounded-2xl bg-white shadow-sm border border-neutral-200/70 hover:border-[#3678F1] transition-colors duration-200 flex flex-col p-5"
                       >
+                        <div className="mb-2">
+                          <label className="inline-flex items-center gap-2 text-xs font-semibold text-neutral-600 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={selectedVendorIds.includes(r.userId)}
+                              onChange={() => toggleVendorSelection(r.userId)}
+                              className="w-4 h-4 accent-[#3678F1]"
+                            />
+                            Mark
+                          </label>
+                        </div>
                         {/* Header: icon + status pill */}
                         <div className="flex items-start justify-between gap-3 mb-4">
                           <div className="w-12 h-12 rounded-xl bg-[#E8F0FE] ring-1 ring-[#3678F1]/15 flex items-center justify-center shrink-0">

@@ -11,7 +11,7 @@ import {
 } from 'react-icons/fa6';
 import AuthLayout from '../components/AuthLayout';
 import { api, ApiException } from '../services/api';
-import { toE164India } from '../utils/phone';
+import { PHONE_COUNTRY_CODES, toE164WithCountryCode } from '../utils/phone';
 import { REGISTRATION_INDIVIDUAL_DEPARTMENTS, REGISTRATION_GENRES } from '../constants/registrationCategories';
 
 /* ── constants ─────────────────────────────────────────────────────────────── */
@@ -28,7 +28,6 @@ type FieldErrors = Record<string, string | undefined>;
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const NAME_RE  = /^[A-Za-z\s]+$/;
-const PHONE_RE = /^[6-9]\d{9}$/;
 
 function validateFullName(v: string): string | undefined {
   if (!v.trim()) return 'Full name is required.';
@@ -40,7 +39,7 @@ function validateFullName(v: string): string | undefined {
 function validatePhone(v: string): string | undefined {
   const digits = v.replace(/\D/g, '');
   if (!digits) return 'Phone number is required.';
-  if (!PHONE_RE.test(digits)) return 'Enter a valid 10-digit Indian mobile number.';
+  if (digits.length < 6 || digits.length > 14) return 'Enter a valid phone number.';
   return undefined;
 }
 
@@ -90,6 +89,12 @@ function getPasswordStrength(v: string): { label: string; color: string; width: 
   return                     { label: 'Strong', color: '#22c55e', width: '100%' };
 }
 
+function validateConfirmPassword(password: string, confirmPassword: string): string | undefined {
+  if (!confirmPassword) return 'Please confirm your password.';
+  if (password !== confirmPassword) return 'Passwords do not match.';
+  return undefined;
+}
+
 /* ── component ─────────────────────────────────────────────────────────────── */
 
 export default function IndividualRegistration() {
@@ -97,6 +102,7 @@ export default function IndividualRegistration() {
 
   /* form state */
   const [fullName,        setFullName]        = useState('');
+  const [countryCode,     setCountryCode]     = useState('+91');
   const [phone,           setPhone]           = useState('');
   const [primaryRole,     setPrimaryRole]     = useState('');
   const [email,           setEmail]           = useState('');
@@ -104,7 +110,9 @@ export default function IndividualRegistration() {
   const [dailyBudget,     setDailyBudget]     = useState('');
   const [location,        setLocation]        = useState('');
   const [password,        setPassword]        = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword,    setShowPassword]    = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [termsAccepted,   setTermsAccepted]   = useState(false);
 
   const [loading,      setLoading]      = useState(false);
@@ -131,10 +139,11 @@ export default function IndividualRegistration() {
         case 'dailyBudget': err = validateDailyBudget(dailyBudget); break;
         case 'location':    err = validateLocation(location);  break;
         case 'password':    err = validatePassword(password);  break;
+        case 'confirmPassword': err = validateConfirmPassword(password, confirmPassword); break;
       }
       setFieldErrors((prev) => ({ ...prev, [field]: err }));
     },
-    [fullName, phone, primaryRole, email, dailyBudget, location, password],
+    [fullName, phone, primaryRole, email, dailyBudget, location, password, confirmPassword],
   );
 
   /* validate all on submit */
@@ -147,12 +156,14 @@ export default function IndividualRegistration() {
       dailyBudget: validateDailyBudget(dailyBudget),
       location:    validateLocation(location),
       password:    validatePassword(password),
+      confirmPassword: validateConfirmPassword(password, confirmPassword),
     };
     if (!termsAccepted) errs.terms = 'You must accept the terms.';
     setFieldErrors(errs);
     setTouched({
       fullName: true, phone: true, primaryRole: true,
       email: true, dailyBudget: true, location: true, password: true, terms: true,
+      confirmPassword: true,
     });
     return !Object.values(errs).some(Boolean);
   };
@@ -171,7 +182,7 @@ export default function IndividualRegistration() {
 
     if (!validateAll()) return;
 
-    const e164Phone = toE164India(phone.trim());
+    const e164Phone = toE164WithCountryCode(phone.trim(), countryCode);
     setLoading(true);
     try {
       await api.post('/auth/register/individual', {
@@ -267,20 +278,30 @@ export default function IndividualRegistration() {
               Phone <span className="text-[#F40F02]">*</span>
             </label>
             <div className="flex items-center gap-0">
-              <span className="inline-flex items-center px-3 py-3 rounded-l-xl border border-r-0 border-neutral-300 bg-neutral-50 text-neutral-700 text-[15px] font-medium select-none h-[46px]">
-                +91
-              </span>
+              <select
+                value={countryCode}
+                onChange={(e) => setCountryCode(e.target.value)}
+                disabled={loading}
+                className="rounded-l-xl border border-r-0 border-neutral-300 bg-neutral-50 text-neutral-700 text-[15px] font-medium h-[46px] px-2 focus:outline-none focus:ring-2 focus:ring-[#3678F1]/20"
+                aria-label="Country code"
+              >
+                {PHONE_COUNTRY_CODES.map((country) => (
+                  <option key={`${country.iso2}-${country.label}`} value={country.dialCode}>
+                    {country.label}
+                  </option>
+                ))}
+              </select>
               <input
                 type="tel"
                 value={phone}
                 onChange={(e) => {
-                  const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                  const val = e.target.value.replace(/\D/g, '').slice(0, 14);
                   setPhone(val);
                 }}
                 onBlur={() => handleBlur('phone')}
-                placeholder="98765 43210"
+                placeholder="Enter phone number"
                 disabled={loading}
-                maxLength={10}
+                maxLength={14}
                 className={`${inputBase} rounded-l-none border-l-0 ${borderClass('phone')}`}
               />
             </div>
@@ -428,6 +449,33 @@ export default function IndividualRegistration() {
               </p>
             </div>
           )}
+        </div>
+
+        {/* Confirm Password */}
+        <div>
+          <label className="block text-[13px] text-neutral-700 mb-1.5 font-semibold">
+            Confirm password <span className="text-[#F40F02]">*</span>
+          </label>
+          <div className="relative">
+            <input
+              type={showConfirmPassword ? 'text' : 'password'}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              onBlur={() => handleBlur('confirmPassword')}
+              placeholder="Re-enter your password"
+              disabled={loading}
+              className={`${inputBase} pr-12 ${borderClass('confirmPassword')}`}
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword((v) => !v)}
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 transition-colors"
+              aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
+            >
+              {showConfirmPassword ? <FaEyeSlash className="w-4 h-4" /> : <FaEye className="w-4 h-4" />}
+            </button>
+          </div>
+          {fieldErrors.confirmPassword && <p className="text-xs text-[#F40F02] mt-1.5">{fieldErrors.confirmPassword}</p>}
         </div>
 
         {/* Terms */}

@@ -57,6 +57,7 @@ interface InvoiceData {
   recipientDetails?: IssuerRecipientDetails;
   lineItems: InvoiceLineItem[];
   subtotalPaise: number;
+  taxType?: 'none' | 'gst' | 'igst';
   taxRatePct: number;
   taxAmountPaise: number;
   totalPaise: number;
@@ -134,6 +135,8 @@ export default function Invoice() {
   const isRecipient = invoice && user && invoice.recipientId === user.id;
   const canEditAttachments = isIssuer && invoice && (invoice.status === 'draft' || invoice.status === 'sent');
   const attachments = invoice?.attachments ?? [];
+  const cgstAmountPaise = invoice ? Math.floor(invoice.taxAmountPaise / 2) : 0;
+  const sgstAmountPaise = invoice ? invoice.taxAmountPaise - cgstAmountPaise : 0;
 
   const handleAddAttachment = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -442,9 +445,21 @@ export default function Invoice() {
                               <span className="text-neutral-500">Subtotal</span>
                               <span className="font-semibold text-neutral-900">{formatPaise(invoice.subtotalPaise)}</span>
                             </div>
-                            {invoice.taxRatePct > 0 && (
+                            {invoice.taxRatePct > 0 && invoice.taxType === 'gst' && (
+                              <>
+                                <div className="flex justify-between text-sm">
+                                  <span className="text-neutral-500">CGST ({invoice.taxRatePct / 2}%)</span>
+                                  <span className="font-semibold text-neutral-900">{formatPaise(cgstAmountPaise)}</span>
+                                </div>
+                                <div className="flex justify-between text-sm">
+                                  <span className="text-neutral-500">SGST ({invoice.taxRatePct / 2}%)</span>
+                                  <span className="font-semibold text-neutral-900">{formatPaise(sgstAmountPaise)}</span>
+                                </div>
+                              </>
+                            )}
+                            {invoice.taxRatePct > 0 && invoice.taxType === 'igst' && (
                               <div className="flex justify-between text-sm">
-                                <span className="text-neutral-500">GST ({invoice.taxRatePct}%)</span>
+                                <span className="text-neutral-500">IGST ({invoice.taxRatePct}%)</span>
                                 <span className="font-semibold text-neutral-900">{formatPaise(invoice.taxAmountPaise)}</span>
                               </div>
                             )}

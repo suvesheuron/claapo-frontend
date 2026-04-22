@@ -13,6 +13,8 @@ interface Project {
   id: string;
   title: string;
   status: string;
+  shootDates?: string[];
+  shootLocations?: string[];
 }
 
 interface InquiryRequestModalProps {
@@ -24,7 +26,7 @@ interface InquiryRequestModalProps {
   selectedDate: string;
   projects: Project[];
   projectsLoading: boolean;
-  onSendInquiry: (projectId: string) => Promise<void>;
+  onSendInquiry: (projectId: string, location: string) => Promise<void>;
 }
 
 const formatDate = (iso: string) =>
@@ -33,6 +35,8 @@ const formatDate = (iso: string) =>
     day: 'numeric',
     month: 'long',
   });
+
+const toDateOnly = (value: string) => value.slice(0, 10);
 
 export default function InquiryRequestModal({
   isOpen,
@@ -45,6 +49,7 @@ export default function InquiryRequestModal({
   onSendInquiry,
 }: InquiryRequestModalProps) {
   const [projectId, setProjectId] = useState('');
+  const [location, setLocation] = useState('');
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
 
@@ -52,6 +57,7 @@ export default function InquiryRequestModal({
   useEffect(() => {
     if (isOpen) {
       setProjectId('');
+      setLocation('');
       setSent(false);
     }
   }, [isOpen]);
@@ -76,16 +82,30 @@ export default function InquiryRequestModal({
     .join('')
     .toUpperCase();
 
+  const selectedProject = projects.find((p) => p.id === projectId);
+  const projectLocations = selectedProject?.shootLocations ?? [];
+  const projectDates = selectedProject?.shootDates?.map((d) => toDateOnly(d)) ?? [];
+  const selectedDateOnly = toDateOnly(selectedDate);
+  const matchedDateIndex = projectDates.indexOf(selectedDateOnly);
+  const inferredLocation =
+    matchedDateIndex >= 0 ? (projectLocations[matchedDateIndex] ?? '') : '';
+  const hasProjectLocations = projectLocations.length > 0;
+  const resolvedLocation = inferredLocation || location.trim();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!projectId) {
       toast.error('Please select a project.');
       return;
     }
+    if (!resolvedLocation) {
+      toast.error('Please add a location.');
+      return;
+    }
 
     setLoading(true);
     try {
-      await onSendInquiry(projectId);
+      await onSendInquiry(projectId, resolvedLocation);
       setSent(true);
     } catch (err) {
       // Error already handled in parent
@@ -165,7 +185,15 @@ export default function InquiryRequestModal({
                 </label>
                 <select
                   value={projectId}
-                  onChange={(e) => setProjectId(e.target.value)}
+                  onChange={(e) => {
+                    const nextProjectId = e.target.value;
+                    setProjectId(nextProjectId);
+                    const nextProject = projects.find((p) => p.id === nextProjectId);
+                    const nextDates = nextProject?.shootDates?.map((d) => toDateOnly(d)) ?? [];
+                    const nextLocations = nextProject?.shootLocations ?? [];
+                    const nextDateIndex = nextDates.indexOf(selectedDateOnly);
+                    setLocation(nextDateIndex >= 0 ? (nextLocations[nextDateIndex] ?? '') : (nextLocations[0] ?? ''));
+                  }}
                   required
                   disabled={loading || projectsLoading}
                   className="w-full px-3.5 py-2.5 border border-neutral-300 rounded-xl bg-white text-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#3678F1]/20 focus:border-[#3678F1] transition-colors disabled:opacity-50"
@@ -181,17 +209,56 @@ export default function InquiryRequestModal({
                 </select>
               </div>
 
+              <div>
+                <label className="block text-xs font-semibold text-neutral-700 mb-1.5 uppercase tracking-wide">
+                  Location <span className="text-[#F40F02]">*</span>
+                </label>
+                {inferredLocation ? (
+                  <div className="w-full px-3.5 py-2.5 border border-neutral-300 rounded-xl bg-neutral-50 text-neutral-900 text-sm">
+                    {inferredLocation}
+                    <p className="text-[11px] text-neutral-500 mt-1">
+                      Auto-selected from this project&apos;s shoot plan for {formatDate(selectedDate)}.
+                    </p>
+                  </div>
+                ) : hasProjectLocations ? (
+                  <select
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    required
+                    disabled={loading}
+                    className="w-full px-3.5 py-2.5 border border-neutral-300 rounded-xl bg-white text-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#3678F1]/20 focus:border-[#3678F1] transition-colors disabled:opacity-50"
+                  >
+                    <option value="">— Select location —</option>
+                    {projectLocations.map((loc) => (
+                      <option key={loc} value={loc}>
+                        {loc}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    placeholder="e.g., Mumbai Film City"
+                    required
+                    disabled={loading}
+                    className="w-full px-3.5 py-2.5 border border-neutral-300 rounded-xl bg-white text-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#3678F1]/20 focus:border-[#3678F1] transition-colors disabled:opacity-50"
+                  />
+                )}
+              </div>
+
               {/* Info */}
               <div className="rounded-xl bg-[#E8F0FE] border border-[#3678F1]/30 p-3">
                 <p className="text-xs text-[#1D4ED8] leading-relaxed">
-                  This will send an inquiry message to {targetName.split(' ')[0] || 'them'} asking about their availability for this date. They can respond via chat.
+                  This will send an inquiry with date and location to {targetName.split(' ')[0] || 'them'}. They can respond via chat.
                 </p>
               </div>
 
               {/* Submit */}
               <button
                 type="submit"
-                disabled={loading || !projectId}
+                disabled={loading || !projectId || !resolvedLocation}
                 className="w-full rounded-xl py-3 bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white text-sm font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] shadow-brand disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {loading ? 'Sending…' : 'Send Inquiry'}
