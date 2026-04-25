@@ -143,6 +143,12 @@ export default function CompanyRegistration() {
     return 'border-neutral-300 focus:border-[#3678F1] focus:ring-[#3678F1]/20';
   };
 
+  const phoneWrapperClass = (field: keyof FieldErrors) => {
+    if (fieldErrors[field]) return 'border-[#F40F02]/40 focus-within:border-[#F40F02] focus-within:ring-[#F40F02]/15';
+    if (touched[field] && !fieldErrors[field]) return 'border-emerald-400 focus-within:border-emerald-500 focus-within:ring-emerald-500/20';
+    return 'border-neutral-300 dark:border-[#354763] focus-within:border-[#3678F1] focus-within:ring-[#3678F1]/20';
+  };
+
   const strength = getPasswordStrength(password);
 
   /* ── Submit ── */
@@ -319,17 +325,17 @@ export default function CompanyRegistration() {
           <label className="block text-[13px] text-neutral-700 mb-1.5 font-semibold">
             Phone <span className="text-[#F40F02]">*</span>
           </label>
-          <div className="flex items-center gap-0">
+          <div className={`flex items-stretch h-[46px] rounded-xl border bg-white dark:bg-[#141A28] overflow-hidden transition-all focus-within:ring-2 ${phoneWrapperClass('phone')}`}>
             <select
               value={countryCode}
               onChange={(e) => setCountryCode(e.target.value)}
               disabled={loading}
-              className="rounded-l-xl border border-r-0 border-neutral-300 bg-neutral-50 text-neutral-700 text-[15px] font-medium h-[46px] px-2 focus:outline-none focus:ring-2 focus:ring-[#3678F1]/20"
+              className="shrink-0 w-[88px] h-full bg-neutral-50 dark:bg-[#1E2640] border-r border-neutral-300 dark:border-[#354763] text-neutral-800 dark:text-[#F1F5F9] text-[15px] font-medium px-2.5 focus:outline-none cursor-pointer disabled:opacity-50"
               aria-label="Country code"
             >
               {PHONE_COUNTRY_CODES.map((country) => (
-                <option key={`${country.iso2}-${country.label}`} value={country.dialCode}>
-                  {country.label}
+                <option key={`${country.iso2}-${country.label}`} value={country.dialCode} title={country.label}>
+                  {country.dialCode}
                 </option>
               ))}
             </select>
@@ -344,7 +350,7 @@ export default function CompanyRegistration() {
               placeholder="Enter phone number"
               disabled={loading}
               maxLength={14}
-              className={`${inputBase} rounded-l-none border-l-0 ${borderClass('phone')}`}
+              className="flex-1 min-w-0 h-full px-4 bg-transparent text-[15px] text-neutral-900 dark:text-[#F1F5F9] placeholder-neutral-400 focus:outline-none disabled:opacity-50"
             />
           </div>
           {fieldErrors.phone && <p className="text-xs text-[#F40F02] mt-1.5">{fieldErrors.phone}</p>}
