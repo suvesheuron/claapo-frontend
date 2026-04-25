@@ -272,12 +272,17 @@ export default function Chat() {
       }
 
       try {
-        const res = await api.get<{ conversationId: string | null; items: ChatMessage[] }>(
+        const res = await api.get<{
+          conversationId: string | null;
+          project?: { id: string; title: string } | null;
+          items: ChatMessage[];
+        }>(
           `/conversations/with/${targetUserId}?limit=50`,
         );
         const data = res?.items ?? [];
         if (!isPolling) {
           setNoConversation(res?.conversationId === null);
+          setScopedProjectTitle(res?.project?.title ?? null);
           setMessages(data);
         }
         if (!data.length) return;

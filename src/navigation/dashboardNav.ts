@@ -34,6 +34,7 @@ export const vendorNavLinks: NavItem[] = [
   { icon: FaMessage,       label: 'Chat',               to: '/conversations',       section: 'Communication', badgeKey: 'chat' },
   { icon: FaFileInvoice,   label: 'Invoices',           to: '/invoices',            section: 'Communication' },
   { icon: FaChartLine,     label: 'Earnings',           to: '/earnings',            section: 'Communication' },
+  { icon: FaPeopleGroup,   label: 'Team',               to: '/team',                section: 'Account' },
   { icon: FaUser,          label: 'Profile',            to: '/vendor-profile',      section: 'Account' },
 ];
 

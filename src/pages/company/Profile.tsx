@@ -27,6 +27,7 @@ interface CompanyProfileData {
   bio: string | null;
   aboutUs: string | null;
   gstNumber: string | null;
+  sacCode: string | null;
   panNumber: string | null;
   companyType: string | null;
   skills?: string[] | null;
@@ -72,6 +73,7 @@ export default function CompanyProfile() {
   const [vimeoUrl, setVimeoUrl] = useState('');
   const [panNumber, setPanNumber] = useState('');
   const [gstNumber, setGstNumber] = useState('');
+  const [sacCode, setSacCode] = useState('');
   const [bankAccountName, setBankAccountName] = useState('');
   const [bankAccountNumber, setBankAccountNumber] = useState('');
   const [ifscCode, setIfscCode] = useState('');
@@ -136,6 +138,7 @@ export default function CompanyProfile() {
     setVimeoUrl(p.vimeoUrl ?? '');
     setPanNumber(p.panNumber ?? '');
     setGstNumber(p.gstNumber ?? '');
+    setSacCode(p.sacCode ?? '');
     setBankAccountName(p.bankAccountName ?? '');
     setBankAccountNumber(p.bankAccountNumber ?? '');
     setIfscCode(p.ifscCode ?? '');
@@ -156,6 +159,10 @@ export default function CompanyProfile() {
       setError('Address is required for invoices.');
       return;
     }
+    if (gstNumber.trim() && !sacCode.trim()) {
+      setError('SAC Code is required when GST Number is provided.');
+      return;
+    }
     setSaving(true);
     try {
       await api.patch('/profile/company', {
@@ -174,6 +181,7 @@ export default function CompanyProfile() {
         vimeoUrl: vimeoUrl.trim() || undefined,
         panNumber: panNumber.trim() || undefined,
         gstNumber: gstNumber.trim() || undefined,
+        sacCode: sacCode.trim() || undefined,
         bankAccountName: bankAccountName.trim() || undefined,
         bankAccountNumber: bankAccountNumber.trim() || undefined,
         ifscCode: ifscCode.trim() || undefined,
@@ -229,6 +237,7 @@ export default function CompanyProfile() {
     vimeoUrl,
     panNumber,
     gstNumber,
+    sacCode,
     bankAccountName,
     bankAccountNumber,
     ifscCode,
@@ -463,6 +472,7 @@ export default function CompanyProfile() {
                               icon={<FaIdCard />}
                               copyable
                             />
+                            <InfoRow label="SAC Code" value={sacCode || '—'} copyable />
                             <InfoRow label="PAN Number" value={panNumber || '—'} copyable />
                             <InfoRow label="Bank" value={bankName || '—'} />
                             <InfoRow label="Account" value={bankAccountNumber || '—'} copyable />
@@ -681,6 +691,15 @@ export default function CompanyProfile() {
                               disabled={saving}
                               helpText={profile?.isGstVerified ? 'GST Number is verified' : '15-character GSTIN'}
                               icon={<FaIdCard />}
+                            />
+                            <EditableField
+                              label={`SAC Code${gstNumber.trim() ? '' : ' (Optional)'}`}
+                              value={sacCode}
+                              onChange={setSacCode}
+                              placeholder="e.g. 998314"
+                              disabled={saving || !gstNumber.trim()}
+                              helpText={gstNumber.trim() ? 'Required once GST Number is provided' : 'Enter GST Number first to enable SAC Code'}
+                              required={Boolean(gstNumber.trim())}
                             />
                             {profile?.isGstVerified && (
                               <p className="text-[10px] text-emerald-600 -mt-2 ml-1">✓ Verified by admin</p>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { FaArrowLeft, FaLocationDot, FaUpRightFromSquare, FaCalendarDays, FaTriangleExclamation, FaVideo, FaLink, FaChevronLeft, FaChevronRight, FaBan, FaCircleCheck, FaCalendarCheck, FaGlobe, FaInstagram, FaYoutube, FaVimeoV, FaImdb, FaLinkedinIn, FaXTwitter } from 'react-icons/fa6';
+import { FaArrowLeft, FaLocationDot, FaCalendarDays, FaTriangleExclamation, FaVideo, FaChevronLeft, FaChevronRight, FaBan, FaCircleCheck, FaCalendarCheck, FaGlobe, FaInstagram, FaYoutube, FaVimeoV, FaImdb, FaLinkedinIn, FaXTwitter, FaPhone, FaStar } from 'react-icons/fa6';
 import toast from 'react-hot-toast';
 import DashboardHeader from '../components/DashboardHeader';
 import DashboardSidebar from '../components/DashboardSidebar';
@@ -13,11 +13,13 @@ import AvailabilityDateDetailModal from '../components/AvailabilityDateDetailMod
 import BookingRequestModal from '../components/BookingRequestModal';
 import InquiryRequestModal from '../components/InquiryRequestModal';
 import { api, ApiException } from '../services/api';
+import { useApiQuery } from '../hooks/useApiQuery';
 import { useAuth } from '../contexts/AuthContext';
 import { companyNavLinks } from '../navigation/dashboardNav';
 import type { BookingWithDetails, SlotStatus } from '../types/availability';
 import { parseAvailabilityMonthResponse } from '../utils/parseAvailabilityResponse';
 import { formatPaise } from '../utils/currency';
+import StarRating from '../components/StarRating';
 
 type UserRole = 'individual' | 'company' | 'vendor' | 'admin';
 
@@ -31,6 +33,7 @@ interface VendorEquipment {
 interface PublicProfileResponse {
   id: string;
   role: UserRole;
+  phone?: string;
   profile: {
     displayName?: string;
     companyName?: string;
@@ -55,6 +58,14 @@ interface PublicProfileResponse {
     isAvailable?: boolean;
     equipment?: VendorEquipment[];
   } | null;
+}
+
+interface ReviewItem {
+  rating: number;
+}
+
+interface ReviewsResponse {
+  items: ReviewItem[];
 }
 
 function formatRate(paise?: number | null): string {
@@ -143,6 +154,12 @@ export default function OtherUserProfile() {
       .finally(() => setLoading(false));
   }, [userId]);
 
+  const { data: reviewsData } = useApiQuery<ReviewsResponse>(userId ? `/reviews/user/${userId}` : null);
+  const reviewItems = reviewsData?.items ?? [];
+  const avgRating = reviewItems.length
+    ? Math.round((reviewItems.reduce((sum, review) => sum + review.rating, 0) / reviewItems.length) * 10) / 10
+    : 0;
+
   useEffect(() => {
     if (!userId || !profile) return;
     const role = profile.role;
@@ -176,8 +193,8 @@ export default function OtherUserProfile() {
   const p = profile?.profile;
   const isIndividual = profile?.role === 'individual';
   const isVendor = profile?.role === 'vendor';
+  const isCompany = profile?.role === 'company';
   const title = p?.displayName ?? p?.companyName ?? 'Profile';
-  const worklink = (p as any)?.imdbUrl as string | undefined;
   const primaryRole = isIndividual
     ? (p?.skills?.[0] ?? 'Individual')
     : profile?.role
@@ -240,11 +257,6 @@ export default function OtherUserProfile() {
     const n = new Date();
     return n.getFullYear() === calYear && n.getMonth() === calMonth;
   })();
-
-  const profileShareUrl =
-    typeof window !== 'undefined' && userId
-      ? `${window.location.origin}/profile/${userId}`
-      : '';
 
   const socialPlatforms: Array<{ key: string; label: string; url: string | undefined; Icon: typeof FaGlobe; color: string; bg: string; border: string }> = [
     { key: 'website',   label: 'Website',     url: p?.website,      Icon: FaGlobe,      color: 'text-[#3678F1]', bg: 'bg-[#3678F1]/10', border: 'border-[#3678F1]/20' },
@@ -400,6 +412,15 @@ We're working on ${projectName}. The shoot is planned for ${shootDate} at ${loca
 
                       <div className="min-w-0 lg:pt-1">
                         <h1 className="text-2xl sm:text-3xl font-extrabold text-neutral-900">{title}</h1>
+                        {reviewItems.length > 0 && (
+                          <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-[#3678F1]/20 bg-[#E8F0FE] px-3 py-1">
+                            <FaStar className="w-3 h-3 text-[#3678F1]" />
+                            <StarRating rating={Math.round(avgRating * 2) / 2} size="sm" />
+                            <span className="text-xs font-semibold text-[#1D4ED8]">
+                              {avgRating} ({reviewItems.length})
+                            </span>
+                          </div>
+                        )}
                         <p className="text-xs uppercase tracking-[0.15em] font-semibold text-[#3678F1] mt-1">
                           {primaryRole}
                         </p>
@@ -421,6 +442,12 @@ We're working on ${projectName}. The shoot is planned for ${shootDate} at ${loca
                             </p>
                           </div>
                         )}
+                        {profile?.phone && (
+                          <p className="text-sm text-neutral-600 flex items-center gap-1.5 mt-2">
+                            <FaPhone className="w-3.5 h-3.5 text-neutral-400" />
+                            {profile.phone}
+                          </p>
+                        )}
                         {isIndividual && p.skills && p.skills.length > 1 ? (
                           <div className="flex flex-wrap gap-1.5 mt-3">
                             {p.skills.slice(1).map((s) => (
@@ -430,62 +457,36 @@ We're working on ${projectName}. The shoot is planned for ${shootDate} at ${loca
                             ))}
                           </div>
                         ) : null}
-                        {worklink && (
-                          <div className="mt-4 pt-4 border-t border-neutral-100">
-                            <a
-                              href={worklink}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="inline-flex items-center gap-1.5 text-sm font-medium text-[#3678F1] hover:text-[#2563EB] transition-colors"
-                            >
-                              View Portfolio
-                              <FaUpRightFromSquare className="w-3.5 h-3.5" />
-                            </a>
+                        {visiblePlatforms.length > 0 && (
+                          <div className="mt-4 pt-4 border-t border-neutral-100 flex items-center gap-2.5 flex-wrap">
+                            {visiblePlatforms.map(({ key, label, url, Icon, color, bg, border }) => (
+                              <a
+                                key={key}
+                                href={url}
+                                target="_blank"
+                                rel="noreferrer"
+                                aria-label={label}
+                                title={label}
+                                className={`w-9 h-9 rounded-full border ${border} ${bg} hover:border-[#3678F1] transition-colors flex items-center justify-center`}
+                              >
+                                <Icon className={`w-4 h-4 ${color}`} />
+                              </a>
+                            ))}
                           </div>
                         )}
                       </div>
 
-                      {visiblePlatforms.length > 0 && (
-                        <div className="w-full lg:w-[220px] flex flex-col gap-2">
-                          {visiblePlatforms.map(({ key, label, url, Icon, color, bg, border }) => (
-                            <a
-                              key={key}
-                              href={url}
-                              target="_blank"
-                              rel="noreferrer"
-                              className={`inline-flex items-center gap-2.5 rounded-xl border ${border} ${bg} px-3 py-2.5 hover:border-[#3678F1] transition-colors`}
-                            >
-                              <span className="w-6 h-6 rounded-md bg-white border border-neutral-200/70 flex items-center justify-center shrink-0">
-                                <Icon className={`w-3.5 h-3.5 ${color}`} />
-                              </span>
-                              <span className={`text-sm font-semibold ${color}`}>{label}</span>
-                            </a>
-                          ))}
-                          {profileShareUrl && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                void navigator.clipboard.writeText(profileShareUrl);
-                                toast.success('Profile link copied');
-                              }}
-                              className="inline-flex items-center justify-center gap-2 text-xs font-semibold text-[#3678F1] border border-[#3678F1]/30 rounded-xl px-3 py-2 hover:bg-[#E8F0FE] transition-colors mt-1"
-                            >
-                              <FaLink className="w-3.5 h-3.5" />
-                              Copy profile link
-                            </button>
-                          )}
-                        </div>
-                      )}
+                      <div className="hidden lg:block" />
                     </div>
                   </motion.div>
 
-                  {(p.bio || p.aboutMe || p.aboutUs) && (
+                  {((isIndividual && (p.bio || p.aboutMe)) || (isCompany && (p.bio || p.aboutUs)) || (isVendor && p.aboutUs)) && (
                     <motion.div variants={itemVariants} className="rounded-3xl bg-white shadow-soft border border-neutral-100 hover:border-[#3678F1] transition-colors duration-200 p-6 sm:p-8">
                       <h2 className="text-base font-bold text-neutral-900 mb-4 flex items-center gap-2">
                         <span className="w-1 h-5 rounded-full bg-[#3678F1]" /> About
                       </h2>
                       <p className="text-sm text-neutral-600 leading-relaxed whitespace-pre-wrap">
-                        {p.aboutMe || p.aboutUs || p.bio}
+                        {isIndividual ? (p.aboutMe || p.bio) : isVendor ? (p.aboutUs || '—') : (p.aboutUs || p.bio)}
                       </p>
                     </motion.div>
                   )}
@@ -744,7 +745,7 @@ We're working on ${projectName}. The shoot is planned for ${shootDate} at ${loca
                       onSubmitted={() => setReviewsRefreshKey((k) => k + 1)}
                     />
                   )}
-                  <ReviewsList userId={profile.id} refreshKey={reviewsRefreshKey} />
+                  <ReviewsList userId={profile.id} refreshKey={reviewsRefreshKey} showAverageHeader={false} />
                 </motion.div>
               )}
             </div>
@@ -783,4 +784,3 @@ We're working on ${projectName}. The shoot is planned for ${shootDate} at ${loca
     </div>
   );
 }
-

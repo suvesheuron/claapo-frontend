@@ -28,7 +28,6 @@ interface VendorProfileData {
   vendorServiceCategory?: string | null;
   locationCity: string | null;
   locationState: string | null;
-  bio: string | null;
   aboutUs: string | null;
   website: string | null;
   imdbUrl?: string | null;
@@ -43,6 +42,7 @@ interface VendorProfileData {
   ifscCode?: string | null;
   bankName?: string | null;
   gstNumber: string | null;
+  sacCode?: string | null;
   isGstVerified: boolean;
   coverUrl?: string | null;
 }
@@ -65,7 +65,6 @@ export default function VendorProfile() {
   const [vendorServiceCategory, setVendorServiceCategory] = useState('');
   const [locationCity, setLocationCity] = useState('');
   const [locationState, setLocationState] = useState('');
-  const [bio, setBio] = useState('');
   const [aboutUs, setAboutUs] = useState('');
   const [website, setWebsite] = useState('');
   const [imdbUrl, setImdbUrl] = useState('');
@@ -79,6 +78,7 @@ export default function VendorProfile() {
   const [bankAccountNumber, setBankAccountNumber] = useState('');
   const [ifscCode, setIfscCode] = useState('');
   const [bankName, setBankName] = useState('');
+  const [sacCode, setSacCode] = useState('');
 
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -158,7 +158,6 @@ export default function VendorProfile() {
     setVendorServiceCategory(p.vendorServiceCategory ?? '');
     setLocationCity(p.locationCity ?? '');
     setLocationState(p.locationState ?? '');
-    setBio(p.bio ?? '');
     setAboutUs(p.aboutUs ?? '');
     setWebsite(p.website ?? '');
     setImdbUrl(p.imdbUrl ?? '');
@@ -172,12 +171,17 @@ export default function VendorProfile() {
     setBankAccountNumber(p.bankAccountNumber ?? '');
     setIfscCode(p.ifscCode ?? '');
     setBankName(p.bankName ?? '');
+    setSacCode(p.sacCode ?? '');
   }, [me]);
 
   const handleSave = async () => {
     setError(null); setSaved(false);
     if (!address.trim()) {
       setError('Address is required for invoices.');
+      return;
+    }
+    if ((profile?.gstNumber ?? '').trim() && !sacCode.trim()) {
+      setError('SAC Code is required when GST Number is provided.');
       return;
     }
     setSaving(true);
@@ -188,7 +192,6 @@ export default function VendorProfile() {
         vendorServiceCategory: vendorServiceCategory.trim() || undefined,
         locationCity: locationCity.trim() || undefined,
         locationState: locationState.trim() || undefined,
-        bio: bio.trim() || undefined,
         aboutUs: aboutUs.trim() || undefined,
         website: website.trim() || undefined,
         imdbUrl: imdbUrl.trim() || undefined,
@@ -202,6 +205,7 @@ export default function VendorProfile() {
         bankAccountNumber: bankAccountNumber.trim() || undefined,
         ifscCode: ifscCode.trim() || undefined,
         bankName: bankName.trim() || undefined,
+        sacCode: sacCode.trim() || undefined,
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
@@ -416,16 +420,12 @@ export default function VendorProfile() {
                           </div>
                         </ProfileSection>
 
-                        {/* About Business */}
+                        {/* Social Links */}
                         <ProfileSection 
                           title="About Business" 
                           icon={<FaUser />}
                         >
                           <div className="space-y-4">
-                            <div>
-                              <dt className="text-xs font-medium text-neutral-500 mb-1">Bio / Description</dt>
-                              <dd className="text-sm text-neutral-700 whitespace-pre-wrap">{bio || '—'}</dd>
-                            </div>
                             <div>
                               <dt className="text-xs font-medium text-neutral-500 mb-1">About Us</dt>
                               <dd className="text-sm text-neutral-700 whitespace-pre-wrap">{aboutUs || '—'}</dd>
@@ -468,6 +468,7 @@ export default function VendorProfile() {
                               icon={<FaIdCard />}
                               copyable
                             />
+                            <InfoRow label="SAC Code" value={sacCode || '—'} copyable />
                             <InfoRow label="PAN" value={panNumber || '—'} copyable />
                             <InfoRow label="UPI ID" value={profile?.upiId || '—'} copyable />
                             <InfoRow label="Bank" value={bankName || '—'} />
@@ -638,16 +639,6 @@ export default function VendorProfile() {
                         >
                           <div className="space-y-4">
                             <EditableField
-                              label="Bio / Short Description"
-                              type="textarea"
-                              rows={3}
-                              value={bio}
-                              onChange={setBio}
-                              placeholder="Brief description of your business, specialties, and services..."
-                              disabled={saving}
-                              helpText="Describe what makes your business unique"
-                            />
-                            <EditableField
                               label="About Us"
                               type="textarea"
                               rows={4}
@@ -711,6 +702,15 @@ export default function VendorProfile() {
                               <p className="text-[10px] text-neutral-400 mt-1.5">GST number verification is done by admin</p>
                             </div>
                             <EditableField label="PAN Number" value={panNumber} onChange={setPanNumber} placeholder="e.g. ABCDE1234F" disabled={saving} />
+                            <EditableField
+                              label={`SAC Code${(profile?.gstNumber ?? '').trim() ? '' : ' (Optional)'}`}
+                              value={sacCode}
+                              onChange={setSacCode}
+                              placeholder="e.g. 998314"
+                              disabled={saving || !(profile?.gstNumber ?? '').trim()}
+                              helpText={(profile?.gstNumber ?? '').trim() ? 'Required once GST Number is provided' : 'GST Number is required before entering SAC Code'}
+                              required={Boolean((profile?.gstNumber ?? '').trim())}
+                            />
                             <EditableField label="UPI ID (Optional)" value={upiId} onChange={setUpiId} placeholder="e.g. name@upi" disabled={saving} helpText="Your UPI ID / VPA for receiving payments" />
                             <EditableField label="Bank name" value={bankName} onChange={setBankName} disabled={saving} icon={<FaBuilding />} />
                             <EditableField label="Account holder name" value={bankAccountName} onChange={setBankAccountName} disabled={saving} />

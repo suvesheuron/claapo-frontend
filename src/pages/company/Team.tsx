@@ -9,7 +9,8 @@ import { api, ApiException } from '../../services/api';
 import toast from 'react-hot-toast';
 import { useApiQuery } from '../../hooks/useApiQuery';
 import { toE164India } from '../../utils/phone';
-import { companyNavLinks } from '../../navigation/dashboardNav';
+import { useRole } from '../../contexts/RoleContext';
+import { companyNavLinks, vendorNavLinks } from '../../navigation/dashboardNav';
 
 interface SubUser {
   id: string;
@@ -26,11 +27,18 @@ interface ProjectsResponse { items: Project[] }
 
 export default function TeamPage() {
   useEffect(() => { document.title = 'Team Management – Claapo'; }, []);
+  const { currentRole } = useRole();
+
+  const navLinks = currentRole === 'Vendor' ? vendorNavLinks : companyNavLinks;
+  const projectsEndpoint =
+    currentRole === 'Vendor'
+      ? '/projects/my/with-stats?limit=100'
+      : '/projects?limit=100';
 
   const { data: subUsersData, loading: loadingUsers, refetch: refetchUsers, error: usersError } =
     useApiQuery<SubUsersResponse>('/profile/sub-users/list');
 
-  const { data: projectsData } = useApiQuery<ProjectsResponse>('/projects?limit=100');
+  const { data: projectsData } = useApiQuery<ProjectsResponse>(projectsEndpoint);
 
   const subUsers = subUsersData?.items ?? [];
   const projects = projectsData?.items ?? [];
@@ -131,7 +139,7 @@ export default function TeamPage() {
     <div className="h-screen flex flex-col overflow-hidden bg-[#F3F4F6] w-full">
       <DashboardHeader />
       <div className="flex-1 flex min-h-0 overflow-hidden">
-        <DashboardSidebar links={companyNavLinks} />
+        <DashboardSidebar links={navLinks} />
         <main className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
           <div className="flex-1 min-h-0 overflow-auto">
             <div className="max-w-[900px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -285,13 +293,23 @@ export default function TeamPage() {
                                     <ul className="flex flex-wrap gap-1.5">
                                       {assigned.map((proj) => (
                                         <li key={proj.id}>
-                                          <Link
-                                            to={`/projects/${proj.id}`}
-                                            className="inline-flex items-center gap-1 rounded-lg px-2 py-1 bg-[#E8F0FE] text-[11px] font-semibold text-[#2563EB] hover:bg-[#DBEAFE] transition-colors max-w-[220px]"
-                                            title={proj.title}
-                                          >
-                                            <span className="truncate">{proj.title}</span>
-                                          </Link>
+                                          {currentRole === 'Vendor' ? (
+                                            <Link
+                                              to={`/conversations/${proj.id}`}
+                                              className="inline-flex items-center gap-1 rounded-lg px-2 py-1 bg-[#E8F0FE] text-[11px] font-semibold text-[#2563EB] hover:bg-[#DBEAFE] transition-colors max-w-[220px]"
+                                              title={proj.title}
+                                            >
+                                              <span className="truncate">{proj.title}</span>
+                                            </Link>
+                                          ) : (
+                                            <Link
+                                              to={`/projects/${proj.id}`}
+                                              className="inline-flex items-center gap-1 rounded-lg px-2 py-1 bg-[#E8F0FE] text-[11px] font-semibold text-[#2563EB] hover:bg-[#DBEAFE] transition-colors max-w-[220px]"
+                                              title={proj.title}
+                                            >
+                                              <span className="truncate">{proj.title}</span>
+                                            </Link>
+                                          )}
                                         </li>
                                       ))}
                                     </ul>
