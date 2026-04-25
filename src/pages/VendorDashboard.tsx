@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { FaCalendar, FaTruck, FaBell, FaChevronLeft, FaChevronRight, FaMessage, FaTriangleExclamation, FaUser } from 'react-icons/fa6';
+import { FaCalendar, FaTruck, FaBell, FaChevronLeft, FaChevronRight, FaMessage, FaTriangleExclamation, FaUser, FaPeopleGroup } from 'react-icons/fa6';
 import { api, ApiException } from '../services/api';
 import { useApiQuery } from '../hooks/useApiQuery';
 import { useChatUnread } from '../contexts/ChatUnreadContext';
@@ -576,6 +576,12 @@ export default function VendorDashboard() {
                           <FaTruck className="w-3.5 h-3.5 text-[#3678F1]" />
                         </div>
                         <span className="flex-1 truncate">Equipment</span>
+                      </Link>
+                      <Link to="/team" className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-neutral-200/70 text-neutral-700 text-[13px] font-semibold hover:border-[#3678F1] transition-colors duration-200">
+                        <div className="w-8 h-8 rounded-lg bg-[#E8F0FE] ring-1 ring-[#3678F1]/15 flex items-center justify-center shrink-0">
+                          <FaPeopleGroup className="w-3.5 h-3.5 text-[#3678F1]" />
+                        </div>
+                        <span className="flex-1 truncate">Manage Team</span>
                       </Link>
                       <Link to="/vendor-profile" className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-neutral-200/70 text-neutral-700 text-[13px] font-semibold hover:border-[#3678F1] transition-colors duration-200">
                         <div className="w-8 h-8 rounded-lg bg-[#E8F0FE] ring-1 ring-[#3678F1]/15 flex items-center justify-center shrink-0">

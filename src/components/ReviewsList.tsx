@@ -26,6 +26,7 @@ interface ReviewsListProps {
   userId: string;
   /** Bump this value to force a refetch (e.g. after a new review is submitted). */
   refreshKey?: number;
+  showAverageHeader?: boolean;
 }
 
 function formatDate(iso: string): string {
@@ -41,7 +42,7 @@ function reviewerLabel(r: Reviewer): string {
   );
 }
 
-export default function ReviewsList({ userId, refreshKey = 0 }: ReviewsListProps) {
+export default function ReviewsList({ userId, refreshKey = 0, showAverageHeader = true }: ReviewsListProps) {
   const { data, loading, error, refetch } = useApiQuery<ReviewsResponse>(`/reviews/user/${userId}`);
   useEffect(() => {
     if (refreshKey > 0) refetch();
@@ -89,18 +90,19 @@ export default function ReviewsList({ userId, refreshKey = 0 }: ReviewsListProps
 
   return (
     <div className="space-y-4">
-      {/* Average rating header */}
-      <div className="rounded-2xl bg-white border border-neutral-200 p-5 flex items-center gap-4">
-        <div className="w-14 h-14 rounded-2xl bg-[#E8F0FE] flex items-center justify-center">
-          <span className="text-lg font-bold text-[#3678F1]">{avgRating}</span>
+      {showAverageHeader && (
+        <div className="rounded-2xl bg-white border border-neutral-200 p-5 flex items-center gap-4">
+          <div className="w-14 h-14 rounded-2xl bg-[#E8F0FE] flex items-center justify-center">
+            <span className="text-lg font-bold text-[#3678F1]">{avgRating}</span>
+          </div>
+          <div>
+            <StarRating rating={Math.round(avgRating * 2) / 2} size="md" />
+            <p className="text-xs text-neutral-500 mt-1">
+              Based on {reviews.length} review{reviews.length !== 1 ? 's' : ''}
+            </p>
+          </div>
         </div>
-        <div>
-          <StarRating rating={Math.round(avgRating * 2) / 2} size="md" />
-          <p className="text-xs text-neutral-500 mt-1">
-            Based on {reviews.length} review{reviews.length !== 1 ? 's' : ''}
-          </p>
-        </div>
-      </div>
+      )}
 
       {/* Individual reviews */}
       {reviews.map((review) => (

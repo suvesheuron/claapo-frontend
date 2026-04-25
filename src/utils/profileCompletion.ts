@@ -51,7 +51,6 @@ interface VendorProfileData {
   vendorServiceCategory: string | null;
   locationCity: string | null;
   locationState: string | null;
-  bio: string | null;
   aboutUs: string | null;
   website: string | null;
   imdbUrl?: string | null;
@@ -151,7 +150,6 @@ export function calculateVendorCompletion(profile: VendorProfileData): number {
     { value: profile.locationCity, weight: 8, required: true },
     { value: profile.locationState, weight: 4, required: false },
     { value: profile.address, weight: 6, required: false },
-    { value: profile.bio, weight: 10, required: true },
     { value: profile.aboutUs, weight: 5, required: false },
     { value: profile.website, weight: 5, required: false },
     { value: profile.instagramUrl, weight: 4, required: false },
@@ -238,7 +236,6 @@ export function getProfileImprovementTips(
     if (!p.vendorServiceCategory) tips.push('Select your service category');
     if (!p.locationCity) tips.push('Add your business location');
     if (!p.address?.trim()) tips.push('Add your business address for invoices');
-    if (!p.bio) tips.push('Describe your services briefly');
     if (!p.aboutUs) tips.push('Tell your business story');
     if (!p.website) tips.push('Add your business website');
     if (!p.instagramUrl) tips.push('Add your Instagram profile');

@@ -18,6 +18,7 @@ interface InvoiceLineItem {
 interface IssuerRecipientDetails {
   name: string;
   gstNumber: string | null;
+  sacCode?: string | null;
   address: string | null;
   panNumber: string | null;
   upiId: string | null;
@@ -133,6 +134,7 @@ export default function Invoice() {
 
   const isIssuer = invoice && user && invoice.issuerId === user.id;
   const isRecipient = invoice && user && invoice.recipientId === user.id;
+  const invoiceHeading = invoice?.issuerDetails?.gstNumber ? 'TAX INVOICE' : 'INVOICE';
   const canEditAttachments = isIssuer && invoice && (invoice.status === 'draft' || invoice.status === 'sent');
   const attachments = invoice?.attachments ?? [];
   const cgstAmountPaise = invoice ? Math.floor(invoice.taxAmountPaise / 2) : 0;
@@ -291,7 +293,7 @@ export default function Invoice() {
                           <img src="/claapo-logo.svg" alt="Claapo" className="h-12 w-auto" />
                         </div>
                         <div className="text-right">
-                          <h2 className="text-3xl font-bold text-neutral-900 tracking-tight">INVOICE</h2>
+                          <h2 className="text-3xl font-bold text-neutral-900 tracking-tight">{invoiceHeading}</h2>
                           <p className="text-sm font-mono text-neutral-600 mt-1">{invoice.invoiceNumber}</p>
                           <div className="mt-3 space-y-0.5 text-xs text-neutral-600">
                             <p>
@@ -323,13 +325,16 @@ export default function Invoice() {
                             {invoice.issuerDetails?.address && (
                               <p className="text-xs text-neutral-600 mt-1 leading-relaxed whitespace-pre-wrap">{invoice.issuerDetails.address}</p>
                             )}
-                            {(invoice.issuerDetails?.panNumber || invoice.issuerDetails?.gstNumber) && (
+                            {(invoice.issuerDetails?.panNumber || invoice.issuerDetails?.gstNumber || invoice.issuerDetails?.sacCode) && (
                               <div className="mt-2 space-y-0.5">
                                 {invoice.issuerDetails.panNumber && (
                                   <p className="text-xs text-neutral-500"><span className="text-neutral-400">PAN:&nbsp;</span><span className="font-mono text-neutral-700">{invoice.issuerDetails.panNumber}</span></p>
                                 )}
                                 {invoice.issuerDetails.gstNumber && (
                                   <p className="text-xs text-neutral-500"><span className="text-neutral-400">GST:&nbsp;</span><span className="font-mono text-neutral-700">{invoice.issuerDetails.gstNumber}</span></p>
+                                )}
+                                {invoice.issuerDetails.sacCode && (
+                                  <p className="text-xs text-neutral-500"><span className="text-neutral-400">SAC:&nbsp;</span><span className="font-mono text-neutral-700">{invoice.issuerDetails.sacCode}</span></p>
                                 )}
                               </div>
                             )}
@@ -355,13 +360,16 @@ export default function Invoice() {
                             {invoice.recipientDetails?.address && (
                               <p className="text-xs text-neutral-600 mt-1 leading-relaxed whitespace-pre-wrap">{invoice.recipientDetails.address}</p>
                             )}
-                            {(invoice.recipientDetails?.panNumber || invoice.recipientDetails?.gstNumber) && (
+                            {(invoice.recipientDetails?.panNumber || invoice.recipientDetails?.gstNumber || invoice.recipientDetails?.sacCode) && (
                               <div className="mt-2 space-y-0.5">
                                 {invoice.recipientDetails.panNumber && (
                                   <p className="text-xs text-neutral-500"><span className="text-neutral-400">PAN:&nbsp;</span><span className="font-mono text-neutral-700">{invoice.recipientDetails.panNumber}</span></p>
                                 )}
                                 {invoice.recipientDetails.gstNumber && (
                                   <p className="text-xs text-neutral-500"><span className="text-neutral-400">GST:&nbsp;</span><span className="font-mono text-neutral-700">{invoice.recipientDetails.gstNumber}</span></p>
+                                )}
+                                {invoice.recipientDetails.sacCode && (
+                                  <p className="text-xs text-neutral-500"><span className="text-neutral-400">SAC:&nbsp;</span><span className="font-mono text-neutral-700">{invoice.recipientDetails.sacCode}</span></p>
                                 )}
                               </div>
                             )}

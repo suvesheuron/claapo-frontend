@@ -215,7 +215,7 @@ export default function App() {
           <Route path="/bookings" element={<ProtectedRoute allowedRoles={['individual', 'vendor']}><Bookings /></ProtectedRoute>} />
           <Route path="/project-details" element={<ProtectedRoute allowedRoles={['individual', 'vendor']}><ProjectDetails /></ProtectedRoute>} />
           <Route path="/ongoing-projects" element={<ProtectedRoute allowedRoles={['individual', 'vendor']}><OngoingProjects /></ProtectedRoute>} />
-          <Route path="/team" element={<ProtectedRoute allowedRoles={['company', 'admin']}><TeamPage /></ProtectedRoute>} />
+          <Route path="/team" element={<ProtectedRoute allowedRoles={['company', 'vendor', 'admin']}><TeamPage /></ProtectedRoute>} />
 
           {/* Reports */}
           <Route path="/earnings" element={<ProtectedRoute allowedRoles={['individual', 'vendor']}><EarningsDashboard /></ProtectedRoute>} />

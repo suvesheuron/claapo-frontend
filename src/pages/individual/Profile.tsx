@@ -44,6 +44,7 @@ interface ProfileData {
   isAvailable: boolean;
   panNumber: string | null;
   gstNumber: string | null;
+  sacCode: string | null;
   upiId: string | null;
   bankAccountName: string | null;
   bankAccountNumber: string | null;
@@ -87,6 +88,7 @@ export default function IndividualProfile() {
   const [twitterUrl, setTwitterUrl] = useState('');
   const [panNumber, setPanNumber] = useState('');
   const [gstNumber, setGstNumber] = useState('');
+  const [sacCode, setSacCode] = useState('');
   const [upiId, setUpiId] = useState('');
   const [bankAccountName, setBankAccountName] = useState('');
   const [bankAccountNumber, setBankAccountNumber] = useState('');
@@ -179,6 +181,7 @@ export default function IndividualProfile() {
     setTwitterUrl(p.twitterUrl ?? '');
     setPanNumber(p.panNumber ?? '');
     setGstNumber(p.gstNumber ?? '');
+    setSacCode(p.sacCode ?? '');
     setUpiId(p.upiId ?? '');
     setBankAccountName(p.bankAccountName ?? '');
     setBankAccountNumber(p.bankAccountNumber ?? '');
@@ -201,6 +204,10 @@ export default function IndividualProfile() {
       setError('Address is required for invoices. Please add your mailing address.');
       return;
     }
+    if (gstNumber.trim() && !sacCode.trim()) {
+      setError('SAC Code is required when GST Number is provided.');
+      return;
+    }
     setSaving(true);
     try {
       await api.patch('/profile/individual', {
@@ -221,6 +228,7 @@ export default function IndividualProfile() {
         twitterUrl: twitterUrl.trim() || undefined,
         panNumber: panNumber.trim() || undefined,
         gstNumber: gstNumber.trim() || undefined,
+        sacCode: sacCode.trim() || undefined,
         upiId: upiId.trim() || undefined,
         bankAccountName: bankAccountName.trim() || undefined,
         bankAccountNumber: bankAccountNumber.trim() || undefined,
@@ -260,6 +268,7 @@ export default function IndividualProfile() {
     twitterUrl,
     panNumber,
     gstNumber,
+    sacCode,
     upiId,
     bankAccountName,
     bankAccountNumber,
@@ -537,6 +546,7 @@ export default function IndividualProfile() {
                           <div className="space-y-1 divide-y divide-neutral-50">
                             <InfoRow label="PAN Number" value={panNumber || '—'} icon={<FaIdCard />} copyable />
                             <InfoRow label="GST Number" value={gstNumber || '—'} icon={<FaIdCard />} copyable />
+                            <InfoRow label="SAC Code" value={sacCode || '—'} icon={<FaIdCard />} copyable />
                             <InfoRow label="UPI ID" value={upiId || '—'} icon={<FaIdCard />} copyable />
                             <InfoRow label="Bank Name" value={bankName || '—'} icon={<FaBuilding />} />
                             <InfoRow label="Account Name" value={bankAccountName || '—'} />
@@ -730,6 +740,16 @@ export default function IndividualProfile() {
                               disabled={saving}
                               icon={<FaIdCard />}
                               helpText="15-character GSTIN — leave blank if not registered"
+                            />
+                            <EditableField
+                              label={`SAC Code${gstNumber.trim() ? '' : ' (Optional)'}`}
+                              value={sacCode}
+                              onChange={setSacCode}
+                              placeholder="e.g. 998314"
+                              disabled={saving || !gstNumber.trim()}
+                              icon={<FaIdCard />}
+                              required={Boolean(gstNumber.trim())}
+                              helpText={gstNumber.trim() ? 'Required once GST Number is provided' : 'Enter GST Number first to enable SAC Code'}
                             />
                             <EditableField
                               label="UPI ID (Optional)"
