@@ -32,6 +32,9 @@ interface Booking {
   requester: { id: string; email: string; companyProfile?: { companyName?: string } | null };
   vendorEquipment?: { id: string; name: string } | null;
   equipmentAlreadyBookedFor?: { projectTitle: string; startDate: string; endDate: string } | null;
+  cancelRequestReason?: string | null;
+  cancelRequestedAt?: string | null;
+  cancelRequestedBySide?: 'company' | 'crew_or_vendor' | null;
 }
 
 interface BookingsResponse {
@@ -111,6 +114,23 @@ export default function Bookings() {
       refetch();
     } catch (err) {
       const msg = err instanceof ApiException ? err.payload.message : `Failed to ${action} booking.`;
+      toast.error(msg);
+      setActionError(msg);
+    } finally {
+      setActioning(null);
+    }
+  };
+
+  const doCancelResponse = async (bookingId: string, accept: boolean) => {
+    const key = bookingId + (accept ? 'accept-company-cancel' : 'deny-company-cancel');
+    setActioning(key);
+    setActionError(null);
+    try {
+      await api.patch(`/bookings/${bookingId}/${accept ? 'accept-company-cancel' : 'deny-company-cancel'}`, {});
+      toast.success(accept ? 'Cancellation approved.' : 'Cancellation request denied. Booking remains active.');
+      refetch();
+    } catch (err) {
+      const msg = err instanceof ApiException ? err.payload.message : 'Failed to respond to cancellation request.';
       toast.error(msg);
       setActionError(msg);
     } finally {
@@ -270,10 +290,6 @@ export default function Bookings() {
                               <div className="min-w-0">
                                 <p className="text-[10px] uppercase tracking-wider font-semibold text-neutral-400">Project</p>
                                 <p className="text-sm font-semibold text-neutral-900 truncate">{booking.project.title}</p>
-                                <p className="text-[11px] text-neutral-500 mt-0.5">
-                                  {formatDate(booking.project.startDate)}
-                                  {booking.project.endDate !== booking.project.startDate && ` – ${formatDate(booking.project.endDate)}`}
-                                </p>
                               </div>
                             </div>
 
@@ -411,6 +427,29 @@ export default function Bookings() {
                                 >
                                   <FaXmark className="w-3 h-3" />
                                   {actioning === booking.id + 'decline' ? 'Declining…' : 'Decline'}
+                                </button>
+                              </>
+                            )}
+
+                            {booking.status === 'cancel_requested' && booking.cancelRequestedBySide === 'company' && (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => doCancelResponse(booking.id, true)}
+                                  disabled={!!isActioning}
+                                  className="rounded-xl px-4 py-2 bg-[#F40F02] text-white text-xs font-semibold hover:bg-[#C20D02] flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                                >
+                                  <FaCircleCheck className="w-3 h-3" />
+                                  {actioning === booking.id + 'accept-company-cancel' ? 'Approving…' : 'Approve Cancellation'}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => doCancelResponse(booking.id, false)}
+                                  disabled={!!isActioning}
+                                  className="rounded-xl px-4 py-2 border border-neutral-300 text-neutral-700 text-xs font-semibold hover:bg-neutral-50 flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                                >
+                                  <FaXmark className="w-3 h-3" />
+                                  {actioning === booking.id + 'deny-company-cancel' ? 'Denying…' : 'Deny — Keep Booked'}
                                 </button>
                               </>
                             )}

@@ -46,7 +46,7 @@ export const companyNavLinks: NavItem[] = [
   { icon: FaFolder,          label: 'Past Projects',    to: '/company-past-projects', section: 'Projects' },
   { icon: FaBan,             label: 'Cancel Requests',  to: '/cancel-requests',       section: 'Projects',       badgeKey: 'cancelRequests' },
   { icon: FaMessage,         label: 'Chat',             to: '/conversations',         section: 'Communication', badgeKey: 'chat' },
-  { icon: FaFileInvoice,     label: 'Invoices',         to: '/invoices',              section: 'Communication' },
+  { icon: FaFileInvoice,     label: 'Invoices',         to: '/invoices',              section: 'Communication', badgeKey: 'invoices' },
   { icon: FaChartLine,       label: 'Spending',         to: '/spending',              section: 'Communication' },
   { icon: FaPeopleGroup,     label: 'Team',             to: '/team',                  section: 'Account' },
   { icon: FaUser,            label: 'Profile',          to: '/company-profile',       section: 'Account' },

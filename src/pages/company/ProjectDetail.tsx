@@ -112,7 +112,7 @@ function getBookingDateLocationSummary(booking: Booking): string {
   return '';
 }
 
-const ACTIVE_STATUSES = ['pending', 'accepted', 'locked'];
+const ACTIVE_STATUSES = ['pending', 'accepted', 'locked', 'cancel_requested'];
 
 export default function ProjectDetail() {
   const { id: projectId } = useParams<{ id: string }>();
@@ -221,8 +221,15 @@ export default function ProjectDetail() {
   const handleCancelBooking = async (bookingId: string) => {
     setCancelError(null);
     try {
-      await api.patch(`/bookings/${bookingId}/cancel`, {});
-      toast.success('Booking cancelled.');
+      const booking = bookings.find((b) => b.id === bookingId);
+      if (!booking) return;
+      if (booking.status === 'pending') {
+        await api.patch(`/bookings/${bookingId}/cancel`, {});
+        toast.success('Booking request cancelled.');
+      } else {
+        await api.patch(`/bookings/${bookingId}/request-cancel`, {});
+        toast.success('Cancellation request sent. Awaiting approval.');
+      }
       setCancellingId(null);
       setCancellingBookingId(null);
       await loadBookings();
@@ -292,6 +299,7 @@ export default function ProjectDetail() {
   const statusBadge = (status: string) => {
     if (status === 'locked')   return <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#DCFCE7] text-[#15803D]">Locked</span>;
     if (status === 'accepted') return <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#DBEAFE] text-[#1D4ED8]">Accepted</span>;
+    if (status === 'cancel_requested') return <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#FEF3C7] text-[#946A00]">Cancel Requested</span>;
     return <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#FEF9E6] text-[#92400E]">Pending</span>;
   };
 
@@ -490,7 +498,7 @@ export default function ProjectDetail() {
                                     <FaFileInvoice className="text-xs" />
                                   </Link>
                                 )}
-                                {booking.status !== 'locked' && (
+                                {(booking.status === 'pending' || booking.status === 'accepted') && (
                                   <button type="button" title="Cancel booking" onClick={() => { setCancellingId(booking.id); setCancelError(null); }}
                                     className="w-7 h-7 rounded-lg bg-[#F3F4F6] flex items-center justify-center text-neutral-400 hover:bg-[#FEE2E2] hover:text-[#F40F02] transition-colors">
                                     <FaTrash className="text-xs" />
@@ -577,7 +585,7 @@ export default function ProjectDetail() {
                                   className="w-7 h-7 rounded-lg bg-[#F3F4F6] flex items-center justify-center text-neutral-500 hover:bg-[#E8F0FE] hover:text-[#3678F1] transition-colors">
                                   <FaFileInvoice className="text-xs" />
                                 </Link>
-                                {booking.status !== 'locked' && (
+                                {(booking.status === 'pending' || booking.status === 'accepted') && (
                                   <button type="button" title="Cancel vendor booking"
                                     onClick={() => { setCancellingBookingId(booking.id); setCancelError(null); }}
                                     className="w-7 h-7 rounded-lg bg-[#F3F4F6] flex items-center justify-center text-neutral-400 hover:bg-[#FEE2E2] hover:text-[#F40F02] transition-colors">

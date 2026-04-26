@@ -594,7 +594,7 @@ We're working on ${projectName}. The shoot is planned for ${shootDate} at ${loca
                       <span className="inline-flex items-center gap-1.5 rounded-full bg-white border border-[#93C5FD] px-2.5 py-1 text-[11px] font-bold text-[#1D4ED8] shadow-sm">
                         <FaCalendarCheck className="w-2.5 h-2.5" /> {calStats.booked} booked
                       </span>
-                      <span className="inline-flex items-center gap-1.5 rounded-full bg-[#FCA5A5] border border-[#DC2626] px-2.5 py-1 text-[11px] font-extrabold text-[#7F1D1D] shadow-sm">
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-[#FCA5A5] border border-[#DC2626] px-2.5 py-1 text-[11px] font-extrabold text-[#7F1D1D] shadow-sm dark:bg-[#EF4444]/25 dark:border-[#F87171] dark:text-[#FCA5A5]">
                         <FaBan className="w-2.5 h-2.5" /> {calStats.blocked} unavailable
                       </span>
                       {calLoading && (
@@ -699,7 +699,7 @@ We're working on ${projectName}. The shoot is planned for ${shootDate} at ${loca
                             Completed
                           </div>
                           <div className="flex items-center gap-1">
-                            <span className="w-3 h-3 rounded-sm bg-[#FCA5A5] border border-[#DC2626]" />
+                            <span className="w-3 h-3 rounded-sm bg-[#FCA5A5] border border-[#DC2626] dark:bg-[#EF4444]/30 dark:border-[#F87171]" />
                             Unavailable
                           </div>
                         </div>

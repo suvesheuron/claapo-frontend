@@ -232,7 +232,7 @@ export default function BookingRequestModal({
   const [message, setMessage] = useState('');
   const [bookingDates, setBookingDates] = useState<string[]>([]);
   const [shootDateLocations, setShootDateLocations] = useState<ShootDateLocation[]>([]);
-  const [selectedEquipmentId, setSelectedEquipmentId] = useState('');
+  const [selectedEquipmentIds, setSelectedEquipmentIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
@@ -285,7 +285,7 @@ export default function BookingRequestModal({
       setShootDateLocations([]);
       setError(null);
       setSent(false);
-      setSelectedEquipmentId('');
+      setSelectedEquipmentIds([]);
       setLocationInputs({});
     }
   }, [isOpen]);
@@ -294,9 +294,9 @@ export default function BookingRequestModal({
     if (!isOpen || !isVendor) return;
     const list = (Array.isArray(rawList) ? rawList : []) as { id?: string }[];
     if (initialVendorEquipmentId && list.some((eq) => eq.id === initialVendorEquipmentId)) {
-      setSelectedEquipmentId(initialVendorEquipmentId);
+      setSelectedEquipmentIds([initialVendorEquipmentId]);
     } else if (list.length === 1 && list[0]?.id) {
-      setSelectedEquipmentId(list[0].id);
+      setSelectedEquipmentIds([list[0].id]);
     }
   }, [isOpen, isVendor, initialVendorEquipmentId, rawList]);
 
@@ -344,15 +344,18 @@ export default function BookingRequestModal({
     setLoading(true);
 
     try {
-      await api.post('/bookings/request', {
-        projectId,
-        targetUserId,
-        vendorEquipmentId: selectedEquipmentId || undefined,
-        rateOffered: rateOffered ? Math.round(parseFloat(rateOffered.replace(/[^0-9.]/g, '')) * 100) : undefined,
-        message: message.trim() || undefined,
-        shootDates: bookingDates,
-        shootDateLocations: shootDateLocations,
-      });
+      const equipmentIdsForRequest = isVendor && selectedEquipmentIds.length > 0 ? selectedEquipmentIds : [undefined];
+      for (const equipmentId of equipmentIdsForRequest) {
+        await api.post('/bookings/request', {
+          projectId,
+          targetUserId,
+          vendorEquipmentId: equipmentId,
+          rateOffered: rateOffered ? Math.round(parseFloat(rateOffered.replace(/[^0-9.]/g, '')) * 100) : undefined,
+          message: message.trim() || undefined,
+          shootDates: bookingDates,
+          shootDateLocations: shootDateLocations,
+        });
+      }
       toast.success('Booking request sent!');
       setSent(true);
       onSuccess?.();
@@ -460,17 +463,31 @@ export default function BookingRequestModal({
                     Equipment for this request
                     <span className="ml-2 text-[9px] font-normal text-neutral-400 normal-case">(Optional)</span>
                   </label>
-                  <select
-                    value={selectedEquipmentId}
-                    onChange={(e) => setSelectedEquipmentId(e.target.value)}
-                    disabled={loading || equipmentLoading}
-                    className="w-full px-3.5 py-2.5 border border-neutral-300 rounded-xl bg-white text-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#3678F1]/20 focus:border-[#3678F1] transition-colors disabled:opacity-50"
-                  >
-                    <option value="">— Any equipment —</option>
-                    {equipmentList.map((eq, idx) => (
-                      <option key={(eq.id as string) || idx} value={(eq.id as string) ?? ''}>{String(eq.name ?? '')}</option>
-                    ))}
-                  </select>
+                  <div className="rounded-xl border border-neutral-200 bg-white p-2.5 space-y-2 max-h-44 overflow-auto">
+                    {equipmentList.map((eq, idx) => {
+                      const id = (eq.id as string) ?? `${idx}`;
+                      const checked = selectedEquipmentIds.includes(id);
+                      return (
+                        <label key={id} className="flex items-center gap-2.5 text-sm text-neutral-700">
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            disabled={loading || equipmentLoading}
+                            onChange={(e) => {
+                              setSelectedEquipmentIds((prev) =>
+                                e.target.checked ? [...prev, id] : prev.filter((x) => x !== id),
+                              );
+                            }}
+                            className="h-4 w-4 rounded border-neutral-300 text-[#3678F1] focus:ring-[#3678F1]/30"
+                          />
+                          <span className="truncate">{String(eq.name ?? '')}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                  <p className="text-[11px] text-neutral-500 mt-1.5">
+                    If you select multiple items, separate booking requests will be sent for each equipment.
+                  </p>
                 </div>
               )}
 

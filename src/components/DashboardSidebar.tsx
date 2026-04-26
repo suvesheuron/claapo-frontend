@@ -7,7 +7,7 @@ import { useSidebar } from '../contexts/SidebarContext';
 
 /** Declarative badge source for a nav item. The sidebar resolves the
  *  actual count at render time from the matching context. */
-export type NavBadgeKey = 'chat' | 'cancelRequests' | 'projectRequests';
+export type NavBadgeKey = 'chat' | 'cancelRequests' | 'projectRequests' | 'invoices';
 
 export interface NavItem {
   icon: ComponentType<SVGProps<SVGSVGElement> & { className?: string }>;
@@ -56,7 +56,7 @@ function useActiveNav(links: NavItem[], pathname: string): string | null {
 export default function DashboardSidebar({ links }: Props) {
   const { pathname } = useLocation();
   const { totalUnread } = useChatUnread();
-  const { cancelRequestsCount, projectRequestsCount } = useNavBadges();
+  const { cancelRequestsCount, projectRequestsCount, invoiceAlertsCount } = useNavBadges();
   const { open: drawerOpen, closeSidebar } = useSidebar();
   const activeTo = useActiveNav(links, pathname);
 
@@ -66,6 +66,7 @@ export default function DashboardSidebar({ links }: Props) {
       case 'chat':            return totalUnread;
       case 'cancelRequests':  return cancelRequestsCount;
       case 'projectRequests': return projectRequestsCount;
+      case 'invoices':        return invoiceAlertsCount;
       default:                return 0;
     }
   };

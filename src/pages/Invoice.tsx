@@ -92,6 +92,9 @@ export default function Invoice() {
 
   const [sending, setSending] = useState(false);
   const [markingPaid, setMarkingPaid] = useState(false);
+  const [declining, setDeclining] = useState(false);
+  const [showDeclineBox, setShowDeclineBox] = useState(false);
+  const [declineReason, setDeclineReason] = useState('');
   const [uploadingAttachment, setUploadingAttachment] = useState(false);
   const [deletingAttachmentId, setDeletingAttachmentId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -129,6 +132,26 @@ export default function Invoice() {
       toast.error(err instanceof ApiException ? err.payload.message : 'Failed to mark as paid.');
     } finally {
       setMarkingPaid(false);
+    }
+  };
+
+  const handleDecline = async () => {
+    if (!invoiceId) return;
+    if (!declineReason.trim()) {
+      toast.error('Please enter a reason before declining.');
+      return;
+    }
+    setDeclining(true);
+    try {
+      await api.patch(`/invoices/${invoiceId}/decline`, { reason: declineReason.trim() });
+      toast.success('Invoice declined.');
+      setShowDeclineBox(false);
+      setDeclineReason('');
+      refetch();
+    } catch (err) {
+      toast.error(err instanceof ApiException ? err.payload.message : 'Failed to decline invoice.');
+    } finally {
+      setDeclining(false);
     }
   };
 
@@ -235,14 +258,16 @@ export default function Invoice() {
                           )}
                         </div>
                         <div className="flex items-center gap-2 shrink-0 flex-wrap">
-                          {(() => {
-                            const cfg = STATUS_CONFIG[invoice.status] ?? STATUS_CONFIG.draft;
-                            return (
-                              <span className={`text-xs font-semibold px-3 py-1.5 rounded-full ${cfg.bg} ${cfg.text}`}>
-                                {cfg.label}
-                              </span>
-                            );
-                          })()}
+                          {!isRecipient || invoice.status !== 'sent'
+                            ? (() => {
+                                const cfg = STATUS_CONFIG[invoice.status] ?? STATUS_CONFIG.draft;
+                                return (
+                                  <span className={`text-xs font-semibold px-3 py-1.5 rounded-full ${cfg.bg} ${cfg.text}`}>
+                                    {cfg.label}
+                                  </span>
+                                );
+                              })()
+                            : null}
 
                           {/* Issuer actions */}
                           {isIssuer && invoice.status === 'draft' && (
@@ -258,14 +283,23 @@ export default function Invoice() {
 
                           {/* Recipient/company actions */}
                           {isRecipient && invoice.status === 'sent' && (
-                            <button
-                              onClick={handleMarkPaid}
-                              disabled={markingPaid}
-                              className="no-print px-3 py-2 bg-[#22C55E] text-white rounded-xl text-sm font-semibold flex items-center gap-1.5 hover:bg-[#16a34a] disabled:opacity-50 transition-colors"
-                            >
-                              <FaCheck className="w-3.5 h-3.5" />
-                              {markingPaid ? 'Saving…' : 'Mark as paid'}
-                            </button>
+                            <>
+                              <button
+                                onClick={handleMarkPaid}
+                                disabled={markingPaid || declining}
+                                className="no-print px-3 py-2 bg-[#22C55E] text-white rounded-xl text-sm font-semibold flex items-center gap-1.5 hover:bg-[#16a34a] disabled:opacity-50 transition-colors"
+                              >
+                                <FaCheck className="w-3.5 h-3.5" />
+                                {markingPaid ? 'Saving…' : 'Mark as paid'}
+                              </button>
+                              <button
+                                onClick={() => setShowDeclineBox((v) => !v)}
+                                disabled={markingPaid || declining}
+                                className="no-print px-3 py-2 bg-[#FEEBEA] border border-[#F40F02]/30 text-[#991B1B] rounded-xl text-sm font-semibold hover:bg-[#FDD8D5] disabled:opacity-50 transition-colors"
+                              >
+                                Decline Invoice
+                              </button>
+                            </>
                           )}
 
                           <button
@@ -282,6 +316,39 @@ export default function Invoice() {
                       )}
                       {invoice.paidAt && (
                         <p className="text-xs text-green-600 font-semibold mt-0.5">Paid on {formatDate(invoice.paidAt)}</p>
+                      )}
+                      {isRecipient && invoice.status === 'sent' && showDeclineBox && (
+                        <div className="no-print mt-3 max-w-md rounded-xl border border-[#F40F02]/20 bg-[#FFF7F6] p-3">
+                          <label className="block text-xs font-semibold text-[#991B1B] mb-1.5">Reason for declining</label>
+                          <textarea
+                            value={declineReason}
+                            onChange={(e) => setDeclineReason(e.target.value)}
+                            rows={3}
+                            placeholder="Please mention why this invoice is being declined..."
+                            className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm text-neutral-700 focus:outline-none focus:ring-2 focus:ring-[#F40F02]/20"
+                          />
+                          <div className="mt-2 flex items-center justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setShowDeclineBox(false);
+                                setDeclineReason('');
+                              }}
+                              disabled={declining}
+                              className="px-3 py-1.5 text-xs font-semibold text-neutral-600 border border-neutral-200 rounded-lg hover:bg-white"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleDecline}
+                              disabled={declining}
+                              className="px-3 py-1.5 text-xs font-semibold text-white bg-[#F40F02] rounded-lg hover:bg-[#C20D02] disabled:opacity-50"
+                            >
+                              {declining ? 'Declining…' : 'Confirm Decline'}
+                            </button>
+                          </div>
+                        </div>
                       )}
                     </div>
 

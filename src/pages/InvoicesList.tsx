@@ -36,6 +36,13 @@ interface Project {
   bookingCount: number;
 }
 interface ProjectsWithStatsResponse { items: Project[]; meta: { total: number } }
+interface NotificationsResponse {
+  items: Array<{
+    type?: string;
+    readAt?: string | null;
+    data?: Record<string, unknown>;
+  }>;
+}
 
 const STATUS_CFG = {
   draft:     { bg: 'bg-[#F4F8FE]', text: 'text-[#3678F1]',  ring: 'ring-[#3678F1]/20', dot: 'bg-[#3678F1]',  label: 'Draft' },
@@ -78,6 +85,12 @@ export default function InvoicesList() {
   // Fetch projects list
   const { data: projectsData, loading: projectsLoading } = useApiQuery<ProjectsWithStatsResponse>('/projects/my/with-stats?limit=100');
   const projects = projectsData?.items ?? [];
+  const { data: notificationsData } = useApiQuery<NotificationsResponse>(
+    currentRole === 'Company' ? '/notifications?limit=100' : null,
+  );
+  const { data: companyInvoicesForAlerts } = useApiQuery<InvoicesResponse>(
+    currentRole === 'Company' ? '/invoices?limit=100' : null,
+  );
 
   // Build invoice list URL with optional project filter
   const listPath = useMemo(() => {
@@ -130,6 +143,28 @@ export default function InvoicesList() {
     const filterTo = dateTo ? new Date(dateTo + 'T23:59:59').getTime() : Infinity;
     return projStart <= filterTo && projEnd >= filterFrom;
   });
+
+  const unreadInvoiceByProject = useMemo(() => {
+    if (currentRole !== 'Company') return {} as Record<string, number>;
+    const statusByInvoiceId = new Map(
+      (companyInvoicesForAlerts?.items ?? []).map((inv) => [inv.id, inv.status]),
+    );
+    const counts: Record<string, number> = {};
+    for (const n of notificationsData?.items ?? []) {
+      if (n.readAt || n.type !== 'invoice_sent') continue;
+      const rawInvoiceId = n.data?.invoiceId;
+      if (typeof rawInvoiceId !== 'string' || statusByInvoiceId.get(rawInvoiceId) !== 'sent') continue;
+      const rawProjectId = n.data?.projectId;
+      if (typeof rawProjectId !== 'string' || !rawProjectId) continue;
+      counts[rawProjectId] = (counts[rawProjectId] ?? 0) + 1;
+    }
+    return counts;
+  }, [currentRole, notificationsData, companyInvoicesForAlerts]);
+
+  const unreadInvoiceProjectCount = useMemo(
+    () => filteredProjects.reduce((sum, p) => sum + ((unreadInvoiceByProject[p.id] ?? 0) > 0 ? 1 : 0), 0),
+    [filteredProjects, unreadInvoiceByProject],
+  );
 
   function clearProjectListDates() {
     setSearchParams((prev) => {
@@ -205,6 +240,7 @@ export default function InvoicesList() {
     return (
       <ul className="space-y-2">
         {filteredProjects.map((project) => {
+          const unreadForProject = unreadInvoiceByProject[project.id] ?? 0;
           return (
             <li key={project.id}>
               <Link
@@ -225,6 +261,11 @@ export default function InvoicesList() {
                       </p>
                     </div>
                     <div className="flex flex-col items-end gap-2 shrink-0">
+                      {unreadForProject > 0 && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FEEBEA] text-[#F40F02] ring-1 ring-[#F40F02]/20">
+                          {unreadForProject > 99 ? '99+' : unreadForProject} new
+                        </span>
+                      )}
                       <span className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full capitalize ${
                         project.status === 'active' ? 'bg-[#DCFCE7] text-[#15803D] ring-1 ring-[#22C55E]/30' :
                         project.status === 'completed' ? 'bg-[#DBEAFE] text-[#1E3A8A] ring-1 ring-[#3678F1]/30' :
@@ -539,6 +580,11 @@ export default function InvoicesList() {
                             : (dateFrom || dateTo)
                               ? `${filteredProjects.length} of ${projects.length} project${projects.length === 1 ? '' : 's'} in range`
                               : 'Select a project to view invoices'}
+                        {!projectsLoading && currentRole === 'Company' && unreadInvoiceProjectCount > 0 && (
+                          <span className="ml-1 text-[#F40F02] font-semibold">
+                            · {unreadInvoiceProjectCount} project{unreadInvoiceProjectCount === 1 ? '' : 's'} with new invoices
+                          </span>
+                        )}
                       </p>
                       {canCreate && (
                         <Link

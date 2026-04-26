@@ -24,7 +24,7 @@ import {
   FaArrowLeft, FaPaperPlane, FaTriangleExclamation, FaPaperclip,
   FaImage, FaFile, FaXmark, FaMagnifyingGlass, FaEllipsisVertical,
   FaReply, FaShareFromSquare, FaThumbtack, FaTrash, FaCopy,
-  FaFaceSmile, FaMicrophone, FaChevronDown,
+  FaFaceSmile, FaMicrophone, FaChevronDown, FaBell,
 } from 'react-icons/fa6';
 import DashboardHeader from '../components/DashboardHeader';
 import DashboardSidebar from '../components/DashboardSidebar';
@@ -67,6 +67,15 @@ interface ConversationItem {
   id: string;
   otherParticipant?: { id: string; displayName?: string };
   project?: { id: string; title: string } | null;
+}
+
+function isBookingSystemNotification(content: string | null | undefined): boolean {
+  if (!content) return false;
+  const text = content.trim().toLowerCase();
+  return (
+    text.startsWith('booking update:') ||
+    text.startsWith('booking request —')
+  );
 }
 
 function formatTime(iso: string): string {
@@ -707,6 +716,7 @@ export default function Chat() {
                   const isMe = msg.isSameAccount ?? msg.senderId === user?.id;
                   const isDeleted = !!msg.deletedAt;
                   const showDate = shouldShowDateLabel(filteredMessages, idx);
+                  const isSystemNotification = !isDeleted && msg.type === 'text' && isBookingSystemNotification(msg.content);
 
                   // Show sender name whenever the message was not sent by the current logged-in user.
                   // This works for both cross-party messages (individual↔company) and same-account
@@ -733,7 +743,18 @@ export default function Chat() {
                         </div>
                       )}
 
-                      {/* Message bubble */}
+                      {/* System notification (booking events) */}
+                      {isSystemNotification ? (
+                        <div className="flex justify-center mb-2">
+                          <div className="max-w-[88%] rounded-full border border-[#3678F1]/20 bg-[#E8F0FE] text-[#1D4ED8] px-4 py-2 inline-flex items-center gap-2 shadow-sm">
+                            <FaBell className="w-3 h-3 shrink-0" />
+                            <p className="text-[12px] leading-relaxed font-medium whitespace-pre-wrap break-words">
+                              {msg.content ?? ''}
+                            </p>
+                            <span className="text-[10px] text-[#1D4ED8]/70 shrink-0">{formatTime(msg.createdAt)}</span>
+                          </div>
+                        </div>
+                      ) : (
                       <div
                         className={`flex mb-1 ${isMe ? 'justify-end' : 'justify-start'}`}
                         onContextMenu={(e) => {
@@ -827,6 +848,7 @@ export default function Chat() {
                       </div>
                     </div>
                     </div>
+                    )}
                   </motion.div>
                 );
               })}
@@ -1011,13 +1033,13 @@ export default function Chat() {
 
                 {/* Text input */}
                 <div className="flex-1 min-w-0 flex items-center">
-                  <input
-                    type="text"
+                  <textarea
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     placeholder="Message..."
                     disabled={sending}
-                    className="w-full px-4 py-3 bg-transparent text-[15px] font-medium text-[#111B21] dark:text-slate-200 placeholder-neutral-400 focus:outline-none disabled:opacity-50"
+                    rows={1}
+                    className="w-full px-4 py-2.5 bg-transparent text-[15px] font-medium text-[#111B21] dark:text-slate-200 placeholder-neutral-400 focus:outline-none disabled:opacity-50 resize-none max-h-32 overflow-y-auto leading-relaxed"
                   />
                 </div>
 
