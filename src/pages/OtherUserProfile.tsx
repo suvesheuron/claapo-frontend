@@ -458,7 +458,7 @@ We're working on ${projectName}. The shoot is planned for ${shootDate} at ${loca
                           </div>
                         ) : null}
                         {visiblePlatforms.length > 0 && (
-                          <div className="mt-4 pt-4 border-t border-neutral-100 flex items-center gap-2.5 flex-wrap">
+                          <div className="mt-4 pt-4 border-t border-neutral-100 flex items-center gap-2.5 flex-wrap lg:hidden">
                             {visiblePlatforms.map(({ key, label, url, Icon, color, bg, border }) => (
                               <a
                                 key={key}
@@ -476,7 +476,27 @@ We're working on ${projectName}. The shoot is planned for ${shootDate} at ${loca
                         )}
                       </div>
 
-                      <div className="hidden lg:block" />
+                      <div className="hidden lg:block min-w-[120px] lg:pt-2">
+                        {visiblePlatforms.length > 0 && (
+                          <div className="flex justify-end">
+                            <div className="flex flex-col items-center gap-2.5 rounded-2xl border border-neutral-100 bg-neutral-50/70 px-3 py-3">
+                              {visiblePlatforms.map(({ key, label, url, Icon, color, bg, border }) => (
+                                <a
+                                  key={key}
+                                  href={url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  aria-label={label}
+                                  title={label}
+                                  className={`w-9 h-9 rounded-full border ${border} ${bg} hover:border-[#3678F1] transition-colors flex items-center justify-center`}
+                                >
+                                  <Icon className={`w-4 h-4 ${color}`} />
+                                </a>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </motion.div>
 
