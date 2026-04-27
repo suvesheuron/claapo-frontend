@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { FaTriangleExclamation, FaMagnifyingGlass, FaMessage, FaCheck, FaFolder, FaArrowLeft, FaComments, FaCalendar } from 'react-icons/fa6';
 import DashboardHeader from '../components/DashboardHeader';
@@ -56,7 +56,7 @@ export default function Conversations() {
   useEffect(() => { document.title = 'Messages – Claapo'; }, []);
   const { currentRole } = useRole();
   const isCompanyView = currentRole === 'Company';
-  const { markAllConversationsAsRead } = useChatUnread();
+  const { markAllConversationsAsRead, unreadByProject } = useChatUnread();
   const markedReadOnMount = useRef(false);
   const { projectId: selectedProjectId } = useParams<{ projectId: string }>();
 
@@ -126,6 +126,11 @@ export default function Conversations() {
     return projStart <= filterTo && projEnd >= filterFrom;
   });
 
+  const totalProjectsWithUnread = useMemo(
+    () => filteredProjects.reduce((sum, p) => sum + ((unreadByProject[p.id] ?? 0) > 0 ? 1 : 0), 0),
+    [filteredProjects, unreadByProject],
+  );
+
   // Project List View
   const renderProjectList = () => {
     if (projectsLoading) {
@@ -188,6 +193,7 @@ export default function Conversations() {
       <ul className="space-y-2">
         {filteredProjects.map((project) => {
           const hasConversations = project.conversationCount > 0;
+          const unreadForProject = unreadByProject[project.id] ?? 0;
           return (
             <li key={project.id}>
               <Link
@@ -217,6 +223,11 @@ export default function Conversations() {
                       </p>
                     </div>
                     <div className="flex flex-col items-end gap-2 shrink-0">
+                      {unreadForProject > 0 && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FEEBEA] text-[#F40F02] ring-1 ring-[#F40F02]/20">
+                          {unreadForProject > 99 ? '99+' : unreadForProject} new
+                        </span>
+                      )}
                       <span className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full capitalize ${
                         project.status === 'active' ? 'bg-[#DCFCE7] text-[#15803D] ring-1 ring-[#22C55E]/30' :
                         project.status === 'completed' ? 'bg-[#DBEAFE] text-[#1E3A8A] ring-1 ring-[#3678F1]/30' :
@@ -503,6 +514,11 @@ export default function Conversations() {
                                 : (dateFrom || dateTo)
                                   ? `${filteredProjects.length} of ${projects.length} project${projects.length === 1 ? '' : 's'} in range`
                                   : 'Select a project to view conversations'}
+                            {!projectsLoading && totalProjectsWithUnread > 0 && (
+                              <span className="ml-1 text-[#F40F02] font-semibold">
+                                · {totalProjectsWithUnread} project{totalProjectsWithUnread === 1 ? '' : 's'} with new messages
+                              </span>
+                            )}
                           </p>
                         </div>
                       </div>

@@ -35,6 +35,7 @@ interface VendorResult {
   userId: string;
   companyName: string;
   vendorType: string;
+  vendorServiceCategory?: string | null;
   locationCity?: string;
   isGstVerified: boolean;
   equipment?: VendorEquipmentItem[];
@@ -147,7 +148,12 @@ export default function SearchFilter() {
         if (q.trim()) params.name = q.trim();
       } else {
         if (loc) params.city = loc;
-        if (skill) params.type = vendorCategoryToVendorType(skill);
+        if (skill) {
+          params.vendorServiceCategory = skill;
+          // Keep the old type param for backward compatibility with older vendor rows
+          // that may not have serviceCategory populated yet.
+          params.type = vendorCategoryToVendorType(skill);
+        }
         if (q.trim()) params.companyName = q.trim();
       }
 
@@ -680,7 +686,11 @@ Please share your best quotation for this requirement.`;
                         {/* Name + type */}
                         <h3 className="text-[15px] font-bold text-neutral-900 truncate">{r.companyName}</h3>
                         <p className="text-[10.5px] uppercase tracking-widest text-[#3678F1] font-semibold mt-1 mb-4 truncate">
-                          {r.vendorType === 'all' ? 'All types' : (r.vendorType?.replace(/_/g, ' ') ?? 'Vendor')}
+                          {r.vendorServiceCategory?.trim()
+                            ? r.vendorServiceCategory
+                            : r.vendorType === 'all'
+                              ? 'All types'
+                              : (r.vendorType?.replace(/_/g, ' ') ?? 'Vendor')}
                         </p>
 
                         {/* Meta row */}

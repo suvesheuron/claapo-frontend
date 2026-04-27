@@ -278,7 +278,7 @@ export default function CreateInvoice() {
                           <input
                             type="number"
                             min="0"
-                            step="100"
+                            step="0.01"
                             placeholder="0"
                             value={line.unitPrice}
                             onChange={(e) => updateLine(i, 'unitPrice', e.target.value)}
