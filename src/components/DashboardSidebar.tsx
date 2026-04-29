@@ -4,6 +4,7 @@ import { FaXmark } from 'react-icons/fa6';
 import { useChatUnread } from '../contexts/ChatUnreadContext';
 import { useNavBadges } from '../contexts/NavBadgesContext';
 import { useSidebar } from '../contexts/SidebarContext';
+import { useAuth } from '../contexts/AuthContext';
 
 /** Declarative badge source for a nav item. The sidebar resolves the
  *  actual count at render time from the matching context. */
@@ -55,10 +56,15 @@ function useActiveNav(links: NavItem[], pathname: string): string | null {
 
 export default function DashboardSidebar({ links }: Props) {
   const { pathname } = useLocation();
+  const { user } = useAuth();
   const { totalUnread } = useChatUnread();
   const { cancelRequestsCount, projectRequestsCount, invoiceAlertsCount } = useNavBadges();
   const { open: drawerOpen, closeSidebar } = useSidebar();
-  const activeTo = useActiveNav(links, pathname);
+  const visibleLinks = useMemo(() => {
+    if (user?.role !== 'vendor' || !user.mainUserId) return links;
+    return links.filter((item) => item.to !== '/earnings' && item.to !== '/team');
+  }, [links, user?.role, user?.mainUserId]);
+  const activeTo = useActiveNav(visibleLinks, pathname);
 
   /** Map a NavItem's badge key to its live count. Returns 0 when no key is set. */
   const resolveBadge = (key?: NavBadgeKey): number => {
@@ -74,7 +80,7 @@ export default function DashboardSidebar({ links }: Props) {
   // Group links by section, preserving order
   const sections: { label: string | null; items: NavItem[] }[] = [];
   let currentSection: string | null | undefined = undefined;
-  for (const item of links) {
+  for (const item of visibleLinks) {
     const sec = item.section ?? null;
     if (sec !== currentSection) {
       sections.push({ label: sec, items: [item] });

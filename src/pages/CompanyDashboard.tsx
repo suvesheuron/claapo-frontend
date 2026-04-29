@@ -169,8 +169,6 @@ export default function CompanyDashboard() {
     [calendarYear, calendarMonth, projects]
   );
 
-  const activeProjects = projects.filter(p => p.status === 'active' || p.status === 'open').length;
-  const crewHired = projects.reduce((acc, p) => acc + (p._count?.bookings ?? 0), 0);
 
   const isToday = (cell: CalendarCell) => {
     return !cell.muted && cell.d > 0 && cell.d === today.getDate() && displayDate.getMonth() === today.getMonth() && displayDate.getFullYear() === today.getFullYear();
@@ -324,7 +322,6 @@ export default function CompanyDashboard() {
   const greeting = greetingHour < 12 ? 'Good morning' : greetingHour < 17 ? 'Good afternoon' : 'Good evening';
   const firstName = (user?.displayName ?? user?.email?.split('@')[0] ?? '').split(' ')[0];
   const todayLabel = today.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-  const totalProjects = projects.length;
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -369,46 +366,6 @@ export default function CompanyDashboard() {
                     <RoleIndicator />
                   </div>
                 </div>
-              </motion.div>
-
-              {/* ── Stats row ──────────────────────────────────────── */}
-              <motion.div variants={itemVariants} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {loading ? (
-                  <>
-                    {[1,2,3].map(i => (
-                      <div key={i} className="rounded-2xl bg-white border border-neutral-200/70 p-5 h-[104px] overflow-hidden">
-                        <div className="flex items-center gap-4 h-full">
-                          <div className="skeleton w-12 h-12 rounded-xl shrink-0" />
-                          <div className="flex-1 space-y-2.5">
-                            <div className="skeleton h-2.5 w-24 rounded-full" />
-                            <div className="skeleton h-7 w-16 rounded-md" />
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </>
-                ) : (
-                  <>
-                    {[
-                      { label: 'Active Projects', value: activeProjects, icon: FaFolder },
-                      { label: 'Crew Hired',      value: crewHired,      icon: FaUsers  },
-                      { label: 'Total Projects',  value: totalProjects,  icon: FaFolder },
-                    ].map(({ label, value, icon: Icon }) => (
-                      <div
-                        key={label}
-                        className="rounded-2xl bg-white border border-neutral-200/70 shadow-soft p-5 flex items-center gap-4 hover:border-[#3678F1] transition-colors duration-200"
-                      >
-                        <div className="w-12 h-12 rounded-xl bg-[#E8F0FE] ring-1 ring-[#3678F1]/15 flex items-center justify-center shrink-0">
-                          <Icon className="text-[#3678F1] text-lg" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-[10.5px] uppercase tracking-[0.15em] text-neutral-500 font-bold">{label}</p>
-                          <p className="text-[28px] font-extrabold text-neutral-900 tabular-nums leading-none mt-1.5">{value}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </>
-                )}
               </motion.div>
 
               {/* ── Quick actions ──────────────────────────────────── */}

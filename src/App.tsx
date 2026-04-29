@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect } from 'react';
+import { lazy, Suspense, useEffect, type ReactNode } from 'react';
 import { Toaster } from 'react-hot-toast';
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -140,6 +140,19 @@ function SubuserRestrictedCreateProject() {
   return <CreateProject />;
 }
 
+function VendorSubuserRestricted({
+  children,
+  fallbackTo = '/dashboard',
+}: {
+  children: ReactNode;
+  fallbackTo?: string;
+}) {
+  const { user } = useAuth();
+  const isVendorSubuser = user?.role === 'vendor' && !!user?.mainUserId;
+  if (isVendorSubuser) return <Navigate to={fallbackTo} replace />;
+  return children;
+}
+
 /**
  * Catches legacy `/dashboard/<sub>` URLs (bookmarks, in-flight links, external
  * shares) and 301s them to the new flat path. The exact `/dashboard` route is
@@ -215,10 +228,10 @@ export default function App() {
           <Route path="/bookings" element={<ProtectedRoute allowedRoles={['individual', 'vendor']}><Bookings /></ProtectedRoute>} />
           <Route path="/project-details" element={<ProtectedRoute allowedRoles={['individual', 'vendor']}><ProjectDetails /></ProtectedRoute>} />
           <Route path="/ongoing-projects" element={<ProtectedRoute allowedRoles={['individual', 'vendor']}><OngoingProjects /></ProtectedRoute>} />
-          <Route path="/team" element={<ProtectedRoute allowedRoles={['company', 'vendor', 'admin']}><TeamPage /></ProtectedRoute>} />
+          <Route path="/team" element={<ProtectedRoute allowedRoles={['company', 'vendor', 'admin']}><VendorSubuserRestricted><TeamPage /></VendorSubuserRestricted></ProtectedRoute>} />
 
           {/* Reports */}
-          <Route path="/earnings" element={<ProtectedRoute allowedRoles={['individual', 'vendor']}><EarningsDashboard /></ProtectedRoute>} />
+          <Route path="/earnings" element={<ProtectedRoute allowedRoles={['individual', 'vendor']}><VendorSubuserRestricted><EarningsDashboard /></VendorSubuserRestricted></ProtectedRoute>} />
           <Route path="/spending" element={<ProtectedRoute allowedRoles={['company', 'admin']}><SpendingDashboard /></ProtectedRoute>} />
 
           {/* Individual routes */}

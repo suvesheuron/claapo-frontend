@@ -73,8 +73,10 @@ function isBookingSystemNotification(content: string | null | undefined): boolea
   if (!content) return false;
   const text = content.trim().toLowerCase();
   return (
-    text.startsWith('booking update:') ||
-    text.startsWith('booking request —')
+    text.startsWith('booking request has been accepted') ||
+    text.startsWith('booking request has been declined') ||
+    text.startsWith('cancellation request has been accepted by ') ||
+    text.startsWith('cancellation request has been declined by ')
   );
 }
 

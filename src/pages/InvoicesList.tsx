@@ -30,6 +30,11 @@ interface Project {
   status: string;
   startDate: string;
   endDate: string;
+  approvedBudget: number;
+  closureAmount: number;
+  gstOrIgstAmount: number;
+  paidAmount: number;
+  unpaidAmount: number;
   createdAt: string;
   conversationCount: number;
   invoiceCount: number;
@@ -69,6 +74,7 @@ function getPartyName(u: InvoiceItem['issuer']) {
 }
 
 const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
+type InvoicePaymentFilter = 'all' | 'paid' | 'unpaid';
 
 export default function InvoicesList() {
   useEffect(() => { document.title = 'Invoices – Claapo'; }, []);
@@ -104,7 +110,8 @@ export default function InvoicesList() {
 
   const { data, loading, error } = useApiQuery<InvoicesResponse>(listPath);
   const allInvoices = data?.items ?? [];
-  const [projectSearch, setProjectSearch] = useState('');
+  const [projectListSearch, setProjectListSearch] = useState('');
+  const [projectPaymentFilter, setProjectPaymentFilter] = useState<InvoicePaymentFilter>('all');
 
   // Filter by date range (client-side)
   const invoices = useMemo(() => {
@@ -117,13 +124,8 @@ export default function InvoicesList() {
         return invDate >= from && invDate <= to;
       });
     }
-    if (projectSearch.trim()) {
-      filtered = filtered.filter((inv) =>
-        (inv.project?.title ?? '').toLowerCase().includes(projectSearch.trim().toLowerCase()),
-      );
-    }
     return filtered;
-  }, [allInvoices, dateFrom, dateTo, projectSearch]);
+  }, [allInvoices, dateFrom, dateTo]);
 
   const navLinks = currentRole === 'Company' ? companyNavLinks
     : currentRole === 'Vendor' ? vendorNavLinks
@@ -136,12 +138,21 @@ export default function InvoicesList() {
 
   // Filter projects by date range (overlap between project dates and selected range)
   const filteredProjects = projects.filter((project) => {
-    if (!dateFrom && !dateTo) return true;
-    const projStart = new Date(project.startDate).setHours(0, 0, 0, 0);
-    const projEnd = new Date(project.endDate).setHours(23, 59, 59, 999);
-    const filterFrom = dateFrom ? new Date(dateFrom + 'T00:00:00').getTime() : -Infinity;
-    const filterTo = dateTo ? new Date(dateTo + 'T23:59:59').getTime() : Infinity;
-    return projStart <= filterTo && projEnd >= filterFrom;
+    if (projectListSearch.trim() && !project.title.toLowerCase().includes(projectListSearch.trim().toLowerCase())) {
+      return false;
+    }
+    if (dateFrom || dateTo) {
+      const projStart = new Date(project.startDate).setHours(0, 0, 0, 0);
+      const projEnd = new Date(project.endDate).setHours(23, 59, 59, 999);
+      const filterFrom = dateFrom ? new Date(dateFrom + 'T00:00:00').getTime() : -Infinity;
+      const filterTo = dateTo ? new Date(dateTo + 'T23:59:59').getTime() : Infinity;
+      if (!(projStart <= filterTo && projEnd >= filterFrom)) return false;
+    }
+    if (currentRole === 'Company') {
+      if (projectPaymentFilter === 'paid' && project.paidAmount <= 0) return false;
+      if (projectPaymentFilter === 'unpaid' && project.unpaidAmount <= 0) return false;
+    }
+    return true;
   });
 
   const unreadInvoiceByProject = useMemo(() => {
@@ -173,6 +184,12 @@ export default function InvoicesList() {
       next.delete('dateTo');
       return next;
     });
+  }
+
+  function clearProjectListFilters() {
+    clearProjectListDates();
+    setProjectListSearch('');
+    setProjectPaymentFilter('all');
   }
 
   function formatProjectDate(dateStr: string) {
@@ -224,14 +241,14 @@ export default function InvoicesList() {
           <div className="w-12 h-12 rounded-2xl bg-[#E8F0FE] ring-1 ring-[#3678F1]/15 flex items-center justify-center mx-auto mb-3">
             <FaCalendar className="text-[#3678F1] text-base" />
           </div>
-          <p className="text-sm font-bold text-neutral-900 mb-1">No projects in this date range</p>
-          <p className="text-xs text-neutral-500 mb-4">Try widening the range or clear the filter.</p>
+          <p className="text-sm font-bold text-neutral-900 mb-1">No projects match these filters</p>
+          <p className="text-xs text-neutral-500 mb-4">Try changing search, date range, or payment switch.</p>
           <button
             type="button"
-            onClick={clearProjectListDates}
+            onClick={clearProjectListFilters}
             className="text-xs text-[#3678F1] font-bold hover:underline"
           >
-            Clear date filter
+            Clear all filters
           </button>
         </div>
       );
@@ -285,6 +302,15 @@ export default function InvoicesList() {
                       <p className="text-xs text-neutral-400">No invoices yet</p>
                     )}
                   </div>
+                  {currentRole === 'Company' && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 mt-3">
+                      <p className="text-[11px] text-neutral-600">Approved Budget: <span className="font-semibold text-neutral-800">{formatPaise(project.approvedBudget ?? 0)}</span></p>
+                      <p className="text-[11px] text-neutral-600">Closure Amount: <span className="font-semibold text-neutral-800">{formatPaise(project.closureAmount ?? 0)}</span></p>
+                      <p className="text-[11px] text-neutral-600">GST/IGST Amount: <span className="font-semibold text-neutral-800">{formatPaise(project.gstOrIgstAmount ?? 0)}</span></p>
+                      <p className="text-[11px] text-neutral-600">Paid Amount: <span className="font-semibold text-[#15803D]">{formatPaise(project.paidAmount ?? 0)}</span></p>
+                      <p className="text-[11px] text-neutral-600">Unpaid Amount: <span className="font-semibold text-[#B91C1C]">{formatPaise(project.unpaidAmount ?? 0)}</span></p>
+                    </div>
+                  )}
                 </div>
               </Link>
             </li>
@@ -355,97 +381,6 @@ export default function InvoicesList() {
                 )}
               </div>
 
-              {/* Search bar and filters */}
-              {!loading && allInvoices.length > 0 && (
-                <div className="mb-5 space-y-3">
-                  <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
-                    <div className="flex-1 min-w-0">
-                      <label className="sr-only" htmlFor="invoice-project-search">Search by project name</label>
-                      <div className="relative">
-                        <FaMagnifyingGlass className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 w-3.5 h-3.5" />
-                        <input
-                          id="invoice-project-search"
-                          type="text"
-                          value={projectSearch}
-                          onChange={(e) => setProjectSearch(e.target.value)}
-                          placeholder="Search by project name…"
-                          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200 bg-white text-sm placeholder-neutral-400 focus:outline-none focus:border-[#3678F1]/40 focus:ring-2 focus:ring-[#3678F1]/10 shadow-sm transition-all duration-200"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Date range filter */}
-                  <div className="flex flex-wrap items-center gap-3 p-3 bg-white rounded-xl border border-neutral-200 shadow-sm">
-                    <FaCalendar className="text-neutral-400 w-4 h-4" />
-                    <label htmlFor="invoice-date-from" className="text-xs font-medium text-neutral-600 whitespace-nowrap">
-                      From
-                    </label>
-                    <input
-                      id="invoice-date-from"
-                      type="date"
-                      value={dateFrom}
-                      className="rounded-lg border border-neutral-200 bg-white px-2.5 py-2 text-sm text-neutral-900 focus:outline-none focus:border-[#3678F1]/40"
-                      onChange={(e) => {
-                        const v = e.target.value;
-                        setSearchParams((prev) => {
-                          const next = new URLSearchParams(prev);
-                          if (v) next.set('dateFrom', v);
-                          else next.delete('dateFrom');
-                          return next;
-                        });
-                      }}
-                    />
-                    <label htmlFor="invoice-date-to" className="text-xs font-medium text-neutral-600 whitespace-nowrap">
-                      To
-                    </label>
-                    <input
-                      id="invoice-date-to"
-                      type="date"
-                      value={dateTo}
-                      min={dateFrom || undefined}
-                      className="rounded-lg border border-neutral-200 bg-white px-2.5 py-2 text-sm text-neutral-900 focus:outline-none focus:border-[#3678F1]/40"
-                      onChange={(e) => {
-                        const v = e.target.value;
-                        setSearchParams((prev) => {
-                          const next = new URLSearchParams(prev);
-                          if (v) next.set('dateTo', v);
-                          else next.delete('dateTo');
-                          return next;
-                        });
-                      }}
-                    />
-                    {(dateFrom || dateTo) && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSearchParams((prev) => {
-                            const next = new URLSearchParams(prev);
-                            next.delete('dateFrom');
-                            next.delete('dateTo');
-                            return next;
-                          });
-                        }}
-                        className="text-xs text-[#3678F1] font-semibold hover:underline underline-offset-2 ml-auto"
-                      >
-                        Clear dates
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Active date filter indicator */}
-                  {(dateFrom || dateTo) && (
-                    <p className="text-xs text-[#3678F1] font-medium flex items-center gap-2">
-                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#3678F1]" />
-                      Showing invoices from{' '}
-                      {dateFrom ? new Date(dateFrom + 'T12:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
-                      {' '}to{' '}
-                      {dateTo ? new Date(dateTo + 'T12:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
-                    </p>
-                  )}
-                </div>
-              )}
-
               {/* Error */}
               {error && (
                 <div className="flex items-center gap-3 rounded-2xl bg-[#FEEBEA] border border-[#F40F02]/20 p-4 mb-5 shadow-sm">
@@ -474,13 +409,7 @@ export default function InvoicesList() {
                   <div className="w-16 h-16 rounded-full bg-[#E8F0FE] flex items-center justify-center mx-auto mb-5">
                     <FaFileInvoice className="text-[#3678F1] text-2xl" />
                   </div>
-                  {projectSearch.trim() ? (
-                    <>
-                      <p className="text-base font-semibold text-neutral-700 mb-2">No invoices match your search</p>
-                      <p className="text-sm text-neutral-400 mb-5 max-w-xs mx-auto">Try a different project name or clear the search.</p>
-                      <button type="button" onClick={() => setProjectSearch('')} className="text-sm text-[#3678F1] font-semibold hover:underline underline-offset-2">Clear search</button>
-                    </>
-                  ) : dateFrom || dateTo ? (
+                  {dateFrom || dateTo ? (
                     <>
                       <p className="text-base font-semibold text-neutral-700 mb-2">No invoices in this date range</p>
                       <p className="text-sm text-neutral-400 mb-5 max-w-xs mx-auto">
@@ -577,8 +506,8 @@ export default function InvoicesList() {
                           ? 'Loading your projects…'
                           : projects.length === 0
                             ? 'No projects yet'
-                            : (dateFrom || dateTo)
-                              ? `${filteredProjects.length} of ${projects.length} project${projects.length === 1 ? '' : 's'} in range`
+                            : (dateFrom || dateTo || projectListSearch.trim() || (currentRole === 'Company' && projectPaymentFilter !== 'all'))
+                              ? `${filteredProjects.length} of ${projects.length} project${projects.length === 1 ? '' : 's'} match filters`
                               : 'Select a project to view invoices'}
                         {!projectsLoading && currentRole === 'Company' && unreadInvoiceProjectCount > 0 && (
                           <span className="ml-1 text-[#F40F02] font-semibold">
@@ -596,53 +525,86 @@ export default function InvoicesList() {
                       )}
                     </div>
                     {projects.length > 0 && (
-                      <div className="flex flex-wrap items-center gap-3 p-3 bg-white rounded-xl border border-neutral-200/70 shadow-sm">
-                        <FaCalendar className="text-neutral-400 w-4 h-4" />
-                        <label htmlFor="project-date-from" className="text-xs font-medium text-neutral-600 whitespace-nowrap">
-                          From
-                        </label>
-                        <input
-                          id="project-date-from"
-                          type="date"
-                          value={dateFrom}
-                          className="rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5 text-sm text-neutral-900 focus:outline-none focus:border-[#3678F1] focus:ring-2 focus:ring-[#3678F1]/20 transition-colors"
-                          onChange={(e) => {
-                            const v = e.target.value;
-                            setSearchParams((prev) => {
-                              const next = new URLSearchParams(prev);
-                              if (v) next.set('dateFrom', v);
-                              else next.delete('dateFrom');
-                              return next;
-                            });
-                          }}
-                        />
-                        <label htmlFor="project-date-to" className="text-xs font-medium text-neutral-600 whitespace-nowrap">
-                          To
-                        </label>
-                        <input
-                          id="project-date-to"
-                          type="date"
-                          value={dateTo}
-                          min={dateFrom || undefined}
-                          className="rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5 text-sm text-neutral-900 focus:outline-none focus:border-[#3678F1] focus:ring-2 focus:ring-[#3678F1]/20 transition-colors"
-                          onChange={(e) => {
-                            const v = e.target.value;
-                            setSearchParams((prev) => {
-                              const next = new URLSearchParams(prev);
-                              if (v) next.set('dateTo', v);
-                              else next.delete('dateTo');
-                              return next;
-                            });
-                          }}
-                        />
-                        {(dateFrom || dateTo) && (
-                          <button
-                            type="button"
-                            onClick={clearProjectListDates}
-                            className="text-xs text-[#3678F1] font-semibold hover:underline"
-                          >
-                            Clear
-                          </button>
+                      <div className="flex flex-col gap-3 p-3 bg-white rounded-xl border border-neutral-200/70 shadow-sm min-w-[360px]">
+                        <div className="relative">
+                          <FaMagnifyingGlass className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 w-3.5 h-3.5" />
+                          <input
+                            type="text"
+                            value={projectListSearch}
+                            onChange={(e) => setProjectListSearch(e.target.value)}
+                            placeholder="Search by project name…"
+                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200 bg-white text-sm placeholder-neutral-400 focus:outline-none focus:border-[#3678F1]/40 focus:ring-2 focus:ring-[#3678F1]/10 transition-all"
+                          />
+                        </div>
+                        <div className="flex flex-wrap items-center gap-3">
+                          <FaCalendar className="text-neutral-400 w-4 h-4" />
+                          <label htmlFor="project-date-from" className="text-xs font-medium text-neutral-600 whitespace-nowrap">
+                            From
+                          </label>
+                          <input
+                            id="project-date-from"
+                            type="date"
+                            value={dateFrom}
+                            className="rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5 text-sm text-neutral-900 focus:outline-none focus:border-[#3678F1] focus:ring-2 focus:ring-[#3678F1]/20 transition-colors"
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              setSearchParams((prev) => {
+                                const next = new URLSearchParams(prev);
+                                if (v) next.set('dateFrom', v);
+                                else next.delete('dateFrom');
+                                return next;
+                              });
+                            }}
+                          />
+                          <label htmlFor="project-date-to" className="text-xs font-medium text-neutral-600 whitespace-nowrap">
+                            To
+                          </label>
+                          <input
+                            id="project-date-to"
+                            type="date"
+                            value={dateTo}
+                            min={dateFrom || undefined}
+                            className="rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5 text-sm text-neutral-900 focus:outline-none focus:border-[#3678F1] focus:ring-2 focus:ring-[#3678F1]/20 transition-colors"
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              setSearchParams((prev) => {
+                                const next = new URLSearchParams(prev);
+                                if (v) next.set('dateTo', v);
+                                else next.delete('dateTo');
+                                return next;
+                              });
+                            }}
+                          />
+                          {(dateFrom || dateTo) && (
+                            <button
+                              type="button"
+                              onClick={clearProjectListDates}
+                              className="text-xs text-[#3678F1] font-semibold hover:underline"
+                            >
+                              Clear
+                            </button>
+                          )}
+                        </div>
+                        {currentRole === 'Company' && (
+                          <div className="flex items-center justify-between gap-3 rounded-lg border border-neutral-200 px-3 py-2">
+                            <span className="text-xs font-semibold text-neutral-600">Invoice payment filter</span>
+                            <div className="flex items-center gap-1 p-0.5 bg-neutral-100 rounded-full">
+                              {(['all', 'paid', 'unpaid'] as InvoicePaymentFilter[]).map((value) => (
+                                <button
+                                  key={value}
+                                  type="button"
+                                  onClick={() => setProjectPaymentFilter(value)}
+                                  className={`px-3 py-1 text-[11px] font-semibold rounded-full capitalize transition-colors ${
+                                    projectPaymentFilter === value
+                                      ? 'bg-[#3678F1] text-white'
+                                      : 'text-neutral-600 hover:text-neutral-900'
+                                  }`}
+                                >
+                                  {value}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
                         )}
                       </div>
                     )}

@@ -4,6 +4,7 @@ import { FaCalendar, FaTruck, FaBell, FaChevronLeft, FaChevronRight, FaMessage, 
 import { api, ApiException } from '../services/api';
 import { useApiQuery } from '../hooks/useApiQuery';
 import { useChatUnread } from '../contexts/ChatUnreadContext';
+import { useAuth } from '../contexts/AuthContext';
 import { formatPaise, formatRateRange } from '../utils/currency';
 import DashboardHeader from '../components/DashboardHeader';
 import DashboardSidebar from '../components/DashboardSidebar';
@@ -28,6 +29,7 @@ interface CalendarCell {
   company?: string;
   project?: string;
   invoice?: string;
+  projectCount?: number;
 }
 
 const _today = new Date();
@@ -50,7 +52,7 @@ function getBookingDateKeys(booking: { shootDates?: string[] | null }): string[]
   return [...new Set(booking.shootDates.map((d) => normalizeDateOnly(d)).filter(Boolean))];
 }
 
-function buildCalendar(monthOffset: number, bookingsByDay?: Record<string, { status: CellStatus; company?: string; project?: string; invoice?: string }>): CalendarCell[] {
+function buildCalendar(monthOffset: number, bookingsByDay?: Record<string, { status: CellStatus; company?: string; project?: string; invoice?: string; projectCount?: number }>): CalendarCell[] {
   const d = new Date(BASE_YEAR, BASE_MONTH + monthOffset, 1);
   const year = d.getFullYear();
   const month = d.getMonth();
@@ -86,6 +88,7 @@ interface EquipmentItem {
 
 interface IncomingBooking {
   id: string; status: string; rateOffered?: number | null; message?: string | null;
+  cancelRequestedBySide?: 'company' | 'crew_or_vendor' | null;
   shootDates?: string[] | null;
   project: { id: string; title: string; startDate?: string; endDate?: string };
   requester: { id: string; email: string; companyProfile?: { companyName?: string } | null };
@@ -99,6 +102,8 @@ interface PastBookingItem {
 
 export default function VendorDashboard() {
   useEffect(() => { document.title = 'Dashboard – Claapo'; }, []);
+  const { user } = useAuth();
+  const isVendorSubuser = !!user?.mainUserId;
 
   const [monthOffset, setMonthOffset] = useState(0);
   const [detailDate, setDetailDate] = useState<string | null>(null);
@@ -125,6 +130,9 @@ export default function VendorDashboard() {
 
   const incomingItems = bookingsData?.items ?? [];
   const pendingBookings = incomingItems.filter(b => b.status === 'pending').slice(0, 5);
+  const cancelApprovalBookings = incomingItems
+    .filter((b) => b.status === 'cancel_requested' && b.cancelRequestedBySide === 'company')
+    .slice(0, 3);
 
   // Dates with pending booking requests
   const pendingDates = useMemo(() => {
@@ -152,10 +160,16 @@ export default function VendorDashboard() {
   const equipmentArray = Array.isArray(equipmentList) ? equipmentList : (equipmentList as { items?: EquipmentItem[] })?.items ?? [];
 
   const bookingRangesByDay = useMemo(() => {
-    const map: Record<string, { status: CellStatus; project?: string; company?: string }> = {};
+    const map: Record<string, { status: CellStatus; project?: string; company?: string; projectCount?: number }> = {};
     const add = (dateKeys: string[], status: CellStatus, project?: string, company?: string) => {
       dateKeys.forEach((dateStr) => {
-        map[dateStr] = { status, project, company };
+        const existing = map[dateStr];
+        map[dateStr] = {
+          status,
+          project: existing?.project ?? project,
+          company: existing?.company ?? company,
+          projectCount: (existing?.projectCount ?? 0) + 1,
+        };
       });
     };
     incomingItems.filter(b => (b.status === 'accepted' || b.status === 'locked')).forEach((b) => {
@@ -172,7 +186,7 @@ export default function VendorDashboard() {
   }, [incomingItems, pastItems]);
 
   const mergedBookingsByDay = useMemo(() => {
-    const map: Record<string, { status: CellStatus; project?: string; company?: string }> = { ...bookingRangesByDay };
+    const map: Record<string, { status: CellStatus; project?: string; company?: string; projectCount?: number }> = { ...bookingRangesByDay };
     for (const [d, s] of Object.entries(monthSlotDetails)) {
       if (s.status === 'blocked') {
         const prev = map[d];
@@ -180,6 +194,7 @@ export default function VendorDashboard() {
           status: 'blocked',
           project: prev?.project,
           company: prev?.company,
+          projectCount: prev?.projectCount,
         };
       }
     }
@@ -199,7 +214,7 @@ export default function VendorDashboard() {
   const vendorBlockReasons = useMemo(() => ['Equipment maintenance', 'Unavailable for rental', 'Reserved for other use', 'Other'], []);
 
   const fallbackBookingsForDay = useMemo(() => {
-    if (!detailDate || bookingDetails[detailDate]) return [];
+    if (!detailDate) return [];
     const out: {
       id: string;
       projectId: string;
@@ -210,12 +225,28 @@ export default function VendorDashboard() {
       rateOffered?: number | null;
       equipmentLabel?: string | null;
     }[] = [];
+    const seen = new Set<string>();
+    const primaryBooking = bookingDetails[detailDate];
+    if (primaryBooking) {
+      out.push({
+        id: primaryBooking.id,
+        projectId: primaryBooking.projectId,
+        projectTitle: primaryBooking.projectTitle,
+        companyLabel: primaryBooking.companyName,
+        companyUserId: primaryBooking.companyUserId,
+        status: primaryBooking.status,
+        rateOffered: primaryBooking.rateOffered ?? null,
+        equipmentLabel: primaryBooking.roleName ?? null,
+      });
+      seen.add(primaryBooking.id);
+    }
     for (const b of incomingItems) {
       const dateKeys = getBookingDateKeys(b);
       if (
         (b.status === 'accepted' || b.status === 'locked') &&
         dateKeys.includes(detailDate)
       ) {
+        if (seen.has(b.id)) continue;
         out.push({
           id: b.id,
           projectId: b.project.id,
@@ -226,10 +257,12 @@ export default function VendorDashboard() {
           rateOffered: b.rateOffered ?? null,
           equipmentLabel: null,
         });
+        seen.add(b.id);
       }
     }
     for (const b of pastItems) {
       if (getBookingDateKeys(b).includes(detailDate)) {
+        if (seen.has(b.id)) continue;
         out.push({
           id: b.id,
           projectId: b.project.id,
@@ -240,10 +273,22 @@ export default function VendorDashboard() {
           rateOffered: null,
           equipmentLabel: null,
         });
+        seen.add(b.id);
       }
     }
     return out;
   }, [detailDate, incomingItems, pastItems, bookingDetails]);
+
+  const allShootDates = useMemo(() => {
+    const set = new Set<string>();
+    incomingItems.forEach((b) => {
+      getBookingDateKeys(b).forEach((d) => set.add(d));
+    });
+    pastItems.forEach((b) => {
+      getBookingDateKeys(b).forEach((d) => set.add(d));
+    });
+    return Array.from(set);
+  }, [incomingItems, pastItems]);
 
   const loadVendorAvailability = useCallback(async () => {
     setAvailLoading(true);
@@ -429,9 +474,16 @@ export default function VendorDashboard() {
                               <span className="text-[8px] sm:text-[9px] font-medium leading-tight truncate w-full opacity-80">
                                 {cell.status === 'blocked'
                                   ? 'Unavailable'
-                                  : cell.status === 'booked'
-                                    ? (cell.project?.split(/\s|,/).slice(0, 2).join(' ') || 'Ongoing')
-                                    : (cell.project?.split(/\s|,/).slice(0, 2).join(' ') || 'Completed')}
+                                  : cell.projectCount && cell.projectCount > 1
+                                    ? `${cell.projectCount} projects`
+                                    : cell.status === 'booked'
+                                      ? (cell.project?.split(/\s|,/).slice(0, 2).join(' ') || 'Ongoing')
+                                      : (cell.project?.split(/\s|,/).slice(0, 2).join(' ') || 'Completed')}
+                              </span>
+                            )}
+                            {!!cell.projectCount && cell.projectCount > 1 && (
+                              <span className="absolute top-0.5 right-0.5 w-3.5 h-3.5 rounded-full bg-[#3678F1] text-white text-[7px] font-bold flex items-center justify-center leading-none shadow-sm">
+                                {cell.projectCount > 9 ? '9+' : cell.projectCount}
                               </span>
                             )}
                           </button>
@@ -464,8 +516,10 @@ export default function VendorDashboard() {
                         <FaBell className="text-[#3678F1] text-xs" />
                       </div>
                       <h3 className="text-sm font-bold text-neutral-900">Booking Requests</h3>
-                      {pendingBookings.length > 0 && (
-                        <span className="ml-auto text-xs font-bold text-white bg-[#F40F02] rounded-full w-5 h-5 flex items-center justify-center">{pendingBookings.length}</span>
+                      {(pendingBookings.length + cancelApprovalBookings.length) > 0 && (
+                        <span className="ml-auto text-xs font-bold text-white bg-[#F40F02] rounded-full w-5 h-5 flex items-center justify-center">
+                          {pendingBookings.length + cancelApprovalBookings.length}
+                        </span>
                       )}
                     </div>
                     {actionError && (
@@ -476,10 +530,22 @@ export default function VendorDashboard() {
                     )}
                     {bookingsLoading ? (
                       <div className="space-y-2">{[1,2].map(i => <div key={i} className="skeleton h-16 rounded-xl" />)}</div>
-                    ) : pendingBookings.length === 0 ? (
+                    ) : pendingBookings.length === 0 && cancelApprovalBookings.length === 0 ? (
                       <p className="text-xs text-neutral-400 text-center py-4">No pending requests</p>
                     ) : (
                       <div className="space-y-2">
+                        {cancelApprovalBookings.map((b) => (
+                          <Link
+                            key={`cancel-${b.id}`}
+                            to="/bookings"
+                            className="block rounded-xl border border-[#F40F02]/30 p-3 bg-[#FEEBEA] hover:bg-[#FDE2E0] transition-colors duration-200"
+                          >
+                            <p className="text-xs font-semibold text-[#991B1B] mb-0.5 truncate">{b.project.title}</p>
+                            <p className="text-[11px] text-[#B42318] truncate">
+                              Cancellation approval needed from you
+                            </p>
+                          </Link>
+                        ))}
                         {pendingBookings.map((b) => (
                           <div key={b.id} className="rounded-xl border border-neutral-200/70 p-3 bg-white hover:border-[#3678F1] transition-colors duration-200">
                             <p className="text-xs font-semibold text-neutral-900 mb-0.5 truncate">{b.project.title}</p>
@@ -577,12 +643,14 @@ export default function VendorDashboard() {
                         </div>
                         <span className="flex-1 truncate">Equipment</span>
                       </Link>
-                      <Link to="/team" className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-neutral-200/70 text-neutral-700 text-[13px] font-semibold hover:border-[#3678F1] transition-colors duration-200">
-                        <div className="w-8 h-8 rounded-lg bg-[#E8F0FE] ring-1 ring-[#3678F1]/15 flex items-center justify-center shrink-0">
-                          <FaPeopleGroup className="w-3.5 h-3.5 text-[#3678F1]" />
-                        </div>
-                        <span className="flex-1 truncate">Manage Team</span>
-                      </Link>
+                      {!isVendorSubuser && (
+                        <Link to="/team" className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-neutral-200/70 text-neutral-700 text-[13px] font-semibold hover:border-[#3678F1] transition-colors duration-200">
+                          <div className="w-8 h-8 rounded-lg bg-[#E8F0FE] ring-1 ring-[#3678F1]/15 flex items-center justify-center shrink-0">
+                            <FaPeopleGroup className="w-3.5 h-3.5 text-[#3678F1]" />
+                          </div>
+                          <span className="flex-1 truncate">Manage Team</span>
+                        </Link>
+                      )}
                       <Link to="/vendor-profile" className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-neutral-200/70 text-neutral-700 text-[13px] font-semibold hover:border-[#3678F1] transition-colors duration-200">
                         <div className="w-8 h-8 rounded-lg bg-[#E8F0FE] ring-1 ring-[#3678F1]/15 flex items-center justify-center shrink-0">
                           <FaUser className="w-3.5 h-3.5 text-[#3678F1]" />
@@ -614,15 +682,14 @@ export default function VendorDashboard() {
               selectedDate={detailDate}
               onDismiss={() => setDetailDate(null)}
               slot={slotForDetailPanel}
-              booking={bookingDetails[detailDate]
-                ? bookingDetails[detailDate]
-                : undefined}
+              booking={undefined}
               fallbackBookings={fallbackBookingsForDay}
               blockReasons={vendorBlockReasons}
               saving={detailSaving}
               onBlock={async (reason) => { await handleDetailBlock(reason); }}
               onUnblock={async () => { await handleDetailUnblock(); }}
               onRequestCancel={(bookingId) => { setCancellingId(bookingId); }}
+              allShootDates={allShootDates}
             />
           </aside>
         </>
