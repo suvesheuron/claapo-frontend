@@ -40,6 +40,7 @@ interface EquipmentItem {
   imageUrl?: string | null;
   currentCity?: string | null;
   dailyBudget?: number | null;
+  quantityTotal?: number;
   availabilities?: EquipmentAvailability[];
   bookingRequests?: ActiveBooking[];
   /** From API: project shoot location while booked + short return buffer */
@@ -67,6 +68,7 @@ export default function Equipment() {
   const [description, setDescription] = useState('');
   const [currentCity, setCurrentCity] = useState('');
   const [dailyBudget, setDailyBudget] = useState('');
+  const [units, setUnits] = useState('1');
 
   const openAdd = () => {
     setSaveError(null);
@@ -74,6 +76,7 @@ export default function Equipment() {
     setDescription('');
     setCurrentCity('');
     setDailyBudget('');
+    setUnits('1');
     setModal('add');
   };
 
@@ -84,6 +87,7 @@ export default function Equipment() {
     setDescription(item.description ?? '');
     setCurrentCity(item.currentCity ?? '');
     setDailyBudget(item.dailyBudget != null ? String(Math.round(item.dailyBudget / 100)) : '');
+    setUnits(String(item.quantityTotal ?? 1));
     setModal('edit');
   };
 
@@ -101,8 +105,14 @@ export default function Equipment() {
       return;
     }
     const budgetPaise = dailyBudget.trim() ? Math.round(parseFloat(dailyBudget) * 100) : undefined;
+    const unitCountRaw = parseInt(units, 10);
+    const unitCount = Number.isNaN(unitCountRaw) ? 1 : unitCountRaw;
     if (budgetPaise !== undefined && (Number.isNaN(budgetPaise) || budgetPaise < 0)) {
       setSaveError('Daily budget must be a valid number.');
+      return;
+    }
+    if (unitCount < 1 || unitCount > 25) {
+      setSaveError('Units must be between 1 and 25.');
       return;
     }
     setSaving(true);
@@ -113,6 +123,7 @@ export default function Equipment() {
           description: description.trim() || undefined,
           currentCity: currentCity.trim() || undefined,
           dailyBudget: budgetPaise,
+          quantityTotal: unitCount,
         });
       } else if (editingId) {
         await api.patch(`/equipment/${editingId}`, {
@@ -120,6 +131,7 @@ export default function Equipment() {
           description: description.trim() || undefined,
           currentCity: currentCity.trim() || undefined,
           dailyBudget: budgetPaise,
+          quantityTotal: unitCount,
         });
       }
       refetch();
@@ -322,6 +334,9 @@ export default function Equipment() {
                         <div className="p-4 flex flex-col flex-1">
                           <div className="flex items-start justify-between gap-2 mb-2">
                             <h3 className="text-base font-bold text-neutral-900 truncate leading-tight">{item.name}</h3>
+                            <span className="inline-flex items-center gap-1 rounded-full bg-[#E8F0FE] text-[#3678F1] px-2 py-0.5 text-[10px] font-bold">
+                              {item.quantityTotal ?? 1} unit{(item.quantityTotal ?? 1) === 1 ? '' : 's'}
+                            </span>
                           </div>
 
                           {/* Rate */}
@@ -472,6 +487,20 @@ export default function Equipment() {
                   </div>
                   <p className="inline-flex items-center gap-1 text-[11px] text-neutral-400 mt-1.5">
                     <FaCircleInfo className="w-2.5 h-2.5" /> Your daily rental rate in rupees
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Units</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={25}
+                    value={units}
+                    onChange={(e) => setUnits(e.target.value)}
+                    className="w-full px-4 py-2.5 border border-neutral-300 rounded-xl text-sm bg-[#F3F4F6] focus:bg-white focus:outline-none focus:border-[#3678F1] focus:ring-2 focus:ring-[#3678F1]/15 transition-all"
+                  />
+                  <p className="inline-flex items-center gap-1 text-[11px] text-neutral-400 mt-1.5">
+                    <FaCircleInfo className="w-2.5 h-2.5" /> Multiple bookings can run in parallel up to this unit count.
                   </p>
                 </div>
               </div>

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   FaPlus, FaEye, FaTriangleExclamation, FaBan, FaFolder,
-  FaMagnifyingGlass, FaLocationDot, FaCalendarDays, FaUsers, FaIndianRupeeSign,
+  FaMagnifyingGlass, FaLocationDot, FaCalendarDays,
 } from 'react-icons/fa6';
 import DashboardHeader from '../../components/DashboardHeader';
 import DashboardSidebar from '../../components/DashboardSidebar';
@@ -106,16 +106,15 @@ export default function Projects() {
 
   /* ─── Summary stats (computed, not fetched) ─── */
   const stats = useMemo(() => {
-    let active = 0, planning = 0, completed = 0, cancelled = 0, totalBudget = 0;
+    let active = 0, planning = 0, completed = 0, cancelled = 0;
     for (const p of projects) {
       const d = statusMap[p.status];
       if (d === 'active')    active++;
       if (d === 'planning')  planning++;
       if (d === 'completed') completed++;
       if (d === 'cancelled') cancelled++;
-      totalBudget += (p.budgetMax ?? p.budgetMin ?? p.budget ?? 0);
     }
-    return { total: projects.length, active, planning, completed, cancelled, totalBudget };
+    return { total: projects.length, active, planning, completed, cancelled };
   }, [projects]);
 
   /* ─── Filtered view ─── */
@@ -174,28 +173,6 @@ export default function Projects() {
                     New Project
                   </Link>
                 )}
-              </div>
-
-              {/* ═══════════ STATS ROW ═══════════ */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-                {[
-                  { label: 'Total',     value: stats.total,                     accent: 'bg-[#E8F0FE] text-[#3678F1] ring-1 ring-[#3678F1]/15',  Icon: FaFolder        },
-                  { label: 'Active',    value: stats.active,                    accent: 'bg-[#E8F0FE] text-[#3678F1] ring-1 ring-[#3678F1]/15',  Icon: FaCalendarDays  },
-                  { label: 'Completed', value: stats.completed,                 accent: 'bg-[#E8F0FE] text-[#3678F1] ring-1 ring-[#3678F1]/15', Icon: FaUsers       },
-                  { label: 'Total budget', value: formatBudgetCompact(stats.totalBudget), accent: 'bg-[#E8F0FE] text-[#3678F1] ring-1 ring-[#3678F1]/15', Icon: FaIndianRupeeSign },
-                ].map(({ label, value, accent, Icon }) => (
-                  <div key={label} className="bg-white border border-neutral-200/70 rounded-2xl px-4 py-4 shadow-sm hover:border-[#3678F1] transition-colors duration-200">
-                    <div className="flex items-center justify-between">
-                      <div className="min-w-0">
-                        <p className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">{label}</p>
-                        <p className="text-xl font-bold text-neutral-900 tabular-nums mt-1 truncate">{value}</p>
-                      </div>
-                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${accent}`}>
-                        <Icon className="text-sm" />
-                      </div>
-                    </div>
-                  </div>
-                ))}
               </div>
 
               {/* ═══════════ TOOLBAR: TABS + SEARCH ═══════════ */}

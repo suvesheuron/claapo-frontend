@@ -13,7 +13,11 @@ import { api } from '../services/api';
 interface CancelRequestsResponse { items: unknown[] }
 
 interface IncomingBookingsResponse {
-  items: Array<{ status?: string; project?: { status?: string } }>;
+  items: Array<{
+    status?: string;
+    cancelRequestedBySide?: 'company' | 'crew_or_vendor' | null;
+    project?: { status?: string };
+  }>;
 }
 
 interface NotificationsResponse {
@@ -67,10 +71,15 @@ export function NavBadgesProvider({ children }: { children: ReactNode }) {
     try {
       if (user.role === 'individual' || user.role === 'vendor') {
         const res = await api.get<IncomingBookingsResponse>('/bookings/incoming');
-        const pending = (res?.items ?? []).filter(
-          (b) => b.status === 'pending' && b.project?.status !== 'cancelled',
+        const actionable = (res?.items ?? []).filter(
+          (b) =>
+            b.project?.status !== 'cancelled' &&
+            (
+              b.status === 'pending' ||
+              (b.status === 'cancel_requested' && b.cancelRequestedBySide === 'company')
+            ),
         ).length;
-        setProjectRequestsCount(pending);
+        setProjectRequestsCount(actionable);
       } else {
         setProjectRequestsCount(0);
       }

@@ -52,7 +52,7 @@ const STATUS_CONFIG: Record<BookingStatus, { bg: string; text: string; label: st
   cancel_requested: { bg: 'bg-[#E8F0FE]',  text: 'text-[#1E3A8A]',  label: 'Cancel Requested' },
 };
 
-type TabFilter = 'all' | 'pending' | 'accepted' | 'completed';
+type TabFilter = 'all' | 'pending' | 'accepted' | 'completed' | 'cancelled';
 
 function matchesTab(status: BookingStatus, tab: TabFilter): boolean {
   if (tab === 'all') return true;
@@ -169,7 +169,7 @@ export default function Bookings() {
 
               {/* Tab filter */}
               <div className="flex items-center gap-0.5 mb-5 bg-white rounded-xl p-1 border border-neutral-200 w-fit">
-                {(['all', 'pending', 'accepted', 'completed'] as TabFilter[]).map((t) => {
+                {(['all', 'pending', 'accepted', 'completed', 'cancelled'] as TabFilter[]).map((t) => {
                   const count = allBookings.filter((b) => matchesTab(b.status, t)).length;
                   const isActive = tab === t;
                   return (
@@ -243,6 +243,8 @@ export default function Bookings() {
                   <p className="text-sm text-neutral-500 max-w-sm mx-auto">
                     {tab === 'pending'
                       ? 'No pending requests right now. New requests will show up here when companies want to hire you.'
+                      : tab === 'cancelled'
+                        ? 'No cancelled requests yet.'
                       : 'Booking requests will appear here.'}
                   </p>
                 </div>

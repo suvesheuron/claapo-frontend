@@ -134,6 +134,11 @@ export default function VendorCalendarDayPanel({
           const id = b?.id ?? f?.id;
           const projectId = b?.projectId ?? f?.projectId;
           const companyChatId = b?.companyUserId ?? f?.companyUserId;
+          const canIssueInvoice =
+            (!!selectedDate && !!projectId && (
+              (b?.shootDates?.includes(selectedDate) ?? false) ||
+              allShootDates.includes(selectedDate)
+            ));
 
           return (
             <div key={id ?? idx} className="rounded-xl border border-neutral-200/70 bg-white p-3 space-y-2 hover:border-[#3678F1] transition-colors duration-200">
@@ -163,6 +168,14 @@ export default function VendorCalendarDayPanel({
                     className="inline-flex flex-1 min-w-[100px] items-center justify-center gap-1.5 rounded-lg py-2 px-2 bg-[#E8F0FE] text-[#2563EB] text-xs font-bold border border-[#3678F1]/20 hover:bg-[#DBEAFE] transition-colors duration-200"
                   >
                     <FaMessage className="text-xs" /> Chat
+                  </Link>
+                )}
+                {canIssueInvoice && (
+                  <Link
+                    to={`/invoices/${encodeURIComponent(projectId)}?issuedOn=${selectedDate}`}
+                    className="inline-flex flex-1 min-w-[100px] items-center justify-center gap-1.5 rounded-lg py-2 px-2 bg-white text-neutral-700 text-xs font-bold border border-neutral-200 hover:border-[#3678F1] hover:text-[#3678F1] transition-colors duration-200"
+                  >
+                    <FaFileInvoice className="text-xs" /> Invoice
                   </Link>
                 )}
               </div>

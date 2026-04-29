@@ -38,6 +38,24 @@ interface ShootDateLocation {
   location: string;
 }
 
+interface VendorEquipmentItem {
+  id: string;
+  name: string;
+  quantityTotal?: number | null;
+  dailyBudget?: number | null;
+  daily_budget?: number | null;
+  availabilities?: Array<{
+    availableFrom: string;
+    availableTo: string;
+    locationCity?: string;
+  }>;
+  bookingRequests?: Array<{
+    id: string;
+    status: string;
+    shootDates?: string[] | null;
+  }>;
+}
+
 type BookingRequestModalProps = {
   isOpen: boolean;
   onClose: () => void;
@@ -246,16 +264,43 @@ export default function BookingRequestModal({
     if (isOpen) refetchProjects();
   }, [isOpen, refetchProjects]);
 
-  const { data: vendorEquipment, loading: equipmentLoading } = useApiQuery<{ id: string; name: string; dailyBudget?: number | null; daily_budget?: number | null }[] | { data?: unknown[]; items?: unknown[] }>(
+  const { data: vendorEquipment, loading: equipmentLoading } = useApiQuery<VendorEquipmentItem[] | { data?: unknown[]; items?: unknown[] }>(
     isOpen && targetUserId && isVendor ? `/equipment/vendor/${targetUserId}` : null
   );
   const rawList = Array.isArray(vendorEquipment) ? vendorEquipment : (vendorEquipment as { data?: unknown[]; items?: unknown[] })?.data ?? (vendorEquipment as { items?: unknown[] })?.items ?? [];
-  const equipmentList = (Array.isArray(rawList) ? rawList : []) as Record<string, unknown>[];
+  const equipmentList = (Array.isArray(rawList) ? rawList : []) as VendorEquipmentItem[];
 
-  const getPaise = (eq: Record<string, unknown>): number[] => {
+  const getPaise = (eq: VendorEquipmentItem): number[] => {
     const budget = (eq.dailyBudget ?? eq.daily_budget) as number | null | undefined;
     return [budget].filter((n): n is number => typeof n === 'number' && !Number.isNaN(n));
   };
+
+  const isDateInRange = (dateIso: string, fromIso?: string, toIso?: string) => {
+    if (!fromIso || !toIso) return false;
+    return dateIso >= fromIso.slice(0, 10) && dateIso <= toIso.slice(0, 10);
+  };
+
+  const isEquipmentFreeOnDate = (eq: VendorEquipmentItem, dateIso: string) => {
+    const hasAvailabilities = (eq.availabilities?.length ?? 0) > 0;
+    if (hasAvailabilities) {
+      const withinAnyAvailability = (eq.availabilities ?? []).some((slot) =>
+        isDateInRange(dateIso, slot.availableFrom, slot.availableTo),
+      );
+      if (!withinAnyAvailability) return false;
+    }
+    const bookedUnits = (eq.bookingRequests ?? []).filter((b) => {
+      if (b.status !== 'accepted' && b.status !== 'locked' && b.status !== 'cancel_requested') return false;
+      return (b.shootDates ?? []).some((d) => d.slice(0, 10) === dateIso);
+    }).length;
+    const totalUnits = Math.max(1, eq.quantityTotal ?? 1);
+    return bookedUnits < totalUnits;
+  };
+
+  const availableEquipmentList = useMemo(() => {
+    if (!isVendor) return equipmentList;
+    if (bookingDates.length === 0) return equipmentList;
+    return equipmentList.filter((eq) => bookingDates.every((d) => isEquipmentFreeOnDate(eq, d)));
+  }, [isVendor, equipmentList, bookingDates]);
 
   const vendorRateDisplay = (() => {
     if (!isVendor) return userRate;
@@ -292,13 +337,20 @@ export default function BookingRequestModal({
 
   useEffect(() => {
     if (!isOpen || !isVendor) return;
-    const list = (Array.isArray(rawList) ? rawList : []) as { id?: string }[];
+    const list = availableEquipmentList as { id?: string }[];
     if (initialVendorEquipmentId && list.some((eq) => eq.id === initialVendorEquipmentId)) {
       setSelectedEquipmentIds([initialVendorEquipmentId]);
     } else if (list.length === 1 && list[0]?.id) {
       setSelectedEquipmentIds([list[0].id]);
     }
-  }, [isOpen, isVendor, initialVendorEquipmentId, rawList]);
+  }, [isOpen, isVendor, initialVendorEquipmentId, availableEquipmentList]);
+
+  useEffect(() => {
+    if (!isVendor) return;
+    if (selectedEquipmentIds.length === 0) return;
+    const allowedIds = new Set(availableEquipmentList.map((eq) => eq.id));
+    setSelectedEquipmentIds((prev) => prev.filter((id) => allowedIds.has(id)));
+  }, [isVendor, selectedEquipmentIds.length, availableEquipmentList]);
 
   // ESC closes modal
   useEffect(() => {
@@ -434,22 +486,26 @@ export default function BookingRequestModal({
                     <p className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider mb-2">Equipment & daily rate</p>
                     {equipmentLoading ? (
                       <p className="text-xs text-neutral-500">Loading equipment…</p>
-                    ) : equipmentList.length === 0 ? (
-                      <p className="text-xs text-neutral-500">No equipment listed yet.</p>
+                    ) : availableEquipmentList.length === 0 ? (
+                      bookingDates.length > 0 ? (
+                        <p className="text-xs text-neutral-500">No equipment is available on all selected dates.</p>
+                      ) : (
+                        <p className="text-xs text-neutral-500">No equipment listed yet.</p>
+                      )
                     ) : (
                       <ul className="space-y-1.5">
-                        {equipmentList.slice(0, 8).map((eq, idx) => {
+                        {availableEquipmentList.slice(0, 8).map((eq, idx) => {
                           const paise = getPaise(eq);
                           const ratePaise = paise.length ? Math.min(...paise) : null;
                           const rateStr = ratePaise != null ? `₹${(ratePaise / 100).toLocaleString('en-IN')}/day` : 'Rate on request';
                           return (
                             <li key={(eq.id as string) || idx} className="text-xs flex justify-between items-center gap-3">
                               <span className="truncate font-medium text-neutral-700">{String(eq.name ?? '')}</span>
-                              <span className="shrink-0 font-semibold text-[#3678F1]">{rateStr}</span>
+                              <span className="shrink-0 font-semibold text-[#3678F1]">{rateStr}{(eq.quantityTotal ?? 1) > 1 ? ` · ${eq.quantityTotal} units` : ''}</span>
                             </li>
                           );
                         })}
-                        {equipmentList.length > 8 && <li className="text-[10px] text-neutral-400">+{equipmentList.length - 8} more</li>}
+                        {availableEquipmentList.length > 8 && <li className="text-[10px] text-neutral-400">+{availableEquipmentList.length - 8} more</li>}
                       </ul>
                     )}
                   </div>
@@ -457,14 +513,14 @@ export default function BookingRequestModal({
               </div>
 
               {/* Equipment selector (vendor only) */}
-              {isVendor && equipmentList.length > 0 && (
+              {isVendor && (equipmentList.length > 0 || bookingDates.length > 0) && (
                 <div>
                   <label className="block text-xs font-semibold text-neutral-700 mb-1.5 uppercase tracking-wide">
                     Equipment for this request
                     <span className="ml-2 text-[9px] font-normal text-neutral-400 normal-case">(Optional)</span>
                   </label>
                   <div className="rounded-xl border border-neutral-200 bg-white p-2.5 space-y-2 max-h-44 overflow-auto">
-                    {equipmentList.map((eq, idx) => {
+                    {availableEquipmentList.map((eq, idx) => {
                       const id = (eq.id as string) ?? `${idx}`;
                       const checked = selectedEquipmentIds.includes(id);
                       return (
@@ -481,9 +537,15 @@ export default function BookingRequestModal({
                             className="h-4 w-4 rounded border-neutral-300 text-[#3678F1] focus:ring-[#3678F1]/30"
                           />
                           <span className="truncate">{String(eq.name ?? '')}</span>
+                          {(eq.quantityTotal ?? 1) > 1 && (
+                            <span className="text-[10px] text-neutral-500">({eq.quantityTotal} units)</span>
+                          )}
                         </label>
                       );
                     })}
+                    {!equipmentLoading && availableEquipmentList.length === 0 && (
+                      <p className="text-xs text-neutral-500 px-1 py-1">No equipment available for selected dates.</p>
+                    )}
                   </div>
                   <p className="text-[11px] text-neutral-500 mt-1.5">
                     If you select multiple items, separate booking requests will be sent for each equipment.
