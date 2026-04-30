@@ -5,6 +5,7 @@ import { FaTruck, FaMagnifyingGlass, FaChevronLeft, FaChevronRight, FaPlus, FaTr
 import toast from 'react-hot-toast';
 import AppFooter from '../components/AppFooter';
 import Avatar from '../components/Avatar';
+import DateInput from '../components/DateInput';
 import DashboardHeader from '../components/DashboardHeader';
 import DashboardSidebar from '../components/DashboardSidebar';
 import { useAuth } from '../contexts/AuthContext';
@@ -437,14 +438,14 @@ Please share your best quotation for this requirement.`;
                   {/* Start Date */}
                   <div>
                     <label className="block text-[11px] font-bold text-neutral-500 mb-2 uppercase tracking-widest">Start Date</label>
-                    <input type="date" value={startDate} onChange={(e) => { setStartDate(e.target.value); setPage(1); }}
+                    <DateInput value={startDate} onChange={(e) => { setStartDate(e.target.value); setPage(1); }}
                       className="w-full px-4 py-3 border border-neutral-200 rounded-xl text-sm bg-neutral-50 focus:bg-white focus:outline-none focus:border-[#3678F1] focus:ring-2 focus:ring-[#3678F1]/20 transition-colors duration-200" />
                   </div>
 
                   {/* End Date */}
                   <div>
                     <label className="block text-[11px] font-bold text-neutral-500 mb-2 uppercase tracking-widest">End Date</label>
-                    <input type="date" value={endDate} min={startDate || undefined} onChange={(e) => { setEndDate(e.target.value); setPage(1); }}
+                    <DateInput value={endDate} min={startDate || undefined} onChange={(e) => { setEndDate(e.target.value); setPage(1); }}
                       className="w-full px-4 py-3 border border-neutral-200 rounded-xl text-sm bg-neutral-50 focus:bg-white focus:outline-none focus:border-[#3678F1] focus:ring-2 focus:ring-[#3678F1]/20 transition-colors duration-200" />
                   </div>
 

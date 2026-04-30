@@ -43,6 +43,7 @@ interface ProfileData {
   twitterUrl: string | null;
   isAvailable: boolean;
   panNumber: string | null;
+  billingName?: string | null;
   gstNumber: string | null;
   sacCode: string | null;
   upiId: string | null;
@@ -87,6 +88,7 @@ export default function IndividualProfile() {
   const [linkedinUrl, setLinkedinUrl] = useState('');
   const [twitterUrl, setTwitterUrl] = useState('');
   const [panNumber, setPanNumber] = useState('');
+  const [billingName, setBillingName] = useState('');
   const [gstNumber, setGstNumber] = useState('');
   const [sacCode, setSacCode] = useState('');
   const [upiId, setUpiId] = useState('');
@@ -180,6 +182,7 @@ export default function IndividualProfile() {
     setLinkedinUrl(p.linkedinUrl ?? '');
     setTwitterUrl(p.twitterUrl ?? '');
     setPanNumber(p.panNumber ?? '');
+    setBillingName(p.billingName ?? '');
     setGstNumber(p.gstNumber ?? '');
     setSacCode(p.sacCode ?? '');
     setUpiId(p.upiId ?? '');
@@ -227,6 +230,7 @@ export default function IndividualProfile() {
         linkedinUrl: linkedinUrl.trim() || undefined,
         twitterUrl: twitterUrl.trim() || undefined,
         panNumber: panNumber.trim() || undefined,
+        billingName: billingName.trim() || undefined,
         gstNumber: gstNumber.trim() || undefined,
         sacCode: sacCode.trim() || undefined,
         upiId: upiId.trim() || undefined,
@@ -267,6 +271,7 @@ export default function IndividualProfile() {
     linkedinUrl,
     twitterUrl,
     panNumber,
+    billingName,
     gstNumber,
     sacCode,
     upiId,
@@ -545,6 +550,7 @@ export default function IndividualProfile() {
                         >
                           <div className="space-y-1 divide-y divide-neutral-50">
                             <InfoRow label="PAN Number" value={panNumber || '—'} icon={<FaIdCard />} copyable />
+                            <InfoRow label="Billing Name" value={billingName || displayName || '—'} icon={<FaUser />} />
                             <InfoRow label="GST Number" value={gstNumber || '—'} icon={<FaIdCard />} copyable />
                             <InfoRow label="SAC Code" value={sacCode || '—'} icon={<FaIdCard />} copyable />
                             <InfoRow label="UPI ID" value={upiId || '—'} icon={<FaIdCard />} copyable />
@@ -723,6 +729,14 @@ export default function IndividualProfile() {
                           icon={<FaIdCard />}
                         >
                           <div className="space-y-4">
+                            <EditableField
+                              label="Billing Name"
+                              value={billingName}
+                              onChange={setBillingName}
+                              placeholder="Name to print in invoice From section"
+                              disabled={saving}
+                              icon={<FaUser />}
+                            />
                             <EditableField
                               label="PAN Number"
                               value={panNumber}

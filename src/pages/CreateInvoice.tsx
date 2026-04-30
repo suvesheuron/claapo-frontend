@@ -3,6 +3,7 @@ import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { FaArrowLeft, FaPlus, FaTrash, FaFileInvoice, FaPaperclip, FaUpload } from 'react-icons/fa6';
 import DashboardHeader from '../components/DashboardHeader';
 import AppFooter from '../components/AppFooter';
+import DateInput from '../components/DateInput';
 import { api, ApiException } from '../services/api';
 import { useApiQuery } from '../hooks/useApiQuery';
 import { formatPaise, rupeesToPaise } from '../utils/currency';
@@ -45,6 +46,7 @@ export default function CreateInvoice() {
   );
 
   const [selectedBookingId, setSelectedBookingId] = useState('');
+  const [invoiceNumber, setInvoiceNumber] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [lineItems, setLineItems] = useState<LineItem[]>([{ description: '', quantity: '1', unitPrice: '' }]);
   const [selectedTaxType, setSelectedTaxType] = useState<TaxType>('gst');
@@ -136,6 +138,7 @@ export default function CreateInvoice() {
     try {
       const normalizedTaxType = selectedTaxRate === '0' ? 'none' : selectedTaxType;
       const dto = {
+        invoiceNumber: invoiceNumber.trim() || undefined,
         projectId: selectedBooking!.project.id,
         recipientUserId: selectedBooking!.requester.id,
         dueDate: dueDate || undefined,
@@ -201,8 +204,16 @@ export default function CreateInvoice() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Project Selection */}
+            {/* Invoice Number + Project Selection */}
             <div className="bg-white rounded-2xl border border-neutral-200 p-5">
+              <h2 className="text-sm font-bold text-neutral-700 mb-3">Invoice Number</h2>
+              <input
+                type="text"
+                value={invoiceNumber}
+                onChange={(e) => setInvoiceNumber(e.target.value)}
+                placeholder="e.g. INV-2026-001 (optional)"
+                className="w-full border border-neutral-200 rounded-xl px-3 py-2.5 text-sm text-neutral-700 focus:outline-none focus:ring-2 focus:ring-[#3678F1] focus:border-transparent mb-4"
+              />
               <h2 className="text-sm font-bold text-neutral-700 mb-3">Project</h2>
               {bookingsLoading ? (
                 <div className="skeleton h-10 rounded-xl" />
@@ -231,8 +242,7 @@ export default function CreateInvoice() {
             {/* Due Date */}
             <div className="bg-white rounded-2xl border border-neutral-200 p-5">
               <h2 className="text-sm font-bold text-neutral-700 mb-3">Due Date <span className="font-normal text-neutral-400">(optional)</span></h2>
-              <input
-                type="date"
+              <DateInput
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
                 min={new Date().toISOString().split('T')[0]}

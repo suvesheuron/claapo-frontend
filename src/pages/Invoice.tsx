@@ -248,7 +248,7 @@ export default function Invoice() {
                       <div className="flex items-start justify-between gap-4 mb-2 flex-wrap">
                         <div>
                           <h1 className="text-xl sm:text-2xl font-bold text-neutral-900">
-                            Invoice {invoice.invoiceNumber}
+                            Invoice No: {invoice.invoiceNumber}
                           </h1>
                           {invoice.projectTitle && (
                             <p className="text-sm text-neutral-600 mt-0.5">
@@ -361,7 +361,7 @@ export default function Invoice() {
                         </div>
                         <div className="text-right">
                           <h2 className="text-3xl font-bold text-neutral-900 tracking-tight">{invoiceHeading}</h2>
-                          <p className="text-sm font-mono text-neutral-600 mt-1">{invoice.invoiceNumber}</p>
+                          <p className="text-sm font-mono text-neutral-600 mt-1">Invoice No: {invoice.invoiceNumber}</p>
                           <div className="mt-3 space-y-0.5 text-xs text-neutral-600">
                             <p>
                               <span className="text-neutral-400">Issued:&nbsp;</span>

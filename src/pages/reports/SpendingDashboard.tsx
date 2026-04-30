@@ -11,6 +11,7 @@ import {
 import DashboardHeader from '../../components/DashboardHeader';
 import DashboardSidebar from '../../components/DashboardSidebar';
 import AppFooter from '../../components/AppFooter';
+import DateInput from '../../components/DateInput';
 import { useApiQuery } from '../../hooks/useApiQuery';
 import { useRole } from '../../contexts/RoleContext';
 import { formatPaise } from '../../utils/currency';
@@ -178,15 +179,13 @@ export default function SpendingDashboard() {
                 <div className="mb-5 flex flex-wrap items-center gap-3 p-3.5 bg-white rounded-2xl border border-neutral-200/70 shadow-sm">
                   <FaClock className="text-[#3678F1] w-4 h-4" />
                   <label className="text-xs text-neutral-500 font-medium">From</label>
-                  <input
-                    type="date"
+                  <DateInput
                     value={dateFrom}
                     onChange={(e) => setDateFrom(e.target.value)}
                     className="rounded-xl border border-neutral-200 px-3 py-2 text-sm focus:outline-none focus:border-[#3678F1] focus:ring-2 focus:ring-[#3678F1]/20 transition-colors"
                   />
                   <label className="text-xs text-neutral-500 font-medium">To</label>
-                  <input
-                    type="date"
+                  <DateInput
                     value={dateTo}
                     min={dateFrom || undefined}
                     onChange={(e) => setDateTo(e.target.value)}

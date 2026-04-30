@@ -7,6 +7,7 @@ import {
 import DashboardHeader from '../components/DashboardHeader';
 import DashboardSidebar from '../components/DashboardSidebar';
 import AppFooter from '../components/AppFooter';
+import DateInput from '../components/DateInput';
 import { api, ApiException } from '../services/api';
 import { companyNavLinks } from '../navigation/dashboardNav';
 import { useAuth } from '../contexts/AuthContext';
@@ -164,8 +165,7 @@ export default function CreateProject() {
                         <div>
                           <label className="block text-neutral-700 text-xs mb-1.5 font-semibold">Start Date <span className="text-[#F40F02]">*</span></label>
                           <div className="relative">
-                            <input
-                              type="date"
+                            <DateInput
                               value={startDate}
                               onChange={(e) => setStartDate(e.target.value)}
                               disabled={loading}
@@ -178,8 +178,7 @@ export default function CreateProject() {
                         <div>
                           <label className="block text-neutral-700 text-xs mb-1.5 font-semibold">End Date <span className="text-[#F40F02]">*</span></label>
                           <div className="relative">
-                            <input
-                              type="date"
+                            <DateInput
                               value={endDate}
                               min={startDate}
                               onChange={(e) => setEndDate(e.target.value)}
@@ -249,8 +248,7 @@ export default function CreateProject() {
 
                               <div className="flex gap-2">
                                 <div className="relative flex-1">
-                                  <input
-                                    type="date"
+                                  <DateInput
                                     value={pair.date}
                                     onChange={(e) => updateProjectDate(i, 'date', e.target.value)}
                                     disabled={loading}

@@ -13,6 +13,7 @@ import {
 import DashboardHeader from '../../components/DashboardHeader';
 import DashboardSidebar from '../../components/DashboardSidebar';
 import AppFooter from '../../components/AppFooter';
+import DateInput from '../../components/DateInput';
 import { useApiQuery } from '../../hooks/useApiQuery';
 import { useRole } from '../../contexts/RoleContext';
 import { formatPaise } from '../../utils/currency';
@@ -241,17 +242,15 @@ export default function EarningsDashboard() {
                     <div className="flex flex-wrap items-center gap-2 p-1.5 bg-white rounded-xl border border-neutral-200 shadow-sm">
                       <FaCalendar className="text-[#3678F1] w-3.5 h-3.5 ml-1.5" />
                       <label htmlFor="earnings-date-from" className="text-xs font-medium text-neutral-600">From</label>
-                      <input
+                      <DateInput
                         id="earnings-date-from"
-                        type="date"
                         value={dateFrom}
                         onChange={(e) => setDateFrom(e.target.value)}
                         className="rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5 text-sm text-neutral-900 focus:outline-none focus:border-[#3678F1] focus:ring-2 focus:ring-[#3678F1]/20 transition-colors"
                       />
                       <label htmlFor="earnings-date-to" className="text-xs font-medium text-neutral-600">To</label>
-                      <input
+                      <DateInput
                         id="earnings-date-to"
-                        type="date"
                         value={dateTo}
                         min={dateFrom || undefined}
                         onChange={(e) => setDateTo(e.target.value)}

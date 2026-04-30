@@ -8,6 +8,7 @@ import {
 import DashboardHeader from '../../components/DashboardHeader';
 import DashboardSidebar from '../../components/DashboardSidebar';
 import AppFooter from '../../components/AppFooter';
+import DateInput from '../../components/DateInput';
 import { useApiQuery } from '../../hooks/useApiQuery';
 import { api, ApiException } from '../../services/api';
 import { formatPaise } from '../../utils/currency';
@@ -24,6 +25,7 @@ interface EquipmentAvailability {
 
 interface ActiveBooking {
   id: string;
+  shootDates?: string[] | null;
   project: {
     title: string;
     startDate: string;
@@ -197,9 +199,20 @@ export default function Equipment() {
     return '—';
   };
 
-  const formatBookingDate = (start: string, end: string) => {
-    const d = (s: string) => new Date(s).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
-    return start === end ? d(start) : `${d(start)} – ${d(end)}`;
+  const formatBookingDates = (booking: ActiveBooking) => {
+    const formatDay = (s: string) =>
+      new Date(s).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+    const shootDates = (booking.shootDates ?? [])
+      .map((d) => d.slice(0, 10))
+      .filter(Boolean)
+      .sort();
+    if (shootDates.length > 0) {
+      return shootDates.map(formatDay).join(', ');
+    }
+    // Backward-compatible fallback for old payloads.
+    return booking.project.startDate === booking.project.endDate
+      ? formatDay(booking.project.startDate)
+      : `${formatDay(booking.project.startDate)} – ${formatDay(booking.project.endDate)}`;
   };
 
   const availableCount = equipment.filter((e) => (e.availabilities?.length ?? 0) > 0).length;
@@ -378,7 +391,7 @@ export default function Equipment() {
                                 <div className="min-w-0 text-[11px] leading-snug">
                                   <p className="font-semibold text-[#8A6508] uppercase tracking-wider text-[9px]">Given to</p>
                                   <p className="text-[#8A6508] truncate mt-0.5">
-                                    {(item.bookingRequests ?? []).map((br) => `${br.project.title} · ${formatBookingDate(br.project.startDate, br.project.endDate)}`).join('  ·  ')}
+                                    {(item.bookingRequests ?? []).map((br) => `${br.project.title} · ${formatBookingDates(br)}`).join('  ·  ')}
                                   </p>
                                 </div>
                               </div>
@@ -551,11 +564,11 @@ export default function Equipment() {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-semibold text-neutral-700 mb-1.5">From <span className="text-[#F40F02]">*</span></label>
-                    <input type="date" value={availFrom} onChange={(e) => setAvailFrom(e.target.value)} className="w-full px-4 py-2.5 border border-neutral-300 rounded-xl text-sm bg-[#F3F4F6] focus:bg-white focus:outline-none focus:border-[#3678F1] focus:ring-2 focus:ring-[#3678F1]/15 transition-all" />
+                    <DateInput value={availFrom} onChange={(e) => setAvailFrom(e.target.value)} className="w-full px-4 py-2.5 border border-neutral-300 rounded-xl text-sm bg-[#F3F4F6] focus:bg-white focus:outline-none focus:border-[#3678F1] focus:ring-2 focus:ring-[#3678F1]/15 transition-all" />
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-neutral-700 mb-1.5">To <span className="text-[#F40F02]">*</span></label>
-                    <input type="date" min={availFrom || undefined} value={availTo} onChange={(e) => setAvailTo(e.target.value)} className="w-full px-4 py-2.5 border border-neutral-300 rounded-xl text-sm bg-[#F3F4F6] focus:bg-white focus:outline-none focus:border-[#3678F1] focus:ring-2 focus:ring-[#3678F1]/15 transition-all" />
+                    <DateInput min={availFrom || undefined} value={availTo} onChange={(e) => setAvailTo(e.target.value)} className="w-full px-4 py-2.5 border border-neutral-300 rounded-xl text-sm bg-[#F3F4F6] focus:bg-white focus:outline-none focus:border-[#3678F1] focus:ring-2 focus:ring-[#3678F1]/15 transition-all" />
                   </div>
                 </div>
               </div>

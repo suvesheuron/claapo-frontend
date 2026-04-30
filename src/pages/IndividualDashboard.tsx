@@ -405,46 +405,48 @@ export default function IndividualDashboard() {
                       {DAYS.map((day) => <div key={day} className="text-center text-[11px] font-semibold text-neutral-400 py-1">{day}</div>)}
                     </div>
                     <div className="grid grid-cols-7 gap-1">
-                      {calendarDays.map((cell, i) => (
-                        <button
-                          key={i}
-                          type="button"
-                          onClick={() => !cell.muted && setDetailDate(getDateStr(cell.d))}
-                          disabled={cell.muted}
-                          className={`
-                            cal-cell rounded-xl border text-center p-1 sm:p-1.5 relative
-                            min-h-[44px] sm:min-h-[52px] flex flex-col items-center justify-center gap-0.5
-                            ${cell.muted
-                              ? 'bg-white border-neutral-100 text-neutral-300 cursor-default'
-                              : cell.status && cellStyle[cell.status]
+                      {calendarDays.map((cell, i) => {
+                        if (cell.muted && cell.d === 0) {
+                          return <div key={i} className="min-h-[44px] sm:min-h-[52px]" aria-hidden />;
+                        }
+                        return (
+                          <button
+                            key={i}
+                            type="button"
+                            onClick={() => setDetailDate(getDateStr(cell.d))}
+                            className={`
+                              cal-cell rounded-xl border text-center p-1 sm:p-1.5 relative
+                              min-h-[44px] sm:min-h-[52px] flex flex-col items-center justify-center gap-0.5
+                              ${cell.status && cellStyle[cell.status]
                                 ? `${cellStyle[cell.status]} cursor-pointer`
                                 : 'bg-white border-neutral-200 text-neutral-600 hover:bg-[#F3F4F6] cursor-pointer'}
-                            ${!cell.muted && detailDate === getDateStr(cell.d) ? 'ring-2 ring-[#3678F1] ring-offset-1' : ''}
-                          `}
-                        >
-                          <span className="text-[11px] sm:text-xs font-semibold leading-none">{cell.muted ? '' : cell.d}</span>
-                          {/* Pending booking request indicator */}
-                          {pendingDates.has(getDateStr(cell.d)) && (
-                            <span className="absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-[#F40F02] animate-pulse" />
-                          )}
-                          {/* Inquiry/message shoot-date indicator */}
-                          {!pendingDates.has(getDateStr(cell.d)) && unreadShootDates.has(getDateStr(cell.d)) && (
-                            <span className="absolute top-0.5 right-0.5 flex items-center justify-center">
-                              <span className="absolute inline-flex h-2.5 w-2.5 rounded-full bg-[#F40F02] opacity-45 animate-ping" />
-                              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#F40F02]" />
-                            </span>
-                          )}
-                          {cell.status && !cell.muted && cell.status !== 'available' && (
-                            <span className="text-[8px] sm:text-[9px] font-medium leading-tight truncate w-full opacity-80 px-0.5">
-                              {cell.status === 'blocked'
-                                ? 'Unavailable'
-                                : cell.status === 'booked'
-                                  ? (cell.project?.split(/\s|,/).slice(0, 2).join(' ') || 'Ongoing')
-                                  : (cell.project?.split(/\s|,/).slice(0, 2).join(' ') || 'Completed')}
-                            </span>
-                          )}
-                        </button>
-                      ))}
+                              ${detailDate === getDateStr(cell.d) ? 'ring-2 ring-[#3678F1] ring-offset-1' : ''}
+                            `}
+                          >
+                            <span className="text-[11px] sm:text-xs font-semibold leading-none">{cell.d}</span>
+                            {/* Pending booking request indicator */}
+                            {pendingDates.has(getDateStr(cell.d)) && (
+                              <span className="absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-[#F40F02] animate-pulse" />
+                            )}
+                            {/* Inquiry/message shoot-date indicator */}
+                            {!pendingDates.has(getDateStr(cell.d)) && unreadShootDates.has(getDateStr(cell.d)) && (
+                              <span className="absolute top-0.5 right-0.5 flex items-center justify-center">
+                                <span className="absolute inline-flex h-2.5 w-2.5 rounded-full bg-[#F40F02] opacity-45 animate-ping" />
+                                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#F40F02]" />
+                              </span>
+                            )}
+                            {cell.status && cell.status !== 'available' && (
+                              <span className="text-[8px] sm:text-[9px] font-medium leading-tight truncate w-full opacity-80 px-0.5">
+                                {cell.status === 'blocked'
+                                  ? 'Unavailable'
+                                  : cell.status === 'booked'
+                                    ? (cell.project?.split(/\s|,/).slice(0, 2).join(' ') || 'Ongoing')
+                                    : (cell.project?.split(/\s|,/).slice(0, 2).join(' ') || 'Completed')}
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
                     </div>
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-4 pt-4 border-t border-neutral-100">
                       {availLoading && (
