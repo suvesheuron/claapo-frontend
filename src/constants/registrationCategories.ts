@@ -4,18 +4,24 @@
 export const REGISTRATION_GENRES = [
   'Action',
   'Adventure',
+  'Animal',
+  'Automobile',
   'Beauty',
   'Comedy',
   'Drama',
   'Fantasy',
   'Fashion',
+  'Food',
   'Historical',
   'Horror',
+  'Jewellery',
+  'Kids',
+  'Narrative',
   'Noir',
   'Romance',
   'Science Fiction',
 ] as const;
-
+// Food, Animal, Kids, Narrative, Automobile, Jewellery
 export const REGISTRATION_COMPANY_TYPES = [
   'Line Production',
   'Production House',

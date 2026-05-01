@@ -7,6 +7,7 @@ import {
 import DashboardHeader from '../components/DashboardHeader';
 import DashboardSidebar from '../components/DashboardSidebar';
 import AppFooter from '../components/AppFooter';
+import DateInput from '../components/DateInput';
 import { api, ApiException } from '../services/api';
 import { companyNavLinks } from '../navigation/dashboardNav';
 import { formatRupees, paiseToRupees, rupeesToPaise } from '../utils/currency';
@@ -190,14 +191,14 @@ export default function EditProject() {
                         <div>
                           <label className="block text-neutral-700 text-xs mb-1.5 font-semibold">Start Date <span className="text-neutral-400 font-normal">(optional)</span></label>
                           <div className="relative">
-                            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} disabled={loading} className="date-input-no-native-icon rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all disabled:opacity-50" />
+                            <DateInput value={startDate} onChange={(e) => setStartDate(e.target.value)} disabled={loading} className="date-input-no-native-icon rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all disabled:opacity-50" />
                             <FaCalendar className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 text-xs pointer-events-none" />
                           </div>
                         </div>
                         <div>
                           <label className="block text-neutral-700 text-xs mb-1.5 font-semibold">End Date <span className="text-neutral-400 font-normal">(optional)</span></label>
                           <div className="relative">
-                            <input type="date" value={endDate} min={startDate} onChange={(e) => setEndDate(e.target.value)} disabled={loading} className="date-input-no-native-icon rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all disabled:opacity-50" />
+                            <DateInput value={endDate} min={startDate} onChange={(e) => setEndDate(e.target.value)} disabled={loading} className="date-input-no-native-icon rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all disabled:opacity-50" />
                             <FaCalendar className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 text-xs pointer-events-none" />
                           </div>
                         </div>
@@ -205,7 +206,7 @@ export default function EditProject() {
                       <div>
                         <label className="block text-neutral-700 text-xs mb-1.5 font-semibold">Delivery Date <span className="text-neutral-400 font-normal">(optional)</span></label>
                         <div className="relative">
-                          <input type="date" value={deliveryDate} min={endDate} onChange={(e) => setDeliveryDate(e.target.value)} disabled={loading} className="date-input-no-native-icon rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all disabled:opacity-50" />
+                          <DateInput value={deliveryDate} min={endDate} onChange={(e) => setDeliveryDate(e.target.value)} disabled={loading} className="date-input-no-native-icon rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all disabled:opacity-50" />
                           <FaCalendar className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 text-xs pointer-events-none" />
                         </div>
                       </div>
@@ -228,7 +229,7 @@ export default function EditProject() {
                           {shootDates.map((d, i) => (
                             <div key={i} className="flex items-center gap-2">
                               <div className="relative flex-1">
-                                <input type="date" value={d} onChange={(e) => updateShootDate(i, e.target.value)} disabled={loading} min={startDate} max={endDate} className="date-input-no-native-icon rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all disabled:opacity-50" />
+                                <DateInput value={d} onChange={(e) => updateShootDate(i, e.target.value)} disabled={loading} min={startDate} max={endDate} className="date-input-no-native-icon rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all disabled:opacity-50" />
                                 <FaCalendar className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 text-xs pointer-events-none" />
                               </div>
                               {shootDates.length > 1 && (

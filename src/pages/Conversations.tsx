@@ -4,6 +4,7 @@ import { FaTriangleExclamation, FaMagnifyingGlass, FaMessage, FaCheck, FaFolder,
 import DashboardHeader from '../components/DashboardHeader';
 import DashboardSidebar from '../components/DashboardSidebar';
 import Avatar from '../components/Avatar';
+import DateInput from '../components/DateInput';
 import { useApiQuery } from '../hooks/useApiQuery';
 import { useRole } from '../contexts/RoleContext';
 import { useChatUnread } from '../contexts/ChatUnreadContext';
@@ -340,16 +341,14 @@ export default function Conversations() {
             </div>
             <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white border border-neutral-200/70">
               <FaCalendar className="w-3 h-3 text-neutral-400 shrink-0" />
-              <input
-                type="date"
+              <DateInput
                 value={dateFrom}
                 onChange={(e) => setDateFrom(e.target.value)}
                 className="text-[11px] bg-transparent border-0 focus:outline-none text-neutral-700 w-[110px] cursor-pointer"
                 aria-label="From date"
               />
               <span className="text-neutral-300">–</span>
-              <input
-                type="date"
+              <DateInput
                 min={dateFrom || undefined}
                 value={dateTo}
                 onChange={(e) => setDateTo(e.target.value)}
@@ -428,6 +427,9 @@ export default function Conversations() {
                 const lastMsgText = conv.lastMessage?.content ?? null;
                 const hasUnread = (conv.unreadCount ?? 0) > 0;
                 const chatHref = `/chat/${other.id}${selectedProjectId ? `?projectId=${selectedProjectId}` : ''}`;
+                const showProjectFirst = !isCompanyView;
+                const projectTitle = conv.project?.title?.trim() || 'Untitled Project';
+                const productionHouseName = getName(other);
                 return (
                   <li key={conv.id}>
                     <Link
@@ -451,8 +453,13 @@ export default function Conversations() {
                         <div className="flex items-start justify-between gap-3 mb-1">
                           <div className="min-w-0">
                             <p className={`text-base truncate leading-snug ${hasUnread ? 'font-bold text-neutral-900' : 'font-semibold text-neutral-800 group-hover:text-[#3678F1]'}`}>
-                              {getName(other)}
+                              {showProjectFirst ? projectTitle : productionHouseName}
                             </p>
+                            {showProjectFirst && (
+                              <p className="text-xs text-neutral-500 truncate mt-0.5">
+                                {productionHouseName}
+                              </p>
+                            )}
                           </div>
                           <div className="flex flex-col items-end gap-1.5 shrink-0">
                             {lastMsgTime && (
@@ -525,16 +532,14 @@ export default function Conversations() {
                       {projects.length > 0 && (
                         <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white border border-neutral-200/70">
                           <FaCalendar className="w-3 h-3 text-neutral-400 shrink-0" />
-                          <input
-                            type="date"
+                          <DateInput
                             value={dateFrom}
                             onChange={(e) => setDateFrom(e.target.value)}
                             className="text-[11px] bg-transparent border-0 focus:outline-none text-neutral-700 w-[110px] cursor-pointer"
                             aria-label="From date"
                           />
                           <span className="text-neutral-300">–</span>
-                          <input
-                            type="date"
+                          <DateInput
                             min={dateFrom || undefined}
                             value={dateTo}
                             onChange={(e) => setDateTo(e.target.value)}
