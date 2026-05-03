@@ -81,6 +81,7 @@ export default function VendorProfile() {
   const [ifscCode, setIfscCode] = useState('');
   const [bankName, setBankName] = useState('');
   const [sacCode, setSacCode] = useState('');
+  const [gstNumber, setGstNumber] = useState('');
 
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -175,6 +176,7 @@ export default function VendorProfile() {
     setIfscCode(p.ifscCode ?? '');
     setBankName(p.bankName ?? '');
     setSacCode(p.sacCode ?? '');
+    setGstNumber(p.gstNumber ?? '');
   }, [me]);
 
   const handleSave = async () => {
@@ -183,7 +185,10 @@ export default function VendorProfile() {
       setError('Address is required for invoices.');
       return;
     }
-    if ((profile?.gstNumber ?? '').trim() && !sacCode.trim()) {
+    // Validate against the FORM state (what the user is saving), not the
+    // persisted DB value — otherwise a vendor who registered with GST but
+    // no SAC could never save anything (UPI, bank, etc.) until they add SAC.
+    if (gstNumber.trim() && !sacCode.trim()) {
       setError('SAC Code is required when GST Number is provided.');
       return;
     }
@@ -202,17 +207,24 @@ export default function VendorProfile() {
         youtubeUrl: youtubeUrl.trim() || undefined,
         vimeoUrl: vimeoUrl.trim() || undefined,
         address: address.trim() || undefined,
-        panNumber: panNumber.trim() || undefined,
-        billingName: billingName.trim() || undefined,
-        upiId: upiId.trim() || undefined,
-        bankAccountName: bankAccountName.trim() || undefined,
-        bankAccountNumber: bankAccountNumber.trim() || undefined,
-        ifscCode: ifscCode.trim() || undefined,
-        bankName: bankName.trim() || undefined,
-        sacCode: sacCode.trim() || undefined,
+        // Send null (not undefined) for fields the user can clear — undefined
+        // gets dropped by JSON.stringify, so the backend would treat empty
+        // values as "no change" instead of "clear this field".
+        panNumber: panNumber.trim() || null,
+        billingName: billingName.trim() || null,
+        gstNumber: gstNumber.trim() || null,
+        sacCode: sacCode.trim() || null,
+        upiId: upiId.trim() || null,
+        bankAccountName: bankAccountName.trim() || null,
+        bankAccountNumber: bankAccountNumber.trim() || null,
+        ifscCode: ifscCode.trim() || null,
+        bankName: bankName.trim() || null,
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
+      // Refetch so the form rehydrates from the persisted state and the
+      // user sees their changes reflected on the next render / page revisit.
+      refetchMe();
     } catch (err) {
       setError(err instanceof ApiException ? err.payload.message : 'Failed to save profile.');
     } finally {
@@ -686,6 +698,15 @@ export default function VendorProfile() {
                           icon={<FaIdCard />}
                         >
                           <div className="space-y-4">
+                            <EditableField
+                              label="Billing Name"
+                              value={billingName}
+                              onChange={setBillingName}
+                              placeholder="Name to print in invoice From section"
+                              disabled={saving}
+                              icon={<FaUser />}
+                            />
+                            <EditableField label="PAN Number" value={panNumber} onChange={setPanNumber} placeholder="e.g. ABCDE1234F" disabled={saving} />
                             <div>
                               <label className="block text-xs font-medium text-neutral-700 mb-1.5">
                                 GST Number
@@ -696,33 +717,26 @@ export default function VendorProfile() {
                                 )}
                               </label>
                               <div className="relative">
-                                <FaIdCard className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 w-4 h-4" />
-                                <input 
-                                  type="text" 
-                                  value={profile?.gstNumber ?? ''} 
-                                  readOnly 
-                                  className="w-full pl-10 pr-3 py-2.5 border border-neutral-200 rounded-xl text-sm bg-neutral-50 text-neutral-500 cursor-not-allowed font-mono"
+                                <FaIdCard className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 w-4 h-4 z-10" />
+                                <input
+                                  type="text"
+                                  value={gstNumber}
+                                  onChange={(e) => setGstNumber(e.target.value.toUpperCase())}
+                                  disabled={saving}
+                                  placeholder="e.g. 27AAAPL1234C1Z5"
+                                  className="w-full pl-10 pr-3 py-2.5 border border-neutral-300 rounded-xl text-sm bg-white text-neutral-900 font-mono focus:outline-none focus:ring-2 focus:ring-[#3678F1]/20 focus:border-[#3678F1] disabled:bg-neutral-50 disabled:text-neutral-400"
                                 />
                               </div>
-                              <p className="text-[10px] text-neutral-400 mt-1.5">GST number verification is done by admin</p>
+                              <p className="text-[10px] text-neutral-400 mt-1.5">Leave blank to remove. GST number verification is done by admin.</p>
                             </div>
-                            <EditableField label="PAN Number" value={panNumber} onChange={setPanNumber} placeholder="e.g. ABCDE1234F" disabled={saving} />
                             <EditableField
-                              label="Billing Name"
-                              value={billingName}
-                              onChange={setBillingName}
-                              placeholder="Name to print in invoice From section"
-                              disabled={saving}
-                              icon={<FaUser />}
-                            />
-                            <EditableField
-                              label={`SAC Code${(profile?.gstNumber ?? '').trim() ? '' : ' (Optional)'}`}
+                              label={`SAC Code${gstNumber.trim() ? '' : ' (Optional)'}`}
                               value={sacCode}
                               onChange={setSacCode}
                               placeholder="e.g. 998314"
-                              disabled={saving || !(profile?.gstNumber ?? '').trim()}
-                              helpText={(profile?.gstNumber ?? '').trim() ? 'Required once GST Number is provided' : 'GST Number is required before entering SAC Code'}
-                              required={Boolean((profile?.gstNumber ?? '').trim())}
+                              disabled={saving || !gstNumber.trim()}
+                              helpText={gstNumber.trim() ? 'Required once GST Number is provided' : 'GST Number is required before entering SAC Code'}
+                              required={Boolean(gstNumber.trim())}
                             />
                             <EditableField label="UPI ID (Optional)" value={upiId} onChange={setUpiId} placeholder="e.g. name@upi" disabled={saving} helpText="Your UPI ID / VPA for receiving payments" />
                             <EditableField label="Bank name" value={bankName} onChange={setBankName} disabled={saving} icon={<FaBuilding />} />

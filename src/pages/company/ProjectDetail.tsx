@@ -207,8 +207,9 @@ export default function ProjectDetail() {
         toast.error('No accepted bookings to lock. Crew/vendors must accept their requests first.');
         return;
       }
-      const body = project ? { shootDates: (project as Project).shootDates, shootLocations: (project as Project).shootLocations } : {};
-      await Promise.all(accepted.map((b) => api.patch(`/bookings/${b.id}/lock`, body)));
+      // Lock only changes status. Do NOT send project-wide shootDates — that would replace
+      // each booking's hired-specific dates with every project shoot day and block the wrong calendar days.
+      await Promise.all(accepted.map((b) => api.patch(`/bookings/${b.id}/lock`, {})));
       toast.success('Bookings locked.');
       await loadBookings();
     } catch (err) {
