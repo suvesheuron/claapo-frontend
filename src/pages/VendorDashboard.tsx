@@ -90,13 +90,29 @@ interface IncomingBooking {
   id: string; status: string; rateOffered?: number | null; message?: string | null;
   cancelRequestedBySide?: 'company' | 'crew_or_vendor' | null;
   shootDates?: string[] | null;
-  project: { id: string; title: string; startDate?: string; endDate?: string };
+  shootDateLocations?: Array<{ date: string; location: string }> | null;
+  project: {
+    id: string;
+    title: string;
+    startDate?: string;
+    endDate?: string;
+    locationCity?: string | null;
+    shootLocations?: string[] | null;
+  };
   requester: { id: string; email: string; companyProfile?: { companyName?: string } | null };
 }
 interface PastBookingItem {
   id: string;
   shootDates?: string[] | null;
-  project: { id: string; title: string; startDate: string; endDate: string };
+  shootDateLocations?: Array<{ date: string; location: string }> | null;
+  project: {
+    id: string;
+    title: string;
+    startDate: string;
+    endDate: string;
+    locationCity?: string | null;
+    shootLocations?: string[] | null;
+  };
   requester: { id: string; companyProfile?: { companyName?: string } | null };
 }
 
@@ -224,6 +240,7 @@ export default function VendorDashboard() {
       status: string;
       rateOffered?: number | null;
       equipmentLabel?: string | null;
+      locationLabel?: string | null;
     }[] = [];
     const seen = new Set<string>();
     const primaryBooking = bookingDetails[detailDate];
@@ -237,6 +254,10 @@ export default function VendorDashboard() {
         status: primaryBooking.status,
         rateOffered: primaryBooking.rateOffered ?? null,
         equipmentLabel: primaryBooking.roleName ?? null,
+        locationLabel:
+          primaryBooking.shootDateLocations?.find((entry) => entry.date === detailDate)?.location ??
+          primaryBooking.shootLocations?.[0] ??
+          null,
       });
       seen.add(primaryBooking.id);
     }
@@ -256,6 +277,11 @@ export default function VendorDashboard() {
           status: b.status,
           rateOffered: b.rateOffered ?? null,
           equipmentLabel: null,
+          locationLabel:
+            b.shootDateLocations?.find((entry) => entry.date === detailDate)?.location ??
+            b.project.shootLocations?.[0] ??
+            b.project.locationCity ??
+            null,
         });
         seen.add(b.id);
       }
@@ -272,6 +298,11 @@ export default function VendorDashboard() {
           status: 'past_work',
           rateOffered: null,
           equipmentLabel: null,
+          locationLabel:
+            b.shootDateLocations?.find((entry) => entry.date === detailDate)?.location ??
+            b.project.shootLocations?.[0] ??
+            b.project.locationCity ??
+            null,
         });
         seen.add(b.id);
       }
@@ -692,6 +723,7 @@ export default function VendorDashboard() {
               onUnblock={async () => { await handleDetailUnblock(); }}
               onRequestCancel={(bookingId) => { setCancellingId(bookingId); }}
               allShootDates={allShootDates}
+              projectWiseCancel
             />
           </aside>
         </>

@@ -15,6 +15,7 @@ export interface VendorFallbackBookingRow {
   status: string;
   rateOffered?: number | null;
   equipmentLabel?: string | null;
+  locationLabel?: string | null;
 }
 
 const STATUS_LABELS = SLOT_STATUS_LABEL;
@@ -35,6 +36,8 @@ interface VendorCalendarDayPanelProps {
   variant?: 'card' | 'drawer';
   /** Shoot dates from all bookings for this month to check if date is a shoot date */
   allShootDates?: string[];
+  /** If true, render cancellation action on each booking row instead of one global button. */
+  projectWiseCancel?: boolean;
 }
 
 export default function VendorCalendarDayPanel({
@@ -50,6 +53,7 @@ export default function VendorCalendarDayPanel({
   onRequestCancel,
   variant = 'card',
   allShootDates = [],
+  projectWiseCancel = false,
 }: VendorCalendarDayPanelProps) {
   const [blockMode, setBlockMode] = useState(false);
   const [blockPick, setBlockPick] = useState(blockReasons[0] ?? 'Other');
@@ -131,6 +135,11 @@ export default function VendorCalendarDayPanel({
           const company = b?.companyName ?? f?.companyLabel ?? '—';
           const equip = b?.roleName ?? f?.equipmentLabel ?? null;
           const rate = b?.rateOffered ?? f?.rateOffered ?? null;
+          const location =
+            (b?.shootDateLocations?.find((entry) => entry.date === selectedDate)?.location
+              ?? b?.shootLocations?.[0]
+              ?? f?.locationLabel
+              ?? null);
           const id = b?.id ?? f?.id;
           const projectId = b?.projectId ?? f?.projectId;
           const companyChatId = b?.companyUserId ?? f?.companyUserId;
@@ -157,6 +166,11 @@ export default function VendorCalendarDayPanel({
                   <span className="text-neutral-400">Rate</span> · {formatPaise(rate)}
                 </p>
               ) : null}
+              {location ? (
+                <p className="text-xs text-neutral-600">
+                  <span className="text-neutral-400">Location</span> · {location}
+                </p>
+              ) : null}
               {b?.shootDates?.length ? (
                 <p className="text-[11px] text-neutral-500">{b.shootDates.length} shoot day(s) in booking</p>
               ) : null}
@@ -179,6 +193,17 @@ export default function VendorCalendarDayPanel({
                   </Link>
                 )}
               </div>
+              {projectWiseCancel && (b?.status === 'accepted' || b?.status === 'locked' || f?.status === 'accepted' || f?.status === 'locked') && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (id) onRequestCancel?.(id);
+                  }}
+                  className="w-full rounded-xl py-2.5 border border-[#F40F02]/30 bg-[#FEE2E2] text-[#991B1B] text-xs font-semibold hover:bg-[#FECACA] transition-colors duration-200"
+                >
+                  Request cancellation
+                </button>
+              )}
             </div>
           );
         })}
@@ -256,7 +281,7 @@ export default function VendorCalendarDayPanel({
           ) : null}
 
           {/* Direct cancellation button for booked/hired dates */}
-          {(booking || fallbackBookings.some(fb => fb.status === 'accepted' || fb.status === 'locked')) && (
+          {!projectWiseCancel && (booking || fallbackBookings.some(fb => fb.status === 'accepted' || fb.status === 'locked')) && (
             <button
               type="button"
               onClick={() => {

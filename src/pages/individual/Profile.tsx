@@ -229,15 +229,18 @@ export default function IndividualProfile() {
         vimeoUrl: vimeoUrl.trim() || undefined,
         linkedinUrl: linkedinUrl.trim() || undefined,
         twitterUrl: twitterUrl.trim() || undefined,
-        panNumber: panNumber.trim() || undefined,
-        billingName: billingName.trim() || undefined,
-        gstNumber: gstNumber.trim() || undefined,
-        sacCode: sacCode.trim() || undefined,
-        upiId: upiId.trim() || undefined,
-        bankAccountName: bankAccountName.trim() || undefined,
-        bankAccountNumber: bankAccountNumber.trim() || undefined,
-        ifscCode: ifscCode.trim() || undefined,
-        bankName: bankName.trim() || undefined,
+        panNumber: panNumber.trim() || null,
+        billingName: billingName.trim() || null,
+        // Send null (not undefined) so backend can clear these fields when
+        // the user empties them — JSON.stringify drops undefined keys, so
+        // the backend would otherwise treat empty as "no change".
+        gstNumber: gstNumber.trim() || null,
+        sacCode: sacCode.trim() || null,
+        upiId: upiId.trim() || null,
+        bankAccountName: bankAccountName.trim() || null,
+        bankAccountNumber: bankAccountNumber.trim() || null,
+        ifscCode: ifscCode.trim() || null,
+        bankName: bankName.trim() || null,
       });
       setSaved(true);
       setEditing(false);

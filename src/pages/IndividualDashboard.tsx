@@ -33,7 +33,17 @@ interface IncomingBooking {
   rateOffered?: number | null;
   message?: string | null;
   shootDates?: string[] | null;
-  project: { id: string; title: string; startDate: string; endDate: string; status?: string; companyUser?: { companyProfile?: { companyName?: string } | null } };
+  shootDateLocations?: Array<{ date: string; location: string }> | null;
+  project: {
+    id: string;
+    title: string;
+    startDate: string;
+    endDate: string;
+    status?: string;
+    locationCity?: string | null;
+    shootLocations?: string[] | null;
+    companyUser?: { companyProfile?: { companyName?: string } | null };
+  };
   requester: { id: string; email: string; companyProfile?: { companyName?: string } | null };
 }
 interface IncomingBookingsResponse { items: IncomingBooking[] }
@@ -41,7 +51,15 @@ interface IncomingBookingsResponse { items: IncomingBooking[] }
 interface PastBookingItem {
   id: string;
   shootDates?: string[] | null;
-  project: { id: string; title: string; startDate: string; endDate: string };
+  shootDateLocations?: Array<{ date: string; location: string }> | null;
+  project: {
+    id: string;
+    title: string;
+    startDate: string;
+    endDate: string;
+    locationCity?: string | null;
+    shootLocations?: string[] | null;
+  };
   requester: { id: string; companyProfile?: { companyName?: string } | null };
 }
 
@@ -221,6 +239,7 @@ export default function IndividualDashboard() {
       status: string;
       rateOffered?: number | null;
       equipmentLabel?: string | null;
+      locationLabel?: string | null;
     }[] = [];
     for (const b of allBookings) {
       const dateKeys = getBookingDateKeys(b);
@@ -238,6 +257,11 @@ export default function IndividualDashboard() {
           status: b.status,
           rateOffered: b.rateOffered ?? null,
           equipmentLabel: null,
+          locationLabel:
+            b.shootDateLocations?.find((entry) => entry.date === detailDate)?.location ??
+            b.project.shootLocations?.[0] ??
+            b.project.locationCity ??
+            null,
         });
       }
     }
@@ -252,6 +276,11 @@ export default function IndividualDashboard() {
           status: 'past_work',
           rateOffered: null,
           equipmentLabel: null,
+          locationLabel:
+            b.shootDateLocations?.find((entry) => entry.date === detailDate)?.location ??
+            b.project.shootLocations?.[0] ??
+            b.project.locationCity ??
+            null,
         });
       }
     }

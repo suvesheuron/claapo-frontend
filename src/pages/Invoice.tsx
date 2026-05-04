@@ -52,6 +52,7 @@ interface InvoiceData {
   fromName: string;
   fromRole: string | null;
   fromCity: string | null;
+  fromDepartment?: string | null;
   toName: string;
   toCity: string | null;
   issuerDetails?: IssuerRecipientDetails;
@@ -66,6 +67,10 @@ interface InvoiceData {
   issuerId: string;
   recipientId: string;
   attachments?: InvoiceAttachment[];
+  /** True when company recorded this invoice for a party not on Claapo. */
+  recordedOfflineByCompany?: boolean;
+  offlineBillingName?: string | null;
+  offlineDepartment?: string | null;
 }
 
 const STATUS_CONFIG = {
@@ -302,13 +307,15 @@ export default function Invoice() {
                             </>
                           )}
 
-                          <button
-                            onClick={handlePrint}
-                            className="no-print px-3 py-2 border border-neutral-200 text-neutral-600 rounded-xl hover:bg-neutral-50 text-sm font-semibold flex items-center gap-1.5 transition-colors"
-                          >
-                            <FaPrint className="w-3.5 h-3.5" />
-                            <span className="hidden sm:inline">Print / PDF</span>
-                          </button>
+                          {!invoice.recordedOfflineByCompany && (
+                            <button
+                              onClick={handlePrint}
+                              className="no-print px-3 py-2 border border-neutral-200 text-neutral-600 rounded-xl hover:bg-neutral-50 text-sm font-semibold flex items-center gap-1.5 transition-colors"
+                            >
+                              <FaPrint className="w-3.5 h-3.5" />
+                              <span className="hidden sm:inline">Print / PDF</span>
+                            </button>
+                          )}
                         </div>
                       </div>
                       {invoice.dueDate && (
@@ -352,7 +359,183 @@ export default function Invoice() {
                       )}
                     </div>
 
-                    {/* Printable invoice area */}
+                    {/* Offline-only: compact summary + prominent attached invoice document.
+                        For offline invoices the rest of the auto-generated invoice
+                        template is hidden — only the uploaded file is shown. */}
+                    {invoice.recordedOfflineByCompany && (
+                      <div className="mb-5 bg-white rounded-2xl border border-neutral-200 p-5">
+                        <div className="flex flex-wrap items-start justify-between gap-4">
+                          <div className="min-w-0">
+                            <p className="text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">
+                              Recorded for
+                            </p>
+                            <p className="text-base font-bold text-neutral-900 mt-0.5 truncate">
+                              {invoice.fromName}
+                            </p>
+                            {invoice.offlineDepartment ? (
+                              <span className="inline-flex items-center mt-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#E8F0FE] text-[#2563EB] ring-1 ring-[#3678F1]/20">
+                                {invoice.offlineDepartment}
+                              </span>
+                            ) : null}
+                          </div>
+                          <div className="grid grid-cols-3 gap-3 w-full sm:w-auto">
+                            <div className="rounded-lg border border-neutral-100 bg-neutral-50 px-3 py-2 min-w-[110px]">
+                              <p className="text-[10px] uppercase tracking-wider font-semibold text-neutral-500">
+                                Subtotal
+                              </p>
+                              <p className="text-sm font-bold text-neutral-900 mt-0.5 tabular-nums">
+                                {formatPaise(invoice.subtotalPaise)}
+                              </p>
+                            </div>
+                            <div className="rounded-lg border border-neutral-100 bg-neutral-50 px-3 py-2 min-w-[110px]">
+                              <p className="text-[10px] uppercase tracking-wider font-semibold text-neutral-500">
+                                {invoice.taxType === 'igst' ? 'IGST' : 'GST'}
+                                {invoice.taxRatePct ? ` ${invoice.taxRatePct}%` : ''}
+                              </p>
+                              <p className="text-sm font-bold text-neutral-900 mt-0.5 tabular-nums">
+                                {formatPaise(invoice.taxAmountPaise)}
+                              </p>
+                            </div>
+                            <div className="rounded-lg border border-[#3678F1]/20 bg-[#EFF6FF] px-3 py-2 min-w-[110px]">
+                              <p className="text-[10px] uppercase tracking-wider font-semibold text-[#1D4ED8]">
+                                Total
+                              </p>
+                              <p className="text-sm font-bold text-[#1D4ED8] mt-0.5 tabular-nums">
+                                {formatPaise(invoice.totalPaise)}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Offline-only: prominent attached invoice document */}
+                    {invoice.recordedOfflineByCompany && (() => {
+                      const primary = attachments[0] ?? null;
+                      const isImage = !!primary && (primary.mimeType ?? '').toLowerCase().startsWith('image/');
+                      const isPdf = !!primary && (primary.mimeType ?? '').toLowerCase().includes('pdf');
+                      return (
+                        <div className="no-print mb-5 bg-white rounded-2xl border border-[#3678F1]/30 overflow-hidden">
+                          <div className="flex items-center justify-between gap-3 px-5 py-3 bg-[#EFF6FF] border-b border-[#BFDBFE]">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#3678F1] text-white text-[10px] font-bold tracking-wider">
+                                OFFLINE
+                              </span>
+                              <p className="text-sm font-semibold text-neutral-800 truncate">
+                                Attached invoice
+                              </p>
+                              {invoice.offlineDepartment ? (
+                                <span className="text-xs text-neutral-500 truncate">
+                                  · {invoice.offlineDepartment}
+                                </span>
+                              ) : null}
+                            </div>
+                            {canEditAttachments && (
+                              <button
+                                type="button"
+                                onClick={() => fileInputRef.current?.click()}
+                                disabled={uploadingAttachment}
+                                className="text-xs font-semibold text-[#3678F1] hover:underline disabled:opacity-50 flex items-center gap-1"
+                              >
+                                <FaPaperclip className="w-3 h-3" />
+                                {uploadingAttachment ? 'Uploading…' : (primary ? 'Replace' : 'Attach')}
+                              </button>
+                            )}
+                          </div>
+                          <div className="p-5">
+                            {!primary ? (
+                              <div className="rounded-xl border-2 border-dashed border-neutral-200 bg-neutral-50 px-4 py-8 text-center">
+                                <p className="text-sm text-neutral-500">
+                                  No invoice document attached.
+                                </p>
+                              </div>
+                            ) : (
+                              <div className="space-y-3">
+                                {isImage && primary.downloadUrl ? (
+                                  <a
+                                    href={primary.downloadUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="block rounded-xl overflow-hidden border border-neutral-200 bg-neutral-50"
+                                  >
+                                    <img
+                                      src={primary.downloadUrl}
+                                      alt={primary.fileName}
+                                      className="w-full max-h-[480px] object-contain bg-neutral-50"
+                                    />
+                                  </a>
+                                ) : isPdf && primary.downloadUrl ? (
+                                  <object
+                                    data={primary.downloadUrl}
+                                    type="application/pdf"
+                                    className="w-full h-[520px] rounded-xl border border-neutral-200"
+                                  >
+                                    <a
+                                      href={primary.downloadUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#3678F1] text-white text-sm font-semibold"
+                                    >
+                                      <FaDownload className="w-3.5 h-3.5" />
+                                      Open {primary.fileName}
+                                    </a>
+                                  </object>
+                                ) : (
+                                  <div className="rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-6 flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-lg bg-[#3678F1]/10 text-[#3678F1] flex items-center justify-center">
+                                      <FaPaperclip className="w-4 h-4" />
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                      <p className="text-sm font-semibold text-neutral-800 truncate">
+                                        {primary.fileName}
+                                      </p>
+                                      <p className="text-xs text-neutral-500">
+                                        {(primary.size / 1024).toFixed(1)} KB · {primary.mimeType}
+                                      </p>
+                                    </div>
+                                  </div>
+                                )}
+                                <div className="flex items-center justify-between gap-2 flex-wrap">
+                                  <p className="text-xs text-neutral-500 truncate">
+                                    {primary.fileName} · {(primary.size / 1024).toFixed(1)} KB
+                                  </p>
+                                  <div className="flex items-center gap-2">
+                                    {primary.downloadUrl ? (
+                                      <a
+                                        href={primary.downloadUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#3678F1] text-white text-xs font-semibold hover:bg-[#2563EB]"
+                                      >
+                                        <FaDownload className="w-3 h-3" />
+                                        Open
+                                      </a>
+                                    ) : null}
+                                    {canEditAttachments && (
+                                      <button
+                                        type="button"
+                                        onClick={() => handleDeleteAttachment(primary.id)}
+                                        disabled={deletingAttachmentId === primary.id}
+                                        className="text-[#F40F02] hover:text-[#C20D02] p-1 disabled:opacity-50"
+                                        aria-label="Remove attachment"
+                                      >
+                                        <FaTrash className="w-3.5 h-3.5" />
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    {/* Printable invoice area — hidden for offline invoices.
+                        Offline invoices represent parties not on Claapo, so the
+                        auto-generated invoice template doesn't apply; only the
+                        uploaded document is shown above. */}
+                    {!invoice.recordedOfflineByCompany && (
                     <div id="invoice-print-area" ref={printRef} className="bg-white rounded-2xl border border-neutral-200 p-6 sm:p-10">
                       {/* Claapo Logo + Invoice Header */}
                       <div className="flex items-start justify-between mb-8 pb-6 border-b-2 border-neutral-900">
@@ -616,56 +799,72 @@ export default function Invoice() {
                         </div>
                       </div>
                     </div>
+                    )}
 
-                    {/* Attachments — supporting files, not part of the printed invoice */}
-                    <div className="no-print mt-6 bg-white rounded-2xl border border-neutral-200 p-5 sm:p-6">
-                      <div className="flex items-center justify-between gap-2 mb-3">
-                        <div>
-                          <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">Supporting Documents</p>
-                          <p className="text-[11px] text-neutral-400 mt-0.5">Files attached for reference — not included in the printed invoice.</p>
-                        </div>
-                        {canEditAttachments && (
-                          <>
-                            <input ref={fileInputRef} type="file" className="hidden" onChange={handleAddAttachment} />
-                            <button
-                              type="button"
-                              onClick={() => fileInputRef.current?.click()}
-                              disabled={uploadingAttachment}
-                              className="text-xs font-semibold text-[#3678F1] hover:underline disabled:opacity-50 flex items-center gap-1 shrink-0"
-                            >
-                              <FaPaperclip className="w-3 h-3" />
-                              {uploadingAttachment ? 'Uploading…' : 'Add attachment'}
-                            </button>
-                          </>
-                        )}
-                      </div>
-                      {attachments.length === 0 ? (
-                        <p className="text-sm text-neutral-400">No attachments</p>
-                      ) : (
-                        <ul className="space-y-2">
-                          {attachments.map((a) => (
-                            <li key={a.id} className="flex items-center justify-between gap-2 py-1.5 px-2 rounded-lg bg-neutral-50 border border-neutral-100">
-                              <a href={a.downloadUrl ?? '#'} target="_blank" rel="noopener noreferrer" className="text-sm text-[#3678F1] hover:underline truncate flex items-center gap-2 min-w-0">
-                                <FaDownload className="w-3 h-3 shrink-0" />
-                                <span className="truncate">{a.fileName}</span>
-                                <span className="text-xs text-neutral-400 shrink-0">({(a.size / 1024).toFixed(1)} KB)</span>
-                              </a>
-                              {canEditAttachments && (
+                    {/* Attachments — supporting files, not part of the printed invoice.
+                        For offline invoices the primary attachment is shown in the
+                        prominent section above; only render this block if there
+                        are extras or it's a non-offline invoice. */}
+                    {(() => {
+                      const visibleAttachments = invoice.recordedOfflineByCompany
+                        ? attachments.slice(1)
+                        : attachments;
+                      if (invoice.recordedOfflineByCompany && visibleAttachments.length === 0 && !canEditAttachments) {
+                        return null;
+                      }
+                      return (
+                        <div className="no-print mt-6 bg-white rounded-2xl border border-neutral-200 p-5 sm:p-6">
+                          <div className="flex items-center justify-between gap-2 mb-3">
+                            <div>
+                              <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">
+                                {invoice.recordedOfflineByCompany ? 'Additional Documents' : 'Supporting Documents'}
+                              </p>
+                              <p className="text-[11px] text-neutral-400 mt-0.5">Files attached for reference — not included in the printed invoice.</p>
+                            </div>
+                            {canEditAttachments && (
+                              <>
+                                <input ref={fileInputRef} type="file" className="hidden" onChange={handleAddAttachment} />
                                 <button
                                   type="button"
-                                  onClick={() => handleDeleteAttachment(a.id)}
-                                  disabled={deletingAttachmentId === a.id}
-                                  className="text-[#F40F02] hover:text-[#C20D02] p-1 disabled:opacity-50"
-                                  aria-label="Remove attachment"
+                                  onClick={() => fileInputRef.current?.click()}
+                                  disabled={uploadingAttachment}
+                                  className="text-xs font-semibold text-[#3678F1] hover:underline disabled:opacity-50 flex items-center gap-1 shrink-0"
                                 >
-                                  <FaTrash className="w-3.5 h-3.5" />
+                                  <FaPaperclip className="w-3 h-3" />
+                                  {uploadingAttachment ? 'Uploading…' : 'Add attachment'}
                                 </button>
-                              )}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
+                              </>
+                            )}
+                          </div>
+                          {visibleAttachments.length === 0 ? (
+                            <p className="text-sm text-neutral-400">No attachments</p>
+                          ) : (
+                            <ul className="space-y-2">
+                              {visibleAttachments.map((a) => (
+                                <li key={a.id} className="flex items-center justify-between gap-2 py-1.5 px-2 rounded-lg bg-neutral-50 border border-neutral-100">
+                                  <a href={a.downloadUrl ?? '#'} target="_blank" rel="noopener noreferrer" className="text-sm text-[#3678F1] hover:underline truncate flex items-center gap-2 min-w-0">
+                                    <FaDownload className="w-3 h-3 shrink-0" />
+                                    <span className="truncate">{a.fileName}</span>
+                                    <span className="text-xs text-neutral-400 shrink-0">({(a.size / 1024).toFixed(1)} KB)</span>
+                                  </a>
+                                  {canEditAttachments && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteAttachment(a.id)}
+                                      disabled={deletingAttachmentId === a.id}
+                                      className="text-[#F40F02] hover:text-[#C20D02] p-1 disabled:opacity-50"
+                                      aria-label="Remove attachment"
+                                    >
+                                      <FaTrash className="w-3.5 h-3.5" />
+                                    </button>
+                                  )}
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </>
                 )}
               </div>

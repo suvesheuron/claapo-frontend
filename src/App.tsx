@@ -54,6 +54,7 @@ const TeamPage = lazy(() => import('./pages/company/Team'));
 
 // Invoice pages
 const InvoicesList = lazy(() => import('./pages/InvoicesList'));
+const OfflineInvoices = lazy(() => import('./pages/OfflineInvoices'));
 const CreateInvoice = lazy(() => import('./pages/CreateInvoice'));
 
 // Ongoing projects (individual + vendor)
@@ -222,6 +223,8 @@ export default function App() {
           <Route path="/conversations" element={<ProtectedRoute><Conversations /></ProtectedRoute>} />
           <Route path="/conversations/:projectId" element={<ProtectedRoute><Conversations /></ProtectedRoute>} />
           <Route path="/invoices" element={<ProtectedRoute><InvoicesList /></ProtectedRoute>} />
+          <Route path="/invoices/offline" element={<ProtectedRoute><OfflineInvoices /></ProtectedRoute>} />
+          <Route path="/invoices/:projectId/offline" element={<ProtectedRoute><OfflineInvoices /></ProtectedRoute>} />
           <Route path="/invoices/:projectId" element={<ProtectedRoute><InvoicesList /></ProtectedRoute>} />
           <Route path="/invoice/new" element={<ProtectedRoute allowedRoles={['individual', 'vendor']}><CreateInvoice /></ProtectedRoute>} />
           <Route path="/invoice/:invoiceId" element={<ProtectedRoute><Invoice /></ProtectedRoute>} />

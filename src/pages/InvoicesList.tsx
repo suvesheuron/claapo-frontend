@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams, useParams } from 'react-router-dom';
-import { FaFileInvoice, FaPlus, FaTriangleExclamation, FaMagnifyingGlass, FaCalendar, FaFolder, FaArrowLeft } from 'react-icons/fa6';
+import { FaFileInvoice, FaPlus, FaTriangleExclamation, FaMagnifyingGlass, FaFolder, FaArrowLeft, FaUpload, FaCloudArrowUp } from 'react-icons/fa6';
 import DashboardHeader from '../components/DashboardHeader';
 import DashboardSidebar from '../components/DashboardSidebar';
 import AppFooter from '../components/AppFooter';
-import DateInput from '../components/DateInput';
+import OfflineInvoiceModal from '../components/OfflineInvoiceModal';
 import { useApiQuery } from '../hooks/useApiQuery';
 import { useRole } from '../contexts/RoleContext';
 import { formatPaise } from '../utils/currency';
@@ -18,9 +18,24 @@ interface InvoiceItem {
   dueDate: string | null;
   amount: number;
   totalAmount: number;
+  /** Tax stored in paise; >0 when GST/IGST was applied */
+  gstAmount?: number;
+  taxType?: 'none' | 'gst' | 'igst';
+  offlineBillingName?: string | null;
+  recordedOfflineByCompany?: boolean;
   project: { id: string; title: string } | null;
-  issuer: { id: string; individualProfile?: { displayName: string } | null; vendorProfile?: { companyName: string } | null; companyProfile?: { companyName: string } | null };
-  recipient: { id: string; individualProfile?: { displayName: string } | null; vendorProfile?: { companyName: string } | null; companyProfile?: { companyName: string } | null };
+  issuer: {
+    id: string;
+    individualProfile?: { displayName: string; skills?: string[] | null } | null;
+    vendorProfile?: { companyName: string; vendorServiceCategory?: string | null } | null;
+    companyProfile?: { companyName: string } | null;
+  };
+  recipient: {
+    id: string;
+    individualProfile?: { displayName: string; skills?: string[] | null } | null;
+    vendorProfile?: { companyName: string; vendorServiceCategory?: string | null } | null;
+    companyProfile?: { companyName: string } | null;
+  };
 }
 
 interface InvoicesResponse { items: InvoiceItem[]; meta: { total: number } }
@@ -74,6 +89,35 @@ function getPartyName(u: InvoiceItem['issuer']) {
   return u.individualProfile?.displayName ?? u.vendorProfile?.companyName ?? u.companyProfile?.companyName ?? '—';
 }
 
+function getIssuerDisplayName(inv: InvoiceItem) {
+  if (inv.recordedOfflineByCompany && inv.offlineBillingName?.trim()) {
+    return inv.offlineBillingName.trim();
+  }
+  return getPartyName(inv.issuer);
+}
+
+function getIssuerRoleLabel(inv: InvoiceItem): string | null {
+  if (inv.recordedOfflineByCompany) return null;
+  const ind = inv.issuer?.individualProfile;
+  if (ind) {
+    const firstSkill = ind.skills?.find((s) => !!s?.trim());
+    return firstSkill?.trim() ?? 'Individual';
+  }
+  const vend = inv.issuer?.vendorProfile;
+  if (vend) {
+    return vend.vendorServiceCategory?.trim() || 'Vendor';
+  }
+  if (inv.issuer?.companyProfile) return 'Company';
+  return null;
+}
+
+function invoiceHasGstApplied(inv: InvoiceItem) {
+  const gst = inv.gstAmount ?? 0;
+  const tt = inv.taxType ?? 'none';
+  if (gst > 0) return true;
+  return tt === 'gst' || tt === 'igst';
+}
+
 const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
 type InvoicePaymentFilter = 'all' | 'paid' | 'unpaid';
 
@@ -90,7 +134,7 @@ export default function InvoicesList() {
   const dateTo = ISO_DAY.test(dateToRaw) ? dateToRaw : '';
 
   // Fetch projects list
-  const { data: projectsData, loading: projectsLoading } = useApiQuery<ProjectsWithStatsResponse>('/projects/my/with-stats?limit=100');
+  const { data: projectsData, loading: projectsLoading, refetch: refetchProjects } = useApiQuery<ProjectsWithStatsResponse>('/projects/my/with-stats?limit=100');
   const projects = projectsData?.items ?? [];
   const { data: notificationsData } = useApiQuery<NotificationsResponse>(
     currentRole === 'Company' ? '/notifications?limit=100' : null,
@@ -109,19 +153,23 @@ export default function InvoicesList() {
     return `/invoices?${q.toString()}`;
   }, [issuedOn, dateFrom, dateTo, selectedProjectId]);
 
-  const { data, loading, error } = useApiQuery<InvoicesResponse>(listPath);
+  const { data, loading, error, refetch: refetchInvoices } = useApiQuery<InvoicesResponse>(listPath);
   const allInvoices = data?.items ?? [];
   const [projectListSearch, setProjectListSearch] = useState('');
+  const [projectListPaymentFilter, setProjectListPaymentFilter] = useState<InvoicePaymentFilter>('all');
+  const [projectListTaxOnly, setProjectListTaxOnly] = useState(false);
+  const [offlineInvoiceModal, setOfflineInvoiceModal] = useState<null | 'company' | 'vendor'>(null);
   const [selectedProjectPaymentFilter, setSelectedProjectPaymentFilter] = useState<InvoicePaymentFilter>('all');
   const [selectedProjectSearch, setSelectedProjectSearch] = useState('');
+  const [taxInvoicesOnly, setTaxInvoicesOnly] = useState(false);
 
-  // Filter by date range (client-side)
+  // Filter by date range (client-side) — not used on a single-project invoice view
   const invoices = useMemo(() => {
     let filtered = allInvoices;
     if (currentRole === 'Company') {
       filtered = filtered.filter((inv) => inv.status !== 'draft');
     }
-    if (dateFrom || dateTo) {
+    if (!selectedProjectId && (dateFrom || dateTo)) {
       filtered = filtered.filter((inv) => {
         const invDate = new Date(inv.createdAt).setHours(0, 0, 0, 0);
         const from = dateFrom ? new Date(dateFrom + 'T00:00:00').getTime() : 0;
@@ -130,7 +178,7 @@ export default function InvoicesList() {
       });
     }
     return filtered;
-  }, [allInvoices, dateFrom, dateTo, currentRole]);
+  }, [allInvoices, dateFrom, dateTo, currentRole, selectedProjectId]);
 
   const selectedProjectInvoices = useMemo(() => {
     let filtered = invoices;
@@ -139,16 +187,19 @@ export default function InvoicesList() {
     } else if (selectedProjectPaymentFilter === 'unpaid') {
       filtered = filtered.filter((inv) => inv.status === 'sent' || inv.status === 'overdue');
     }
+    if (taxInvoicesOnly) {
+      filtered = filtered.filter((inv) => invoiceHasGstApplied(inv));
+    }
     if (selectedProjectSearch.trim()) {
       const q = selectedProjectSearch.trim().toLowerCase();
       filtered = filtered.filter((inv) => {
         const invoiceNo = inv.invoiceNumber?.toLowerCase() ?? '';
-        const issuerName = getPartyName(inv.issuer).toLowerCase();
+        const issuerName = getIssuerDisplayName(inv).toLowerCase();
         return invoiceNo.includes(q) || issuerName.includes(q);
       });
     }
     return filtered;
-  }, [invoices, selectedProjectPaymentFilter, selectedProjectSearch]);
+  }, [invoices, selectedProjectPaymentFilter, selectedProjectSearch, taxInvoicesOnly]);
 
   const navLinks = currentRole === 'Company' ? companyNavLinks
     : currentRole === 'Vendor' ? vendorNavLinks
@@ -159,20 +210,17 @@ export default function InvoicesList() {
   // Find selected project details
   const selectedProject = projects.find(p => p.id === selectedProjectId);
 
-  // Filter projects by date range (overlap between project dates and selected range)
-  const filteredProjects = projects.filter((project) => {
-    if (projectListSearch.trim() && !project.title.toLowerCase().includes(projectListSearch.trim().toLowerCase())) {
-      return false;
-    }
-    if (dateFrom || dateTo) {
-      const projStart = new Date(project.startDate).setHours(0, 0, 0, 0);
-      const projEnd = new Date(project.endDate).setHours(23, 59, 59, 999);
-      const filterFrom = dateFrom ? new Date(dateFrom + 'T00:00:00').getTime() : -Infinity;
-      const filterTo = dateTo ? new Date(dateTo + 'T23:59:59').getTime() : Infinity;
-      if (!(projStart <= filterTo && projEnd >= filterFrom)) return false;
-    }
-    return true;
-  });
+  const filteredProjects = useMemo(() => {
+    return projects.filter((project) => {
+      if (projectListSearch.trim() && !project.title.toLowerCase().includes(projectListSearch.trim().toLowerCase())) {
+        return false;
+      }
+      if (projectListTaxOnly && (project.gstOrIgstAmount ?? 0) <= 0) return false;
+      if (projectListPaymentFilter === 'paid' && (project.paidAmount ?? 0) <= 0) return false;
+      if (projectListPaymentFilter === 'unpaid' && (project.unpaidAmount ?? 0) <= 0) return false;
+      return true;
+    });
+  }, [projects, projectListSearch, projectListTaxOnly, projectListPaymentFilter]);
 
   const unreadInvoiceByProject = useMemo(() => {
     if (currentRole !== 'Company') return {} as Record<string, number>;
@@ -196,18 +244,16 @@ export default function InvoicesList() {
     [filteredProjects, unreadInvoiceByProject],
   );
 
-  function clearProjectListDates() {
+  function clearProjectListFilters() {
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
       next.delete('dateFrom');
       next.delete('dateTo');
       return next;
     });
-  }
-
-  function clearProjectListFilters() {
-    clearProjectListDates();
     setProjectListSearch('');
+    setProjectListPaymentFilter('all');
+    setProjectListTaxOnly(false);
   }
 
   function formatProjectDate(dateStr: string) {
@@ -257,10 +303,10 @@ export default function InvoicesList() {
       return (
         <div className="rounded-2xl bg-white border border-dashed border-neutral-200 py-12 text-center px-6">
           <div className="w-12 h-12 rounded-2xl bg-[#E8F0FE] ring-1 ring-[#3678F1]/15 flex items-center justify-center mx-auto mb-3">
-            <FaCalendar className="text-[#3678F1] text-base" />
+            <FaMagnifyingGlass className="text-[#3678F1] text-base" />
           </div>
           <p className="text-sm font-bold text-neutral-900 mb-1">No projects match these filters</p>
-          <p className="text-xs text-neutral-500 mb-4">Try changing search, date range, or payment switch.</p>
+          <p className="text-xs text-neutral-500 mb-4">Try changing search, tax filter, or paid/unpaid.</p>
           <button
             type="button"
             onClick={clearProjectListFilters}
@@ -342,171 +388,154 @@ export default function InvoicesList() {
               {selectedProjectId ? (
                 <>
                   {/* Invoice List View with back button */}
-                  <div className="flex items-center justify-between mb-6">
-                    <div>
-                      <Link
-                        to="/invoices"
-                        className="inline-flex items-center gap-2 text-sm text-neutral-600 hover:text-[#3678F1] font-semibold mb-3 transition-colors"
-                      >
-                        <FaArrowLeft className="w-3.5 h-3.5" />
-                        Back to Projects
-                      </Link>
-                      <h1 className="text-2xl font-bold tracking-tight text-neutral-900 flex items-center gap-2.5">
-                        <div className="w-9 h-9 rounded-xl bg-[#E8F0FE] flex items-center justify-center">
-                          <FaFileInvoice className="text-[#3678F1] text-sm" />
-                        </div>
-                        {selectedProject?.title ?? 'Project Invoices'}
-                      </h1>
-                      <p className="text-sm text-neutral-500 mt-1.5 ml-[46px]">
-                        {currentRole === 'Company' ? 'Invoices received from crew and vendors' : 'Invoices you have sent to clients'}
-                      </p>
-                      {currentRole === 'Company' && selectedProject && (
-                        <div className="mt-4 ml-[46px] rounded-2xl border border-neutral-200 bg-white p-3.5 sm:p-4 space-y-3">
-                          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-2.5">
-                            <div className="rounded-lg border border-neutral-100 bg-neutral-50 px-3 py-2">
-                              <p className="text-[10px] uppercase tracking-wider font-semibold text-neutral-500">Approved Budget</p>
-                              <p className="text-sm font-bold text-neutral-900 mt-0.5">{formatPaise(selectedProject.approvedBudget ?? 0)}</p>
-                            </div>
-                            <div className="rounded-lg border border-neutral-100 bg-neutral-50 px-3 py-2">
-                              <p className="text-[10px] uppercase tracking-wider font-semibold text-neutral-500">Closure Amount</p>
-                              <p className="text-sm font-bold text-neutral-900 mt-0.5">{formatPaise(selectedProject.closureAmount ?? 0)}</p>
-                            </div>
-                            <div className="rounded-lg border border-neutral-100 bg-neutral-50 px-3 py-2">
-                              <p className="text-[10px] uppercase tracking-wider font-semibold text-neutral-500">GST/IGST Amount</p>
-                              <p className="text-sm font-bold text-neutral-900 mt-0.5">{formatPaise(selectedProject.gstOrIgstAmount ?? 0)}</p>
-                            </div>
-                            <div className="rounded-lg border border-[#22C55E]/20 bg-[#DCFCE7]/50 px-3 py-2">
-                              <p className="text-[10px] uppercase tracking-wider font-semibold text-[#15803D]">Paid Amount</p>
-                              <p className="text-sm font-bold text-[#15803D] mt-0.5">{formatPaise(selectedProject.paidAmount ?? 0)}</p>
-                            </div>
-                            <div className="rounded-lg border border-[#F40F02]/20 bg-[#FEEBEA]/60 px-3 py-2">
-                              <p className="text-[10px] uppercase tracking-wider font-semibold text-[#B91C1C]">Unpaid Amount</p>
-                              <p className="text-sm font-bold text-[#B91C1C] mt-0.5">{formatPaise(selectedProject.unpaidAmount ?? 0)}</p>
-                            </div>
+                  <div className="mb-6 space-y-4">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="min-w-0 flex-1">
+                        <Link
+                          to="/invoices"
+                          className="inline-flex items-center gap-2 text-sm text-neutral-600 hover:text-[#3678F1] font-semibold mb-3 transition-colors"
+                        >
+                          <FaArrowLeft className="w-3.5 h-3.5" />
+                          Back to Projects
+                        </Link>
+                        <h1 className="text-2xl font-bold tracking-tight text-neutral-900 flex items-center gap-2.5">
+                          <div className="w-9 h-9 rounded-xl bg-[#E8F0FE] flex items-center justify-center">
+                            <FaFileInvoice className="text-[#3678F1] text-sm" />
                           </div>
+                          {selectedProject?.title ?? 'Project Invoices'}
+                        </h1>
+                        <p className="text-sm text-neutral-500 mt-1.5 ml-[46px]">
+                          {currentRole === 'Company' ? 'Invoices received from crew and vendors' : 'Invoices you have sent to clients'}
+                        </p>
+                        {issuedOn && (
+                          <p className="text-xs text-[#3678F1] font-medium mt-2 ml-[46px] flex flex-wrap items-center gap-2">
+                            Showing invoices issued on{' '}
+                            {new Date(issuedOn + 'T12:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSearchParams((prev) => {
+                                  const next = new URLSearchParams(prev);
+                                  next.delete('issuedOn');
+                                  return next;
+                                });
+                              }}
+                              className="text-neutral-500 hover:text-neutral-800 underline underline-offset-2 font-semibold"
+                            >
+                              Clear date filter
+                            </button>
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap gap-2 shrink-0 justify-end sm:mt-1">
+                        {currentRole === 'Company' && selectedProject && (
+                          <Link
+                            to={`/invoices/${selectedProject.id}/offline`}
+                            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold border border-neutral-200 bg-white text-neutral-800 hover:border-[#3678F1]/40 hover:text-[#3678F1] transition-colors"
+                          >
+                            <FaCloudArrowUp className="w-3.5 h-3.5" /> View Offline Invoices
+                          </Link>
+                        )}
+                        {currentRole === 'Company' && selectedProject && (
+                          <button
+                            type="button"
+                            onClick={() => setOfflineInvoiceModal('company')}
+                            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold border border-neutral-200 bg-white text-neutral-800 hover:border-[#3678F1]/40 hover:text-[#3678F1] transition-colors"
+                          >
+                            <FaUpload className="w-3.5 h-3.5" /> Upload Offline Invoice
+                          </button>
+                        )}
+                        {canCreate && (
+                          <Link
+                            to="/invoice/new"
+                            className="inline-flex shrink-0 items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white rounded-xl text-sm font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] shadow-brand transition-colors duration-200"
+                          >
+                            <FaPlus className="w-3.5 h-3.5" /> Create Invoice
+                          </Link>
+                        )}
+                      </div>
+                    </div>
 
-                          <div className="flex flex-col lg:flex-row lg:items-center gap-2.5">
-                            <div className="inline-flex items-center gap-2 rounded-lg border border-neutral-200 px-2.5 py-1.5 bg-white">
-                              <span className="text-xs font-semibold text-neutral-600">Filter</span>
-                              <div className="flex items-center gap-1 p-0.5 bg-neutral-100 rounded-full">
-                                {(['all', 'paid', 'unpaid'] as InvoicePaymentFilter[]).map((value) => (
-                                  <button
-                                    key={value}
-                                    type="button"
-                                    onClick={() => setSelectedProjectPaymentFilter(value)}
-                                    className={`px-3 py-1 text-[11px] font-semibold rounded-full capitalize transition-colors ${
-                                      selectedProjectPaymentFilter === value
-                                        ? 'bg-[#3678F1] text-white'
-                                        : 'text-neutral-600 hover:text-neutral-900'
-                                    }`}
-                                  >
-                                    {value}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
+                    {currentRole === 'Company' && selectedProject && (
+                      <div className="w-full rounded-2xl border border-neutral-200 bg-white p-3.5 sm:p-4 space-y-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-2.5">
+                          <div className="rounded-lg border border-neutral-100 bg-neutral-50 px-3 py-2">
+                            <p className="text-[10px] uppercase tracking-wider font-semibold text-neutral-500">Approved Budget</p>
+                            <p className="text-sm font-bold text-neutral-900 mt-0.5">{formatPaise(selectedProject.approvedBudget ?? 0)}</p>
+                          </div>
+                          <div className="rounded-lg border border-neutral-100 bg-neutral-50 px-3 py-2">
+                            <p className="text-[10px] uppercase tracking-wider font-semibold text-neutral-500">Closure Amount</p>
+                            <p className="text-sm font-bold text-neutral-900 mt-0.5">{formatPaise(selectedProject.closureAmount ?? 0)}</p>
+                          </div>
+                          <div className="rounded-lg border border-neutral-100 bg-neutral-50 px-3 py-2">
+                            <p className="text-[10px] uppercase tracking-wider font-semibold text-neutral-500">GST/IGST Amount</p>
+                            <p className="text-sm font-bold text-neutral-900 mt-0.5">{formatPaise(selectedProject.gstOrIgstAmount ?? 0)}</p>
+                          </div>
+                          <div className="rounded-lg border border-[#22C55E]/20 bg-[#DCFCE7]/50 px-3 py-2">
+                            <p className="text-[10px] uppercase tracking-wider font-semibold text-[#15803D]">Paid Amount</p>
+                            <p className="text-sm font-bold text-[#15803D] mt-0.5">{formatPaise(selectedProject.paidAmount ?? 0)}</p>
+                          </div>
+                          <div className="rounded-lg border border-[#F40F02]/20 bg-[#FEEBEA]/60 px-3 py-2">
+                            <p className="text-[10px] uppercase tracking-wider font-semibold text-[#B91C1C]">Unpaid Amount</p>
+                            <p className="text-sm font-bold text-[#B91C1C] mt-0.5">{formatPaise(selectedProject.unpaidAmount ?? 0)}</p>
+                          </div>
+                        </div>
 
-                            <div className="relative lg:ml-auto w-full lg:max-w-sm">
-                              <FaMagnifyingGlass className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 w-3.5 h-3.5" />
+                        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:gap-3">
+                          <div className="relative min-w-0 flex-1 w-full">
+                            <FaMagnifyingGlass className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 w-3.5 h-3.5 pointer-events-none" />
+                            <input
+                              type="text"
+                              value={selectedProjectSearch}
+                              onChange={(e) => setSelectedProjectSearch(e.target.value)}
+                              placeholder="Search by invoice no. or sender…"
+                              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200 bg-white text-sm placeholder-neutral-400 focus:outline-none focus:border-[#3678F1]/40 focus:ring-2 focus:ring-[#3678F1]/10 transition-all"
+                            />
+                          </div>
+                          <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 shrink-0">
+                            <label className="inline-flex items-center gap-2 cursor-pointer select-none rounded-lg border border-neutral-200 bg-neutral-50 px-2.5 py-2">
                               <input
-                                type="text"
-                                value={selectedProjectSearch}
-                                onChange={(e) => setSelectedProjectSearch(e.target.value)}
-                                placeholder="Search by invoice no. or sender…"
-                                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200 bg-white text-sm placeholder-neutral-400 focus:outline-none focus:border-[#3678F1]/40 focus:ring-2 focus:ring-[#3678F1]/10 transition-all"
+                                type="checkbox"
+                                checked={taxInvoicesOnly}
+                                onChange={(e) => setTaxInvoicesOnly(e.target.checked)}
+                                className="h-3.5 w-3.5 rounded border-neutral-300 text-[#3678F1] focus:ring-2 focus:ring-[#3678F1]/20"
                               />
+                              <span className="text-xs font-semibold text-neutral-700 whitespace-nowrap">Tax Invoices Only</span>
+                            </label>
+                            <div className="flex items-center gap-1 p-0.5 bg-neutral-100 rounded-full">
+                              {(['all', 'paid', 'unpaid'] as InvoicePaymentFilter[]).map((value) => (
+                                <button
+                                  key={value}
+                                  type="button"
+                                  onClick={() => setSelectedProjectPaymentFilter(value)}
+                                  className={`px-3 py-1.5 text-[11px] font-semibold rounded-full capitalize transition-colors ${
+                                    selectedProjectPaymentFilter === value
+                                      ? 'bg-[#3678F1] text-white'
+                                      : 'text-neutral-600 hover:text-neutral-900'
+                                  }`}
+                                >
+                                  {value}
+                                </button>
+                              ))}
                             </div>
                           </div>
-
-                          <div className="flex flex-wrap items-center gap-3 p-2.5 bg-white rounded-xl border border-neutral-200/70">
-                            <FaCalendar className="text-neutral-400 w-4 h-4" />
-                            <label htmlFor="selected-project-date-from" className="text-xs font-medium text-neutral-600 whitespace-nowrap">
-                              From
-                            </label>
-                            <input
-                              id="selected-project-date-from"
-                              type="date"
-                              value={dateFrom}
-                              className="rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5 text-sm text-neutral-900 focus:outline-none focus:border-[#3678F1] focus:ring-2 focus:ring-[#3678F1]/20 transition-colors"
-                              onChange={(e) => {
-                                const v = e.target.value;
-                                setSearchParams((prev) => {
-                                  const next = new URLSearchParams(prev);
-                                  if (v) next.set('dateFrom', v);
-                                  else next.delete('dateFrom');
-                                  return next;
-                                });
+                          {(selectedProjectSearch.trim() || selectedProjectPaymentFilter !== 'all' || taxInvoicesOnly) && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedProjectSearch('');
+                                setSelectedProjectPaymentFilter('all');
+                                setTaxInvoicesOnly(false);
                               }}
-                            />
-                            <label htmlFor="selected-project-date-to" className="text-xs font-medium text-neutral-600 whitespace-nowrap">
-                              To
-                            </label>
-                            <input
-                              id="selected-project-date-to"
-                              type="date"
-                              value={dateTo}
-                              min={dateFrom || undefined}
-                              className="rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5 text-sm text-neutral-900 focus:outline-none focus:border-[#3678F1] focus:ring-2 focus:ring-[#3678F1]/20 transition-colors"
-                              onChange={(e) => {
-                                const v = e.target.value;
-                                setSearchParams((prev) => {
-                                  const next = new URLSearchParams(prev);
-                                  if (v) next.set('dateTo', v);
-                                  else next.delete('dateTo');
-                                  return next;
-                                });
-                              }}
-                            />
-                            {(dateFrom || dateTo || selectedProjectSearch.trim() || selectedProjectPaymentFilter !== 'all') && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setSearchParams((prev) => {
-                                    const next = new URLSearchParams(prev);
-                                    next.delete('dateFrom');
-                                    next.delete('dateTo');
-                                    return next;
-                                  });
-                                  setSelectedProjectSearch('');
-                                  setSelectedProjectPaymentFilter('all');
-                                }}
-                                className="text-xs text-[#3678F1] font-semibold hover:underline ml-auto"
-                              >
-                                Clear
-                              </button>
-                            )}
-                          </div>
+                              className="text-xs text-[#3678F1] font-semibold hover:underline xl:ml-auto shrink-0"
+                            >
+                              Clear
+                            </button>
+                          )}
                         </div>
-                      )}
-                  {issuedOn && (
-                    <p className="text-xs text-[#3678F1] font-medium mt-2 ml-[46px] flex flex-wrap items-center gap-2">
-                      Showing invoices issued on{' '}
-                      {new Date(issuedOn + 'T12:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSearchParams((prev) => {
-                            const next = new URLSearchParams(prev);
-                            next.delete('issuedOn');
-                            return next;
-                          });
-                        }}
-                        className="text-neutral-500 hover:text-neutral-800 underline underline-offset-2 font-semibold"
-                      >
-                        Clear date filter
-                      </button>
-                    </p>
-                  )}
-                </div>
-                {canCreate && (
-                  <Link
-                    to="/invoice/new"
-                    className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white rounded-xl text-sm font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] shadow-brand transition-colors duration-200"
-                  >
-                    <FaPlus className="w-3.5 h-3.5" /> Create Invoice
-                  </Link>
-                )}
-              </div>
+                      </div>
+                    )}
+                  </div>
 
               {/* Error */}
               {error && (
@@ -536,25 +565,23 @@ export default function InvoicesList() {
                   <div className="w-16 h-16 rounded-full bg-[#E8F0FE] flex items-center justify-center mx-auto mb-5">
                     <FaFileInvoice className="text-[#3678F1] text-2xl" />
                   </div>
-                  {dateFrom || dateTo || selectedProjectPaymentFilter !== 'all' ? (
+                  {selectedProjectPaymentFilter !== 'all' || taxInvoicesOnly || selectedProjectSearch.trim() || issuedOn ? (
                     <>
                       <p className="text-base font-semibold text-neutral-700 mb-2">No invoices match current filters</p>
                       <p className="text-sm text-neutral-400 mb-5 max-w-xs mx-auto">
-                        Nothing matched for{' '}
-                        {dateFrom ? new Date(dateFrom + 'T12:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
-                        {' '}to{' '}
-                        {dateTo ? new Date(dateTo + 'T12:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}.
+                        Try adjusting search, the tax invoice filter, or paid/unpaid — or clear filters to see all invoices.
                       </p>
                       <button
                         type="button"
                         onClick={() => {
                           setSearchParams((prev) => {
                             const next = new URLSearchParams(prev);
-                            next.delete('dateFrom');
-                            next.delete('dateTo');
+                            next.delete('issuedOn');
                             return next;
                           });
+                          setSelectedProjectSearch('');
                           setSelectedProjectPaymentFilter('all');
+                          setTaxInvoicesOnly(false);
                         }}
                         className="text-sm text-[#3678F1] font-semibold hover:underline underline-offset-2"
                       >
@@ -580,9 +607,11 @@ export default function InvoicesList() {
                   {selectedProjectInvoices.map((inv) => {
                     const cfg = STATUS_CFG[inv.status] ?? STATUS_CFG.draft;
                     const accent = STATUS_ACCENT[inv.status] ?? STATUS_ACCENT.draft;
-                    const counterparty = currentRole === 'Company' ? getPartyName(inv.issuer) : getPartyName(inv.recipient);
+                    const counterparty = currentRole === 'Company' ? getIssuerDisplayName(inv) : getPartyName(inv.recipient);
                     const showProjectFirst = currentRole === 'Vendor' || currentRole === 'Individual';
                     const projectTitle = inv.project?.title ?? 'No project';
+                    const issuerRole = currentRole === 'Company' ? getIssuerRoleLabel(inv) : null;
+                    const headline = showProjectFirst ? projectTitle : counterparty;
                     return (
                       <Link
                         key={inv.id}
@@ -596,10 +625,15 @@ export default function InvoicesList() {
                           <FaFileInvoice className="text-[#3678F1] text-sm" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2.5 mb-1">
-                            <p className="text-sm font-bold text-neutral-900 group-hover:text-[#3678F1] transition-colors duration-200">
-                              {showProjectFirst ? projectTitle : inv.invoiceNumber}
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <p className="text-sm font-bold text-neutral-900 group-hover:text-[#3678F1] transition-colors duration-200 truncate">
+                              {headline}
                             </p>
+                            {issuerRole ? (
+                              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#F4F8FE] text-[#3678F1] ring-1 ring-[#3678F1]/20 inline-flex items-center">
+                                {issuerRole}
+                              </span>
+                            ) : null}
                             <span className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full ring-1 ${cfg.bg} ${cfg.text} ${cfg.ring} inline-flex items-center gap-1`}>
                               <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
                               {cfg.label}
@@ -614,7 +648,9 @@ export default function InvoicesList() {
                               </>
                             ) : (
                               <>
-                                {projectTitle} <span className="text-neutral-300 mx-1">·</span> {currentRole === 'Company' ? 'From' : 'To'}: <span className="text-neutral-600 font-medium">{counterparty}</span>
+                                {projectTitle}
+                                <span className="text-neutral-300 mx-1">·</span>
+                                Invoice: <span className="text-neutral-600 font-medium">{inv.invoiceNumber}</span>
                               </>
                             )}
                           </p>
@@ -649,7 +685,7 @@ export default function InvoicesList() {
                           ? 'Loading your projects…'
                           : projects.length === 0
                             ? 'No projects yet'
-                            : (dateFrom || dateTo || projectListSearch.trim())
+                            : (projectListSearch.trim() || projectListPaymentFilter !== 'all' || projectListTaxOnly)
                               ? `${filteredProjects.length} of ${projects.length} project${projects.length === 1 ? '' : 's'} match filters`
                               : 'Select a project to view invoices'}
                         {!projectsLoading && currentRole === 'Company' && unreadInvoiceProjectCount > 0 && (
@@ -659,19 +695,38 @@ export default function InvoicesList() {
                         )}
                       </p>
                       {canCreate && (
-                        <Link
-                          to="/invoice/new"
-                          className="mt-3 ml-[46px] inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white rounded-xl text-sm font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] shadow-brand transition-colors duration-200"
-                        >
-                          <FaPlus className="w-3.5 h-3.5" /> Create Invoice
-                        </Link>
+                        <div className="mt-3 ml-[46px] flex flex-wrap gap-2">
+                          <Link
+                            to="/invoice/new"
+                            className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white rounded-xl text-sm font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] shadow-brand transition-colors duration-200"
+                          >
+                            <FaPlus className="w-3.5 h-3.5" /> Create Invoice
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={() => setOfflineInvoiceModal('vendor')}
+                            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold border border-neutral-200 bg-white text-neutral-800 hover:border-[#3678F1]/40 hover:text-[#3678F1] transition-colors"
+                          >
+                            Send Offline Invoice
+                          </button>
+                        </div>
+                      )}
+                      {currentRole === 'Company' && (
+                        <div className="mt-3 ml-[46px] flex flex-wrap gap-2">
+                          <Link
+                            to="/invoices/offline"
+                            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold border border-neutral-200 bg-white text-neutral-800 hover:border-[#3678F1]/40 hover:text-[#3678F1] transition-colors"
+                          >
+                            View Offline Invoices
+                          </Link>
+                        </div>
                       )}
                       </div>
                     </div>
                     {projects.length > 0 && (
                       <div className="flex flex-col gap-3 p-3 bg-white rounded-xl border border-neutral-200/70 shadow-sm">
                         <div className="relative">
-                          <FaMagnifyingGlass className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 w-3.5 h-3.5" />
+                          <FaMagnifyingGlass className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 w-3.5 h-3.5 pointer-events-none" />
                           <input
                             type="text"
                             value={projectListSearch}
@@ -680,48 +735,37 @@ export default function InvoicesList() {
                             className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200 bg-white text-sm placeholder-neutral-400 focus:outline-none focus:border-[#3678F1]/40 focus:ring-2 focus:ring-[#3678F1]/10 transition-all"
                           />
                         </div>
-                        <div className="flex flex-wrap items-center gap-3">
-                          <FaCalendar className="text-neutral-400 w-4 h-4" />
-                          <label htmlFor="project-date-from" className="text-xs font-medium text-neutral-600 whitespace-nowrap">
-                            From
+                        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:gap-3">
+                          <label className="inline-flex items-center gap-2 cursor-pointer select-none rounded-lg border border-neutral-200 bg-neutral-50 px-2.5 py-2 shrink-0">
+                            <input
+                              type="checkbox"
+                              checked={projectListTaxOnly}
+                              onChange={(e) => setProjectListTaxOnly(e.target.checked)}
+                              className="h-3.5 w-3.5 rounded border-neutral-300 text-[#3678F1] focus:ring-2 focus:ring-[#3678F1]/20"
+                            />
+                            <span className="text-xs font-semibold text-neutral-700 whitespace-nowrap">Tax Invoices Only</span>
                           </label>
-                          <DateInput
-                            id="project-date-from"
-                            value={dateFrom}
-                            className="rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5 text-sm text-neutral-900 focus:outline-none focus:border-[#3678F1] focus:ring-2 focus:ring-[#3678F1]/20 transition-colors"
-                            onChange={(e) => {
-                              const v = e.target.value;
-                              setSearchParams((prev) => {
-                                const next = new URLSearchParams(prev);
-                                if (v) next.set('dateFrom', v);
-                                else next.delete('dateFrom');
-                                return next;
-                              });
-                            }}
-                          />
-                          <label htmlFor="project-date-to" className="text-xs font-medium text-neutral-600 whitespace-nowrap">
-                            To
-                          </label>
-                          <DateInput
-                            id="project-date-to"
-                            value={dateTo}
-                            min={dateFrom || undefined}
-                            className="rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5 text-sm text-neutral-900 focus:outline-none focus:border-[#3678F1] focus:ring-2 focus:ring-[#3678F1]/20 transition-colors"
-                            onChange={(e) => {
-                              const v = e.target.value;
-                              setSearchParams((prev) => {
-                                const next = new URLSearchParams(prev);
-                                if (v) next.set('dateTo', v);
-                                else next.delete('dateTo');
-                                return next;
-                              });
-                            }}
-                          />
-                          {(dateFrom || dateTo) && (
+                          <div className="flex items-center gap-1 p-0.5 bg-neutral-100 rounded-full shrink-0">
+                            {(['all', 'paid', 'unpaid'] as InvoicePaymentFilter[]).map((value) => (
+                              <button
+                                key={value}
+                                type="button"
+                                onClick={() => setProjectListPaymentFilter(value)}
+                                className={`px-3 py-1.5 text-[11px] font-semibold rounded-full capitalize transition-colors ${
+                                  projectListPaymentFilter === value
+                                    ? 'bg-[#3678F1] text-white'
+                                    : 'text-neutral-600 hover:text-neutral-900'
+                                }`}
+                              >
+                                {value}
+                              </button>
+                            ))}
+                          </div>
+                          {(projectListSearch.trim() || projectListPaymentFilter !== 'all' || projectListTaxOnly) && (
                             <button
                               type="button"
-                              onClick={clearProjectListDates}
-                              className="text-xs text-[#3678F1] font-semibold hover:underline"
+                              onClick={clearProjectListFilters}
+                              className="text-xs text-[#3678F1] font-semibold hover:underline xl:ml-auto shrink-0"
                             >
                               Clear
                             </button>
@@ -750,6 +794,25 @@ export default function InvoicesList() {
           <AppFooter />
         </main>
       </div>
+      <OfflineInvoiceModal
+        open={offlineInvoiceModal !== null}
+        onClose={() => setOfflineInvoiceModal(null)}
+        mode={offlineInvoiceModal === 'vendor' ? 'vendor-send' : 'company-upload'}
+        project={
+          offlineInvoiceModal === 'company' && selectedProject
+            ? {
+                id: selectedProject.id,
+                title: selectedProject.title,
+                startDate: selectedProject.startDate,
+                endDate: selectedProject.endDate,
+              }
+            : undefined
+        }
+        onSuccess={() => {
+          refetchProjects();
+          refetchInvoices();
+        }}
+      />
     </div>
   );
 }

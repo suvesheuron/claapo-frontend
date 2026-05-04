@@ -25,6 +25,8 @@ interface Project {
   status: string;
   startDate: string;
   endDate: string;
+  /** Parallel arrays: shootDates[i] ↔ shootLocations[i] (same as Create Project form). */
+  shootDates?: string[];
   shootLocations?: string[];
 }
 
@@ -83,6 +85,41 @@ const toIso = (d: Date) => {
 
 const parseIso = (iso: string) => new Date(iso + 'T12:00:00');
 
+/**
+ * Calendar boundaries must use local midnight — same as `new Date(y, m, d)` day cells.
+ * Using `parseIso` (noon) made `minDate` strictly after midnight on the start day, so the first
+ * selectable project day was wrongly disabled (e.g. 25 May greyed when window started 25 May).
+ */
+function startOfLocalDayFromCalendarIso(iso: string): Date {
+  const [y, m, d] = iso.split('-').map((x) => parseInt(x, 10));
+  if (!y || Number.isNaN(m) || Number.isNaN(d)) return new Date(NaN);
+  return new Date(y, m - 1, d, 0, 0, 0, 0);
+}
+
+/** Calendar day YYYY-MM-DD for comparing booking picker dates with API shootDates. */
+function calendarDayFromShootDate(raw: string): string {
+  if (!raw) return '';
+  if (typeof raw === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+  try {
+    const s = typeof raw === 'string' ? raw : new Date(raw).toISOString();
+    return s.slice(0, 10);
+  } catch {
+    return raw.slice(0, 10);
+  }
+}
+
+/** Location for this calendar day from project's paired shootDates / shootLocations (not picker order). */
+function locationForProjectCalendarDay(project: Project | null, calendarIso: string): string | undefined {
+  if (!project) return undefined;
+  const day = calendarIso.slice(0, 10);
+  const dates = project.shootDates ?? [];
+  const locs = project.shootLocations ?? [];
+  const idx = dates.findIndex((sd) => calendarDayFromShootDate(sd as string) === day);
+  if (idx !== -1 && locs[idx]?.trim()) return locs[idx].trim();
+  if (locs.length === 1 && locs[0]?.trim()) return locs[0].trim();
+  return undefined;
+}
+
 const formatDate = (iso: string) =>
   parseIso(iso).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
 
@@ -110,7 +147,11 @@ function MultiDatePicker({ selected, onChange, minDate, maxDate, disabled }: Mul
   }, []);
 
   const initialMonth = useMemo(() => {
-    const ref = selected[0] ? parseIso(selected[0]) : minDate ? parseIso(minDate) : today;
+    const ref = selected[0]
+      ? startOfLocalDayFromCalendarIso(selected[0])
+      : minDate
+        ? startOfLocalDayFromCalendarIso(minDate)
+        : today;
     return new Date(ref.getFullYear(), ref.getMonth(), 1);
   }, [selected, minDate, today]);
 
@@ -118,7 +159,9 @@ function MultiDatePicker({ selected, onChange, minDate, maxDate, disabled }: Mul
 
   // Reset view when min changes (e.g., project switched)
   useEffect(() => {
-    if (minDate) setViewMonth(new Date(parseIso(minDate).getFullYear(), parseIso(minDate).getMonth(), 1));
+    if (!minDate) return;
+    const anchor = startOfLocalDayFromCalendarIso(minDate);
+    setViewMonth(new Date(anchor.getFullYear(), anchor.getMonth(), 1));
   }, [minDate]);
 
   const year = viewMonth.getFullYear();
@@ -126,8 +169,8 @@ function MultiDatePicker({ selected, onChange, minDate, maxDate, disabled }: Mul
   const firstWeekday = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-  const minD = minDate ? parseIso(minDate) : null;
-  const maxD = maxDate ? parseIso(maxDate) : null;
+  const minD = minDate ? startOfLocalDayFromCalendarIso(minDate) : null;
+  const maxD = maxDate ? startOfLocalDayFromCalendarIso(maxDate) : null;
 
   const canGoPrev = (() => {
     if (!minD) return true;
@@ -365,7 +408,6 @@ export default function BookingRequestModal({
   const selectedProject = activeProjects.find((p) => p.id === projectId) ?? null;
   const projectStartIso = selectedProject?.startDate?.slice(0, 10) ?? '';
   const projectEndIso = selectedProject?.endDate?.slice(0, 10) ?? '';
-  const projectShootLocations = selectedProject?.shootLocations ?? [];
 
   const initials = userName
     .split(' ')
@@ -613,29 +655,16 @@ export default function BookingRequestModal({
                     selected={bookingDates}
                     onChange={(dates) => {
                       setBookingDates(dates);
-                      // Remove location entries for dates that were deselected
-                      setShootDateLocations((prev) => prev.filter((pair) => dates.includes(pair.date)));
-                      
-                      // Auto-populate locations for newly selected dates from project shootLocations
-                      if (projectShootLocations.length > 0) {
-                        const newDatesWithLocations: ShootDateLocation[] = [];
-                        dates.forEach((date) => {
-                          // Check if this date already has a location
-                          const existingPair = shootDateLocations.find((pair) => pair.date === date);
-                          if (!existingPair) {
-                            // Assign location based on index in dates array
-                            const locationIndex = dates.indexOf(date) % projectShootLocations.length;
-                            newDatesWithLocations.push({
-                              date,
-                              location: projectShootLocations[locationIndex] ?? '',
-                            });
-                          }
-                        });
-                        
-                        if (newDatesWithLocations.length > 0) {
-                          setShootDateLocations((prev) => [...prev, ...newDatesWithLocations]);
+                      setShootDateLocations((prev) => {
+                        const kept = prev.filter((pair) => dates.includes(pair.date));
+                        const additions: ShootDateLocation[] = [];
+                        for (const date of dates) {
+                          if (kept.some((p) => p.date === date)) continue;
+                          const loc = locationForProjectCalendarDay(selectedProject, date);
+                          if (loc) additions.push({ date, location: loc });
                         }
-                      }
+                        return [...kept, ...additions];
+                      });
                     }}
                     minDate={projectStartIso}
                     maxDate={projectEndIso}
