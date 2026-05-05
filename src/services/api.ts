@@ -91,11 +91,38 @@ async function extractError(res: Response): Promise<ApiException> {
   }
 }
 
+/**
+ * Parse the throttler's Retry-After header (RFC 7231 — seconds or HTTP-date).
+ * Returns the wait in milliseconds, capped at 5 s. Returns null if the header
+ * is missing/unparseable or the wait would exceed the cap (caller should
+ * propagate the 429 instead of retrying for that long).
+ */
+function parseRetryAfterMs(res: Response): number | null {
+  const raw = res.headers.get('Retry-After');
+  if (!raw) return null;
+  const seconds = Number(raw);
+  let waitMs: number;
+  if (Number.isFinite(seconds)) {
+    waitMs = seconds * 1000;
+  } else {
+    const dateMs = Date.parse(raw);
+    if (!Number.isFinite(dateMs)) return null;
+    waitMs = dateMs - Date.now();
+  }
+  if (waitMs <= 0) return 0;
+  if (waitMs > 5000) return null;
+  return waitMs;
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 async function request<T>(
   method: string,
   path: string,
   body?: unknown,
-  isRetry = false,
+  retryFlags: { auth?: boolean; throttle?: boolean } = {},
 ): Promise<T> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -112,10 +139,20 @@ async function request<T>(
   });
 
   // Transparent token refresh — attempt once on 401
-  if (res.status === 401 && !isRetry && _refreshFn) {
+  if (res.status === 401 && !retryFlags.auth && _refreshFn) {
     const newToken = await _refreshFn();
     if (newToken) {
-      return request<T>(method, path, body, true);
+      return request<T>(method, path, body, { ...retryFlags, auth: true });
+    }
+  }
+
+  // Transparent throttle backoff — attempt once on 429 if Retry-After is short.
+  // Adds 0–250 ms of jitter so a synchronized burst doesn't immediately rebound.
+  if (res.status === 429 && !retryFlags.throttle) {
+    const waitMs = parseRetryAfterMs(res);
+    if (waitMs !== null) {
+      await sleep(waitMs + Math.floor(Math.random() * 250));
+      return request<T>(method, path, body, { ...retryFlags, throttle: true });
     }
   }
 
