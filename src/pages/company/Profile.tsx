@@ -8,6 +8,7 @@ import DashboardHeader from '../../components/DashboardHeader';
 import DashboardSidebar from '../../components/DashboardSidebar';
 import AppFooter from '../../components/AppFooter';
 import Avatar from '../../components/Avatar';
+import ImagePreviewModal from '../../components/ImagePreviewModal';
 import { api, ApiException } from '../../services/api';
 import { useApiQuery } from '../../hooks/useApiQuery';
 import { companyNavLinks } from '../../navigation/dashboardNav';
@@ -87,6 +88,12 @@ export default function CompanyProfile() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [coverUrl, setCoverUrl] = useState<string | null>(null);
+  const [coverUploading, setCoverUploading] = useState(false);
+  const coverInputRef = useRef<HTMLInputElement>(null);
+  // Lightbox preview state
+  const [avatarPreviewOpen, setAvatarPreviewOpen] = useState(false);
+  const [coverPreviewOpen, setCoverPreviewOpen] = useState(false);
 
   // Password change state
   const [showPasswordSection, setShowPasswordSection] = useState(false);
@@ -101,14 +108,27 @@ export default function CompanyProfile() {
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setError('Please upload an image file (JPEG, PNG, or WebP).');
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      setError('Logo must be under 8MB.');
+      return;
+    }
     setError(null);
     setAvatarUploading(true);
     // Optimistic preview
     const previewUrl = URL.createObjectURL(file);
     setAvatarUrl(previewUrl);
     try {
-      const { uploadUrl, key } = await api.post<{ uploadUrl: string; key: string }>('/profile/avatar', {});
-      await fetch(uploadUrl, { method: 'PUT', headers: { 'Content-Type': file.type || 'image/jpeg' }, body: file });
+      // contentType MUST match between presign and PUT — otherwise S3 returns
+      // SignatureDoesNotMatch and the upload silently fails.
+      const contentType = file.type || 'image/jpeg';
+      const { uploadUrl, key } = await api.post<{ uploadUrl: string; key: string }>('/profile/avatar', {
+        contentType,
+      });
+      await fetch(uploadUrl, { method: 'PUT', headers: { 'Content-Type': contentType }, body: file });
       await api.post('/profile/avatar/confirm', { key });
       refetchMe();
     } catch {
@@ -119,10 +139,43 @@ export default function CompanyProfile() {
     }
   };
 
+  const handleCoverChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setError('Please upload an image file for cover photo.');
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      setError('Cover photo must be under 8MB.');
+      return;
+    }
+    setError(null);
+    setCoverUploading(true);
+    const previewUrl = URL.createObjectURL(file);
+    setCoverUrl(previewUrl);
+    try {
+      const contentType = file.type || 'image/jpeg';
+      const { uploadUrl, key } = await api.post<{ uploadUrl: string; key: string }>('/profile/cover', {
+        contentType,
+      });
+      await fetch(uploadUrl, { method: 'PUT', headers: { 'Content-Type': contentType }, body: file });
+      await api.post('/profile/cover/confirm', { key });
+      refetchMe();
+    } catch {
+      setError('Failed to upload cover photo.');
+    } finally {
+      setCoverUploading(false);
+      URL.revokeObjectURL(previewUrl);
+      if (coverInputRef.current) coverInputRef.current.value = '';
+    }
+  };
+
   const hydrateFromProfile = useCallback(() => {
     if (!me?.profile) return;
-    const p = me.profile as CompanyProfileData & { avatarUrl?: string; logoUrl?: string };
+    const p = me.profile as CompanyProfileData & { avatarUrl?: string; logoUrl?: string; coverUrl?: string };
     if (p.logoUrl || p.avatarUrl) setAvatarUrl(p.logoUrl ?? p.avatarUrl ?? null);
+    if (p.coverUrl) setCoverUrl(p.coverUrl);
     setCompanyName(p.companyName ?? '');
     setLocationCity(p.locationCity ?? '');
     setLocationState(p.locationState ?? '');
@@ -284,20 +337,108 @@ export default function CompanyProfile() {
                   <div className="lg:col-span-1 space-y-6">
                     {/* Profile Card */}
                     <div className="rounded-2xl bg-white border border-neutral-200 shadow-sm hover:border-[#3678F1] transition-colors duration-200 overflow-hidden">
-                      {/* Gradient Banner */}
-                      <div className="h-32 bg-gradient-to-br from-[#3678F1] via-[#3678F1]/90 to-[#2563EB] relative overflow-hidden">
-                        <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(255,255,255,0.3) 0%, transparent 50%), radial-gradient(circle at 80% 30%, rgba(255,255,255,0.2) 0%, transparent 50%)' }} />
+                      {/* Cover Banner — click to preview, hover to reveal upload pill */}
+                      <div
+                        className="h-36 bg-gradient-to-br from-[#3678F1] via-[#3678F1]/90 to-[#2563EB] relative overflow-hidden cursor-zoom-in group"
+                        onClick={() => setCoverPreviewOpen(true)}
+                        role="button"
+                        tabIndex={0}
+                        aria-label="Open cover photo preview"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            setCoverPreviewOpen(true);
+                          }
+                        }}
+                      >
+                        {coverUrl ? (
+                          <>
+                            {/* Blurred backdrop: same image scaled + blurred,
+                                fills any empty space left by object-contain
+                                with the cover's own colors instead of the
+                                raw blue gradient. */}
+                            <img
+                              src={coverUrl}
+                              alt=""
+                              aria-hidden
+                              draggable={false}
+                              className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-80 select-none pointer-events-none"
+                            />
+                            <img
+                              src={coverUrl}
+                              alt="Cover"
+                              draggable={false}
+                              className="absolute inset-0 w-full h-full object-contain transition-transform duration-500 group-hover:scale-[1.03]"
+                            />
+                          </>
+                        ) : (
+                          <div
+                            className="absolute inset-0 opacity-25"
+                            style={{
+                              backgroundImage:
+                                'radial-gradient(circle at 20% 50%, rgba(255,255,255,0.35) 0%, transparent 50%), radial-gradient(circle at 80% 30%, rgba(255,255,255,0.25) 0%, transparent 50%)',
+                            }}
+                          />
+                        )}
+                        <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            coverInputRef.current?.click();
+                          }}
+                          aria-label="Change cover photo"
+                          className="absolute bottom-2.5 right-2.5 inline-flex items-center gap-1.5 text-white text-xs font-semibold bg-black/55 hover:bg-black/75 active:bg-black/85 backdrop-blur px-2.5 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity shadow-md"
+                        >
+                          {coverUploading ? (
+                            <>
+                              <span className="w-3 h-3 border-[2px] border-white/40 border-t-white rounded-full animate-spin" />
+                              Uploading…
+                            </>
+                          ) : (
+                            <>
+                              <FaCamera className="w-3 h-3" /> Change cover
+                            </>
+                          )}
+                        </button>
+                        <input ref={coverInputRef} type="file" accept="image/*" className="hidden" onChange={handleCoverChange} />
                       </div>
-                      
-                      {/* Avatar */}
-                      <div className="flex justify-center -mt-14 mb-4">
-                        <div className="relative group cursor-pointer ring-4 ring-white rounded-full shadow-lg" onClick={() => fileInputRef.current?.click()}>
-                          <Avatar src={avatarUrl ?? undefined} name={companyName || 'Co'} size="lg" />
-                          <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                            {avatarUploading
-                              ? <span className="w-6 h-6 border-[2.5px] border-white/40 border-t-white border-r-white rounded-full animate-spin" />
-                              : <FaCamera className="text-white text-sm" />}
+
+                      {/* Avatar (= company logo) — bigger, pure circular, gradient ring */}
+                      <div className="flex justify-center -mt-16 mb-4">
+                        <div
+                          className="relative group cursor-zoom-in"
+                          onClick={() => setAvatarPreviewOpen(true)}
+                          role="button"
+                          tabIndex={0}
+                          aria-label="Open logo preview"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              setAvatarPreviewOpen(true);
+                            }
+                          }}
+                        >
+                          <div className="p-[3px] rounded-full bg-gradient-to-br from-[#3678F1] via-[#2563EB] to-[#1D4ED8] shadow-xl">
+                            <div className="p-[3px] rounded-full bg-white">
+                              <Avatar src={avatarUrl ?? undefined} name={companyName || 'Co'} size="xl" />
+                            </div>
                           </div>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              fileInputRef.current?.click();
+                            }}
+                            aria-label="Change logo"
+                            className="absolute bottom-1 right-1 w-9 h-9 rounded-full bg-[#3678F1] hover:bg-[#2563EB] active:bg-[#1D4ED8] text-white flex items-center justify-center shadow-lg ring-2 ring-white transition-colors"
+                          >
+                            {avatarUploading ? (
+                              <span className="w-3.5 h-3.5 border-[2px] border-white/40 border-t-white rounded-full animate-spin" />
+                            ) : (
+                              <FaCamera className="w-3.5 h-3.5" />
+                            )}
+                          </button>
                           <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
                         </div>
                       </div>
@@ -758,6 +899,29 @@ export default function CompanyProfile() {
           <AppFooter />
         </main>
       </div>
+
+      <ImagePreviewModal
+        open={avatarPreviewOpen}
+        onClose={() => setAvatarPreviewOpen(false)}
+        imageUrl={avatarUrl}
+        title="Company Logo"
+        shape="circle"
+        emptyState="No logo yet — upload one below."
+        uploading={avatarUploading}
+        uploadLabel="Change logo"
+        onUploadNew={() => fileInputRef.current?.click()}
+      />
+      <ImagePreviewModal
+        open={coverPreviewOpen}
+        onClose={() => setCoverPreviewOpen(false)}
+        imageUrl={coverUrl}
+        title="Cover Photo"
+        shape="rect"
+        emptyState="No cover photo yet — upload one below."
+        uploading={coverUploading}
+        uploadLabel="Change cover photo"
+        onUploadNew={() => coverInputRef.current?.click()}
+      />
     </div>
   );
 }

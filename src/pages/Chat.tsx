@@ -101,7 +101,9 @@ function shouldShowDateLabel(msgs: ChatMessage[], idx: number): boolean {
   return prev !== curr;
 }
 
-const POLL_INTERVAL_MS = 4000;
+// 8 s leaves comfortable headroom under the 200/min global throttle even when
+// the unread-context (20 s) and nav-badges (20 s) polls are also running.
+const POLL_INTERVAL_MS = 8000;
 
 export default function Chat() {
   const { userId: targetUserId } = useParams<{ userId: string }>();

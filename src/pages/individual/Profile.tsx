@@ -8,6 +8,7 @@ import DashboardHeader from '../../components/DashboardHeader';
 import DashboardSidebar from '../../components/DashboardSidebar';
 import AppFooter from '../../components/AppFooter';
 import Avatar from '../../components/Avatar';
+import ImagePreviewModal from '../../components/ImagePreviewModal';
 import { api, ApiException } from '../../services/api';
 import { useApiQuery } from '../../hooks/useApiQuery';
 import { paiseToRupees, rupeesToPaise } from '../../utils/currency';
@@ -106,18 +107,35 @@ export default function IndividualProfile() {
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
   const [coverUploading, setCoverUploading] = useState(false);
+  // Lightbox preview state
+  const [avatarPreviewOpen, setAvatarPreviewOpen] = useState(false);
+  const [coverPreviewOpen, setCoverPreviewOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setError('Please upload an image file (JPEG, PNG, or WebP).');
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      setError('Avatar must be under 8MB.');
+      return;
+    }
     setError(null);
     setAvatarUploading(true);
     setAvatarUrl(URL.createObjectURL(file));
     try {
-      const { uploadUrl, key } = await api.post<{ uploadUrl: string; key: string }>('/profile/avatar', {});
-      await fetch(uploadUrl, { method: 'PUT', headers: { 'Content-Type': file.type || 'image/jpeg' }, body: file });
+      // The backend signs the presigned PUT with this exact contentType. The
+      // browser PUT below MUST send the same Content-Type header or S3 returns
+      // SignatureDoesNotMatch (the previous bug that made PNG uploads fail).
+      const contentType = file.type || 'image/jpeg';
+      const { uploadUrl, key } = await api.post<{ uploadUrl: string; key: string }>('/profile/avatar', {
+        contentType,
+      });
+      await fetch(uploadUrl, { method: 'PUT', headers: { 'Content-Type': contentType }, body: file });
       await api.post('/profile/avatar/confirm', { key });
       refetchMe();
     } catch {
@@ -144,10 +162,12 @@ export default function IndividualProfile() {
     const previewUrl = URL.createObjectURL(file);
     setCoverUrl(previewUrl);
     try {
+      // Same critical rule as avatar: signed Content-Type must match PUT header.
+      const contentType = file.type || 'image/jpeg';
       const { uploadUrl, key } = await api.post<{ uploadUrl: string; key: string }>('/profile/cover', {
-        contentType: file.type || 'image/jpeg',
+        contentType,
       });
-      await fetch(uploadUrl, { method: 'PUT', headers: { 'Content-Type': file.type || 'image/jpeg' }, body: file });
+      await fetch(uploadUrl, { method: 'PUT', headers: { 'Content-Type': contentType }, body: file });
       await api.post('/profile/cover/confirm', { key });
       refetchMe();
     } catch {
@@ -335,45 +355,112 @@ export default function IndividualProfile() {
                   <div className="lg:col-span-1 space-y-6">
                     {/* Profile Card */}
                     <div className="rounded-2xl bg-white border border-neutral-200/70 shadow-soft overflow-hidden hover:border-[#3678F1] transition-colors duration-200">
-                      {/* Cover Banner */}
+                      {/* Cover Banner — click to preview, hover to reveal upload pill */}
                       <div
-                        className="h-28 bg-gradient-to-br from-[#3678F1] via-[#2563EB] to-[#1D4ED8] relative overflow-hidden cursor-pointer group"
-                        onClick={() => coverInputRef.current?.click()}
+                        className="h-36 bg-gradient-to-br from-[#3678F1] via-[#2563EB] to-[#1D4ED8] relative overflow-hidden cursor-zoom-in group"
+                        onClick={() => setCoverPreviewOpen(true)}
                         role="button"
                         tabIndex={0}
+                        aria-label="Open cover photo preview"
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' || e.key === ' ') {
                             e.preventDefault();
-                            coverInputRef.current?.click();
+                            setCoverPreviewOpen(true);
                           }
                         }}
                       >
                         {coverUrl ? (
-                          <img src={coverUrl} alt="Cover" className="absolute inset-0 w-full h-full object-cover" />
+                          <>
+                            {/* Blurred backdrop: same image scaled + blurred,
+                                fills any empty space left by object-contain
+                                with the cover's own colors instead of the
+                                raw blue gradient. */}
+                            <img
+                              src={coverUrl}
+                              alt=""
+                              aria-hidden
+                              draggable={false}
+                              className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-80 select-none pointer-events-none"
+                            />
+                            <img
+                              src={coverUrl}
+                              alt="Cover"
+                              draggable={false}
+                              className="absolute inset-0 w-full h-full object-contain transition-transform duration-500 group-hover:scale-[1.03]"
+                            />
+                          </>
                         ) : (
-                          <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(255,255,255,0.3) 0%, transparent 50%), radial-gradient(circle at 80% 30%, rgba(255,255,255,0.2) 0%, transparent 50%)' }} />
+                          <div
+                            className="absolute inset-0 opacity-25"
+                            style={{
+                              backgroundImage:
+                                'radial-gradient(circle at 20% 50%, rgba(255,255,255,0.35) 0%, transparent 50%), radial-gradient(circle at 80% 30%, rgba(255,255,255,0.25) 0%, transparent 50%)',
+                            }}
+                          />
                         )}
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors flex items-center justify-center">
+                        {/* Subtle gradient at bottom for legibility of the change-pill */}
+                        <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                        {/* Upload pill — clicking it bypasses the preview and goes straight to file picker */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            coverInputRef.current?.click();
+                          }}
+                          aria-label="Change cover photo"
+                          className="absolute bottom-2.5 right-2.5 inline-flex items-center gap-1.5 text-white text-xs font-semibold bg-black/55 hover:bg-black/75 active:bg-black/85 backdrop-blur px-2.5 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity shadow-md"
+                        >
                           {coverUploading ? (
-                            <span className="w-6 h-6 border-[2.5px] border-white/40 border-t-white border-r-white rounded-full animate-spin" />
+                            <>
+                              <span className="w-3 h-3 border-[2px] border-white/40 border-t-white rounded-full animate-spin" />
+                              Uploading…
+                            </>
                           ) : (
-                            <span className="opacity-0 group-hover:opacity-100 transition-opacity inline-flex items-center gap-1.5 text-white text-xs font-semibold bg-black/40 px-2.5 py-1 rounded-md">
+                            <>
                               <FaCamera className="w-3 h-3" /> Change cover
-                            </span>
+                            </>
                           )}
-                        </div>
+                        </button>
                         <input ref={coverInputRef} type="file" accept="image/*" className="hidden" onChange={handleCoverChange} />
                       </div>
 
-                      {/* Avatar */}
-                      <div className="flex justify-center -mt-12 mb-4">
-                        <div className="relative group cursor-pointer ring-4 ring-white rounded-full shadow-lg" onClick={() => fileInputRef.current?.click()}>
-                          <Avatar src={avatarUrl ?? undefined} name={nameForAvatar} size="lg" />
-                          <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                            {avatarUploading
-                              ? <span className="w-6 h-6 border-[2.5px] border-[#3678F1]/15 border-t-white border-r-white rounded-full animate-spin" />
-                              : <FaCamera className="text-white text-sm" />}
+                      {/* Avatar — bigger, pure circular, gradient ring, click to preview */}
+                      <div className="flex justify-center -mt-16 mb-4">
+                        <div
+                          className="relative group cursor-zoom-in"
+                          onClick={() => setAvatarPreviewOpen(true)}
+                          role="button"
+                          tabIndex={0}
+                          aria-label="Open profile photo preview"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              setAvatarPreviewOpen(true);
+                            }
+                          }}
+                        >
+                          {/* Gradient ring (separate layer so the ring keeps a perfect circle even when the avatar uses a fallback bg) */}
+                          <div className="p-[3px] rounded-full bg-gradient-to-br from-[#3678F1] via-[#2563EB] to-[#1D4ED8] shadow-xl">
+                            <div className="p-[3px] rounded-full bg-white">
+                              <Avatar src={avatarUrl ?? undefined} name={nameForAvatar} size="xl" className="ring-1 ring-white" />
+                            </div>
                           </div>
+                          {/* Edit affordance — small camera badge bottom-right; click goes to file picker, not modal */}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              fileInputRef.current?.click();
+                            }}
+                            aria-label="Change profile photo"
+                            className="absolute bottom-1 right-1 w-9 h-9 rounded-full bg-[#3678F1] hover:bg-[#2563EB] active:bg-[#1D4ED8] text-white flex items-center justify-center shadow-lg ring-2 ring-white transition-colors"
+                          >
+                            {avatarUploading ? (
+                              <span className="w-3.5 h-3.5 border-[2px] border-white/40 border-t-white rounded-full animate-spin" />
+                            ) : (
+                              <FaCamera className="w-3.5 h-3.5" />
+                            )}
+                          </button>
                           <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
                         </div>
                       </div>
@@ -850,6 +937,30 @@ export default function IndividualProfile() {
           <AppFooter />
         </main>
       </div>
+
+      {/* Lightbox previews — rendered to body via portal so they overlay the dashboard sidebar/header */}
+      <ImagePreviewModal
+        open={avatarPreviewOpen}
+        onClose={() => setAvatarPreviewOpen(false)}
+        imageUrl={avatarUrl}
+        title="Profile Photo"
+        shape="circle"
+        emptyState="No profile photo yet — upload one below."
+        uploading={avatarUploading}
+        uploadLabel="Change profile photo"
+        onUploadNew={() => fileInputRef.current?.click()}
+      />
+      <ImagePreviewModal
+        open={coverPreviewOpen}
+        onClose={() => setCoverPreviewOpen(false)}
+        imageUrl={coverUrl}
+        title="Cover Photo"
+        shape="rect"
+        emptyState="No cover photo yet — upload one below."
+        uploading={coverUploading}
+        uploadLabel="Change cover photo"
+        onUploadNew={() => coverInputRef.current?.click()}
+      />
     </div>
   );
 }
