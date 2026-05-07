@@ -116,7 +116,6 @@ function locationForProjectCalendarDay(project: Project | null, calendarIso: str
   const locs = project.shootLocations ?? [];
   const idx = dates.findIndex((sd) => calendarDayFromShootDate(sd as string) === day);
   if (idx !== -1 && locs[idx]?.trim()) return locs[idx].trim();
-  if (locs.length === 1 && locs[0]?.trim()) return locs[0].trim();
   return undefined;
 }
 
