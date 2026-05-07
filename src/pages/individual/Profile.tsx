@@ -370,12 +370,25 @@ export default function IndividualProfile() {
                         }}
                       >
                         {coverUrl ? (
-                          <img
-                            src={coverUrl}
-                            alt="Cover"
-                            draggable={false}
-                            className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-                          />
+                          <>
+                            {/* Blurred backdrop: same image scaled + blurred,
+                                fills any empty space left by object-contain
+                                with the cover's own colors instead of the
+                                raw blue gradient. */}
+                            <img
+                              src={coverUrl}
+                              alt=""
+                              aria-hidden
+                              draggable={false}
+                              className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-80 select-none pointer-events-none"
+                            />
+                            <img
+                              src={coverUrl}
+                              alt="Cover"
+                              draggable={false}
+                              className="absolute inset-0 w-full h-full object-contain transition-transform duration-500 group-hover:scale-[1.03]"
+                            />
+                          </>
                         ) : (
                           <div
                             className="absolute inset-0 opacity-25"

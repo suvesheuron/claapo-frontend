@@ -7,6 +7,7 @@ import DashboardHeader from '../components/DashboardHeader';
 import DashboardSidebar from '../components/DashboardSidebar';
 import AppFooter from '../components/AppFooter';
 import Avatar from '../components/Avatar';
+import ImagePreviewModal from '../components/ImagePreviewModal';
 import ReviewsList from '../components/ReviewsList';
 import LeaveReviewSection from '../components/LeaveReviewSection';
 import AvailabilityDateDetailModal from '../components/AvailabilityDateDetailModal';
@@ -126,6 +127,8 @@ export default function OtherUserProfile() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reviewsRefreshKey, setReviewsRefreshKey] = useState(0);
+  const [avatarPreviewOpen, setAvatarPreviewOpen] = useState(false);
+  const [coverPreviewOpen, setCoverPreviewOpen] = useState(false);
 
   const [calYear, setCalYear] = useState(new Date().getFullYear());
   const [calMonth, setCalMonth] = useState(new Date().getMonth());
@@ -206,6 +209,10 @@ export default function OtherUserProfile() {
   const coverPhotoUrl = (p as { coverPhotoUrl?: string; coverImageUrl?: string } | null)?.coverPhotoUrl
     ?? (p as { coverUrl?: string } | null)?.coverUrl
     ?? (p as { coverPhotoUrl?: string; coverImageUrl?: string } | null)?.coverImageUrl;
+  // Resolve avatar URL across the various shapes the API may return
+  // (individual = avatarUrl, company/vendor = logoUrl).
+  const avatarUrl = (p as { avatarUrl?: string; logoUrl?: string } | null)?.avatarUrl
+    ?? (p as { logoUrl?: string } | null)?.logoUrl;
 
   useEffect(() => {
     const n = new Date();
@@ -388,25 +395,68 @@ We're working on ${projectName}. The shoot is planned for ${shootDate} at ${loca
                 <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-6">
                   {/* Hero Card */}
                   <motion.div variants={itemVariants} className="rounded-3xl bg-white shadow-soft border border-neutral-100 hover:border-[#3678F1] transition-colors duration-200 overflow-hidden">
-                    <div className="relative h-36 sm:h-44 border-b border-neutral-100">
+                    <div
+                      className={`relative h-36 sm:h-44 border-b border-neutral-100 overflow-hidden bg-gradient-to-r from-[#3678F1]/15 via-[#7c96ff]/10 to-[#E8F0FE]/60 ${
+                        coverPhotoUrl ? 'cursor-zoom-in group' : ''
+                      }`}
+                      onClick={() => coverPhotoUrl && setCoverPreviewOpen(true)}
+                      role={coverPhotoUrl ? 'button' : undefined}
+                      tabIndex={coverPhotoUrl ? 0 : undefined}
+                      aria-label={coverPhotoUrl ? 'Open cover photo preview' : undefined}
+                      onKeyDown={(e) => {
+                        if (!coverPhotoUrl) return;
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setCoverPreviewOpen(true);
+                        }
+                      }}
+                    >
                       {coverPhotoUrl ? (
-                        <img
-                          src={coverPhotoUrl}
-                          alt="Cover"
-                          className="absolute inset-0 w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="absolute inset-0 bg-gradient-to-r from-[#3678F1]/15 via-[#7c96ff]/10 to-[#E8F0FE]/60" />
-                      )}
-                      <div className="absolute left-4 top-3 text-[11px] font-semibold text-neutral-600 bg-white/80 backdrop-blur-sm border border-neutral-200 rounded-md px-2 py-1">
-                        Cover photo
-                      </div>
+                        <>
+                          {/* Blurred backdrop — same image scaled + blurred,
+                              fills any empty space left by object-contain
+                              with the cover's own colors. */}
+                          <img
+                            src={coverPhotoUrl}
+                            alt=""
+                            aria-hidden
+                            draggable={false}
+                            className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-80 select-none pointer-events-none"
+                          />
+                          <img
+                            src={coverPhotoUrl}
+                            alt="Cover"
+                            draggable={false}
+                            className="absolute inset-0 w-full h-full object-contain"
+                          />
+                        </>
+                      ) : null}
                     </div>
 
                     <div className="p-5 sm:p-7 lg:p-8 grid grid-cols-1 lg:grid-cols-[auto_1fr_auto] gap-5 lg:gap-7 items-start">
-                      <div className="flex-shrink-0">
-                        <div className="ring-4 ring-white rounded-full bg-white shadow-sm inline-block relative z-10">
-                          <Avatar name={title} size="lg" />
+                      {/* Avatar overlaps the cover (LinkedIn pattern) so the
+                          card has a clear focal point and the cover doesn't
+                          visually dominate. */}
+                      <div
+                        className={`flex-shrink-0 -mt-16 sm:-mt-20 ${
+                          avatarUrl ? 'cursor-zoom-in' : ''
+                        }`}
+                        onClick={() => avatarUrl && setAvatarPreviewOpen(true)}
+                        role={avatarUrl ? 'button' : undefined}
+                        tabIndex={avatarUrl ? 0 : undefined}
+                        aria-label={avatarUrl ? 'Open profile photo preview' : undefined}
+                        onKeyDown={(e) => {
+                          if (!avatarUrl) return;
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            setAvatarPreviewOpen(true);
+                          }
+                        }}
+                      >
+                        <div className="p-[3px] rounded-full bg-gradient-to-br from-[#3678F1] via-[#2563EB] to-[#1D4ED8] shadow-xl inline-block relative z-10">
+                          <div className="p-[3px] rounded-full bg-white">
+                            <Avatar src={avatarUrl} name={title} size="xl" />
+                          </div>
                         </div>
                       </div>
 
@@ -801,6 +851,22 @@ We're working on ${projectName}. The shoot is planned for ${shootDate} at ${loca
           onSendInquiry={handleStartInquiryChat}
         />
       )}
+
+      {/* Avatar / Cover lightbox previews (read-only — no upload action). */}
+      <ImagePreviewModal
+        open={avatarPreviewOpen}
+        onClose={() => setAvatarPreviewOpen(false)}
+        imageUrl={avatarUrl ?? null}
+        title={`${title} — Profile Photo`}
+        shape="circle"
+      />
+      <ImagePreviewModal
+        open={coverPreviewOpen}
+        onClose={() => setCoverPreviewOpen(false)}
+        imageUrl={coverPhotoUrl ?? null}
+        title={`${title} — Cover Photo`}
+        shape="rect"
+      />
     </div>
   );
 }

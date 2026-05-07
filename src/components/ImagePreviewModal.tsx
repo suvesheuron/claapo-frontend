@@ -112,16 +112,27 @@ export default function ImagePreviewModal({
               }`}
             >
               {imageUrl ? (
-                <img
-                  src={imageUrl}
-                  alt={title}
-                  draggable={false}
-                  className={
-                    isCircle
-                      ? 'w-[min(70vw,360px)] h-[min(70vw,360px)] sm:w-[min(60vw,420px)] sm:h-[min(60vw,420px)] rounded-full object-cover ring-4 ring-white/15 shadow-2xl select-none'
-                      : 'w-full max-h-[70vh] object-contain rounded-2xl ring-1 ring-white/10 shadow-2xl select-none bg-neutral-900'
-                  }
-                />
+                isCircle ? (
+                  // Circular preview: square wrapper with overflow-hidden so the
+                  // <img> can never reshape the container, regardless of the
+                  // source image aspect ratio. object-center keeps the focal
+                  // point in the middle of the visible circle.
+                  <div className="w-[min(70vw,360px)] h-[min(70vw,360px)] sm:w-[min(60vw,420px)] sm:h-[min(60vw,420px)] aspect-square rounded-full overflow-hidden ring-4 ring-white/15 shadow-2xl flex items-center justify-center bg-neutral-900">
+                    <img
+                      src={imageUrl}
+                      alt={title}
+                      draggable={false}
+                      className="w-full h-full object-cover object-center block select-none"
+                    />
+                  </div>
+                ) : (
+                  <img
+                    src={imageUrl}
+                    alt={title}
+                    draggable={false}
+                    className="w-full max-h-[70vh] object-contain rounded-2xl ring-1 ring-white/10 shadow-2xl select-none bg-neutral-900"
+                  />
+                )
               ) : (
                 <div
                   className={

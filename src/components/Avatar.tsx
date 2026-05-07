@@ -42,21 +42,31 @@ export default function Avatar({ src, alt = 'Profile', name, size = 'md', classN
   const hasValidSrc = src && src.trim() !== '';
   const showImage = hasValidSrc && !imageError;
 
+  // The wrapper is always a perfect square (aspect-square + fixed w/h) with
+  // overflow hidden, so the avatar stays circular regardless of the source
+  // image's aspect ratio or how a parent flex/grid layout tries to stretch it.
+  // The <img> inside fills the wrapper and is cropped via object-cover.
+  // `flex items-center justify-center` keeps the image visually centered even
+  // when fragmentary loading or print stylesheets briefly drop object-fit.
+  const wrapperBase = `${sizeClasses[size]} aspect-square rounded-full overflow-hidden shrink-0 select-none flex items-center justify-center ${className}`;
+
   if (showImage) {
     return (
-      <img
-        src={src!.trim()}
-        alt={alt}
-        className={`${sizeClasses[size]} rounded-full object-cover shrink-0 select-none ${className}`}
-        onError={() => setImageError(true)}
-        draggable={false}
-      />
+      <div className={wrapperBase}>
+        <img
+          src={src!.trim()}
+          alt={alt}
+          className="w-full h-full object-cover object-center block"
+          onError={() => setImageError(true)}
+          draggable={false}
+        />
+      </div>
     );
   }
 
   return (
     <div
-      className={`${sizeClasses[size]} rounded-full flex items-center justify-center shrink-0 font-semibold text-white select-none ${className}`}
+      className={`${wrapperBase} font-semibold text-white`}
       style={{ backgroundColor: bgColor }}
     >
       <span className={iconSizes[size]}>{initials}</span>
