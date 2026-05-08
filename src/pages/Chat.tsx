@@ -29,7 +29,13 @@ import {
 import DashboardHeader from '../components/DashboardHeader';
 import DashboardSidebar from '../components/DashboardSidebar';
 import Avatar from '../components/Avatar';
-import { api, ApiException } from '../services/api';
+import { api, ApiException, getMediaUrl } from '../services/api';
+import {
+  ensureChatSocket,
+  joinConversationRoom,
+  leaveConversationRoom,
+  emitReadAck,
+} from '../services/chatSocket';
 import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 import { useRole } from '../contexts/RoleContext';
@@ -116,6 +122,7 @@ export default function Chat() {
   const [otherUser, setOtherUser] = useState<OtherUser | null>(null);
   const [noConversation, setNoConversation] = useState(false);
   const [scopedConversationId, setScopedConversationId] = useState<string | null>(null);
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [scopedProjectTitle, setScopedProjectTitle] = useState<string | null>(null);
   const [scopedConversationLoading, setScopedConversationLoading] = useState(() => !!projectIdFromUrl);
   const [input, setInput] = useState('');
@@ -160,6 +167,7 @@ export default function Chat() {
   useEffect(() => {
     if (!projectIdFromUrl || !targetUserId) {
       setScopedConversationId(null);
+      setActiveConversationId(null);
       setScopedProjectTitle(null);
       setScopedConversationLoading(false);
       return;
@@ -167,6 +175,7 @@ export default function Chat() {
     let alive = true;
     setScopedConversationLoading(true);
     setScopedConversationId(null);
+    setActiveConversationId(null);
     setScopedProjectTitle(null);
     void (async () => {
       try {
@@ -176,11 +185,13 @@ export default function Chat() {
         });
         if (!alive) return;
         setScopedConversationId(res.id);
+        setActiveConversationId(res.id);
         setScopedProjectTitle(res.project?.title ?? null);
         setNoConversation(false);
       } catch {
         if (!alive) return;
         setScopedConversationId(null);
+        setActiveConversationId(null);
         setNoConversation(true);
         toast.error('Could not open chat for this project.');
       } finally {
@@ -295,6 +306,7 @@ export default function Chat() {
         const data = res?.items ?? [];
         if (!isPolling) {
           setNoConversation(res?.conversationId === null);
+          setActiveConversationId(res?.conversationId ?? null);
           setScopedProjectTitle(res?.project?.title ?? null);
           setMessages(data);
         }
@@ -344,6 +356,45 @@ export default function Chat() {
     pollRef.current = setInterval(() => fetchMessages(true), POLL_INTERVAL_MS);
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [fetchMessages]);
+
+  // ── Socket.IO real-time layer (additive — polling above stays as fallback)
+  useEffect(() => {
+    if (!activeConversationId) return;
+    const socket = ensureChatSocket();
+    if (!socket) return;
+
+    joinConversationRoom(activeConversationId);
+    emitReadAck(activeConversationId);
+
+    const onNewMessage = (raw: Parameters<typeof mapApiMessageToChat>[0] & { conversationId?: string }) => {
+      if (raw?.conversationId && raw.conversationId !== activeConversationId) return;
+      const incoming = mapApiMessageToChat(raw);
+      setMessages((prev) => {
+        const idx = prev.findIndex((m) => m.id === incoming.id);
+        if (idx >= 0) {
+          const next = [...prev];
+          next[idx] = { ...next[idx], ...incoming };
+          return next;
+        }
+        return [...prev, incoming];
+      });
+      lastMsgTime.current = incoming.createdAt;
+    };
+
+    const onMessagesRead = (payload: { conversationId?: string }) => {
+      if (payload?.conversationId && payload.conversationId !== activeConversationId) return;
+      void fetchMessages(true);
+    };
+
+    socket.on('new_message', onNewMessage);
+    socket.on('messages_read', onMessagesRead);
+
+    return () => {
+      socket.off('new_message', onNewMessage);
+      socket.off('messages_read', onMessagesRead);
+      leaveConversationRoom(activeConversationId);
+    };
+  }, [activeConversationId, mapApiMessageToChat, fetchMessages]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -399,7 +450,11 @@ export default function Chat() {
     }
   };
 
-  // File/Image upload
+  // File/Image upload — three-step flow shared with SearchFilter quotation flow:
+  //   1. POST /conversations/{id}/media → presigned upload URL + key
+  //   2. PUT the file body to that URL with the same content-type
+  //   3. POST a `type: file|image` message referencing the returned mediaKey
+  // The recipient renders the attachment from the mediaKey via getMediaUrl().
   const handleFileUpload = async (file: File, type: 'image' | 'file') => {
     if (!targetUserId) return;
     if (projectIdFromUrl && !scopedConversationId) {
@@ -409,15 +464,38 @@ export default function Chat() {
     setShowAttachMenu(false);
     const toastId = toast.loading(`Sending ${type}...`);
     try {
-      const payload = {
-        content: `📎 ${file.name} (${(file.size / 1024).toFixed(1)} KB)`,
-        type,
-      };
-      if (scopedConversationId) {
-        await api.post(`/conversations/${scopedConversationId}/messages`, payload);
-      } else {
-        await api.post(`/conversations/with/${targetUserId}/messages`, payload);
+      // Need a concrete conversation id to mint a presigned URL. If the chat
+      // was opened without ?projectId=, resolve it via the /with/ endpoint first.
+      let conversationId = scopedConversationId;
+      if (!conversationId) {
+        const res = await api.get<{ conversationId: string | null }>(
+          `/conversations/with/${targetUserId}?limit=1`,
+        );
+        conversationId = res?.conversationId ?? null;
       }
+      if (!conversationId) {
+        toast.error('Open a project chat first to send attachments.', { id: toastId });
+        return;
+      }
+
+      const contentType = file.type || 'application/octet-stream';
+      const media = await api.post<{ uploadUrl: string; key: string }>(
+        `/conversations/${conversationId}/media`,
+        { contentType },
+      );
+      const putResp = await fetch(media.uploadUrl, {
+        method: 'PUT',
+        body: file,
+        headers: { 'Content-Type': contentType },
+      });
+      if (!putResp.ok) throw new Error(`Upload failed (${putResp.status})`);
+
+      await api.post(`/conversations/${conversationId}/messages`, {
+        type,
+        mediaKey: media.key,
+        content: file.name,
+      });
+
       await fetchMessages(false);
       toast.success(`${type === 'image' ? 'Image' : 'File'} sent!`, { id: toastId });
     } catch (err) {
@@ -811,17 +889,75 @@ export default function Chat() {
                           </p>
                         ) : (
                           <>
-                            {msg.type === 'image' && msg.mediaUrl && (
-                              <img src={msg.mediaUrl} alt="Shared image" className="rounded-xl mb-2 max-w-full max-h-60 object-cover shadow-sm border border-black/5" />
-                            )}
-                            <p className={`text-[14px] leading-relaxed break-words whitespace-pre-wrap ${isMe ? 'text-white' : 'text-[#111B21] dark:text-slate-200'}`}>
-                              {msg.content ?? ''}
-                              {/* Invisible spacer for timestamp */}
-                              <span className="invisible text-[11px] pl-4">
+                            {msg.type === 'image' && msg.mediaKey ? (
+                              (() => {
+                                const url = getMediaUrl(msg.mediaKey);
+                                return url ? (
+                                  <a href={url} target="_blank" rel="noreferrer" className="block mb-2">
+                                    <img
+                                      src={url}
+                                      alt={msg.content ?? 'Shared image'}
+                                      className="rounded-xl max-w-full max-h-60 object-cover shadow-sm border border-black/5 cursor-zoom-in"
+                                    />
+                                  </a>
+                                ) : null;
+                              })()
+                            ) : null}
+                            {msg.type === 'file' && msg.mediaKey ? (
+                              (() => {
+                                const url = getMediaUrl(msg.mediaKey);
+                                // Strip the legacy "Requirement file: " prefix so the chip just
+                                // shows the filename — same display name on web as on mobile.
+                                const fileName =
+                                  msg.content?.replace(/^Requirement file:\s*/i, '') ||
+                                  'Attachment';
+                                return url ? (
+                                  <a
+                                    href={url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    download={fileName}
+                                    className={`mb-2 flex items-center gap-2.5 rounded-xl px-3 py-2 transition-colors max-w-full ${
+                                      isMe
+                                        ? 'bg-white/15 hover:bg-white/25 text-white'
+                                        : 'bg-[#E8F0FE] hover:bg-[#DBEAFE] text-[#1D4ED8]'
+                                    }`}
+                                  >
+                                    <span
+                                      className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                                        isMe ? 'bg-white/20' : 'bg-[#3678F1] text-white'
+                                      }`}
+                                    >
+                                      <FaFile className="w-3.5 h-3.5" />
+                                    </span>
+                                    <span className="min-w-0 flex-1">
+                                      <span className="block truncate text-[13px] font-semibold">
+                                        {fileName}
+                                      </span>
+                                      <span className={`block text-[11px] ${isMe ? 'text-white/80' : 'text-[#1D4ED8]/70'}`}>
+                                        Tap to download
+                                      </span>
+                                    </span>
+                                  </a>
+                                ) : null;
+                              })()
+                            ) : null}
+                            {msg.type !== 'file' || !msg.mediaKey ? (
+                              <p className={`text-[14px] leading-relaxed break-words whitespace-pre-wrap ${isMe ? 'text-white' : 'text-[#111B21] dark:text-slate-200'}`}>
+                                {msg.content ?? ''}
+                                {/* Invisible spacer for timestamp */}
+                                <span className="invisible text-[11px] pl-4">
+                                  {formatTime(msg.createdAt)}
+                                  {isMe && '  ✓✓'}
+                                </span>
+                              </p>
+                            ) : (
+                              /* Reserve room for the absolute-positioned timestamp on file-only bubbles */
+                              <span className="invisible block text-[11px] pl-4">
                                 {formatTime(msg.createdAt)}
                                 {isMe && '  ✓✓'}
                               </span>
-                            </p>
+                            )}
                           </>
                         )}
 
@@ -1040,6 +1176,14 @@ export default function Chat() {
                   <textarea
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+                        e.preventDefault();
+                        if (input.trim() && !sending) {
+                          void handleSend(e as unknown as React.FormEvent);
+                        }
+                      }
+                    }}
                     placeholder="Message..."
                     disabled={sending}
                     rows={1}

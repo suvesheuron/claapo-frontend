@@ -46,6 +46,11 @@ interface ProjectItem {
   id: string;
   title: string;
   status: string;
+  startDate?: string;
+  endDate?: string;
+  shootDates?: string[];
+  shootLocations?: string[];
+  locationCity?: string;
 }
 
 const PAGE_SIZE = 15;
@@ -233,18 +238,62 @@ export default function SearchFilter() {
 
   const isAllVendorsMarked = vendorResults.length > 0 && vendorResults.every((r) => selectedVendorIds.includes(r.userId));
 
-  const getQuotationTemplate = (projectTitle: string) => {
-    const dateLabel = startDate && endDate
-      ? `${new Date(startDate).toLocaleDateString('en-IN')} to ${new Date(endDate).toLocaleDateString('en-IN')}`
-      : startDate
-        ? new Date(startDate).toLocaleDateString('en-IN')
-        : endDate
-          ? new Date(endDate).toLocaleDateString('en-IN')
-          : 'TBD';
-    const locationLabel = location.trim() || 'TBD';
+  /**
+   * Build the quotation template from the selected project. Prefer the
+   * project's own shootDates/shootLocations (what the company actually
+   * scheduled in CreateProject), then fall back to startDate..endDate or the
+   * search filter values, then finally TBD. The previous version only read
+   * from the search-filter inputs, so the message defaulted to "TBD" whenever
+   * the user hadn't typed those filters in.
+   */
+  const getQuotationTemplate = (project: ProjectItem) => {
+    const fmt = (iso: string) =>
+      new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+
+    const sortedShootDates = (project.shootDates ?? [])
+      .map((s) => s.slice(0, 10))
+      .filter(Boolean)
+      .sort();
+
+    let dateLabel = 'TBD';
+    if (sortedShootDates.length === 1) {
+      dateLabel = fmt(sortedShootDates[0]);
+    } else if (sortedShootDates.length > 1) {
+      dateLabel = `${fmt(sortedShootDates[0])} to ${fmt(sortedShootDates[sortedShootDates.length - 1])}`;
+    } else if (project.startDate && project.endDate) {
+      dateLabel = `${fmt(project.startDate)} to ${fmt(project.endDate)}`;
+    } else if (project.startDate) {
+      dateLabel = fmt(project.startDate);
+    } else if (project.endDate) {
+      dateLabel = fmt(project.endDate);
+    } else if (startDate && endDate) {
+      dateLabel = `${fmt(startDate)} to ${fmt(endDate)}`;
+    } else if (startDate) {
+      dateLabel = fmt(startDate);
+    } else if (endDate) {
+      dateLabel = fmt(endDate);
+    }
+
+    const uniqueLocations = Array.from(
+      new Set(
+        (project.shootLocations ?? [])
+          .map((l) => l?.trim())
+          .filter((l): l is string => !!l),
+      ),
+    );
+
+    let locationLabel = 'TBD';
+    if (uniqueLocations.length > 0) {
+      locationLabel = uniqueLocations.join(', ');
+    } else if (project.locationCity?.trim()) {
+      locationLabel = project.locationCity.trim();
+    } else if (location.trim()) {
+      locationLabel = location.trim();
+    }
+
     return `Hi, hope you're doing well :)
 
-We are looking for a quotation for project "${projectTitle}".
+We are looking for a quotation for project "${project.title}".
 
 Project date: ${dateLabel}
 Project location: ${locationLabel}
@@ -270,31 +319,67 @@ Please share your best quotation for this requirement.`;
     setSendingQuotation(true);
     const toastId = toast.loading('Sending quotation requests...');
     try {
+      // Mirrors the OfflineInvoiceModal pattern: the text message always goes
+      // out so the vendor at least receives the inquiry. The file attachment
+      // is best-effort — when storage isn't configured the chat-media endpoint
+      // throws "Storage is not configured", but we don't want that to take the
+      // whole quotation request down with it. Track per-vendor failure and
+      // surface a single warning at the end instead.
       const selectedVendors = vendorResults.filter((r) => selectedVendorIds.includes(r.userId));
+      let textSentCount = 0;
+      let attachmentFailedCount = 0;
+
       await Promise.all(selectedVendors.map(async (vendor) => {
         const conv = await api.post<{ id: string }>('/conversations', {
           projectId: project.id,
           otherUserId: vendor.userId,
         });
-        const media = await api.post<{ uploadUrl: string; key: string }>(`/conversations/${conv.id}/media`, {
-          contentType: quotationFile.type || 'application/octet-stream',
-        });
-        await fetch(media.uploadUrl, {
-          method: 'PUT',
-          body: quotationFile,
-          headers: { 'Content-Type': quotationFile.type || 'application/octet-stream' },
-        });
         await api.post(`/conversations/${conv.id}/messages`, {
           type: 'text',
-          content: getQuotationTemplate(project.title),
+          content: getQuotationTemplate(project),
         });
-        await api.post(`/conversations/${conv.id}/messages`, {
-          type: 'file',
-          mediaKey: media.key,
-          content: `Requirement file: ${quotationFile.name}`,
-        });
+        textSentCount += 1;
+
+        try {
+          const media = await api.post<{ uploadUrl: string; key: string }>(`/conversations/${conv.id}/media`, {
+            contentType: quotationFile.type || 'application/octet-stream',
+          });
+          const putResp = await fetch(media.uploadUrl, {
+            method: 'PUT',
+            body: quotationFile,
+            headers: { 'Content-Type': quotationFile.type || 'application/octet-stream' },
+          });
+          if (!putResp.ok) throw new Error(`Upload failed (${putResp.status})`);
+          await api.post(`/conversations/${conv.id}/messages`, {
+            type: 'file',
+            mediaKey: media.key,
+            content: `Requirement file: ${quotationFile.name}`,
+          });
+        } catch {
+          attachmentFailedCount += 1;
+          // Let the vendor know a file was meant to be attached. The company
+          // can re-share it from the chat thread once storage is back.
+          await api.post(`/conversations/${conv.id}/messages`, {
+            type: 'text',
+            content: `Note: a requirement file ("${quotationFile.name}") was meant to be attached here, but the upload failed. The team will resend it shortly.`,
+          }).catch(() => {});
+        }
       }));
-      toast.success(`Quotation request sent to ${selectedVendorIds.length} vendor${selectedVendorIds.length > 1 ? 's' : ''}.`, { id: toastId });
+
+      const vendorWord = textSentCount === 1 ? 'vendor' : 'vendors';
+      if (attachmentFailedCount === 0) {
+        toast.success(`Quotation request sent to ${textSentCount} ${vendorWord}.`, { id: toastId });
+      } else if (attachmentFailedCount === textSentCount) {
+        toast.success(
+          `Sent to ${textSentCount} ${vendorWord} without the attachment — file storage isn't configured. Resend the file from chat once it's available.`,
+          { id: toastId, duration: 6000 },
+        );
+      } else {
+        toast.success(
+          `Sent to ${textSentCount} ${vendorWord}. Attachment failed for ${attachmentFailedCount} of them — resend from chat.`,
+          { id: toastId, duration: 6000 },
+        );
+      }
       setSelectedVendorIds([]);
       setQuotationFile(null);
     } catch (err) {
