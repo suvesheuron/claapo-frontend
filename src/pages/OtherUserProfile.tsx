@@ -286,15 +286,14 @@ export default function OtherUserProfile() {
   // Handle Chat button click on a date
   const handleDateChatClick = (dateKey: string) => {
     const status = getDateBookingStatus(dateKey);
-    // If there's already an accepted/locked booking, go directly to chat
+    // If there's already an accepted/locked booking, go directly to chat scoped to its project.
+    // Always pass projectId — Chat.tsx uses it to upsert the project-scoped conversation.
+    // Falling back to /chat/:userId alone resolves to the most-recent conversation across
+    // projects (wrong thread when multiple projects exist between the same two users).
     if (status === 'accepted' || status === 'locked' || status === 'completed') {
       const booking = profileBookingDetails[dateKey];
-      if (booking?.conversationId) {
-        navigate(`/chat/${userId}?conversationId=${booking.conversationId}`);
-      } else {
-        // Fallback: navigate without conversationId, chat page will find or create it
-        navigate(`/chat/${userId}?projectId=${booking?.projectId || ''}`);
-      }
+      const projId = booking?.projectId;
+      navigate(`/chat/${userId}${projId ? `?projectId=${encodeURIComponent(projId)}` : ''}`);
     } else {
       // No confirmed booking - open inquiry modal with pre-selected date
       setDetailDate(null);

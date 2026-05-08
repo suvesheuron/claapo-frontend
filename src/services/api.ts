@@ -63,6 +63,38 @@ export function setAccessToken(token: string | null): void {
   _accessToken = token;
 }
 
+/** Read-only accessor for non-fetch callers (e.g. WebSocket auth). */
+export function getAccessToken(): string | null {
+  return _accessToken;
+}
+
+/** Backend origin (no /v1 suffix) — used by WebSocket clients which speak Socket.IO directly. */
+export function getApiOrigin(): string {
+  if (BASE_URL.startsWith('http://') || BASE_URL.startsWith('https://')) {
+    return BASE_URL.replace(/\/v1\/?$/, '');
+  }
+  // Relative base (dev with Vite proxy) → use current page origin; backend at :3000 in dev.
+  if (typeof window === 'undefined') return '';
+  const { protocol, hostname } = window.location;
+  return `${protocol}//${hostname}:3000`;
+}
+
+/**
+ * Build a downloadable URL for a storage key. The backend exposes
+ * `GET /v1/storage/files/{key}` which serves local files or 302-redirects to a
+ * Supabase / S3 signed URL. Pass the `mediaKey` from a chat message, profile,
+ * or invoice attachment.
+ *
+ * Returns `null` when the key is empty.
+ */
+export function getMediaUrl(key: string | null | undefined): string | null {
+  if (!key) return null;
+  const trimmed = key.trim();
+  if (!trimmed) return null;
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  return `${getApiOrigin()}/v1/storage/files/${trimmed.replace(/^\/+/, '')}`;
+}
+
 /**
  * Called by AuthContext once on mount.
  * The registered function must call POST /auth/refresh, persist the new

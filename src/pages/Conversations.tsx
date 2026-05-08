@@ -426,7 +426,14 @@ export default function Conversations() {
                 const lastMsgTime = conv.lastMessage?.createdAt ?? conv.lastMessageAt ?? null;
                 const lastMsgText = conv.lastMessage?.content ?? null;
                 const hasUnread = (conv.unreadCount ?? 0) > 0;
-                const chatHref = `/chat/${other.id}${selectedProjectId ? `?projectId=${selectedProjectId}` : ''}`;
+                // Always scope the chat to the conversation's own project so we open
+                // the exact thread shown in this list row. Without this, vendor/individual
+                // users (who have no `selectedProjectId` in the URL) fall through to
+                // `/conversations/with/:userId` on the Chat page, which returns the
+                // most-recent conversation across any project — surfacing the wrong
+                // thread when multiple projects exist between the same two users.
+                const chatProjectId = conv.project?.id ?? selectedProjectId ?? null;
+                const chatHref = `/chat/${other.id}${chatProjectId ? `?projectId=${chatProjectId}` : ''}`;
                 const showProjectFirst = !isCompanyView;
                 const projectTitle = conv.project?.title?.trim() || 'Untitled Project';
                 const productionHouseName = getName(other);
