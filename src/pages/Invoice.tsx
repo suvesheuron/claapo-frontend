@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaPrint, FaTriangleExclamation, FaCheck, FaPaperPlane, FaPaperclip, FaDownload, FaTrash } from 'react-icons/fa6';
 import DashboardHeader from '../components/DashboardHeader';
 import AppFooter from '../components/AppFooter';
@@ -88,6 +88,7 @@ function formatDate(iso: string): string {
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function Invoice() {
   const { invoiceId } = useParams<{ invoiceId: string }>();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const printRef = useRef<HTMLDivElement>(null);
 
@@ -102,6 +103,7 @@ export default function Invoice() {
   const [declineReason, setDeclineReason] = useState('');
   const [uploadingAttachment, setUploadingAttachment] = useState(false);
   const [deletingAttachmentId, setDeletingAttachmentId] = useState<string | null>(null);
+  const [cancelling, setCancelling] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -200,6 +202,30 @@ export default function Invoice() {
     }
   };
 
+  const handleCancelInvoice = async () => {
+    if (!invoiceId || !invoice) return;
+    const isOffline = invoice.recordedOfflineByCompany;
+    const verb = isOffline ? 'delete' : 'cancel';
+    const ok = window.confirm(
+      isOffline
+        ? 'Delete this offline invoice? It will be moved to the deleted section and removed from project totals.'
+        : 'Cancel this invoice? It cannot be sent again afterwards.',
+    );
+    if (!ok) return;
+    setCancelling(true);
+    try {
+      await api.patch(`/invoices/${invoiceId}/cancel`, {});
+      toast.success(isOffline ? 'Offline invoice deleted.' : 'Invoice cancelled.');
+      refetch();
+    } catch (err) {
+      toast.error(
+        err instanceof ApiException ? err.payload.message : `Failed to ${verb} invoice.`,
+      );
+    } finally {
+      setCancelling(false);
+    }
+  };
+
   return (
     <>
       {/* Print styles */}
@@ -222,10 +248,21 @@ export default function Invoice() {
             <div className="flex-1 min-h-0 overflow-auto">
               <div className="max-w-4xl mx-auto px-4 sm:px-6 md:px-8 py-4 sm:py-6">
                 <div className="no-print">
-                  <Link to="/invoices" className="inline-flex items-center gap-2 text-neutral-600 hover:text-neutral-900 mb-4 text-sm transition-colors">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // Use the browser history when available so we land on the
+                      // exact list/project view the user came from. Falling back
+                      // to /invoices for direct loads (refresh on this page,
+                      // deep links, fresh tab) keeps the link safe.
+                      if (window.history.length > 1) navigate(-1);
+                      else navigate('/invoices');
+                    }}
+                    className="inline-flex items-center gap-2 text-neutral-600 hover:text-neutral-900 mb-4 text-sm transition-colors"
+                  >
                     <FaArrowLeft className="w-4 h-4" />
                     Back to Invoices
-                  </Link>
+                  </button>
                 </div>
 
                 {loading && (
@@ -314,6 +351,24 @@ export default function Invoice() {
                             >
                               <FaPrint className="w-3.5 h-3.5" />
                               <span className="hidden sm:inline">Print / PDF</span>
+                            </button>
+                          )}
+
+                          {/* Issuer-side cancel/delete. Offline invoices recorded by the company show
+                              a "Delete" label; regular issued invoices show "Cancel". Backend marks
+                              the invoice cancelled either way, which moves it into the deleted
+                              section on the list and excludes it from project totals. */}
+                          {isIssuer && (invoice.status === 'draft' || invoice.status === 'sent') && (
+                            <button
+                              type="button"
+                              onClick={handleCancelInvoice}
+                              disabled={cancelling}
+                              className="no-print px-3 py-2 bg-[#FEEBEA] border border-[#F40F02]/30 text-[#991B1B] rounded-xl text-sm font-semibold hover:bg-[#FDD8D5] disabled:opacity-50 transition-colors flex items-center gap-1.5"
+                            >
+                              <FaTrash className="w-3.5 h-3.5" />
+                              {cancelling
+                                ? (invoice.recordedOfflineByCompany ? 'Deleting…' : 'Cancelling…')
+                                : (invoice.recordedOfflineByCompany ? 'Delete' : 'Cancel Invoice')}
                             </button>
                           )}
                         </div>

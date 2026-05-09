@@ -137,6 +137,70 @@ export default function OfflineInvoices() {
     return out;
   }, [offlineInvoices, paymentFilter, search]);
 
+  // Split active vs cancelled (treat cancelled as the "deleted" bucket — it's
+  // how the API marks invoices retired by either party). They appear at the
+  // bottom in a separate section for cleaner organization.
+  const activeFiltered = useMemo(
+    () => filtered.filter((inv) => inv.status !== 'cancelled'),
+    [filtered],
+  );
+  const cancelledFiltered = useMemo(
+    () => filtered.filter((inv) => inv.status === 'cancelled'),
+    [filtered],
+  );
+
+  const renderOfflineRow = (inv: InvoiceItem) => {
+    const cfg = STATUS_CFG[inv.status] ?? STATUS_CFG.draft;
+    const issuer = getIssuerLabel(inv);
+    const isCancelled = inv.status === 'cancelled';
+    return (
+      <li key={inv.id}>
+        <Link
+          to={`/invoice/${inv.id}`}
+          className={`block rounded-2xl bg-white border border-neutral-200 hover:border-[#3678F1]/40 transition-colors px-4 sm:px-5 py-4 ${isCancelled ? 'opacity-75' : ''}`}
+        >
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-[#3678F1] text-white text-[9px] font-bold tracking-wider">
+                  OFFLINE
+                </span>
+                <span className="text-xs font-mono text-neutral-500">
+                  {inv.invoiceNumber}
+                </span>
+                <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${cfg.bg} ${cfg.text}`}>
+                  {cfg.label}
+                </span>
+                {inv.offlineDepartment ? (
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#E8F0FE] text-[#2563EB] ring-1 ring-[#3678F1]/20">
+                    {inv.offlineDepartment}
+                  </span>
+                ) : null}
+              </div>
+              <p className="text-sm font-bold text-neutral-900 mt-1.5">{issuer}</p>
+              <p className="text-xs text-neutral-500 mt-1 flex items-center gap-1.5">
+                <FaFileInvoice className="text-neutral-400 w-3 h-3" />
+                {isProjectScoped ? null : (
+                  <>
+                    {inv.project?.title ?? 'No project'}
+                    <span className="text-neutral-300">·</span>
+                  </>
+                )}
+                Issued {formatDate(inv.createdAt)}
+              </p>
+            </div>
+            <div className="text-right shrink-0">
+              <p className="text-lg font-bold text-neutral-900">{formatPaise(inv.totalAmount)}</p>
+              {inv.gstAmount ? (
+                <p className="text-[11px] text-neutral-500">Tax {formatPaise(inv.gstAmount)}</p>
+              ) : null}
+            </div>
+          </div>
+        </Link>
+      </li>
+    );
+  };
+
   const stats = useMemo(() => {
     let closureAmount = 0;
     let taxAmount = 0;
@@ -319,66 +383,27 @@ export default function OfflineInvoices() {
                   </p>
                 </div>
               ) : (
-                <ul className="space-y-2">
-                  {filtered.map((inv) => {
-                    const cfg = STATUS_CFG[inv.status] ?? STATUS_CFG.draft;
-                    const issuer = getIssuerLabel(inv);
-                    return (
-                      <li key={inv.id}>
-                        <Link
-                          to={`/invoice/${inv.id}`}
-                          className="block rounded-2xl bg-white border border-neutral-200 hover:border-[#3678F1]/40 transition-colors px-4 sm:px-5 py-4"
-                        >
-                          <div className="flex flex-wrap items-start justify-between gap-3">
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-[#3678F1] text-white text-[9px] font-bold tracking-wider">
-                                  OFFLINE
-                                </span>
-                                <span className="text-xs font-mono text-neutral-500">
-                                  {inv.invoiceNumber}
-                                </span>
-                                <span
-                                  className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${cfg.bg} ${cfg.text}`}
-                                >
-                                  {cfg.label}
-                                </span>
-                                {inv.offlineDepartment ? (
-                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#E8F0FE] text-[#2563EB] ring-1 ring-[#3678F1]/20">
-                                    {inv.offlineDepartment}
-                                  </span>
-                                ) : null}
-                              </div>
-                              <p className="text-sm font-bold text-neutral-900 mt-1.5">
-                                {issuer}
-                              </p>
-                              <p className="text-xs text-neutral-500 mt-1 flex items-center gap-1.5">
-                                <FaFileInvoice className="text-neutral-400 w-3 h-3" />
-                                {isProjectScoped ? null : (
-                                  <>
-                                    {inv.project?.title ?? 'No project'}
-                                    <span className="text-neutral-300">·</span>
-                                  </>
-                                )}
-                                Issued {formatDate(inv.createdAt)}
-                              </p>
-                            </div>
-                            <div className="text-right shrink-0">
-                              <p className="text-lg font-bold text-neutral-900">
-                                {formatPaise(inv.totalAmount)}
-                              </p>
-                              {inv.gstAmount ? (
-                                <p className="text-[11px] text-neutral-500">
-                                  Tax {formatPaise(inv.gstAmount)}
-                                </p>
-                              ) : null}
-                            </div>
-                          </div>
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ul>
+                <div className="space-y-6">
+                  {activeFiltered.length > 0 && (
+                    <ul className="space-y-2">
+                      {activeFiltered.map((inv) => renderOfflineRow(inv))}
+                    </ul>
+                  )}
+                  {cancelledFiltered.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 pt-2">
+                        <span className="h-px flex-1 bg-neutral-200" />
+                        <span className="text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
+                          Deleted · {cancelledFiltered.length}
+                        </span>
+                        <span className="h-px flex-1 bg-neutral-200" />
+                      </div>
+                      <ul className="space-y-2">
+                        {cancelledFiltered.map((inv) => renderOfflineRow(inv))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           </div>

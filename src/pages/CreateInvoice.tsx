@@ -30,7 +30,7 @@ interface PendingAttachment {
   uploading: boolean;
 }
 
-type TaxType = 'gst' | 'igst';
+type TaxType = 'gst' | 'igst' | 'none';
 
 export default function CreateInvoice() {
   useEffect(() => { document.title = 'Create Invoice – Claapo'; }, []);
@@ -66,10 +66,13 @@ export default function CreateInvoice() {
   }, [myProfile]);
 
   useEffect(() => {
-    if (!hasValidGst && (selectedTaxRate === '5' || selectedTaxRate === '18')) {
-      setSelectedTaxRate('0');
+    // Without a valid GST number, GST/IGST aren't allowed — force the tax type
+    // toggle to "Not Applicable" and clear any percentage that depends on GST.
+    if (!hasValidGst) {
+      if (selectedTaxType !== 'none') setSelectedTaxType('none');
+      if (selectedTaxRate === '5' || selectedTaxRate === '18') setSelectedTaxRate('0');
     }
-  }, [hasValidGst, selectedTaxRate]);
+  }, [hasValidGst, selectedTaxType, selectedTaxRate]);
 
   useEffect(() => {
     if (bookingsLoading || !bookingIdFromUrl) return;
@@ -126,7 +129,7 @@ export default function CreateInvoice() {
       toast.error('Please fill in all line item descriptions and prices.');
       return;
     }
-    if (!selectedTaxRate) {
+    if (selectedTaxType !== 'none' && !selectedTaxRate) {
       toast.error('Please select a tax percentage.');
       return;
     }
@@ -136,14 +139,17 @@ export default function CreateInvoice() {
     }
     setSubmitting(true);
     try {
-      const normalizedTaxType = selectedTaxRate === '0' ? 'none' : selectedTaxType;
+      // 'Not Applicable' = backend tax type 'none' with rate 0; the GST/IGST
+      // toggle still drives the rate breakdown (CGST+SGST vs single IGST line).
+      const normalizedTaxType =
+        selectedTaxType === 'none' || selectedTaxRate === '0' ? 'none' : selectedTaxType;
       const dto = {
         invoiceNumber: invoiceNumber.trim() || undefined,
         projectId: selectedBooking!.project.id,
         recipientUserId: selectedBooking!.requester.id,
         dueDate: dueDate || undefined,
         taxType: normalizedTaxType,
-        taxRatePct: Number(selectedTaxRate),
+        taxRatePct: selectedTaxType === 'none' ? 0 : Number(selectedTaxRate),
         lineItems: lineItems.map((l) => ({
           description: l.description,
           quantity: Math.max(1, parseInt(l.quantity) || 1),
@@ -318,45 +324,68 @@ export default function CreateInvoice() {
                     <div className="inline-flex rounded-xl border border-neutral-200 overflow-hidden">
                       <button
                         type="button"
-                        onClick={() => setSelectedTaxType('gst')}
+                        onClick={() => {
+                          setSelectedTaxType('gst');
+                          if (selectedTaxRate === '0' || selectedTaxRate === '') setSelectedTaxRate(hasValidGst ? '' : '0');
+                        }}
+                        disabled={!hasValidGst}
                         className={`px-4 py-2 text-sm font-semibold transition-colors ${
                           selectedTaxType === 'gst'
                             ? 'bg-[#3678F1] text-white'
                             : 'bg-white text-neutral-600 hover:bg-neutral-50'
-                        }`}
+                        } disabled:opacity-50 disabled:cursor-not-allowed`}
                       >
                         GST
                       </button>
                       <button
                         type="button"
-                        onClick={() => setSelectedTaxType('igst')}
+                        onClick={() => {
+                          setSelectedTaxType('igst');
+                          if (selectedTaxRate === '0' || selectedTaxRate === '') setSelectedTaxRate(hasValidGst ? '' : '0');
+                        }}
+                        disabled={!hasValidGst}
                         className={`px-4 py-2 text-sm font-semibold transition-colors border-l border-neutral-200 ${
                           selectedTaxType === 'igst'
                             ? 'bg-[#3678F1] text-white'
                             : 'bg-white text-neutral-600 hover:bg-neutral-50'
-                        }`}
+                        } disabled:opacity-50 disabled:cursor-not-allowed`}
                       >
                         IGST
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedTaxType('none');
+                          setSelectedTaxRate('0');
+                        }}
+                        className={`px-4 py-2 text-sm font-semibold transition-colors border-l border-neutral-200 ${
+                          selectedTaxType === 'none'
+                            ? 'bg-[#3678F1] text-white'
+                            : 'bg-white text-neutral-600 hover:bg-neutral-50'
+                        }`}
+                      >
+                        Not Applicable
                       </button>
                     </div>
                   </div>
 
-                  <div className="sm:w-52">
-                    <label className="block text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-2">
-                      Tax Percentage <span className="text-[#F40F02]">*</span>
-                    </label>
-                    <select
-                      value={selectedTaxRate}
-                      onChange={(e) => setSelectedTaxRate(e.target.value as '5' | '18' | '0' | '')}
-                      className="w-full border border-neutral-200 rounded-xl px-3 py-2.5 text-sm text-neutral-700 focus:outline-none focus:ring-2 focus:ring-[#3678F1] focus:border-transparent"
-                      required
-                    >
-                      <option value="">Select tax rate</option>
-                      <option value="5" disabled={!hasValidGst}>5%</option>
-                      <option value="18" disabled={!hasValidGst}>18%</option>
-                      <option value="0">Not Applicable</option>
-                    </select>
-                  </div>
+                  {selectedTaxType !== 'none' && (
+                    <div className="sm:w-52">
+                      <label className="block text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-2">
+                        Tax Percentage <span className="text-[#F40F02]">*</span>
+                      </label>
+                      <select
+                        value={selectedTaxRate}
+                        onChange={(e) => setSelectedTaxRate(e.target.value as '5' | '18' | '0' | '')}
+                        className="w-full border border-neutral-200 rounded-xl px-3 py-2.5 text-sm text-neutral-700 focus:outline-none focus:ring-2 focus:ring-[#3678F1] focus:border-transparent"
+                        required
+                      >
+                        <option value="">Select tax rate</option>
+                        <option value="5" disabled={!hasValidGst}>5%</option>
+                        <option value="18" disabled={!hasValidGst}>18%</option>
+                      </select>
+                    </div>
+                  )}
                 </div>
               </div>
 
