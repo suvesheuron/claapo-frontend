@@ -5,7 +5,7 @@ import { api, ApiException } from '../services/api';
 import { useApiQuery } from '../hooks/useApiQuery';
 import { rupeesToPaise } from '../utils/currency';
 import DateInput from './DateInput';
-type TaxTypeUi = 'gst' | 'igst';
+type TaxTypeUi = 'gst' | 'igst' | 'none';
 
 const MAX_BYTES = 10 * 1024 * 1024;
 const ACCEPT = 'application/pdf,image/jpeg,image/png,.pdf,.jpg,.jpeg,.png';
@@ -111,10 +111,13 @@ export default function OfflineInvoiceModal({
 
   useEffect(() => {
     if (mode !== 'vendor-send') return;
-    if (!hasValidGst && (selectedTaxRate === '5' || selectedTaxRate === '18')) {
-      setSelectedTaxRate('0');
+    // No valid GST → force the toggle to "Not Applicable" so the form can't
+    // submit a GST/IGST percentage that the backend would reject.
+    if (!hasValidGst) {
+      if (selectedTaxType !== 'none') setSelectedTaxType('none');
+      if (selectedTaxRate === '5' || selectedTaxRate === '18') setSelectedTaxRate('0');
     }
-  }, [hasValidGst, selectedTaxRate, mode]);
+  }, [hasValidGst, selectedTaxType, selectedTaxRate, mode]);
 
   const subtotalPaise = rupeesToPaise(amountStr);
   const taxRatePct = selectedTaxRate === '' ? null : Number(selectedTaxRate);
@@ -164,7 +167,7 @@ export default function OfflineInvoiceModal({
       toast.error('Enter a valid amount.');
       return;
     }
-    if (!selectedTaxRate) {
+    if (selectedTaxType !== 'none' && !selectedTaxRate) {
       toast.error('Please select tax percentage.');
       return;
     }
@@ -182,8 +185,9 @@ export default function OfflineInvoiceModal({
       return;
     }
 
-    const taxRateNum = Number(selectedTaxRate);
-    const normalizedTaxType = taxRateNum === 0 ? 'none' : selectedTaxType;
+    const taxRateNum = selectedTaxType === 'none' ? 0 : Number(selectedTaxRate);
+    const normalizedTaxType =
+      selectedTaxType === 'none' || taxRateNum === 0 ? 'none' : selectedTaxType;
 
     const basePayload = {
       amountPaise: subtotalPaise,
@@ -327,14 +331,18 @@ export default function OfflineInvoiceModal({
                 <span className="block text-xs font-semibold text-neutral-700 mb-1.5">
                   Tax Type {requiredStar}
                 </span>
-                <div className="flex gap-6 pt-0.5">
+                <div className="flex flex-wrap gap-6 pt-0.5">
                   <label className="inline-flex items-center gap-2 cursor-pointer text-sm font-medium text-neutral-800">
                     <input
                       type="radio"
                       name="offline-tax-type"
                       checked={selectedTaxType === 'gst'}
-                      onChange={() => setSelectedTaxType('gst')}
-                      className="text-[#3678F1] focus:ring-[#3678F1]"
+                      disabled={!hasValidGst}
+                      onChange={() => {
+                        setSelectedTaxType('gst');
+                        if (selectedTaxRate === '0' || selectedTaxRate === '') setSelectedTaxRate('18');
+                      }}
+                      className="text-[#3678F1] focus:ring-[#3678F1] disabled:opacity-50"
                     />
                     GST
                   </label>
@@ -343,44 +351,64 @@ export default function OfflineInvoiceModal({
                       type="radio"
                       name="offline-tax-type"
                       checked={selectedTaxType === 'igst'}
-                      onChange={() => setSelectedTaxType('igst')}
-                      className="text-[#3678F1] focus:ring-[#3678F1]"
+                      disabled={!hasValidGst}
+                      onChange={() => {
+                        setSelectedTaxType('igst');
+                        if (selectedTaxRate === '0' || selectedTaxRate === '') setSelectedTaxRate('18');
+                      }}
+                      className="text-[#3678F1] focus:ring-[#3678F1] disabled:opacity-50"
                     />
                     IGST
+                  </label>
+                  <label className="inline-flex items-center gap-2 cursor-pointer text-sm font-medium text-neutral-800">
+                    <input
+                      type="radio"
+                      name="offline-tax-type"
+                      checked={selectedTaxType === 'none'}
+                      onChange={() => {
+                        setSelectedTaxType('none');
+                        setSelectedTaxRate('0');
+                      }}
+                      className="text-[#3678F1] focus:ring-[#3678F1]"
+                    />
+                    Not Applicable
                   </label>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1.5">
-                  Tax Percentage {requiredStar}
-                </label>
-                <select
-                  value={selectedTaxRate}
-                  onChange={(e) => setSelectedTaxRate(e.target.value as '5' | '18' | '0' | '')}
-                  className="w-full rounded-xl border border-neutral-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#3678F1]/25"
-                >
-                  <option value="">Select</option>
-                  <option value="0">Not applicable (0%)</option>
-                  <option value="5" disabled={!hasValidGst}>5%</option>
-                  <option value="18" disabled={!hasValidGst}>18%</option>
-                </select>
-              </div>
+              {selectedTaxType !== 'none' && (
+                <>
+                  <div>
+                    <label className="block text-xs font-semibold text-neutral-700 mb-1.5">
+                      Tax Percentage {requiredStar}
+                    </label>
+                    <select
+                      value={selectedTaxRate}
+                      onChange={(e) => setSelectedTaxRate(e.target.value as '5' | '18' | '0' | '')}
+                      className="w-full rounded-xl border border-neutral-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#3678F1]/25"
+                    >
+                      <option value="">Select</option>
+                      <option value="5" disabled={!hasValidGst}>5%</option>
+                      <option value="18" disabled={!hasValidGst}>18%</option>
+                    </select>
+                  </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1.5">
-                  {selectedTaxType === 'igst' ? 'IGST Amount (₹)' : 'GST Amount (₹)'}
-                </label>
-                <input
-                  readOnly
-                  value={(taxAmountPaise / 100).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  className="w-full rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2.5 text-sm text-neutral-700"
-                />
-              </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-neutral-700 mb-1.5">
+                      {selectedTaxType === 'igst' ? 'IGST Amount (₹)' : 'GST Amount (₹)'}
+                    </label>
+                    <input
+                      readOnly
+                      value={(taxAmountPaise / 100).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      className="w-full rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2.5 text-sm text-neutral-700"
+                    />
+                  </div>
 
-              <div className="rounded-xl bg-[#EFF6FF] border border-[#BFDBFE] px-3 py-2.5 text-xs text-[#1e40af] leading-relaxed">
-                GST Amount will be calculated automatically based on the amount and tax percentage.
-              </div>
+                  <div className="rounded-xl bg-[#EFF6FF] border border-[#BFDBFE] px-3 py-2.5 text-xs text-[#1e40af] leading-relaxed">
+                    GST Amount will be calculated automatically based on the amount and tax percentage.
+                  </div>
+                </>
+              )}
 
               <div>
                 <label className="block text-xs font-semibold text-neutral-700 mb-1.5">
@@ -488,13 +516,16 @@ export default function OfflineInvoiceModal({
                 <span className="block text-xs font-semibold text-neutral-700 mb-1.5">
                   Tax Type {requiredStar}
                 </span>
-                <div className="flex gap-6 pt-0.5">
+                <div className="flex flex-wrap gap-6 pt-0.5">
                   <label className="inline-flex items-center gap-2 cursor-pointer text-sm font-medium text-neutral-800">
                     <input
                       type="radio"
                       name="offline-tax-type-co"
                       checked={selectedTaxType === 'gst'}
-                      onChange={() => setSelectedTaxType('gst')}
+                      onChange={() => {
+                        setSelectedTaxType('gst');
+                        if (selectedTaxRate === '0' || selectedTaxRate === '') setSelectedTaxRate('18');
+                      }}
                       className="text-[#3678F1] focus:ring-[#3678F1]"
                     />
                     GST
@@ -504,45 +535,64 @@ export default function OfflineInvoiceModal({
                       type="radio"
                       name="offline-tax-type-co"
                       checked={selectedTaxType === 'igst'}
-                      onChange={() => setSelectedTaxType('igst')}
+                      onChange={() => {
+                        setSelectedTaxType('igst');
+                        if (selectedTaxRate === '0' || selectedTaxRate === '') setSelectedTaxRate('18');
+                      }}
                       className="text-[#3678F1] focus:ring-[#3678F1]"
                     />
                     IGST
                   </label>
+                  <label className="inline-flex items-center gap-2 cursor-pointer text-sm font-medium text-neutral-800">
+                    <input
+                      type="radio"
+                      name="offline-tax-type-co"
+                      checked={selectedTaxType === 'none'}
+                      onChange={() => {
+                        setSelectedTaxType('none');
+                        setSelectedTaxRate('0');
+                      }}
+                      className="text-[#3678F1] focus:ring-[#3678F1]"
+                    />
+                    Not Applicable
+                  </label>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1.5">
-                    Tax Percentage {requiredStar}
-                  </label>
-                  <select
-                    value={selectedTaxRate}
-                    onChange={(e) => setSelectedTaxRate(e.target.value as '5' | '18' | '0' | '')}
-                    className="w-full rounded-xl border border-neutral-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#3678F1]/25"
-                  >
-                    <option value="">Select</option>
-                    <option value="0">Not applicable (0%)</option>
-                    <option value="5">5%</option>
-                    <option value="18">18%</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1.5">
-                    {selectedTaxType === 'igst' ? 'IGST Amount (₹)' : 'GST Amount (₹)'}
-                  </label>
-                  <input
-                    readOnly
-                    value={(taxAmountPaise / 100).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    className="w-full rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2.5 text-sm text-neutral-700"
-                  />
-                </div>
-              </div>
+              {selectedTaxType !== 'none' && (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-neutral-700 mb-1.5">
+                        Tax Percentage {requiredStar}
+                      </label>
+                      <select
+                        value={selectedTaxRate}
+                        onChange={(e) => setSelectedTaxRate(e.target.value as '5' | '18' | '0' | '')}
+                        className="w-full rounded-xl border border-neutral-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#3678F1]/25"
+                      >
+                        <option value="">Select</option>
+                        <option value="5">5%</option>
+                        <option value="18">18%</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-neutral-700 mb-1.5">
+                        {selectedTaxType === 'igst' ? 'IGST Amount (₹)' : 'GST Amount (₹)'}
+                      </label>
+                      <input
+                        readOnly
+                        value={(taxAmountPaise / 100).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        className="w-full rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2.5 text-sm text-neutral-700"
+                      />
+                    </div>
+                  </div>
 
-              <div className="rounded-xl bg-[#EFF6FF] border border-[#BFDBFE] px-3 py-2.5 text-xs text-[#1e40af] leading-relaxed">
-                GST Amount will be calculated automatically based on the amount and tax percentage.
-              </div>
+                  <div className="rounded-xl bg-[#EFF6FF] border border-[#BFDBFE] px-3 py-2.5 text-xs text-[#1e40af] leading-relaxed">
+                    GST Amount will be calculated automatically based on the amount and tax percentage.
+                  </div>
+                </>
+              )}
 
               <div>
                 <label className="block text-xs font-semibold text-neutral-700 mb-1.5">

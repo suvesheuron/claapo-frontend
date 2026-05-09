@@ -22,6 +22,7 @@ interface InvoiceItem {
   gstAmount?: number;
   taxType?: 'none' | 'gst' | 'igst';
   offlineBillingName?: string | null;
+  offlineDepartment?: string | null;
   recordedOfflineByCompany?: boolean;
   project: { id: string; title: string } | null;
   issuer: {
@@ -97,7 +98,13 @@ function getIssuerDisplayName(inv: InvoiceItem) {
 }
 
 function getIssuerRoleLabel(inv: InvoiceItem): string | null {
-  if (inv.recordedOfflineByCompany) return null;
+  // Offline invoices recorded by a company carry the role/department on the
+  // invoice itself (the recorded party isn't a Claapo user). Surface it here
+  // so the list row matches what shows on the offline-invoice detail page.
+  if (inv.recordedOfflineByCompany) {
+    const dept = inv.offlineDepartment?.trim();
+    return dept || null;
+  }
   const ind = inv.issuer?.individualProfile;
   if (ind) {
     const firstSkill = ind.skills?.find((s) => !!s?.trim());
@@ -193,19 +200,93 @@ export default function InvoicesList() {
     if (selectedProjectSearch.trim()) {
       const q = selectedProjectSearch.trim().toLowerCase();
       filtered = filtered.filter((inv) => {
-        const invoiceNo = inv.invoiceNumber?.toLowerCase() ?? '';
         const issuerName = getIssuerDisplayName(inv).toLowerCase();
-        return invoiceNo.includes(q) || issuerName.includes(q);
+        const issuerRole = (getIssuerRoleLabel(inv) ?? '').toLowerCase();
+        return issuerName.includes(q) || issuerRole.includes(q);
       });
     }
     return filtered;
   }, [invoices, selectedProjectPaymentFilter, selectedProjectSearch, taxInvoicesOnly]);
+
+  // Split into active vs cancelled so cancelled rows live in their own bottom
+  // section and don't break up the active list visually.
+  const activeProjectInvoices = useMemo(
+    () => selectedProjectInvoices.filter((inv) => inv.status !== 'cancelled'),
+    [selectedProjectInvoices],
+  );
+  const cancelledProjectInvoices = useMemo(
+    () => selectedProjectInvoices.filter((inv) => inv.status === 'cancelled'),
+    [selectedProjectInvoices],
+  );
 
   const navLinks = currentRole === 'Company' ? companyNavLinks
     : currentRole === 'Vendor' ? vendorNavLinks
     : individualNavLinks;
 
   const canCreate = currentRole === 'Individual' || currentRole === 'Vendor';
+
+  // Render one invoice list row. Extracted so the active and cancelled
+  // sections share identical row markup without duplication.
+  const renderInvoiceRow = (inv: InvoiceItem) => {
+    const cfg = STATUS_CFG[inv.status] ?? STATUS_CFG.draft;
+    const accent = STATUS_ACCENT[inv.status] ?? STATUS_ACCENT.draft;
+    const counterparty = currentRole === 'Company' ? getIssuerDisplayName(inv) : getPartyName(inv.recipient);
+    const showProjectFirst = currentRole === 'Vendor' || currentRole === 'Individual';
+    const projectTitle = inv.project?.title ?? 'No project';
+    const issuerRole = currentRole === 'Company' ? getIssuerRoleLabel(inv) : null;
+    const headline = showProjectFirst ? projectTitle : counterparty;
+    const isCancelled = inv.status === 'cancelled';
+    return (
+      <Link
+        key={inv.id}
+        to={`/invoice/${inv.id}`}
+        className={`group relative flex items-center gap-4 p-5 rounded-2xl bg-white border border-neutral-200/80 shadow-sm hover:border-[#3678F1] transition-colors duration-200 overflow-hidden ${isCancelled ? 'opacity-75' : ''}`}
+      >
+        <div className={`absolute left-0 top-0 bottom-0 w-1 rounded-l-2xl ${accent}`} />
+        <div className="w-10 h-10 rounded-xl bg-[#E8F0FE] flex items-center justify-center shrink-0">
+          <FaFileInvoice className="text-[#3678F1] text-sm" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
+            <p className="text-sm font-bold text-neutral-900 group-hover:text-[#3678F1] transition-colors duration-200 truncate">
+              {headline}
+            </p>
+            {issuerRole ? (
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#F4F8FE] text-[#3678F1] ring-1 ring-[#3678F1]/20 inline-flex items-center">
+                {issuerRole}
+              </span>
+            ) : null}
+            <span className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full ring-1 ${cfg.bg} ${cfg.text} ${cfg.ring} inline-flex items-center gap-1`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
+              {cfg.label}
+            </span>
+          </div>
+          <p className="text-xs text-neutral-500 truncate">
+            {showProjectFirst ? (
+              <>
+                Production House: <span className="text-neutral-600 font-medium">{counterparty}</span>
+                <span className="text-neutral-300 mx-1">·</span>
+                Invoice: <span className="text-neutral-600 font-medium">{inv.invoiceNumber}</span>
+              </>
+            ) : (
+              <>
+                {projectTitle}
+                <span className="text-neutral-300 mx-1">·</span>
+                Invoice: <span className="text-neutral-600 font-medium">{inv.invoiceNumber}</span>
+              </>
+            )}
+          </p>
+          {inv.dueDate && (
+            <p className="text-[10px] text-neutral-400 mt-1">Due {formatDate(inv.dueDate)}</p>
+          )}
+        </div>
+        <div className="text-right shrink-0 pl-3">
+          <p className="text-sm font-bold text-neutral-900 tabular-nums">{formatPaise(inv.totalAmount)}</p>
+          <p className="text-[10px] text-neutral-400 mt-1 tabular-nums">{formatDate(inv.createdAt)}</p>
+        </div>
+      </Link>
+    );
+  };
 
   // Find selected project details
   const selectedProject = projects.find(p => p.id === selectedProjectId);
@@ -488,7 +569,7 @@ export default function InvoicesList() {
                               type="text"
                               value={selectedProjectSearch}
                               onChange={(e) => setSelectedProjectSearch(e.target.value)}
-                              placeholder="Search by invoice no. or sender…"
+                              placeholder="Search by sender or role (e.g., Director, Editor)…"
                               className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200 bg-white text-sm placeholder-neutral-400 focus:outline-none focus:border-[#3678F1]/40 focus:ring-2 focus:ring-[#3678F1]/10 transition-all"
                             />
                           </div>
@@ -603,68 +684,24 @@ export default function InvoicesList() {
                   )}
                 </div>
               ) : (
-                <div className="space-y-2.5">
-                  {selectedProjectInvoices.map((inv) => {
-                    const cfg = STATUS_CFG[inv.status] ?? STATUS_CFG.draft;
-                    const accent = STATUS_ACCENT[inv.status] ?? STATUS_ACCENT.draft;
-                    const counterparty = currentRole === 'Company' ? getIssuerDisplayName(inv) : getPartyName(inv.recipient);
-                    const showProjectFirst = currentRole === 'Vendor' || currentRole === 'Individual';
-                    const projectTitle = inv.project?.title ?? 'No project';
-                    const issuerRole = currentRole === 'Company' ? getIssuerRoleLabel(inv) : null;
-                    const headline = showProjectFirst ? projectTitle : counterparty;
-                    return (
-                      <Link
-                        key={inv.id}
-                        to={`/invoice/${inv.id}`}
-                        className="group relative flex items-center gap-4 p-5 rounded-2xl bg-white border border-neutral-200/80 shadow-sm hover:border-[#3678F1] transition-colors duration-200 overflow-hidden"
-                      >
-                        {/* Status accent line on left */}
-                        <div className={`absolute left-0 top-0 bottom-0 w-1 rounded-l-2xl ${accent}`} />
-
-                        <div className="w-10 h-10 rounded-xl bg-[#E8F0FE] flex items-center justify-center shrink-0">
-                          <FaFileInvoice className="text-[#3678F1] text-sm" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1 flex-wrap">
-                            <p className="text-sm font-bold text-neutral-900 group-hover:text-[#3678F1] transition-colors duration-200 truncate">
-                              {headline}
-                            </p>
-                            {issuerRole ? (
-                              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#F4F8FE] text-[#3678F1] ring-1 ring-[#3678F1]/20 inline-flex items-center">
-                                {issuerRole}
-                              </span>
-                            ) : null}
-                            <span className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full ring-1 ${cfg.bg} ${cfg.text} ${cfg.ring} inline-flex items-center gap-1`}>
-                              <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
-                              {cfg.label}
-                            </span>
-                          </div>
-                          <p className="text-xs text-neutral-500 truncate">
-                            {showProjectFirst ? (
-                              <>
-                                Production House: <span className="text-neutral-600 font-medium">{counterparty}</span>
-                                <span className="text-neutral-300 mx-1">·</span>
-                                Invoice: <span className="text-neutral-600 font-medium">{inv.invoiceNumber}</span>
-                              </>
-                            ) : (
-                              <>
-                                {projectTitle}
-                                <span className="text-neutral-300 mx-1">·</span>
-                                Invoice: <span className="text-neutral-600 font-medium">{inv.invoiceNumber}</span>
-                              </>
-                            )}
-                          </p>
-                          {inv.dueDate && (
-                            <p className="text-[10px] text-neutral-400 mt-1">Due {formatDate(inv.dueDate)}</p>
-                          )}
-                        </div>
-                        <div className="text-right shrink-0 pl-3">
-                          <p className="text-sm font-bold text-neutral-900 tabular-nums">{formatPaise(inv.totalAmount)}</p>
-                          <p className="text-[10px] text-neutral-400 mt-1 tabular-nums">{formatDate(inv.createdAt)}</p>
-                        </div>
-                      </Link>
-                    );
-                  })}
+                <div className="space-y-6">
+                  {activeProjectInvoices.length > 0 && (
+                    <div className="space-y-2.5">
+                      {activeProjectInvoices.map((inv) => renderInvoiceRow(inv))}
+                    </div>
+                  )}
+                  {cancelledProjectInvoices.length > 0 && (
+                    <div className="space-y-2.5">
+                      <div className="flex items-center gap-2 pt-2">
+                        <span className="h-px flex-1 bg-neutral-200" />
+                        <span className="text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
+                          Cancelled · {cancelledProjectInvoices.length}
+                        </span>
+                        <span className="h-px flex-1 bg-neutral-200" />
+                      </div>
+                      {cancelledProjectInvoices.map((inv) => renderInvoiceRow(inv))}
+                    </div>
+                  )}
                 </div>
               )}
                 </>
@@ -709,16 +746,6 @@ export default function InvoicesList() {
                           >
                             Send Offline Invoice
                           </button>
-                        </div>
-                      )}
-                      {currentRole === 'Company' && (
-                        <div className="mt-3 ml-[46px] flex flex-wrap gap-2">
-                          <Link
-                            to="/invoices/offline"
-                            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold border border-neutral-200 bg-white text-neutral-800 hover:border-[#3678F1]/40 hover:text-[#3678F1] transition-colors"
-                          >
-                            View Offline Invoices
-                          </Link>
                         </div>
                       )}
                       </div>

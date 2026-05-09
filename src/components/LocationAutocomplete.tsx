@@ -113,15 +113,27 @@ export default function LocationAutocomplete({
   const [selectedDisplay, setSelectedDisplay] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  // Tracks the last `city|state` we copied into `selectedDisplay`. Letting this
+  // effect react to internal state (typing, clearing) rebroadcasts the parent's
+  // prop and overwrites whatever the user just did — so we only run the sync
+  // when the props themselves change.
+  const lastSyncedRef = useRef<string | null>(null);
 
   const debouncedQuery = useDebounce(query, 350);
 
-  // Sync display text with props
+  // Sync display text with props — once per prop change.
   useEffect(() => {
-    if (city && !selectedDisplay) {
+    const key = `${city}|${state}`;
+    if (lastSyncedRef.current === key) return;
+    lastSyncedRef.current = key;
+    if (city) {
       setSelectedDisplay(state ? `${city}, ${state}` : city);
+      setQuery('');
+    } else {
+      setSelectedDisplay('');
+      setQuery('');
     }
-  }, [city, state, selectedDisplay]);
+  }, [city, state]);
 
   // Search when debounced query changes
   useEffect(() => {
@@ -174,9 +186,15 @@ export default function LocationAutocomplete({
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setQuery(e.target.value);
+    const value = e.target.value;
+    setQuery(value);
     setSelectedDisplay('');
     setOpen(true);
+    // If the user erased the field, propagate the clear so the parent's
+    // city/state isn't silently saved on the next form submit.
+    if (!value && (city || state)) {
+      onSelect({ city: '', state: '' });
+    }
   };
 
   const handleFocus = () => {
