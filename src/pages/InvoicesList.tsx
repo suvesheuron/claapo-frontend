@@ -18,6 +18,8 @@ interface InvoiceItem {
   dueDate: string | null;
   amount: number;
   totalAmount: number;
+  /** Amount already paid (paise). >0 && < totalAmount = partial payment. */
+  paidAmount?: number;
   /** Tax stored in paise; >0 when GST/IGST was applied */
   gstAmount?: number;
   taxType?: 'none' | 'gst' | 'igst';
@@ -236,6 +238,8 @@ export default function InvoicesList() {
     const issuerRole = currentRole === 'Company' ? getIssuerRoleLabel(inv) : null;
     const headline = showProjectFirst ? projectTitle : counterparty;
     const isCancelled = inv.status === 'cancelled';
+    const paidSoFar = inv.paidAmount ?? 0;
+    const isPartial = inv.status !== 'paid' && inv.status !== 'cancelled' && paidSoFar > 0 && paidSoFar < inv.totalAmount;
     return (
       <Link
         key={inv.id}
@@ -256,10 +260,17 @@ export default function InvoicesList() {
                 {issuerRole}
               </span>
             ) : null}
-            <span className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full ring-1 ${cfg.bg} ${cfg.text} ${cfg.ring} inline-flex items-center gap-1`}>
-              <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
-              {cfg.label}
-            </span>
+            {isPartial ? (
+              <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full ring-1 bg-[#FEF9C3] text-[#854D0E] ring-[#EAB308]/30 inline-flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#EAB308]" />
+                Part Payment of {formatPaise(paidSoFar)}
+              </span>
+            ) : (
+              <span className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full ring-1 ${cfg.bg} ${cfg.text} ${cfg.ring} inline-flex items-center gap-1`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
+                {cfg.label}
+              </span>
+            )}
           </div>
           <p className="text-xs text-neutral-500 truncate">
             {showProjectFirst ? (
