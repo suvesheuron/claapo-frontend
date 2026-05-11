@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FaArrowLeft, FaPrint, FaTriangleExclamation, FaCheck, FaPaperPlane, FaPaperclip, FaDownload, FaTrash } from 'react-icons/fa6';
+import { FaArrowLeft, FaPrint, FaTriangleExclamation, FaPaperPlane, FaPaperclip, FaDownload, FaTrash } from 'react-icons/fa6';
 import DashboardHeader from '../components/DashboardHeader';
 import AppFooter from '../components/AppFooter';
 import toast from 'react-hot-toast';
@@ -63,6 +63,7 @@ interface InvoiceData {
   taxRatePct: number;
   taxAmountPaise: number;
   totalPaise: number;
+  paidPaise?: number;
   notes: string | null;
   issuerId: string;
   recipientId: string;
@@ -97,7 +98,9 @@ export default function Invoice() {
   );
 
   const [sending, setSending] = useState(false);
-  const [markingPaid, setMarkingPaid] = useState(false);
+  const [savingPayment, setSavingPayment] = useState(false);
+  const [paymentMode, setPaymentMode] = useState<'full' | 'partial'>('full');
+  const [partialAmount, setPartialAmount] = useState('');
   const [declining, setDeclining] = useState(false);
   const [showDeclineBox, setShowDeclineBox] = useState(false);
   const [declineReason, setDeclineReason] = useState('');
@@ -128,17 +131,40 @@ export default function Invoice() {
     }
   };
 
-  const handleMarkPaid = async () => {
-    if (!invoiceId) return;
-    setMarkingPaid(true);
+  const handleRecordPayment = async () => {
+    if (!invoiceId || !invoice) return;
+    const remainingPaise = Math.max(0, invoice.totalPaise - (invoice.paidPaise ?? 0));
+    if (remainingPaise <= 0) {
+      toast.error('This invoice is already fully paid.');
+      return;
+    }
+    let body: { mode: 'full' | 'partial'; amountPaise?: number };
+    if (paymentMode === 'full') {
+      body = { mode: 'full' };
+    } else {
+      const rupees = Number(partialAmount);
+      if (!Number.isFinite(rupees) || rupees <= 0) {
+        toast.error('Enter a valid amount.');
+        return;
+      }
+      const amountPaise = Math.round(rupees * 100);
+      if (amountPaise > remainingPaise) {
+        toast.error('Amount exceeds the unpaid balance.');
+        return;
+      }
+      body = { mode: 'partial', amountPaise };
+    }
+    setSavingPayment(true);
     try {
-      await api.patch(`/invoices/${invoiceId}/mark-paid`, {});
-      toast.success('Invoice marked as paid!');
+      await api.patch(`/invoices/${invoiceId}/record-payment`, body);
+      toast.success(body.mode === 'full' ? 'Invoice marked as paid!' : 'Part payment recorded.');
+      setPartialAmount('');
+      setPaymentMode('full');
       refetch();
     } catch (err) {
-      toast.error(err instanceof ApiException ? err.payload.message : 'Failed to mark as paid.');
+      toast.error(err instanceof ApiException ? err.payload.message : 'Failed to save payment.');
     } finally {
-      setMarkingPaid(false);
+      setSavingPayment(false);
     }
   };
 
@@ -169,6 +195,10 @@ export default function Invoice() {
   const attachments = invoice?.attachments ?? [];
   const cgstAmountPaise = invoice ? Math.floor(invoice.taxAmountPaise / 2) : 0;
   const sgstAmountPaise = invoice ? invoice.taxAmountPaise - cgstAmountPaise : 0;
+  const paidPaise = invoice?.paidPaise ?? 0;
+  const remainingPaise = invoice ? Math.max(0, invoice.totalPaise - paidPaise) : 0;
+  const isPartiallyPaid = !!invoice && paidPaise > 0 && paidPaise < invoice.totalPaise;
+  const canRecordPayment = !!(isRecipient && invoice && invoice.status === 'sent' && remainingPaise > 0);
 
   const handleAddAttachment = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -309,7 +339,11 @@ export default function Invoice() {
                                   </span>
                                 );
                               })()
-                            : null}
+                            : isPartiallyPaid ? (
+                              <span className="text-xs font-semibold px-3 py-1.5 rounded-full bg-[#FEF9C3] text-[#854D0E]">
+                                Part Payment of {formatPaise(paidPaise)}
+                              </span>
+                            ) : null}
 
                           {/* Issuer actions */}
                           {isIssuer && invoice.status === 'draft' && (
@@ -325,23 +359,13 @@ export default function Invoice() {
 
                           {/* Recipient/company actions */}
                           {isRecipient && invoice.status === 'sent' && (
-                            <>
-                              <button
-                                onClick={handleMarkPaid}
-                                disabled={markingPaid || declining}
-                                className="no-print px-3 py-2 bg-[#22C55E] text-white rounded-xl text-sm font-semibold flex items-center gap-1.5 hover:bg-[#16a34a] disabled:opacity-50 transition-colors"
-                              >
-                                <FaCheck className="w-3.5 h-3.5" />
-                                {markingPaid ? 'Saving…' : 'Mark as paid'}
-                              </button>
-                              <button
-                                onClick={() => setShowDeclineBox((v) => !v)}
-                                disabled={markingPaid || declining}
-                                className="no-print px-3 py-2 bg-[#FEEBEA] border border-[#F40F02]/30 text-[#991B1B] rounded-xl text-sm font-semibold hover:bg-[#FDD8D5] disabled:opacity-50 transition-colors"
-                              >
-                                Decline Invoice
-                              </button>
-                            </>
+                            <button
+                              onClick={() => setShowDeclineBox((v) => !v)}
+                              disabled={savingPayment || declining}
+                              className="no-print px-3 py-2 bg-[#FEEBEA] border border-[#F40F02]/30 text-[#991B1B] rounded-xl text-sm font-semibold hover:bg-[#FDD8D5] disabled:opacity-50 transition-colors"
+                            >
+                              Decline Invoice
+                            </button>
                           )}
 
                           {!invoice.recordedOfflineByCompany && (
@@ -378,6 +402,66 @@ export default function Invoice() {
                       )}
                       {invoice.paidAt && (
                         <p className="text-xs text-green-600 font-semibold mt-0.5">Paid on {formatDate(invoice.paidAt)}</p>
+                      )}
+                      {canRecordPayment && (
+                        <div className="no-print mt-3 rounded-2xl border border-neutral-200 bg-white p-3 sm:p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                          <div className="flex flex-wrap items-center gap-4 sm:gap-6">
+                            <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+                              <input
+                                type="radio"
+                                name="payment-mode"
+                                value="full"
+                                checked={paymentMode === 'full'}
+                                onChange={() => setPaymentMode('full')}
+                                disabled={savingPayment}
+                                className="h-4 w-4 text-[#3678F1] border-neutral-300 focus:ring-[#3678F1]/30"
+                              />
+                              <span className="text-sm font-medium text-neutral-800">Fully paid</span>
+                            </label>
+                            <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+                              <input
+                                type="radio"
+                                name="payment-mode"
+                                value="partial"
+                                checked={paymentMode === 'partial'}
+                                onChange={() => setPaymentMode('partial')}
+                                disabled={savingPayment}
+                                className="h-4 w-4 text-[#3678F1] border-neutral-300 focus:ring-[#3678F1]/30"
+                              />
+                              <span className="text-sm font-medium text-neutral-800">Partly paid</span>
+                            </label>
+                          </div>
+                          <div className="flex items-center gap-2 sm:gap-3 sm:flex-1 sm:justify-end">
+                            <div className="relative flex-1 sm:max-w-xs">
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-neutral-400 pointer-events-none">₹</span>
+                              <input
+                                type="number"
+                                inputMode="decimal"
+                                min="0"
+                                step="0.01"
+                                value={partialAmount}
+                                onChange={(e) => setPartialAmount(e.target.value)}
+                                onFocus={() => setPaymentMode('partial')}
+                                placeholder="Amount"
+                                disabled={savingPayment || paymentMode === 'full'}
+                                className="w-full pl-7 pr-3 py-2 rounded-lg border border-neutral-200 text-sm text-neutral-800 focus:outline-none focus:ring-2 focus:ring-[#3678F1]/20 focus:border-[#3678F1]/40 disabled:bg-neutral-50 disabled:text-neutral-400"
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              onClick={handleRecordPayment}
+                              disabled={savingPayment || declining}
+                              className="px-5 py-2 rounded-lg border border-[#3678F1] text-[#3678F1] text-sm font-semibold hover:bg-[#EFF6FF] disabled:opacity-50 transition-colors"
+                            >
+                              {savingPayment ? 'Saving…' : 'Save'}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      {canRecordPayment && isPartiallyPaid && (
+                        <p className="no-print text-xs text-neutral-500 mt-1.5">
+                          {formatPaise(paidPaise)} received · {formatPaise(remainingPaise)} remaining
+                        </p>
                       )}
                       {isRecipient && invoice.status === 'sent' && showDeclineBox && (
                         <div className="no-print mt-3 max-w-md rounded-xl border border-[#F40F02]/20 bg-[#FFF7F6] p-3">
