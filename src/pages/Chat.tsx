@@ -31,6 +31,11 @@ import DashboardSidebar from '../components/DashboardSidebar';
 import Avatar from '../components/Avatar';
 import { api, ApiException, getMediaUrl } from '../services/api';
 import {
+  readChatSnapshot,
+  writeChatSnapshot,
+  updateChatSnapshotMessages,
+} from '../services/chatCache';
+import {
   ensureChatSocket,
   joinConversationRoom,
   leaveConversationRoom,
@@ -118,15 +123,41 @@ export default function Chat() {
   const { user } = useAuth();
   const { currentRole } = useRole();
 
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  // Seed from the in-memory chat cache so reopening a chat renders messages
+  // on the first paint instead of waiting for the REST round trip. A fresh
+  // fetch still runs in the background (stale-while-revalidate) and updates
+  // state when it returns. The lazy initializers only execute once per mount.
+  const initialSnapshot = readChatSnapshot<ChatMessage>(
+    targetUserId ?? '',
+    projectIdFromUrl,
+  );
+
+  const [messages, setMessages] = useState<ChatMessage[]>(
+    () => initialSnapshot?.messages ?? [],
+  );
   const [otherUser, setOtherUser] = useState<OtherUser | null>(null);
-  const [noConversation, setNoConversation] = useState(false);
-  const [scopedConversationId, setScopedConversationId] = useState<string | null>(null);
-  const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
-  const [scopedProjectTitle, setScopedProjectTitle] = useState<string | null>(null);
-  const [scopedConversationLoading, setScopedConversationLoading] = useState(() => !!projectIdFromUrl);
+  const [noConversation, setNoConversation] = useState(
+    () => initialSnapshot?.noConversation ?? false,
+  );
+  const [scopedConversationId, setScopedConversationId] = useState<string | null>(
+    () => initialSnapshot?.scopedConversationId ?? null,
+  );
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(
+    () => initialSnapshot?.activeConversationId ?? null,
+  );
+  const [scopedProjectTitle, setScopedProjectTitle] = useState<string | null>(
+    () => initialSnapshot?.scopedProjectTitle ?? null,
+  );
+  // If we already resolved the project-scoped conversation last time and have
+  // it cached, skip the resolution spinner — we still re-resolve in the
+  // background to catch the rare case of a conversation being recreated.
+  const [scopedConversationLoading, setScopedConversationLoading] = useState(
+    () => !!projectIdFromUrl && !initialSnapshot?.scopedConversationId,
+  );
   const [input, setInput] = useState('');
-  const [loadingInit, setLoadingInit] = useState(true);
+  // Spinner only when there's nothing cached to show. With a snapshot, the
+  // screen renders content immediately and refresh runs silently.
+  const [loadingInit, setLoadingInit] = useState(() => !initialSnapshot);
   const [sending, setSending] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -188,6 +219,19 @@ export default function Chat() {
         setActiveConversationId(res.id);
         setScopedProjectTitle(res.project?.title ?? null);
         setNoConversation(false);
+        // Refresh cache with the resolved scoped conversation id so a future
+        // reopen can skip the resolution round trip and render messages
+        // immediately. Messages array is filled by fetchMessages right after.
+        if (targetUserId) {
+          const prev = readChatSnapshot<ChatMessage>(targetUserId, projectIdFromUrl);
+          writeChatSnapshot<ChatMessage>(targetUserId, projectIdFromUrl, {
+            messages: prev?.messages ?? [],
+            activeConversationId: res.id,
+            scopedConversationId: res.id,
+            noConversation: false,
+            scopedProjectTitle: res.project?.title ?? null,
+          });
+        }
       } catch {
         if (!alive) return;
         setScopedConversationId(null);
@@ -285,6 +329,16 @@ export default function Chat() {
           }
           if (!isPolling && data.length) lastMsgTime.current = data[data.length - 1]?.createdAt ?? null;
           else if (!isPolling && !data.length) lastMsgTime.current = null;
+          // Refresh cache so the next reopen of this chat is instant.
+          if (targetUserId) {
+            writeChatSnapshot<ChatMessage>(targetUserId, projectIdFromUrl, {
+              messages: data,
+              activeConversationId: scopedConversationId,
+              scopedConversationId,
+              noConversation: false,
+              scopedProjectTitle,
+            });
+          }
         } catch (err) {
           if (!isPolling) {
             setLoadError(err instanceof ApiException ? err.payload.message : 'Failed to load messages.');
@@ -309,6 +363,16 @@ export default function Chat() {
           setActiveConversationId(res?.conversationId ?? null);
           setScopedProjectTitle(res?.project?.title ?? null);
           setMessages(data);
+        }
+        // Refresh cache so the next reopen of this chat is instant.
+        if (targetUserId) {
+          writeChatSnapshot<ChatMessage>(targetUserId, projectIdFromUrl, {
+            messages: data,
+            activeConversationId: res?.conversationId ?? null,
+            scopedConversationId: null,
+            noConversation: res?.conversationId === null,
+            scopedProjectTitle: res?.project?.title ?? null,
+          });
         }
         if (!data.length) return;
         const newest = data[data.length - 1]?.createdAt;
@@ -369,7 +433,7 @@ export default function Chat() {
     const onNewMessage = (raw: Parameters<typeof mapApiMessageToChat>[0] & { conversationId?: string }) => {
       if (raw?.conversationId && raw.conversationId !== activeConversationId) return;
       const incoming = mapApiMessageToChat(raw);
-      setMessages((prev) => {
+      const upsert = (prev: ChatMessage[]): ChatMessage[] => {
         const idx = prev.findIndex((m) => m.id === incoming.id);
         if (idx >= 0) {
           const next = [...prev];
@@ -377,7 +441,17 @@ export default function Chat() {
           return next;
         }
         return [...prev, incoming];
-      });
+      };
+      setMessages(upsert);
+      // Mirror into the cache so the next reopen includes messages that
+      // arrived after the initial fetch.
+      if (targetUserId) {
+        updateChatSnapshotMessages<ChatMessage>(
+          targetUserId,
+          projectIdFromUrl,
+          upsert,
+        );
+      }
       lastMsgTime.current = incoming.createdAt;
     };
 
@@ -394,7 +468,7 @@ export default function Chat() {
       socket.off('messages_read', onMessagesRead);
       leaveConversationRoom(activeConversationId);
     };
-  }, [activeConversationId, mapApiMessageToChat, fetchMessages]);
+  }, [activeConversationId, mapApiMessageToChat, fetchMessages, targetUserId, projectIdFromUrl]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -637,9 +711,17 @@ export default function Chat() {
             >
               <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_120%_at_100%_-20%,rgba(255,255,255,0.15),transparent)] pointer-events-none" />
               <Link
-                to="/conversations"
+                to={
+                  projectIdFromUrl
+                    ? `/conversations/${projectIdFromUrl}`
+                    : '/conversations'
+                }
                 className="relative p-2 hover:bg-white/15 rounded-xl transition-colors shrink-0"
-                aria-label="Back to conversations"
+                aria-label={
+                  projectIdFromUrl
+                    ? 'Back to project chats'
+                    : 'Back to conversations'
+                }
               >
                 <FaArrowLeft className="w-4 h-4 text-white" />
               </Link>

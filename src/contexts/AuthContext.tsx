@@ -27,6 +27,8 @@ import {
   type ReactNode,
 } from 'react';
 import { api, setAccessToken, setRefreshFunction, ApiException } from '../services/api';
+import { clearChatCache } from '../services/chatCache';
+import { clearApiQueryCache } from '../hooks/useApiQuery';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -209,6 +211,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setAccessTokenState(null);
       setAccessToken(null);
       setUser(null);
+      clearChatCache();
+      clearApiQueryCache();
     }
   }, []);
 

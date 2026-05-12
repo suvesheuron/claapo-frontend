@@ -61,15 +61,24 @@ export default function Conversations() {
   const markedReadOnMount = useRef(false);
   const { projectId: selectedProjectId } = useParams<{ projectId: string }>();
 
-  // Fetch projects list
-  const { data: projectsData, loading: projectsLoading } = useApiQuery<ProjectsWithStatsResponse>('/projects/my/with-stats?limit=100');
+  // Fetch projects list. SWR: render cached projects instantly on
+  // back-navigation while refreshing in the background.
+  const { data: projectsData, loading: projectsLoading } = useApiQuery<ProjectsWithStatsResponse>(
+    '/projects/my/with-stats?limit=100',
+    { swr: true },
+  );
   const projects = projectsData?.items ?? [];
 
-  // Fetch conversations for selected project or all conversations
-  const conversationsUrl = selectedProjectId 
-    ? `/conversations?projectId=${selectedProjectId}&limit=100` 
+  // Fetch conversations for selected project or all conversations. SWR
+  // keyed by URL: the project-scoped and the all-conversations views cache
+  // independently, so jumping between them stays snappy.
+  const conversationsUrl = selectedProjectId
+    ? `/conversations?projectId=${selectedProjectId}&limit=100`
     : '/conversations?limit=100';
-  const { data, loading, error } = useApiQuery<ConversationsResponse>(conversationsUrl);
+  const { data, loading, error } = useApiQuery<ConversationsResponse>(
+    conversationsUrl,
+    { swr: true },
+  );
   const conversations = data?.items ?? [];
 
   useEffect(() => {
