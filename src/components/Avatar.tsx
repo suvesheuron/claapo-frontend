@@ -6,10 +6,24 @@ type AvatarProps = {
   name?: string;
   size?: 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
+  /**
+   * Hint for the browser. Default is `lazy` so off-screen avatars in long lists
+   * (search results, conversation lists) don't compete with critical resources.
+   * Pass `eager` for avatars that are above the fold on first paint — e.g. the
+   * hero avatar on a profile page.
+   */
+  loading?: 'lazy' | 'eager';
 };
 
-export default function Avatar({ src, alt = 'Profile', name, size = 'md', className = '' }: AvatarProps) {
+export default function Avatar({ src, alt = 'Profile', name, size = 'md', className = '', loading = 'lazy' }: AvatarProps) {
   const [imageError, setImageError] = React.useState(false);
+
+  // Reset error state when `src` changes — otherwise an avatar that previously
+  // errored would keep the stale flag when this component is reused for a
+  // different user (virtualized lists, swapping search pages, etc.).
+  React.useEffect(() => {
+    setImageError(false);
+  }, [src]);
 
   const sizeClasses = {
     sm: 'w-8 h-8 sm:w-9 sm:h-9',
@@ -39,7 +53,8 @@ export default function Avatar({ src, alt = 'Profile', name, size = 'md', classN
     : '?';
   const hue = (seed % 360);
   const bgColor = `hsl(${hue}, 55%, 45%)`;
-  const hasValidSrc = src && src.trim() !== '';
+  const trimmedSrc = src?.trim();
+  const hasValidSrc = !!trimmedSrc;
   const showImage = hasValidSrc && !imageError;
 
   // The wrapper is always a perfect square (aspect-square + fixed w/h) with
@@ -51,12 +66,23 @@ export default function Avatar({ src, alt = 'Profile', name, size = 'md', classN
   const wrapperBase = `${sizeClasses[size]} aspect-square rounded-full overflow-hidden shrink-0 select-none flex items-center justify-center ${className}`;
 
   if (showImage) {
+    // The initials sit underneath the image (same wrapper, behind absolute <img>)
+    // so the circle is never blank while the image is in flight. The image
+    // itself is always visible — no opacity gating — to avoid the cached-image
+    // race where `onLoad` fires before React attaches the listener and the
+    // image stays invisible despite being fully decoded.
     return (
-      <div className={wrapperBase}>
+      <div
+        className={`${wrapperBase} relative font-semibold text-white`}
+        style={{ backgroundColor: bgColor }}
+      >
+        <span className={iconSizes[size]} aria-hidden>{initials}</span>
         <img
-          src={src!.trim()}
+          src={trimmedSrc}
           alt={alt}
-          className="w-full h-full object-cover object-center block"
+          loading={loading}
+          decoding="async"
+          className="absolute inset-0 w-full h-full object-cover object-center block"
           onError={() => setImageError(true)}
           draggable={false}
         />
@@ -73,4 +99,3 @@ export default function Avatar({ src, alt = 'Profile', name, size = 'md', classN
     </div>
   );
 }
-

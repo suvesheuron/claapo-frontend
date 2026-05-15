@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { FaArrowLeft, FaLocationDot, FaCalendarDays, FaTriangleExclamation, FaVideo, FaChevronLeft, FaChevronRight, FaBan, FaCircleCheck, FaCalendarCheck, FaGlobe, FaInstagram, FaYoutube, FaVimeoV, FaImdb, FaLinkedinIn, FaXTwitter, FaPhone, FaStar } from 'react-icons/fa6';
+import { FaArrowLeft, FaLocationDot, FaCalendarDays, FaTriangleExclamation, FaVideo, FaChevronLeft, FaChevronRight, FaBan, FaCircleCheck, FaCalendarCheck, FaGlobe, FaInstagram, FaYoutube, FaVimeoV, FaImdb, FaLinkedinIn, FaXTwitter, FaPhone } from 'react-icons/fa6';
 import toast from 'react-hot-toast';
 import DashboardHeader from '../components/DashboardHeader';
 import DashboardSidebar from '../components/DashboardSidebar';
@@ -395,7 +395,7 @@ We're working on ${projectName}. The shoot is planned for ${shootDate} at ${loca
                   {/* Hero Card */}
                   <motion.div variants={itemVariants} className="rounded-3xl bg-white shadow-soft border border-neutral-100 hover:border-[#3678F1] transition-colors duration-200 overflow-hidden">
                     <div
-                      className={`relative h-36 sm:h-44 border-b border-neutral-100 overflow-hidden bg-gradient-to-r from-[#3678F1]/15 via-[#7c96ff]/10 to-[#E8F0FE]/60 ${
+                      className={`relative h-56 sm:h-72 lg:h-80 border-b border-neutral-100 overflow-hidden bg-gradient-to-r from-[#3678F1]/15 via-[#7c96ff]/10 to-[#E8F0FE]/60 ${
                         coverPhotoUrl ? 'cursor-zoom-in group' : ''
                       }`}
                       onClick={() => coverPhotoUrl && setCoverPreviewOpen(true)}
@@ -430,122 +430,106 @@ We're working on ${projectName}. The shoot is planned for ${shootDate} at ${loca
                           />
                         </>
                       ) : null}
+                      {/* Soft fade at the bottom of the cover so the transition
+                          into the white content area is gradual and the
+                          avatar's drop-shadow has something to land on. */}
+                      <div
+                        aria-hidden
+                        className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-b from-transparent to-white/70 pointer-events-none"
+                      />
                     </div>
 
-                    <div className="p-5 sm:p-7 lg:p-8 grid grid-cols-1 lg:grid-cols-[auto_1fr_auto] gap-5 lg:gap-7 items-start">
-                      {/* Avatar overlaps the cover (LinkedIn pattern) so the
-                          card has a clear focal point and the cover doesn't
-                          visually dominate. */}
-                      <div
-                        className={`flex-shrink-0 -mt-16 sm:-mt-20 ${
-                          avatarUrl ? 'cursor-zoom-in' : ''
-                        }`}
-                        onClick={() => avatarUrl && setAvatarPreviewOpen(true)}
-                        role={avatarUrl ? 'button' : undefined}
-                        tabIndex={avatarUrl ? 0 : undefined}
-                        aria-label={avatarUrl ? 'Open profile photo preview' : undefined}
-                        onKeyDown={(e) => {
-                          if (!avatarUrl) return;
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            setAvatarPreviewOpen(true);
-                          }
-                        }}
-                      >
-                        <div className="p-[3px] rounded-full bg-gradient-to-br from-[#3678F1] via-[#2563EB] to-[#1D4ED8] shadow-xl inline-block relative z-10">
-                          <div className="p-[3px] rounded-full bg-white">
-                            <Avatar src={avatarUrl} name={title} size="xl" />
+                    <div className="p-5 sm:p-7 lg:p-8">
+                      <div className="grid grid-cols-1 lg:grid-cols-[auto_1fr] gap-5 lg:gap-7 items-start">
+                        {/* Avatar overlaps the cover (LinkedIn pattern). Negative
+                            margin scales with the taller cover so roughly half
+                            of the circle sits on the image and half over the
+                            content — keeps a clear focal point regardless of
+                            breakpoint. */}
+                        <div
+                          className={`flex-shrink-0 -mt-20 sm:-mt-24 ${
+                            avatarUrl ? 'cursor-zoom-in' : ''
+                          }`}
+                          onClick={() => avatarUrl && setAvatarPreviewOpen(true)}
+                          role={avatarUrl ? 'button' : undefined}
+                          tabIndex={avatarUrl ? 0 : undefined}
+                          aria-label={avatarUrl ? 'Open profile photo preview' : undefined}
+                          onKeyDown={(e) => {
+                            if (!avatarUrl) return;
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              setAvatarPreviewOpen(true);
+                            }
+                          }}
+                        >
+                          <div className="p-[3px] rounded-full bg-gradient-to-br from-[#3678F1] via-[#2563EB] to-[#1D4ED8] shadow-xl inline-block relative z-10">
+                            <div className="p-[3px] rounded-full bg-white">
+                              <Avatar src={avatarUrl} name={title} size="xl" />
+                            </div>
                           </div>
+                        </div>
+
+                        <div className="min-w-0 lg:pt-1">
+                          <h1 className="text-2xl sm:text-3xl font-extrabold text-neutral-900">{title}</h1>
+                          <p className="text-xs uppercase tracking-[0.15em] font-semibold text-[#3678F1] mt-1">
+                            {primaryRole}
+                          </p>
+                          {!!genreLine && (
+                            <p className="text-sm text-neutral-600 mt-2.5">
+                              {genreLine}
+                            </p>
+                          )}
+                          {(p.locationCity || p.locationState) && (
+                            <p className="text-sm text-neutral-600 flex items-center gap-1.5 mt-2">
+                              <FaLocationDot className="w-3.5 h-3.5 text-neutral-400" />
+                              {[p.locationCity, p.locationState].filter(Boolean).join(', ')}
+                            </p>
+                          )}
+                          {isIndividual && p.dailyBudget != null && (
+                            <div className="inline-block mt-3 bg-[#E8F0FE] border border-[#3678F1]/20 text-[#3678F1] px-3 py-1.5 rounded-lg">
+                              <p className="text-sm font-bold">
+                                {formatRate(p.dailyBudget)}
+                              </p>
+                            </div>
+                          )}
+                          {profile?.phone && (
+                            <p className="text-sm text-neutral-600 flex items-center gap-1.5 mt-2">
+                              <FaPhone className="w-3.5 h-3.5 text-neutral-400" />
+                              {profile.phone}
+                            </p>
+                          )}
+                          {isIndividual && p.skills && p.skills.length > 1 ? (
+                            <div className="flex flex-wrap gap-1.5 mt-3">
+                              {p.skills.slice(1).map((s) => (
+                                <span key={s} className="px-2.5 py-1 bg-neutral-100 text-neutral-700 text-xs font-medium rounded-md border border-neutral-200">
+                                  {s}
+                                </span>
+                              ))}
+                            </div>
+                          ) : null}
                         </div>
                       </div>
 
-                      <div className="min-w-0 lg:pt-1">
-                        <h1 className="text-2xl sm:text-3xl font-extrabold text-neutral-900">{title}</h1>
-                        {reviewItems.length > 0 && (
-                          <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-[#3678F1]/20 bg-[#E8F0FE] px-3 py-1">
-                            <FaStar className="w-3 h-3 text-[#3678F1]" />
-                            <StarRating rating={Math.round(avgRating * 2) / 2} size="sm" />
-                            <span className="text-xs font-semibold text-[#1D4ED8]">
-                              {avgRating} ({reviewItems.length})
-                            </span>
-                          </div>
-                        )}
-                        <p className="text-xs uppercase tracking-[0.15em] font-semibold text-[#3678F1] mt-1">
-                          {primaryRole}
-                        </p>
-                        {!!genreLine && (
-                          <p className="text-sm text-neutral-600 mt-2.5">
-                            {genreLine}
-                          </p>
-                        )}
-                        {(p.locationCity || p.locationState) && (
-                          <p className="text-sm text-neutral-600 flex items-center gap-1.5 mt-2">
-                            <FaLocationDot className="w-3.5 h-3.5 text-neutral-400" />
-                            {[p.locationCity, p.locationState].filter(Boolean).join(', ')}
-                          </p>
-                        )}
-                        {isIndividual && p.dailyBudget != null && (
-                          <div className="inline-block mt-3 bg-[#E8F0FE] border border-[#3678F1]/20 text-[#3678F1] px-3 py-1.5 rounded-lg">
-                            <p className="text-sm font-bold">
-                              {formatRate(p.dailyBudget)}
-                            </p>
-                          </div>
-                        )}
-                        {profile?.phone && (
-                          <p className="text-sm text-neutral-600 flex items-center gap-1.5 mt-2">
-                            <FaPhone className="w-3.5 h-3.5 text-neutral-400" />
-                            {profile.phone}
-                          </p>
-                        )}
-                        {isIndividual && p.skills && p.skills.length > 1 ? (
-                          <div className="flex flex-wrap gap-1.5 mt-3">
-                            {p.skills.slice(1).map((s) => (
-                              <span key={s} className="px-2.5 py-1 bg-neutral-100 text-neutral-700 text-xs font-medium rounded-md border border-neutral-200">
-                                {s}
-                              </span>
-                            ))}
-                          </div>
-                        ) : null}
-                        {visiblePlatforms.length > 0 && (
-                          <div className="mt-4 pt-4 border-t border-neutral-100 flex items-center gap-2.5 flex-wrap lg:hidden">
-                            {visiblePlatforms.map(({ key, label, url, Icon, color, bg, border }) => (
-                              <a
-                                key={key}
-                                href={url}
-                                target="_blank"
-                                rel="noreferrer"
-                                aria-label={label}
-                                title={label}
-                                className={`w-9 h-9 rounded-full border ${border} ${bg} hover:border-[#3678F1] transition-colors flex items-center justify-center`}
-                              >
-                                <Icon className={`w-4 h-4 ${color}`} />
-                              </a>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="hidden lg:block min-w-[120px] lg:pt-2">
-                        {visiblePlatforms.length > 0 && (
-                          <div className="flex justify-end">
-                            <div className="flex flex-col items-center gap-2.5 rounded-2xl border border-neutral-100 bg-neutral-50/70 px-3 py-3">
-                              {visiblePlatforms.map(({ key, label, url, Icon, color, bg, border }) => (
-                                <a
-                                  key={key}
-                                  href={url}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  aria-label={label}
-                                  title={label}
-                                  className={`w-9 h-9 rounded-full border ${border} ${bg} hover:border-[#3678F1] transition-colors flex items-center justify-center`}
-                                >
-                                  <Icon className={`w-4 h-4 ${color}`} />
-                                </a>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
+                      {/* Social links — horizontal strip anchored to the bottom-right.
+                          A soft top border separates them from the bio details above
+                          without competing for attention. Wraps gracefully on mobile. */}
+                      {visiblePlatforms.length > 0 && (
+                        <div className="mt-5 pt-5 border-t border-neutral-100 flex justify-end items-center gap-2.5 flex-wrap">
+                          {visiblePlatforms.map(({ key, label, url, Icon, color, bg, border }) => (
+                            <a
+                              key={key}
+                              href={url}
+                              target="_blank"
+                              rel="noreferrer"
+                              aria-label={label}
+                              title={label}
+                              className={`w-9 h-9 rounded-full border ${border} ${bg} hover:border-[#3678F1] transition-colors flex items-center justify-center`}
+                            >
+                              <Icon className={`w-4 h-4 ${color}`} />
+                            </a>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </motion.div>
 
@@ -557,50 +541,6 @@ We're working on ${projectName}. The shoot is planned for ${shootDate} at ${loca
                       <p className="text-sm text-neutral-600 leading-relaxed whitespace-pre-wrap">
                         {isIndividual ? (p.aboutMe || p.bio) : isVendor ? (p.aboutUs || '—') : (p.aboutUs || p.bio)}
                       </p>
-                    </motion.div>
-                  )}
-
-                  {isVendor && (
-                    <motion.div variants={itemVariants} className="rounded-3xl bg-white shadow-soft border border-neutral-100 hover:border-[#3678F1] transition-colors duration-200 p-6 sm:p-8">
-                      <h2 className="text-base font-bold text-neutral-900 mb-5 flex items-center gap-2">
-                        <span className="w-1 h-5 rounded-full bg-[#3678F1]" /> Vendor details
-                      </h2>
-                      <dl className="space-y-2 text-sm text-neutral-700">
-                        <div>
-                          <dt className="text-xs text-neutral-500 mb-0.5">Type</dt>
-                          <dd>{p.vendorType ?? '—'}</dd>
-                        </div>
-                        <div>
-                          <dt className="text-xs text-neutral-500 mb-0.5">GST Number</dt>
-                          <dd>{p.gstNumber ?? '—'}</dd>
-                        </div>
-                        {p.equipment && p.equipment.length > 0 && (
-                          <div className="pt-2 border-t border-neutral-200 mt-2">
-                            <dt className="text-xs text-neutral-500 mb-1.5 flex items-center gap-1">
-                              <FaVideo className="w-3 h-3" />
-                              Equipment ({p.equipment.length})
-                            </dt>
-                            <div className="space-y-2">
-                              {p.equipment.slice(0, 5).map((eq) => (
-                                <div key={eq.id} className="text-sm">
-                                  <div className="font-medium text-neutral-800">{eq.name}</div>
-                                  {(eq.currentCity || (eq.availabilities && eq.availabilities.length > 0)) && (
-                                    <div className="text-xs text-neutral-500 flex items-center gap-1 mt-0.5">
-                                      <FaLocationDot className="w-3 h-3" />
-                                      {eq.currentCity || eq.availabilities?.[0]?.locationCity || '—'}
-                                    </div>
-                                  )}
-                                </div>
-                              ))}
-                              {p.equipment.length > 5 && (
-                                <div className="text-xs text-neutral-500 mt-1">
-                                  +{p.equipment.length - 5} more equipment
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </dl>
                     </motion.div>
                   )}
 
@@ -795,6 +735,52 @@ We're working on ${projectName}. The shoot is planned for ${shootDate} at ${loca
                       setIsBookingModalOpen(true);
                     }}
                   />
+
+                  {/* Vendor details (type, GST, equipment) — rendered after the calendar
+                      so viewers see availability first and the kit inventory below it. */}
+                  {isVendor && (
+                    <motion.div variants={itemVariants} className="rounded-3xl bg-white shadow-soft border border-neutral-100 hover:border-[#3678F1] transition-colors duration-200 p-6 sm:p-8">
+                      <h2 className="text-base font-bold text-neutral-900 mb-5 flex items-center gap-2">
+                        <span className="w-1 h-5 rounded-full bg-[#3678F1]" /> Vendor details
+                      </h2>
+                      <dl className="space-y-2 text-sm text-neutral-700">
+                        <div>
+                          <dt className="text-xs text-neutral-500 mb-0.5">Type</dt>
+                          <dd>{p.vendorType ?? '—'}</dd>
+                        </div>
+                        <div>
+                          <dt className="text-xs text-neutral-500 mb-0.5">GST Number</dt>
+                          <dd>{p.gstNumber ?? '—'}</dd>
+                        </div>
+                        {p.equipment && p.equipment.length > 0 && (
+                          <div className="pt-2 border-t border-neutral-200 mt-2">
+                            <dt className="text-xs text-neutral-500 mb-1.5 flex items-center gap-1">
+                              <FaVideo className="w-3 h-3" />
+                              Equipment ({p.equipment.length})
+                            </dt>
+                            <div className="space-y-2">
+                              {p.equipment.slice(0, 5).map((eq) => (
+                                <div key={eq.id} className="text-sm">
+                                  <div className="font-medium text-neutral-800">{eq.name}</div>
+                                  {(eq.currentCity || (eq.availabilities && eq.availabilities.length > 0)) && (
+                                    <div className="text-xs text-neutral-500 flex items-center gap-1 mt-0.5">
+                                      <FaLocationDot className="w-3 h-3" />
+                                      {eq.currentCity || eq.availabilities?.[0]?.locationCity || '—'}
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                              {p.equipment.length > 5 && (
+                                <div className="text-xs text-neutral-500 mt-1">
+                                  +{p.equipment.length - 5} more equipment
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </dl>
+                    </motion.div>
+                  )}
                   </>
                   )}
                 </motion.div>
@@ -807,6 +793,34 @@ We're working on ${projectName}. The shoot is planned for ${shootDate} at ${loca
                     <span className="w-1 h-5 rounded-full bg-[#3678F1]" />
                     <h2 className="text-base font-bold text-neutral-900">Ratings & Reviews</h2>
                   </div>
+                  {/* Average-rating summary — moved out of the hero card so it
+                      reads as a proper headline for the reviews section. The
+                      two-column layout (large numeric average | stars + meta)
+                      is the standard pattern users recognize from app stores
+                      and marketplace listings. */}
+                  {reviewItems.length > 0 && (
+                    <div className="rounded-2xl bg-white shadow-soft border border-neutral-100 p-5 sm:p-6 flex items-center gap-5 sm:gap-6">
+                      <div className="flex flex-col items-center justify-center pr-5 sm:pr-6 border-r border-neutral-100 min-w-[88px]">
+                        <span className="text-4xl sm:text-5xl font-extrabold text-neutral-900 tabular-nums leading-none">
+                          {avgRating.toFixed(1)}
+                        </span>
+                        <span className="mt-1.5 text-[10px] uppercase tracking-widest font-bold text-neutral-400">
+                          out of 5
+                        </span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <StarRating rating={Math.round(avgRating * 2) / 2} size="md" />
+                          <span className="text-xs font-semibold text-neutral-500">
+                            {reviewItems.length} review{reviewItems.length !== 1 ? 's' : ''}
+                          </span>
+                        </div>
+                        <p className="text-xs text-neutral-500 mt-2 leading-relaxed">
+                          Based on feedback from companies that have worked with {title}.
+                        </p>
+                      </div>
+                    </div>
+                  )}
                   {viewer?.role === 'company' && (isIndividual || isVendor) && (
                     <LeaveReviewSection
                       targetUserId={profile.id}

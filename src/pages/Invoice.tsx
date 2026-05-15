@@ -258,13 +258,38 @@ export default function Invoice() {
 
   return (
     <>
-      {/* Print styles */}
+      {/* Print styles.
+         IMPORTANT: use `position: absolute`, NOT `position: fixed`, on the
+         print container. A fixed-position element's containing block is the
+         viewport and the print engine treats it as a single-page overlay that
+         does not paginate — content that exceeds one page gets clipped (which
+         is what hid the "Bill Payable To" bank details before). Absolutely
+         positioned elements paginate normally in paged media. */}
       <style>{`
         @media print {
           body * { visibility: hidden; }
           #invoice-print-area, #invoice-print-area * { visibility: visible; }
-          #invoice-print-area { position: fixed; left: 0; top: 0; width: 100%; }
+          #invoice-print-area {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            margin: 0;
+            padding: 24px;
+            border: none;
+            border-radius: 0;
+            box-shadow: none;
+            background: white;
+          }
           .no-print { display: none !important; }
+          /* Keep the signature + bank-details row together — splitting it
+             across a page break leaves either the signature line orphaned or
+             "Bill Payable To" cut off mid-field. */
+          .invoice-footer-block {
+            break-inside: avoid;
+            page-break-inside: avoid;
+          }
+          @page { margin: 12mm; }
         }
       `}</style>
 
@@ -876,7 +901,7 @@ export default function Invoice() {
                       )}
 
                       {/* Signature / Payable to */}
-                      <div className="mt-10 pt-6 border-t-2 border-neutral-900">
+                      <div className="invoice-footer-block mt-10 pt-6 border-t-2 border-neutral-900">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                           {/* Signature */}
                           <div>

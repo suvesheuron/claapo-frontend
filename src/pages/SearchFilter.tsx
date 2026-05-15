@@ -1,7 +1,7 @@
 import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { FaTruck, FaMagnifyingGlass, FaChevronLeft, FaChevronRight, FaPlus, FaTriangleExclamation, FaLocationDot } from 'react-icons/fa6';
+import { FaMagnifyingGlass, FaChevronLeft, FaChevronRight, FaPlus, FaTriangleExclamation, FaLocationDot } from 'react-icons/fa6';
 import toast from 'react-hot-toast';
 import AppFooter from '../components/AppFooter';
 import Avatar from '../components/Avatar';
@@ -25,6 +25,7 @@ interface CrewResult {
   dailyBudget?: number;
   isAvailable: boolean;
   bio?: string;
+  avatarUrl?: string | null;
 }
 
 interface VendorEquipmentItem {
@@ -40,6 +41,7 @@ interface VendorResult {
   locationCity?: string;
   isGstVerified: boolean;
   equipment?: VendorEquipmentItem[];
+  avatarUrl?: string | null;
 }
 
 interface ProjectItem {
@@ -677,7 +679,7 @@ Please share your best quotation for this requirement.`;
                       >
                         {/* Header: avatar + status pill */}
                         <div className="flex items-start justify-between gap-3 mb-4">
-                          <Avatar name={r.displayName} size="lg" />
+                          <Avatar src={r.avatarUrl ?? undefined} name={r.displayName} size="lg" />
                           <span
                             className={`inline-flex items-center gap-1.5 h-6 px-2.5 rounded-full text-[10.5px] font-bold tracking-wide shrink-0 ${
                               r.isAvailable
@@ -740,7 +742,9 @@ Please share your best quotation for this requirement.`;
                         key={r.userId}
                         className="rounded-2xl bg-white shadow-sm border border-neutral-200/70 hover:border-[#3678F1] transition-colors duration-200 flex flex-col p-5"
                       >
-                        <div className="mb-2">
+                        {/* Top row: Mark checkbox + GST badge (kept here so the header below
+                            has a single status pill on the right, matching the crew card height). */}
+                        <div className="flex items-center justify-between mb-3 min-h-[24px]">
                           <label className="inline-flex items-center gap-2 text-xs font-semibold text-neutral-600 cursor-pointer">
                             <input
                               type="checkbox"
@@ -750,23 +754,20 @@ Please share your best quotation for this requirement.`;
                             />
                             Mark
                           </label>
-                        </div>
-                        {/* Header: icon + status pill */}
-                        <div className="flex items-start justify-between gap-3 mb-4">
-                          <div className="w-12 h-12 rounded-xl bg-[#E8F0FE] ring-1 ring-[#3678F1]/15 flex items-center justify-center shrink-0">
-                            <FaTruck className="text-[#3678F1] text-base" />
-                          </div>
-                          <div className="flex flex-col gap-1 items-end">
-                            <span className="inline-flex items-center gap-1.5 h-6 px-2.5 rounded-full text-[10.5px] font-bold tracking-wide bg-[#DCFCE7] text-[#15803D]">
-                              <span className="w-1.5 h-1.5 rounded-full bg-[#22C55E]" />
-                              Available
+                          {r.isGstVerified && (
+                            <span className="text-[9.5px] font-bold px-2 py-0.5 rounded-full bg-[#E8F0FE] text-[#2563EB]">
+                              GST Verified
                             </span>
-                            {r.isGstVerified && (
-                              <span className="text-[9.5px] font-bold px-2 py-0.5 rounded-full bg-[#E8F0FE] text-[#2563EB]">
-                                GST Verified
-                              </span>
-                            )}
-                          </div>
+                          )}
+                        </div>
+
+                        {/* Header: avatar + availability pill (mirrors the crew layout). */}
+                        <div className="flex items-start justify-between gap-3 mb-4">
+                          <Avatar src={r.avatarUrl ?? undefined} name={r.companyName} size="lg" />
+                          <span className="inline-flex items-center gap-1.5 h-6 px-2.5 rounded-full text-[10.5px] font-bold tracking-wide bg-[#DCFCE7] text-[#15803D] shrink-0">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#22C55E]" />
+                            Available
+                          </span>
                         </div>
 
                         {/* Name + type */}
@@ -779,15 +780,15 @@ Please share your best quotation for this requirement.`;
                               : (r.vendorType?.replace(/_/g, ' ') ?? 'Vendor')}
                         </p>
 
-                        {/* Meta row */}
-                        {r.locationCity && (
-                          <div className="flex flex-col gap-2 pt-4 border-t border-neutral-100">
-                            <span className="text-xs text-neutral-500 flex items-center gap-1.5">
-                              <FaLocationDot className="text-neutral-300 text-[11px]" />
-                              {r.locationCity}
-                            </span>
-                          </div>
-                        )}
+                        {/* Meta row — always rendered (with a graceful fallback) so every
+                            card in the grid has the same vertical rhythm and the CTA below
+                            stays on the same baseline. */}
+                        <div className="flex flex-col gap-2 pt-4 border-t border-neutral-100 mt-auto">
+                          <span className="text-xs text-neutral-500 flex items-center gap-1.5">
+                            <FaLocationDot className="text-neutral-300 text-[11px]" />
+                            {r.locationCity || 'Location on request'}
+                          </span>
+                        </div>
 
                         {/* CTA */}
                         <Link
