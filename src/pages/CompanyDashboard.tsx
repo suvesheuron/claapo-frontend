@@ -145,7 +145,10 @@ export default function CompanyDashboard() {
   const [dateChatGroupsError, setDateChatGroupsError] = useState<string | null>(null);
   const [panelClosing, setPanelClosing] = useState(false);
 
-  const { data: projectsData, loading } = useApiQuery<ProjectsApiResponse>('/projects?limit=100');
+  const { data: projectsData, loading } = useApiQuery<ProjectsApiResponse>(
+    '/projects?limit=100',
+    { swr: true },
+  );
   const projects = projectsData?.items ?? [];
   const { unreadByProject, unreadDateByProject } = useChatUnread();
 

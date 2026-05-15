@@ -131,9 +131,12 @@ export default function IndividualDashboard() {
   const yearLabel = displayDate.getFullYear();
 
   const { data: bookingsData, loading: bookingsLoading, refetch: refetchBookings } =
-    useApiQuery<IncomingBookingsResponse>('/bookings/incoming');
+    useApiQuery<IncomingBookingsResponse>('/bookings/incoming', { swr: true });
   const { unreadByProject, unreadShootDatesByProject } = useChatUnread();
-  const { data: pastData } = useApiQuery<{ items: PastBookingItem[] }>('/bookings/past');
+  const { data: pastData } = useApiQuery<{ items: PastBookingItem[] }>(
+    '/bookings/past',
+    { swr: true },
+  );
   const allBookings = bookingsData?.items ?? [];
   const pendingBookings = allBookings.filter(b => b.status === 'pending').slice(0, 5);
 
