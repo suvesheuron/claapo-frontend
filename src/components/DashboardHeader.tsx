@@ -12,6 +12,7 @@ import { useSidebar } from '../contexts/SidebarContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useApiQuery } from '../hooks/useApiQuery';
 import { api } from '../services/api';
+import { ensureChatSocket } from '../services/chatSocket';
 
 type DashboardHeaderProps = {
   userName?: string;
@@ -73,7 +74,13 @@ export default function DashboardHeader({ userName: propUserName, userAvatar: pr
   const unreadCount = notifData?.meta?.unreadCount ?? 0;
 
   interface MeResponse { profile?: { companyName?: string; displayName?: string; avatarUrl?: string | null } | null; isMainUser?: boolean }
-  const { data: meData, loading: meLoading } = useApiQuery<MeResponse>(isAuthenticated ? '/profile/me' : null);
+  // SWR: the user widget (avatar + name + role) only changes when the user
+  // edits their own profile, so caching is safe. This is what fixes the
+  // "loads every time" flash on the top-right widget.
+  const { data: meData, loading: meLoading } = useApiQuery<MeResponse>(
+    isAuthenticated ? '/profile/me' : null,
+    { swr: true },
+  );
   const profile = meData?.profile;
   const isMainUser = meData?.isMainUser !== false;
 
@@ -101,6 +108,24 @@ export default function DashboardHeader({ userName: propUserName, userAvatar: pr
     document.addEventListener('mousedown', handle);
     return () => document.removeEventListener('mousedown', handle);
   }, []);
+
+  // Real-time bell refresh: the backend emits 'notification_created' to
+  // USER_ROOM(userId) whenever NotificationsService.createForUser runs.
+  // Listening here brings the bell badge from up to 20s (polling cadence)
+  // down to ~100ms. Refetches the same /notifications endpoint we already
+  // use, so the dropdown stays in sync with the badge.
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const socket = ensureChatSocket();
+    if (!socket) return;
+    const onNotificationCreated = () => {
+      refetchNotifs();
+    };
+    socket.on('notification_created', onNotificationCreated);
+    return () => {
+      socket.off('notification_created', onNotificationCreated);
+    };
+  }, [isAuthenticated, refetchNotifs]);
 
   const markAllRead = async () => {
     try {

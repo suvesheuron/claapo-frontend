@@ -74,7 +74,10 @@ export default function Projects() {
   const { user } = useAuth();
   const isSubuser = user?.mainUserId != null;
   
-  const { data, loading, error, refetch } = useApiQuery<ProjectsResponse>('/projects?limit=50');
+  const { data, loading, error, refetch } = useApiQuery<ProjectsResponse>(
+    '/projects?limit=50',
+    { swr: true },
+  );
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [cancelActionError, setCancelActionError] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterKey>('all');

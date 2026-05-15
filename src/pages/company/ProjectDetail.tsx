@@ -10,6 +10,7 @@ import DashboardSidebar from '../../components/DashboardSidebar';
 import AppFooter from '../../components/AppFooter';
 import Avatar from '../../components/Avatar';
 import { api, ApiException } from '../../services/api';
+import { readApiQueryCache, writeApiQueryCache } from '../../hooks/useApiQuery';
 import toast from 'react-hot-toast';
 import { formatBudgetCompact } from '../../utils/currency';
 import { companyNavLinks } from '../../navigation/dashboardNav';
@@ -118,12 +119,40 @@ export default function ProjectDetail() {
   const { id: projectId } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  const [project, setProject] = useState<Project | null>(null);
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [subUsers, setSubUsers] = useState<SubUserAssignment[]>([]);
-  const [loadingProject, setLoadingProject] = useState(true);
-  const [loadingBookings, setLoadingBookings] = useState(true);
-  const [loadingSubUsers, setLoadingSubUsers] = useState(true);
+  // SWR seed: if this project was visited before, render its details
+  // immediately and refresh in the background. The three loading flags
+  // initialize false when their cache entry exists, so the skeleton shells
+  // never appear on a repeat "View details" click. Cache misses (first
+  // visit) behave exactly like before.
+  const projectCacheKey = projectId ? `/projects/${projectId}` : null;
+  const bookingsCacheKey = '/bookings/outgoing';
+  const subUsersCacheKey = projectId ? `/projects/${projectId}/sub-users` : null;
+
+  const cachedProject = projectCacheKey
+    ? readApiQueryCache<Project>(projectCacheKey)
+    : undefined;
+  const cachedBookingsPayload = readApiQueryCache<{ items: Booking[] }>(bookingsCacheKey);
+  const cachedSubUsers = subUsersCacheKey
+    ? readApiQueryCache<{ items: SubUserAssignment[] }>(subUsersCacheKey)
+    : undefined;
+
+  const [project, setProject] = useState<Project | null>(
+    () => cachedProject ?? null,
+  );
+  const [bookings, setBookings] = useState<Booking[]>(() => {
+    if (!cachedBookingsPayload || !projectId) return [];
+    return cachedBookingsPayload.items.filter(
+      (b) => b.projectId === projectId && ACTIVE_STATUSES.includes(b.status),
+    );
+  });
+  const [subUsers, setSubUsers] = useState<SubUserAssignment[]>(
+    () => cachedSubUsers?.items ?? [],
+  );
+  const [loadingProject, setLoadingProject] = useState(() => !cachedProject);
+  const [loadingBookings, setLoadingBookings] = useState(
+    () => !cachedBookingsPayload,
+  );
+  const [loadingSubUsers, setLoadingSubUsers] = useState(() => !cachedSubUsers);
   const [projectError, setProjectError] = useState<string | null>(null);
 
   const [lockingAll, setLockingAll] = useState(false);
@@ -141,13 +170,19 @@ export default function ProjectDetail() {
 
   const loadProject = useCallback(async () => {
     if (!projectId) return;
-    setLoadingProject(true);
+    // Don't flip loading on if we already have cached content — refresh
+    // silently. Empty state (no cache) still shows the skeleton.
+    const hasCached = readApiQueryCache<Project>(`/projects/${projectId}`) !== undefined;
+    if (!hasCached) setLoadingProject(true);
     setProjectError(null);
     try {
       const p = await api.get<Project>(`/projects/${projectId}`);
       setProject(p);
+      writeApiQueryCache(`/projects/${projectId}`, p);
     } catch (err) {
-      setProjectError(err instanceof ApiException ? err.payload.message : 'Failed to load project.');
+      if (!hasCached) {
+        setProjectError(err instanceof ApiException ? err.payload.message : 'Failed to load project.');
+      }
     } finally {
       setLoadingProject(false);
     }
@@ -155,12 +190,14 @@ export default function ProjectDetail() {
 
   const loadBookings = useCallback(async () => {
     if (!projectId) return;
-    setLoadingBookings(true);
+    const hasCached = readApiQueryCache<{ items: Booking[] }>('/bookings/outgoing') !== undefined;
+    if (!hasCached) setLoadingBookings(true);
     try {
       const res = await api.get<{ items: Booking[] }>('/bookings/outgoing');
       setBookings(res.items.filter((b) => b.projectId === projectId && ACTIVE_STATUSES.includes(b.status)));
+      writeApiQueryCache('/bookings/outgoing', res);
     } catch {
-      setBookings([]);
+      if (!hasCached) setBookings([]);
     } finally {
       setLoadingBookings(false);
     }
@@ -168,12 +205,15 @@ export default function ProjectDetail() {
 
   const loadSubUsers = useCallback(async () => {
     if (!projectId) return;
-    setLoadingSubUsers(true);
+    const hasCached =
+      readApiQueryCache<{ items: SubUserAssignment[] }>(`/projects/${projectId}/sub-users`) !== undefined;
+    if (!hasCached) setLoadingSubUsers(true);
     try {
       const res = await api.get<{ items: SubUserAssignment[] }>(`/projects/${projectId}/sub-users`);
       setSubUsers(res.items ?? []);
+      writeApiQueryCache(`/projects/${projectId}/sub-users`, res);
     } catch {
-      setSubUsers([]);
+      if (!hasCached) setSubUsers([]);
     } finally {
       setLoadingSubUsers(false);
     }

@@ -64,6 +64,25 @@ export function clearApiQueryCache(): void {
   swrCache.clear();
 }
 
+/**
+ * Direct cache read. Use this from pages that fetch via raw api.get (i.e.
+ * not via useApiQuery) so they can still benefit from the shared SWR cache.
+ * Returns undefined on miss.
+ */
+export function readApiQueryCache<T>(path: string): T | undefined {
+  return readSwr<T>(path);
+}
+
+/**
+ * Direct cache write. Use after a successful raw api.get so the next consumer
+ * of this URL (whether useApiQuery({ swr: true }) or another raw call) gets
+ * an instant hit. No-op on falsy value.
+ */
+export function writeApiQueryCache<T>(path: string, value: T): void {
+  if (value === undefined || value === null) return;
+  writeSwr<T>(path, value);
+}
+
 export function useApiQuery<T>(
   path: string | null,
   options?: UseApiQueryOptions,

@@ -203,11 +203,24 @@ export default function Chat() {
       setScopedConversationLoading(false);
       return;
     }
+    // If we have this conversation cached, keep the resolved ids on screen
+    // during the background re-resolution. Without this, the effect blanked
+    // the ids the lazy useState already seeded from cache — opening a window
+    // where handleSend's "Chat is still opening — try again" guard fired on
+    // every keystroke / button click. Stacked toasts in that window because
+    // there was no toast id to dedupe.
+    const cached = readChatSnapshot<ChatMessage>(targetUserId, projectIdFromUrl);
+    const hasCachedConversation = !!cached?.scopedConversationId;
     let alive = true;
-    setScopedConversationLoading(true);
-    setScopedConversationId(null);
-    setActiveConversationId(null);
-    setScopedProjectTitle(null);
+    if (hasCachedConversation) {
+      // Cached: stay on the cached ids, refresh silently, no loading flag.
+      setScopedConversationLoading(false);
+    } else {
+      setScopedConversationLoading(true);
+      setScopedConversationId(null);
+      setActiveConversationId(null);
+      setScopedProjectTitle(null);
+    }
     void (async () => {
       try {
         const res = await api.post<{ id: string; project?: { title: string } | null }>('/conversations', {
@@ -234,10 +247,17 @@ export default function Chat() {
         }
       } catch {
         if (!alive) return;
-        setScopedConversationId(null);
-        setActiveConversationId(null);
-        setNoConversation(true);
-        toast.error('Could not open chat for this project.');
+        // Only surface the failure if we don't already have a working
+        // conversation from cache — otherwise the user sees a spurious
+        // error on a chat that's clearly open.
+        if (!hasCachedConversation) {
+          setScopedConversationId(null);
+          setActiveConversationId(null);
+          setNoConversation(true);
+          toast.error('Could not open chat for this project.', {
+            id: 'project-chat-resolve-failed',
+          });
+        }
       } finally {
         if (alive) setScopedConversationLoading(false);
       }
@@ -501,7 +521,11 @@ export default function Chat() {
     const content = input.trim();
     if (!content || sending) return;
     if (projectIdFromUrl && !scopedConversationId) {
-      toast.error('Chat is still opening — try again.');
+      // Stable id so rapid send-button mashing on a still-opening chat
+      // only ever shows one toast at a time instead of a tower of them.
+      toast.error('Chat is still opening — try again.', {
+        id: 'chat-still-opening',
+      });
       return;
     }
     setSending(true);
@@ -532,7 +556,9 @@ export default function Chat() {
   const handleFileUpload = async (file: File, type: 'image' | 'file') => {
     if (!targetUserId) return;
     if (projectIdFromUrl && !scopedConversationId) {
-      toast.error('Chat is still opening — try again.');
+      toast.error('Chat is still opening — try again.', {
+        id: 'chat-still-opening',
+      });
       return;
     }
     setShowAttachMenu(false);

@@ -64,7 +64,10 @@ export default function OngoingProjects() {
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [cancelReason, setCancelReason] = useState('');
 
-  const { data, loading, error, refetch } = useApiQuery<BookingsResponse>('/bookings/incoming');
+  const { data, loading, error, refetch } = useApiQuery<BookingsResponse>(
+    '/bookings/incoming',
+    { swr: true },
+  );
 
   const ongoingBookings = (data?.items ?? []).filter(isOngoingBooking);
 

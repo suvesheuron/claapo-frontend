@@ -139,10 +139,16 @@ export default function VendorDashboard() {
   const yearLabel = displayDate.getFullYear();
 
   const { data: bookingsData, loading: bookingsLoading, refetch: refetchBookings } =
-    useApiQuery<{ items: IncomingBooking[] }>('/bookings/incoming');
+    useApiQuery<{ items: IncomingBooking[] }>('/bookings/incoming', { swr: true });
   const { unreadByProject, unreadShootDatesByProject } = useChatUnread();
-  const { data: pastData } = useApiQuery<{ items: PastBookingItem[] }>('/bookings/past');
-  const { data: equipmentList } = useApiQuery<EquipmentItem[] | { items: EquipmentItem[] }>('/equipment/me');
+  const { data: pastData } = useApiQuery<{ items: PastBookingItem[] }>(
+    '/bookings/past',
+    { swr: true },
+  );
+  const { data: equipmentList } = useApiQuery<EquipmentItem[] | { items: EquipmentItem[] }>(
+    '/equipment/me',
+    { swr: true },
+  );
 
   const incomingItems = bookingsData?.items ?? [];
   const pendingBookings = incomingItems.filter(b => b.status === 'pending').slice(0, 5);
