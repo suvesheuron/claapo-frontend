@@ -137,6 +137,9 @@ export default function VendorAvailability() {
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [cancelReason, setCancelReason] = useState('');
   const [cancelBusy, setCancelBusy] = useState(false);
+  // Mark-complete confirm flow (mirrors the individual-side modal).
+  const [completingBookingId, setCompletingBookingId] = useState<string | null>(null);
+  const [marking, setMarking] = useState(false);
   const { unreadByProject, unreadDateByProject } = useChatUnread();
 
   const displayDate = new Date(BASE_YEAR, BASE_MONTH + monthOffset, 1);
@@ -316,6 +319,22 @@ export default function VendorAvailability() {
       toast.error(err instanceof ApiException ? err.payload.message : 'Failed to update availability.');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleConfirmMarkComplete = async () => {
+    if (!completingBookingId) return;
+    setMarking(true);
+    try {
+      await api.patch(`/bookings/${completingBookingId}/complete`, {});
+      toast.success('Booking marked complete. Calendar updated.');
+      setCompletingBookingId(null);
+      setDetailDate(null);
+      await loadSlots();
+    } catch (err) {
+      toast.error(err instanceof ApiException ? err.payload.message : 'Failed to mark complete.');
+    } finally {
+      setMarking(false);
     }
   };
 
@@ -551,6 +570,7 @@ export default function VendorAvailability() {
               onBlock={handleBlock}
               onUnblock={handleUnblock}
               onRequestCancel={(id) => setCancellingId(id)}
+              onMarkComplete={(id) => setCompletingBookingId(id)}
             />
           </aside>
         </>
@@ -576,6 +596,33 @@ export default function VendorAvailability() {
                 </button>
                 <button type="button" disabled={cancelBusy} onClick={() => void submitCancelRequest()} className="flex-1 py-2.5 rounded-xl bg-[#F40F02] text-white text-sm font-semibold hover:bg-[#C70D02] disabled:opacity-50 flex items-center justify-center gap-2 transition-colors">
                   {cancelBusy ? <><span className="w-6 h-6 border-[2.5px] border-white/30 border-t-white border-r-white rounded-full animate-spin" /> Sending…</> : 'Send request'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {completingBookingId && (
+        <>
+          <div className="fixed inset-0 bg-black/40 z-[60]" onClick={() => !marking && setCompletingBookingId(null)} />
+          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 pointer-events-none">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 pointer-events-auto">
+              <h2 className="text-base font-bold text-neutral-900 mb-2">Mark booking complete?</h2>
+              <p className="text-sm text-neutral-600 mb-2">
+                This booking will be moved to past work on your calendar.
+              </p>
+              <p className="text-xs text-neutral-500 mb-4">
+                The company will be notified. You can still invoice from this project afterwards.
+              </p>
+              <div className="flex gap-3">
+                <button type="button" disabled={marking} onClick={() => setCompletingBookingId(null)}
+                  className="flex-1 rounded-xl py-2.5 border border-neutral-300 text-neutral-700 text-sm font-medium hover:bg-neutral-50 transition-colors disabled:opacity-50">
+                  Cancel
+                </button>
+                <button type="button" disabled={marking} onClick={handleConfirmMarkComplete}
+                  className="flex-1 rounded-xl py-2.5 bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white text-sm font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] disabled:opacity-50 transition-colors shadow-brand">
+                  {marking ? 'Marking…' : 'Mark Complete'}
                 </button>
               </div>
             </div>

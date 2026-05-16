@@ -19,6 +19,7 @@ const Dashboard = lazy(() => import('./pages/Dashboard'));
 const CreateProject = lazy(() => import('./pages/CreateProject'));
 const EditProject = lazy(() => import('./pages/EditProject'));
 const SearchFilter = lazy(() => import('./pages/SearchFilter'));
+const Discover = lazy(() => import('./pages/Discover'));
 const OtherUserProfile = lazy(() => import('./pages/OtherUserProfile'));
 
 // Individual routes
@@ -216,7 +217,8 @@ export default function App() {
           </ProtectedRoute>} />
           <Route path="/projects/:id/edit" element={<ProtectedRoute allowedRoles={['company', 'admin']}><EditProject /></ProtectedRoute>} />
           <Route path="/search" element={<ProtectedRoute allowedRoles={['company', 'admin']}><SearchFilter /></ProtectedRoute>} />
-          <Route path="/profile/:userId" element={<ProtectedRoute allowedRoles={['company', 'admin']}><OtherUserProfile /></ProtectedRoute>} />
+          <Route path="/discover" element={<ProtectedRoute><Discover /></ProtectedRoute>} />
+          <Route path="/profile/:userId" element={<ProtectedRoute><OtherUserProfile /></ProtectedRoute>} />
 
           {/* Shared routes */}
           <Route path="/chat/:userId" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
@@ -226,7 +228,10 @@ export default function App() {
           <Route path="/invoices/offline" element={<ProtectedRoute><OfflineInvoices /></ProtectedRoute>} />
           <Route path="/invoices/:projectId/offline" element={<ProtectedRoute><OfflineInvoices /></ProtectedRoute>} />
           <Route path="/invoices/:projectId" element={<ProtectedRoute><InvoicesList /></ProtectedRoute>} />
-          <Route path="/invoice/new" element={<ProtectedRoute allowedRoles={['individual', 'vendor']}><CreateInvoice /></ProtectedRoute>} />
+          {/* Companies can also reach the create-invoice page now (spec 8 — booked
+              companies raise invoices to the production house). The server still
+              enforces that the issuer is a confirmed booking target on the project. */}
+          <Route path="/invoice/new" element={<ProtectedRoute allowedRoles={['individual', 'vendor', 'company']}><CreateInvoice /></ProtectedRoute>} />
           <Route path="/invoice/:invoiceId" element={<ProtectedRoute><Invoice /></ProtectedRoute>} />
           <Route path="/bookings" element={<ProtectedRoute allowedRoles={['individual', 'vendor']}><Bookings /></ProtectedRoute>} />
           <Route path="/project-details" element={<ProtectedRoute allowedRoles={['individual', 'vendor']}><ProjectDetails /></ProtectedRoute>} />

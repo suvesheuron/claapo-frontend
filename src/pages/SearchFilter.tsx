@@ -1,7 +1,7 @@
 import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { FaMagnifyingGlass, FaChevronLeft, FaChevronRight, FaPlus, FaTriangleExclamation, FaLocationDot } from 'react-icons/fa6';
+import { FaMagnifyingGlass, FaChevronLeft, FaChevronRight, FaPlus, FaTriangleExclamation, FaLocationDot, FaBuilding } from 'react-icons/fa6';
 import toast from 'react-hot-toast';
 import AppFooter from '../components/AppFooter';
 import Avatar from '../components/Avatar';
@@ -14,7 +14,7 @@ import { formatPaise } from '../utils/currency';
 import { companyNavLinks } from '../navigation/dashboardNav';
 import { REGISTRATION_INDIVIDUAL_DEPARTMENTS, REGISTRATION_VENDOR_CATEGORIES, REGISTRATION_GENRES, vendorCategoryToVendorType } from '../constants/registrationCategories';
 
-type SearchType = 'crew' | 'vendors';
+type SearchType = 'crew' | 'vendors' | 'companies';
 
 interface CrewResult {
   userId: string;
@@ -25,6 +25,20 @@ interface CrewResult {
   dailyBudget?: number;
   isAvailable: boolean;
   bio?: string;
+  avatarUrl?: string | null;
+}
+
+/**
+ * Companies-tab result shape. Backed by /search/people?category=company —
+ * the existing /search/crew + /search/vendors endpoints are filter-rich;
+ * companies have no filter surface per spec 8, so we lean on the simpler
+ * directory endpoint for this tab.
+ */
+interface CompanyResult {
+  userId: string;
+  name: string;
+  locationCity?: string | null;
+  locationState?: string | null;
   avatarUrl?: string | null;
 }
 
@@ -81,7 +95,11 @@ export default function SearchFilter() {
 
   const [searchParams] = useSearchParams();
 
-  const initType = (searchParams.get('type') as SearchType) === 'vendors' ? 'vendors' : 'crew';
+  const initTypeRaw = searchParams.get('type');
+  const initType: SearchType =
+    initTypeRaw === 'vendors' ? 'vendors'
+    : initTypeRaw === 'companies' ? 'companies'
+    : 'crew';
   const [searchType, setSearchType] = useState<SearchType>(initType);
 
   const [query, setQuery] = useState('');
@@ -96,6 +114,7 @@ export default function SearchFilter() {
 
   const [crewResults, setCrewResults] = useState<CrewResult[]>([]);
   const [vendorResults, setVendorResults] = useState<VendorResult[]>([]);
+  const [companyResults, setCompanyResults] = useState<CompanyResult[]>([]);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -130,6 +149,21 @@ export default function SearchFilter() {
         page: String(pg),
         limit: String(PAGE_SIZE),
       };
+
+      // Companies tab uses the simple directory endpoint — name-only, no filters
+      // (spec 8). Branching early keeps the existing crew/vendor logic untouched.
+      if (type === 'companies') {
+        if (q.trim()) params.q = q.trim();
+        params.category = 'company';
+        const qs = new URLSearchParams(params);
+        type PeopleRow = { userId: string; name: string; locationCity?: string | null; locationState?: string | null; avatarUrl?: string | null };
+        const raw = await api.get<{ items?: PeopleRow[]; meta?: { total?: number } }>(`/search/people?${qs.toString()}`);
+        const list = Array.isArray(raw?.items) ? raw.items : [];
+        const total = raw?.meta?.total ?? 0;
+        setCompanyResults(list);
+        setTotalPages(Math.max(1, Math.ceil(total / PAGE_SIZE)));
+        return;
+      }
 
       const rateMinPaise = parseBudgetToPaise(minBudgetInr);
       const rateMaxPaise = parseBudgetToPaise(maxBudgetInr);
@@ -392,7 +426,12 @@ Please share your best quotation for this requirement.`;
     }
   };
 
-  const results = searchType === 'crew' ? (crewResults ?? []) : (vendorResults ?? []);
+  const isCompaniesTab = searchType === 'companies';
+  const results = searchType === 'crew'
+    ? (crewResults ?? [])
+    : searchType === 'vendors'
+      ? (vendorResults ?? [])
+      : (companyResults ?? []);
   const resultCount = Array.isArray(results) ? results.length : 0;
 
   return (
@@ -407,8 +446,14 @@ Please share your best quotation for this requirement.`;
               {/* Page header */}
               <div className="flex items-center justify-between gap-4 mb-6">
                 <div>
-                  <h1 className="text-2xl font-bold tracking-tight text-neutral-900">Find Crew & Vendors</h1>
-                  <p className="text-sm text-neutral-500 mt-1">Search and hire the best talent for your productions</p>
+                  <h1 className="text-2xl font-bold tracking-tight text-neutral-900">
+                    {isCompaniesTab ? 'Find Companies' : 'Find Crew & Vendors'}
+                  </h1>
+                  <p className="text-sm text-neutral-500 mt-1">
+                    {isCompaniesTab
+                      ? 'Discover production houses on Claapo by name'
+                      : 'Search and hire the best talent for your productions'}
+                  </p>
                 </div>
                 {!isSubuser && (
                   <Link to="/projects/new" className="rounded-xl px-5 py-2.5 bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white text-sm font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] shadow-brand inline-flex items-center gap-2 transition-colors duration-200 shrink-0">
@@ -420,15 +465,35 @@ Please share your best quotation for this requirement.`;
 
               {/* Crew / Vendor toggle — pill-shaped tabs */}
               <div className="flex items-center gap-1 mb-5 bg-[#E8F0FE] rounded-full p-1 w-fit">
-                {(['crew', 'vendors'] as SearchType[]).map((type) => (
+                {(['crew', 'vendors', 'companies'] as SearchType[]).map((type) => (
                   <button key={type} type="button" onClick={() => switchType(type)}
                     className={`rounded-full px-6 py-2 text-sm font-semibold transition-colors duration-200 capitalize ${searchType === type ? 'bg-white text-[#3678F1] shadow-sm' : 'text-[#2563EB] hover:text-[#1D4ED8]'}`}>
-                    {type === 'crew' ? 'Crew' : 'Vendors'}
+                    {type === 'crew' ? 'Crew' : type === 'vendors' ? 'Vendors' : 'Companies'}
                   </button>
                 ))}
               </div>
 
-              {/* Horizontal filter bar */}
+              {/* Companies tab: simple name-only search bar (no filters per spec 8). */}
+              {isCompaniesTab && (
+                <div className="rounded-2xl bg-white shadow-sm border border-neutral-200/70 hover:border-[#3678F1] transition-colors duration-200 p-5 sm:p-6 mb-6">
+                  <label className="block text-[11px] font-bold text-neutral-500 mb-2 uppercase tracking-widest">
+                    Company Name
+                  </label>
+                  <div className="relative group max-w-xl">
+                    <input
+                      type="text"
+                      value={query}
+                      onChange={(e) => { setQuery(e.target.value); setPage(1); }}
+                      placeholder="Search by company name"
+                      className="w-full pl-10 pr-4 py-3 border border-neutral-200 rounded-xl text-sm bg-neutral-50 placeholder-neutral-400 focus:bg-white focus:outline-none focus:border-[#3678F1] focus:ring-2 focus:ring-[#3678F1]/20 transition-colors duration-200"
+                    />
+                    <FaMagnifyingGlass className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 text-sm group-focus-within:text-[#3678F1] transition-colors" />
+                  </div>
+                </div>
+              )}
+
+              {/* Horizontal filter bar — crew/vendors only */}
+              {!isCompaniesTab && (
               <div className="rounded-2xl bg-white shadow-sm border border-neutral-200/70 hover:border-[#3678F1] transition-colors duration-200 p-5 sm:p-6 mb-6">
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                   {/* Row 1 - First 6 fields */}
@@ -545,6 +610,7 @@ Please share your best quotation for this requirement.`;
                   </div>
                 </div>
               </div>
+              )}
 
               {searchType === 'vendors' && (
                 <div className="rounded-2xl bg-white shadow-sm border border-neutral-200/70 p-4 mb-6 space-y-3">
@@ -791,6 +857,52 @@ Please share your best quotation for this requirement.`;
                         </div>
 
                         {/* CTA */}
+                        <Link
+                          to={`/profile/${r.userId}`}
+                          className="mt-4 w-full inline-flex items-center justify-center h-10 rounded-xl bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white text-[13px] font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] shadow-brand transition-colors duration-200"
+                        >
+                          View Profile
+                        </Link>
+                      </motion.div>
+                    ))}
+                  </motion.div>
+                )
+              )}
+
+              {/* Vertical result list — Companies (name-only directory) */}
+              {!loading && searchType === 'companies' && (
+                companyResults.length === 0 ? (
+                  <div className="rounded-2xl bg-white border border-neutral-200/70 shadow-sm p-16 text-center">
+                    <div className="w-16 h-16 rounded-2xl bg-[#E8F0FE] flex items-center justify-center mx-auto mb-4">
+                      <FaBuilding className="text-[#3678F1] text-xl" />
+                    </div>
+                    <p className="text-base font-semibold text-neutral-900 mb-1.5">No companies found</p>
+                    <p className="text-sm text-neutral-500 max-w-xs mx-auto">
+                      {query.trim() ? 'Try a different name' : 'Type a company name to start searching'}
+                    </p>
+                  </div>
+                ) : (
+                  <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {companyResults.map((r) => (
+                      <motion.div
+                        variants={itemVariants}
+                        key={r.userId}
+                        className="rounded-2xl bg-white shadow-sm border border-neutral-200/70 hover:border-[#3678F1] transition-colors duration-200 flex flex-col p-5"
+                      >
+                        <div className="flex items-start gap-3 mb-4">
+                          <Avatar src={r.avatarUrl ?? undefined} name={r.name || '—'} size="lg" />
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border bg-[#DCFCE7] text-[#15803D] border-[#86EFAC]">
+                            <FaBuilding className="w-2.5 h-2.5" />
+                            Company
+                          </span>
+                        </div>
+                        <h3 className="text-[15px] font-bold text-neutral-900 truncate">{r.name || 'Unnamed'}</h3>
+                        {(r.locationCity || r.locationState) && (
+                          <p className="text-xs text-neutral-500 flex items-center gap-1.5 mt-2">
+                            <FaLocationDot className="text-neutral-300 text-[11px]" />
+                            {[r.locationCity, r.locationState].filter(Boolean).join(', ')}
+                          </p>
+                        )}
                         <Link
                           to={`/profile/${r.userId}`}
                           className="mt-4 w-full inline-flex items-center justify-center h-10 rounded-xl bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white text-[13px] font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] shadow-brand transition-colors duration-200"

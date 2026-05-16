@@ -84,9 +84,12 @@ export default function EarningsDashboard() {
 
   const isCustomRange = !!(dateFrom || dateTo);
 
-  // Filter invoices: custom date range overrides month/year picker when active
+  // Filter invoices: custom date range overrides month/year picker when active.
+  // Drafts are hidden from Earnings — only sent/paid/overdue are real income
+  // signals; cancelled too is excluded for the same reason.
   const filteredInvoices = useMemo(() => {
     return invoices.filter((inv) => {
+      if (inv.status === 'draft' || inv.status === 'cancelled') return false;
       const invDate = new Date(inv.createdAt);
       if (isCustomRange) {
         const ts = invDate.setHours(0, 0, 0, 0);

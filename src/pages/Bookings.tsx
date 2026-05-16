@@ -35,6 +35,8 @@ interface Booking {
   cancelRequestReason?: string | null;
   cancelRequestedAt?: string | null;
   cancelRequestedBySide?: 'company' | 'crew_or_vendor' | null;
+  /** Set when the booking target (this user) self-marked complete. */
+  completedByTargetAt?: string | null;
 }
 
 interface BookingsResponse {
@@ -54,12 +56,28 @@ const STATUS_CONFIG: Record<BookingStatus, { bg: string; text: string; label: st
 
 type TabFilter = 'all' | 'pending' | 'accepted' | 'completed' | 'cancelled';
 
-function matchesTab(status: BookingStatus, tab: TabFilter): boolean {
+/**
+ * A booking is "Completed" from the crew/vendor's perspective when either:
+ *   - the company marked the project itself completed, OR
+ *   - this user self-marked the booking complete (completedByTargetAt set).
+ *
+ * Status enum stays at 'accepted'/'locked' in both cases — we read those
+ * extra signals to slot the row into the right tab.
+ */
+function isCompletedForUser(b: Booking): boolean {
+  return !!b.completedByTargetAt || b.project?.status === 'completed';
+}
+
+function matchesTab(b: Booking, tab: TabFilter): boolean {
+  if (tab === 'completed') return isCompletedForUser(b);
+  // Completed rows must not double-count under All/Pending/Accepted — they live
+  // exclusively in the Completed tab.
+  if (isCompletedForUser(b)) return false;
   if (tab === 'all') return true;
   if (tab === 'accepted') {
-    return status === 'accepted' || status === 'locked';
+    return b.status === 'accepted' || b.status === 'locked';
   }
-  return status === tab;
+  return b.status === tab;
 }
 
 function formatDate(iso: string | null): string {
@@ -103,7 +121,7 @@ export default function Bookings() {
 
   // Exclude cancelled projects (backend also filters; this guards against stale data)
   const allBookings = (data?.items ?? []).filter((b) => b.project?.status !== 'cancelled');
-  const bookings = allBookings.filter((b) => matchesTab(b.status, tab));
+  const bookings = allBookings.filter((b) => matchesTab(b, tab));
 
   const doAction = async (bookingId: string, action: 'accept' | 'decline') => {
     setActioning(bookingId + action);
@@ -170,7 +188,7 @@ export default function Bookings() {
               {/* Tab filter */}
               <div className="flex items-center gap-0.5 mb-5 bg-white rounded-xl p-1 border border-neutral-200 w-fit">
                 {(['all', 'pending', 'accepted', 'completed', 'cancelled'] as TabFilter[]).map((t) => {
-                  const count = allBookings.filter((b) => matchesTab(b.status, t)).length;
+                  const count = allBookings.filter((b) => matchesTab(b, t)).length;
                   const isActive = tab === t;
                   return (
                     <button

@@ -21,6 +21,9 @@ export interface BookingWithDetails {
   targetUserId: string;
   targetDisplayName: string;
   roleName?: string | null;
+  /** Vendor bookings only — the specific equipment item being hired. */
+  equipmentName?: string | null;
+  vendorEquipmentId?: string | null;
   rateOffered?: number | null;
   status: BookingStatus;
   shootDates: string[];
@@ -30,6 +33,8 @@ export interface BookingWithDetails {
   invoiceId?: string | null;
   invoiceStatus?: string | null;
   conversationId?: string | null;
+  /** Set when the booking target self-marks their end complete. */
+  completedByTargetAt?: string | null;
 }
 
 export interface ParsedAvailabilityMonth {

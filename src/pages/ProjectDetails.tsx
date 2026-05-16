@@ -26,6 +26,8 @@ interface ProjectBooking {
   createdAt: string;
   cancelRequestReason: string | null;
   cancelRequestedAt: string | null;
+  /** Set when the crew/vendor self-marks this booking complete (new flow). */
+  completedByTargetAt: string | null;
   shootDates: string[];
   project: { id: string; title: string; startDate: string; endDate: string; status: string };
   requester: { id: string; email: string; companyProfile?: { companyName?: string } | null };
@@ -72,11 +74,19 @@ export default function ProjectDetails() {
 
   const { data, loading, error, refetch } = useApiQuery<BookingsResponse>('/bookings/incoming');
 
-  // Filter by month/year or show all
+  // Filter by month/year or show all.
+  //
+  // Project Details is the ONGOING view — completed bookings move out of
+  // here and into the Project Requests > Completed tab. A booking counts as
+  // completed if either the company wrapped the project or the user
+  // self-marked complete.
   const filteredBookings = useMemo(() => {
     if (!data?.items) return [];
-    if (showAll) return data.items;
-    return data.items.filter((booking) => {
+    const ongoing = data.items.filter(
+      (b) => !b.completedByTargetAt && b.project.status !== 'completed',
+    );
+    if (showAll) return ongoing;
+    return ongoing.filter((booking) => {
       const shootDates = booking.shootDates || [booking.project.startDate];
       return shootDates.some((d) => isDateInMonth(d, filterMonth, filterYear));
     });
@@ -90,6 +100,22 @@ export default function ProjectDetails() {
       return dateB - dateA;
     });
   }, [filteredBookings]);
+
+  const doMarkComplete = async (bookingId: string) => {
+    setActioning(bookingId + 'complete');
+    setActionError(null);
+    try {
+      await api.patch(`/bookings/${bookingId}/complete`, {});
+      toast.success('Booking marked complete. Calendar updated.');
+      refetch();
+    } catch (err) {
+      const msg = err instanceof ApiException ? err.payload.message : 'Failed to mark complete.';
+      toast.error(msg);
+      setActionError(msg);
+    } finally {
+      setActioning(null);
+    }
+  };
 
   const doRequestCancel = async (bookingId: string) => {
     setActioning(bookingId + 'req-cancel');
@@ -322,12 +348,32 @@ export default function ProjectDetails() {
                             <FaMessage className="w-3 h-3" /> Message
                           </Link>
 
+                          {/* Mark Complete — self-close for crew/vendor.
+                              Visible only on an active booking that the user hasn't
+                              already completed; sweeps their AvailabilitySlot rows to past_work. */}
+                          {(booking.status === 'accepted' || booking.status === 'locked') && !booking.completedByTargetAt && (
+                            <button
+                              type="button"
+                              onClick={() => doMarkComplete(booking.id)}
+                              disabled={!!isActioning}
+                              className="rounded-xl px-4 py-2 bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white text-xs font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] flex items-center gap-1.5 transition-colors disabled:opacity-50 shadow-brand ml-auto"
+                            >
+                              <FaCircleCheck className="w-3 h-3" />
+                              {isActioning && actioning === booking.id + 'complete' ? 'Marking…' : 'Mark Complete'}
+                            </button>
+                          )}
+                          {booking.completedByTargetAt && (
+                            <span className="rounded-xl px-3 py-2 bg-[#DCFCE7] text-[#15803D] text-xs font-bold flex items-center gap-1.5 ml-auto">
+                              <FaCircleCheck className="w-3 h-3" /> Marked Complete
+                            </span>
+                          )}
+
                           {isActiveBooking && (
                             <button
                               type="button"
                               onClick={() => { setCancellingId(booking.id); setCancelReason(''); }}
                               disabled={!!isActioning}
-                              className="rounded-xl px-4 py-2 bg-[#FEF3C7] border border-[#F4C430]/50 text-[#946A00] text-xs font-semibold hover:bg-[#FDE68A] hover:border-[#F4C430] flex items-center gap-1.5 transition-colors disabled:opacity-50 ml-auto"
+                              className="rounded-xl px-4 py-2 bg-[#FEF3C7] border border-[#F4C430]/50 text-[#946A00] text-xs font-semibold hover:bg-[#FDE68A] hover:border-[#F4C430] flex items-center gap-1.5 transition-colors disabled:opacity-50"
                             >
                               <FaBan className="w-3 h-3" /> Request Cancellation
                             </button>
