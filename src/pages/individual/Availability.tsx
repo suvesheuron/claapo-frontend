@@ -204,6 +204,28 @@ export default function IndividualAvailability() {
     }
   };
 
+  // Confirm-then-call flow for the modal "Mark as Complete" action. We hold
+  // the booking in state so the parent modal can close and we can show a small
+  // confirm sheet without losing context. Then PATCH /bookings/:id/complete
+  // and refetch the month so the calendar flips the swept dates to past_work.
+  const [completingBooking, setCompletingBooking] = useState<BookingWithDetails | null>(null);
+  const [marking, setMarking] = useState(false);
+
+  const handleConfirmMarkComplete = async () => {
+    if (!completingBooking) return;
+    setMarking(true);
+    try {
+      await api.patch(`/bookings/${completingBooking.id}/complete`, {});
+      toast.success('Booking marked complete. Calendar updated.');
+      setCompletingBooking(null);
+      await loadSlots();
+    } catch (err) {
+      toast.error(err instanceof ApiException ? err.payload.message : 'Failed to mark complete.');
+    } finally {
+      setMarking(false);
+    }
+  };
+
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-[#F3F4F6] w-full">
       <DashboardHeader />
@@ -443,8 +465,39 @@ export default function IndividualAvailability() {
         blocking={saving}
         onBlock={handleBlock}
         onUnblock={handleUnblock}
+        onMarkBookingComplete={(b) => setCompletingBooking(b)}
         allShootDates={Array.from(allShootDates)}
       />
+
+      {completingBooking && (
+        <>
+          <div className="fixed inset-0 bg-black/40 z-40" onClick={() => !marking && setCompletingBooking(null)} />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+              <div className="w-11 h-11 rounded-xl bg-[#E8F0FE] flex items-center justify-center mb-4 border border-[#3678F1]/20">
+                <FaCircleCheck className="text-[#3678F1] text-base" />
+              </div>
+              <h2 className="text-base font-bold text-neutral-900 mb-2">Mark booking complete?</h2>
+              <p className="text-sm text-neutral-600 mb-2">
+                {completingBooking.projectTitle ? `"${completingBooking.projectTitle}"` : 'This booking'} will be moved to past work on your calendar.
+              </p>
+              <p className="text-xs text-neutral-500 mb-4">
+                The company will be notified. You can still invoice from this project afterwards.
+              </p>
+              <div className="flex gap-3">
+                <button type="button" disabled={marking} onClick={() => setCompletingBooking(null)}
+                  className="flex-1 rounded-xl py-2.5 border border-neutral-300 text-neutral-700 text-sm font-medium hover:bg-neutral-50 transition-colors disabled:opacity-50">
+                  Cancel
+                </button>
+                <button type="button" disabled={marking} onClick={handleConfirmMarkComplete}
+                  className="flex-1 rounded-xl py-2.5 bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white text-sm font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] disabled:opacity-50 flex items-center justify-center gap-2 transition-colors shadow-brand">
+                  <FaCircleCheck className="w-3 h-3" /> {marking ? 'Marking…' : 'Mark Complete'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

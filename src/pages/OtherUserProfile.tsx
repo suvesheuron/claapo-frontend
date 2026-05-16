@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { FaArrowLeft, FaLocationDot, FaCalendarDays, FaTriangleExclamation, FaVideo, FaChevronLeft, FaChevronRight, FaBan, FaCircleCheck, FaCalendarCheck, FaGlobe, FaInstagram, FaYoutube, FaVimeoV, FaImdb, FaLinkedinIn, FaXTwitter, FaPhone } from 'react-icons/fa6';
+import { FaArrowLeft, FaLocationDot, FaCalendarDays, FaTriangleExclamation, FaVideo, FaChevronLeft, FaChevronRight, FaBan, FaCircleCheck, FaCalendarCheck, FaGlobe, FaInstagram, FaYoutube, FaVimeoV, FaImdb, FaLinkedinIn, FaXTwitter, FaPhone, FaMessage } from 'react-icons/fa6';
 import toast from 'react-hot-toast';
 import DashboardHeader from '../components/DashboardHeader';
 import DashboardSidebar from '../components/DashboardSidebar';
@@ -16,7 +16,7 @@ import InquiryRequestModal from '../components/InquiryRequestModal';
 import { api, ApiException } from '../services/api';
 import { useApiQuery } from '../hooks/useApiQuery';
 import { useAuth } from '../contexts/AuthContext';
-import { companyNavLinks } from '../navigation/dashboardNav';
+import { companyNavLinks, individualNavLinks, vendorNavLinks } from '../navigation/dashboardNav';
 import type { BookingWithDetails, SlotStatus } from '../types/availability';
 import { parseAvailabilityMonthResponse } from '../utils/parseAvailabilityResponse';
 import { formatPaise } from '../utils/currency';
@@ -197,6 +197,26 @@ export default function OtherUserProfile() {
   const isIndividual = profile?.role === 'individual';
   const isVendor = profile?.role === 'vendor';
   const isCompany = profile?.role === 'company';
+
+  // Viewer-side context — controls which sections render.
+  //
+  // Spec 7.3 / 7.4: when a non-company user lands on a profile via the
+  // simple Discover search they should only see basic info (name, location,
+  // ratings, social links, showreel). No calendar, no rates, no booking
+  // affordances. Spec 8 adds Chat + Book for company-viewing-company.
+  const viewerIsCompany = viewer?.role === 'company' || viewer?.role === 'admin';
+  const showCalendarSection = viewerIsCompany && (isIndividual || isVendor);
+  const showBookActions = viewerIsCompany; // booking available against any role
+  const navLinks = useMemo(() => {
+    if (viewer?.role === 'vendor') return vendorNavLinks;
+    if (viewer?.role === 'individual') return individualNavLinks;
+    return companyNavLinks;
+  }, [viewer?.role]);
+  // Where the "Back" link should go — companies have the rich /search filter,
+  // everyone else came from /discover.
+  const backTo = viewer?.role === 'company' || viewer?.role === 'admin' ? '/search' : '/discover';
+  const backLabel = backTo === '/search' ? 'Back to search' : 'Back to discover';
+
   const title = p?.displayName ?? p?.companyName ?? 'Profile';
   const primaryRole = isIndividual
     ? (p?.skills?.[0] ?? 'Individual')
@@ -364,7 +384,7 @@ We're working on ${projectName}. The shoot is planned for ${shootDate} at ${loca
     <div className="h-screen flex flex-col overflow-hidden bg-neutral-50 dark:bg-bg min-w-0 w-full">
       <DashboardHeader />
       <div className="flex-1 flex min-h-0 overflow-hidden">
-        <DashboardSidebar links={companyNavLinks} />
+        <DashboardSidebar links={navLinks} />
         <main className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden relative">
           {/* Subtle background mesh — light mode only; dark mode stays clean */}
           <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-br from-[#3678F1]/5 via-[#DBEAFE]/30 to-transparent pointer-events-none dark:hidden" />
@@ -372,11 +392,11 @@ We're working on ${projectName}. The shoot is planned for ${shootDate} at ${loca
             <div className="max-w-[1100px] mx-auto px-4 sm:px-6 md:px-8 lg:px-6 xl:px-8 py-4 sm:py-6">
               <div className="mb-4 flex items-center gap-3">
                 <Link
-                  to="/search"
+                  to={backTo}
                   className="inline-flex items-center gap-1.5 text-xs text-neutral-600 hover:text-neutral-900"
                 >
                   <FaArrowLeft className="w-3 h-3" />
-                  Back to search
+                  {backLabel}
                 </Link>
               </div>
 
@@ -440,7 +460,7 @@ We're working on ${projectName}. The shoot is planned for ${shootDate} at ${loca
                     </div>
 
                     <div className="p-5 sm:p-7 lg:p-8">
-                      <div className="grid grid-cols-1 lg:grid-cols-[auto_1fr] gap-5 lg:gap-7 items-start">
+                      <div className="grid grid-cols-1 lg:grid-cols-[auto_1fr_auto] gap-5 lg:gap-7 items-start">
                         {/* Avatar overlaps the cover (LinkedIn pattern). Negative
                             margin scales with the taller cover so roughly half
                             of the circle sits on the image and half over the
@@ -508,30 +528,59 @@ We're working on ${projectName}. The shoot is planned for ${shootDate} at ${loca
                             </div>
                           ) : null}
                         </div>
-                      </div>
 
-                      {/* Social links — horizontal strip anchored to the bottom-right.
-                          A soft top border separates them from the bio details above
-                          without competing for attention. Wraps gracefully on mobile. */}
-                      {visiblePlatforms.length > 0 && (
-                        <div className="mt-5 pt-5 border-t border-neutral-100 flex justify-end items-center gap-2.5 flex-wrap">
-                          {visiblePlatforms.map(({ key, label, url, Icon, color, bg, border }) => (
-                            <a
-                              key={key}
-                              href={url}
-                              target="_blank"
-                              rel="noreferrer"
-                              aria-label={label}
-                              title={label}
-                              className={`w-9 h-9 rounded-full border ${border} ${bg} hover:border-[#3678F1] transition-colors flex items-center justify-center`}
-                            >
-                              <Icon className={`w-4 h-4 ${color}`} />
-                            </a>
-                          ))}
-                        </div>
-                      )}
+                        {/* Social links — moved up next to the name/meta column
+                            (third grid track). Floats top-right beside the avatar on lg+,
+                            and wraps inline with the meta block on smaller screens. */}
+                        {visiblePlatforms.length > 0 && (
+                          <div className="flex items-center gap-2.5 flex-wrap lg:justify-end lg:pt-1">
+                            {visiblePlatforms.map(({ key, label, url, Icon, color, bg, border }) => (
+                              <a
+                                key={key}
+                                href={url}
+                                target="_blank"
+                                rel="noreferrer"
+                                aria-label={label}
+                                title={label}
+                                className={`w-9 h-9 rounded-full border ${border} ${bg} hover:border-[#3678F1] transition-colors flex items-center justify-center`}
+                              >
+                                <Icon className={`w-4 h-4 ${color}`} />
+                              </a>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </motion.div>
+
+                  {/* Section 8: Chat + Book actions on company profiles (company viewer only).
+                      Calendar is hidden for company-target profiles so we surface these as
+                      explicit primary actions instead of leaving the page without affordances. */}
+                  {showBookActions && isCompany && (
+                    <motion.div variants={itemVariants} className="rounded-3xl bg-white shadow-soft border border-neutral-100 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-3">
+                      <p className="text-sm text-neutral-600 sm:flex-1">
+                        Reach out to <span className="font-semibold text-neutral-900">{title}</span> for collaboration or hiring.
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/chat/${profile.id}`)}
+                          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-neutral-200 bg-white text-sm font-semibold text-neutral-800 hover:border-[#3678F1] hover:text-[#3678F1] transition-colors"
+                        >
+                          <FaMessage className="w-3.5 h-3.5" />
+                          Chat
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setIsBookingModalOpen(true)}
+                          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#3678F1] text-sm font-semibold text-white hover:bg-[#2563EB] transition-colors"
+                        >
+                          <FaCalendarCheck className="w-3.5 h-3.5" />
+                          Book
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
 
                   {((isIndividual && (p.bio || p.aboutMe)) || (isCompany && (p.bio || p.aboutUs)) || (isVendor && p.aboutUs)) && (
                     <motion.div variants={itemVariants} className="rounded-3xl bg-white shadow-soft border border-neutral-100 hover:border-[#3678F1] transition-colors duration-200 p-6 sm:p-8">
@@ -544,7 +593,7 @@ We're working on ${projectName}. The shoot is planned for ${shootDate} at ${loca
                     </motion.div>
                   )}
 
-                  {(isIndividual || isVendor) && (
+                  {showCalendarSection && (
                   <>
                   <motion.div variants={itemVariants} className="rounded-3xl bg-white shadow-soft border border-neutral-100 hover:border-[#3678F1] transition-colors duration-200 p-5 sm:p-6">
                     {/* Header: title + month navigation */}

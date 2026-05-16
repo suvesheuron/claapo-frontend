@@ -47,6 +47,11 @@ export interface AvailabilityDateDetailModalProps {
   onUnblock?: () => Promise<void>;
   /** Individual/vendor: start cancellation flow (parent shows confirm UI). */
   onRequestCancelBooking?: (booking: BookingWithDetails) => void;
+  /**
+   * Individual/vendor: self-mark this booking complete. Parent owns the
+   * confirm UI + API call so the modal stays presentational.
+   */
+  onMarkBookingComplete?: (booking: BookingWithDetails) => void;
   /** Override block-reason presets (e.g. vendors use equipment-specific reasons). */
   blockReasonOptions?: string[];
   /** Sliding right pane (e.g. individual dashboard); default is centered modal. */
@@ -74,6 +79,7 @@ export default function AvailabilityDateDetailModal({
   onBlock,
   onUnblock,
   onRequestCancelBooking,
+  onMarkBookingComplete,
   blockReasonOptions,
   variant = 'modal',
   allShootDates = [],
@@ -200,6 +206,12 @@ export default function AvailabilityDateDetailModal({
                   <div className="flex justify-between gap-3">
                     <span className="text-neutral-500 shrink-0">Role</span>
                     <span className="font-semibold text-neutral-900 text-right">{booking.roleName}</span>
+                  </div>
+                ) : null}
+                {booking.equipmentName ? (
+                  <div className="flex justify-between gap-3">
+                    <span className="text-neutral-500 shrink-0">Equipment</span>
+                    <span className="font-semibold text-neutral-900 text-right">{booking.equipmentName}</span>
                   </div>
                 ) : null}
                 {booking.rateOffered != null ? (
@@ -391,6 +403,27 @@ export default function AvailabilityDateDetailModal({
             </Link>
           ) : null}
           
+          {/* Crew/vendor: self-mark this booking complete. Visible only on an
+              active booking that hasn't been completed yet; parent handles the
+              confirm modal + API call + refetch. */}
+          {!isCompany && booking && (booking.status === 'accepted' || booking.status === 'locked') && !booking.completedByTargetAt && onMarkBookingComplete && (
+            <button
+              type="button"
+              onClick={() => {
+                onMarkBookingComplete(booking);
+                onClose();
+              }}
+              className="w-full rounded-xl py-2.5 bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white text-sm font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] transition-colors shadow-brand"
+            >
+              Mark as Complete
+            </button>
+          )}
+          {!isCompany && booking && booking.completedByTargetAt && (
+            <div className="w-full rounded-xl py-2.5 bg-[#DCFCE7] text-[#15803D] text-sm font-bold text-center">
+              Marked Complete
+            </div>
+          )}
+
           {/* Direct cancellation button for booked/hired dates */}
           {!isCompany && booking && (booking.status === 'accepted' || booking.status === 'locked') && (
             <button

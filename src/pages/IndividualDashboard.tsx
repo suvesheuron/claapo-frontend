@@ -122,6 +122,8 @@ export default function IndividualDashboard() {
   const [availLoading, setAvailLoading] = useState(false);
   const [detailSaving, setDetailSaving] = useState(false);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [completingBookingId, setCompletingBookingId] = useState<string | null>(null);
+  const [marking, setMarking] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
 
   const displayDate = new Date(BASE_YEAR, BASE_MONTH + monthOffset, 1);
@@ -243,6 +245,7 @@ export default function IndividualDashboard() {
       rateOffered?: number | null;
       equipmentLabel?: string | null;
       locationLabel?: string | null;
+      completedByTargetAt?: string | null;
     }[] = [];
     for (const b of allBookings) {
       const dateKeys = getBookingDateKeys(b);
@@ -265,6 +268,7 @@ export default function IndividualDashboard() {
             b.project.shootLocations?.[0] ??
             b.project.locationCity ??
             null,
+          completedByTargetAt: (b as any).completedByTargetAt ?? null,
         });
       }
     }
@@ -362,6 +366,23 @@ export default function IndividualDashboard() {
       setDetailSaving(false);
     }
   };
+
+  const doMarkBookingComplete = useCallback(async () => {
+    if (!completingBookingId) return;
+    setMarking(true);
+    try {
+      await api.patch(`/bookings/${completingBookingId}/complete`, {});
+      toast.success('Booking marked complete. Calendar updated.');
+      setCompletingBookingId(null);
+      setDetailDate(null);
+      refetchBookings();
+      await loadAvailability();
+    } catch (err) {
+      toast.error(err instanceof ApiException ? err.payload.message : 'Failed to mark complete.');
+    } finally {
+      setMarking(false);
+    }
+  }, [completingBookingId, refetchBookings, loadAvailability]);
 
   const doRequestCancel = useCallback(async () => {
     if (!cancellingId) return;
@@ -657,9 +678,33 @@ export default function IndividualDashboard() {
               onBlock={async (reason) => { await handleDetailBlock(reason); }}
               onUnblock={async () => { await handleDetailUnblock(); }}
               onRequestCancel={(bookingId) => { setCancellingId(bookingId); }}
+              onMarkComplete={(bookingId) => { setCompletingBookingId(bookingId); }}
               allShootDates={allShootDates}
             />
           </aside>
+        </>
+      )}
+
+      {completingBookingId && (
+        <>
+          <div className="fixed inset-0 bg-black/40 z-[60]" onClick={() => !marking && setCompletingBookingId(null)} />
+          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 pointer-events-none">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 pointer-events-auto">
+              <h2 className="text-base font-bold text-neutral-900 mb-2">Mark booking complete?</h2>
+              <p className="text-sm text-neutral-600 mb-2">This booking will be moved to past work on your calendar.</p>
+              <p className="text-xs text-neutral-500 mb-4">The company will be notified. You can still invoice from this project afterwards.</p>
+              <div className="flex gap-3">
+                <button type="button" disabled={marking} onClick={() => setCompletingBookingId(null)}
+                  className="flex-1 rounded-xl py-2.5 border border-neutral-300 text-neutral-700 text-sm font-medium hover:bg-neutral-50 transition-colors disabled:opacity-50">
+                  Cancel
+                </button>
+                <button type="button" disabled={marking} onClick={doMarkBookingComplete}
+                  className="flex-1 rounded-xl py-2.5 bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white text-sm font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] disabled:opacity-50 transition-colors shadow-brand">
+                  {marking ? 'Marking…' : 'Mark Complete'}
+                </button>
+              </div>
+            </div>
+          </div>
         </>
       )}
 

@@ -16,6 +16,9 @@ export interface VendorFallbackBookingRow {
   rateOffered?: number | null;
   equipmentLabel?: string | null;
   locationLabel?: string | null;
+  /** Set when the booking target self-marked complete. Needed so the
+   * dashboard rows can hide Mark as Complete after the user has already done it. */
+  completedByTargetAt?: string | null;
 }
 
 const STATUS_LABELS = SLOT_STATUS_LABEL;
@@ -32,6 +35,9 @@ interface VendorCalendarDayPanelProps {
   onBlock: (reason: string) => Promise<void> | void;
   onUnblock: () => Promise<void> | void;
   onRequestCancel?: (bookingId: string) => void;
+  /** Vendor self-marks the booking complete from this panel. Parent owns the
+   * confirm UI + API call (PATCH /bookings/:id/complete) + month refetch. */
+  onMarkComplete?: (bookingId: string) => void;
   /** Right sliding pane (full height); default is inline card beside calendar */
   variant?: 'card' | 'drawer';
   /** Shoot dates from all bookings for this month to check if date is a shoot date */
@@ -51,6 +57,7 @@ export default function VendorCalendarDayPanel({
   onBlock,
   onUnblock,
   onRequestCancel,
+  onMarkComplete,
   variant = 'card',
   allShootDates = [],
   projectWiseCancel = false,
@@ -193,6 +200,34 @@ export default function VendorCalendarDayPanel({
                   </Link>
                 )}
               </div>
+              {/* Per-row Mark as Complete. The dashboard feeds data via
+                  fallbackBookings (so `b` may be undefined and `f` carries
+                  the row's status + completedByTargetAt). Mirror the cancel
+                  button's dual-source check so both rendering paths work. */}
+              {(() => {
+                const rowStatus = b?.status ?? f?.status;
+                const rowCompletedAt = b?.completedByTargetAt ?? f?.completedByTargetAt ?? null;
+                const isActive = rowStatus === 'accepted' || rowStatus === 'locked';
+                if (!projectWiseCancel) return null;
+                if (rowCompletedAt) {
+                  return (
+                    <div className="w-full rounded-xl py-2.5 bg-[#DCFCE7] text-[#15803D] text-xs font-bold text-center">
+                      Marked Complete
+                    </div>
+                  );
+                }
+                if (!onMarkComplete || !isActive) return null;
+                return (
+                  <button
+                    type="button"
+                    onClick={() => { if (id) onMarkComplete(id); }}
+                    className="w-full rounded-xl py-2.5 bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white text-xs font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] shadow-brand transition-colors duration-200"
+                  >
+                    Mark as Complete
+                  </button>
+                );
+              })()}
+
               {projectWiseCancel && (b?.status === 'accepted' || b?.status === 'locked' || f?.status === 'accepted' || f?.status === 'locked') && (
                 <button
                   type="button"
@@ -279,6 +314,24 @@ export default function VendorCalendarDayPanel({
               <FaFileInvoice className="text-xs" /> Invoices
             </Link>
           ) : null}
+
+          {/* Vendor "Mark as Complete" — visible when there's an active booking
+              on this date and the vendor hasn't already self-marked complete.
+              Parent owns the confirm modal + API call. */}
+          {!projectWiseCancel && onMarkComplete && booking && (booking.status === 'accepted' || booking.status === 'locked') && !booking.completedByTargetAt && (
+            <button
+              type="button"
+              onClick={() => onMarkComplete(booking.id)}
+              className="mt-2 w-full rounded-xl py-2.5 bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white text-xs font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] transition-colors duration-200 shadow-brand"
+            >
+              Mark as Complete
+            </button>
+          )}
+          {!projectWiseCancel && booking && booking.completedByTargetAt && (
+            <div className="mt-2 w-full rounded-xl py-2.5 bg-[#DCFCE7] text-[#15803D] text-xs font-bold text-center">
+              Marked Complete
+            </div>
+          )}
 
           {/* Direct cancellation button for booked/hired dates */}
           {!projectWiseCancel && (booking || fallbackBookings.some(fb => fb.status === 'accepted' || fb.status === 'locked')) && (

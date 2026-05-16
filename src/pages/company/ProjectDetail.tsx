@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import {
-  FaArrowLeft, FaUsers, FaTruck, FaLock, FaUnlock,
+  FaArrowLeft, FaUsers, FaTruck,
   FaTrash, FaBan, FaMessage, FaFileInvoice,
   FaTriangleExclamation, FaPenToSquare, FaCircleCheck,
 } from 'react-icons/fa6';
@@ -61,6 +61,8 @@ interface Booking {
   rateOffered?: number | null;
   target: BookingTarget;
   projectRole?: { roleName: string } | null;
+  /** Vendor bookings — the specific equipment item being hired. */
+  vendorEquipment?: { id: string; name: string } | null;
   shootDates?: string[];
   shootLocations?: string[];
   shootDateLocations?: Array<{ date: string; location: string }> | null;
@@ -155,15 +157,11 @@ export default function ProjectDetail() {
   const [loadingSubUsers, setLoadingSubUsers] = useState(() => !cachedSubUsers);
   const [projectError, setProjectError] = useState<string | null>(null);
 
-  const [lockingAll, setLockingAll] = useState(false);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [cancellingBookingId, setCancellingBookingId] = useState<string | null>(null);
   const [cancelError, setCancelError] = useState<string | null>(null);
   const [confirmDeleteProject, setConfirmDeleteProject] = useState(false);
   const [deletingProject, setDeletingProject] = useState(false);
-  const [activatingProject, setActivatingProject] = useState(false);
-  const [confirmActivateProject, setConfirmActivateProject] = useState(false);
-  const [activateError, setActivateError] = useState<string | null>(null);
   const [completingProject, setCompletingProject] = useState(false);
   const [confirmCompleteProject, setConfirmCompleteProject] = useState(false);
   const [completeError, setCompleteError] = useState<string | null>(null);
@@ -228,36 +226,17 @@ export default function ProjectDetail() {
 
   const crewBookings   = bookings.filter((b) => b.target.role === 'individual');
   const vendorBookings = bookings.filter((b) => b.target.role === 'vendor');
-  const allLocked      = bookings.length > 0 && bookings.every((b) => b.status === 'locked');
-  const canDeleteProject = project && (project.status === 'draft' || project.status === 'cancelled');
-  const canActivateProject = project && (project.status === 'draft' || project.status === 'open');
-  const canCompleteProject = project && (project.status === 'active' || project.status === 'open') && allLocked;
+  // New project flow (no Lock / Activate step): projects are created as `active`
+  // and the only forward action is "Mark Complete". `draft` is treated as
+  // ongoing too — legacy rows that haven't been swept by the migration.
+  const isOngoingProject = !!project && (project.status === 'active' || project.status === 'open' || project.status === 'draft');
+  const canDeleteProject = !!project && project.status === 'cancelled';
+  const canCompleteProject = isOngoingProject;
 
   const totalBudget = getProjectTotalBudget(project);
   const crewCost    = crewBookings.filter((b) => b.status === 'accepted' || b.status === 'locked').reduce((s, b) => s + (b.rateOffered ?? 0), 0);
   const vendorCost  = vendorBookings.filter((b) => b.status === 'accepted' || b.status === 'locked').reduce((s, b) => s + (b.rateOffered ?? 0), 0);
   const remaining   = totalBudget - crewCost - vendorCost;
-
-  const handleLockAll = async () => {
-    if (!projectId) return;
-    setLockingAll(true);
-    try {
-      const accepted = bookings.filter((b) => b.status === 'accepted');
-      if (accepted.length === 0) {
-        toast.error('No accepted bookings to lock. Crew/vendors must accept their requests first.');
-        return;
-      }
-      // Lock only changes status. Do NOT send project-wide shootDates — that would replace
-      // each booking's hired-specific dates with every project shoot day and block the wrong calendar days.
-      await Promise.all(accepted.map((b) => api.patch(`/bookings/${b.id}/lock`, {})));
-      toast.success('Bookings locked.');
-      await loadBookings();
-    } catch (err) {
-      toast.error(err instanceof ApiException ? err.payload.message : 'Could not lock bookings.');
-    } finally {
-      setLockingAll(false);
-    }
-  };
 
   const handleCancelBooking = async (bookingId: string) => {
     setCancelError(null);
@@ -292,24 +271,6 @@ export default function ProjectDetail() {
       toast.error(err instanceof ApiException ? err.payload.message : 'Failed to delete project.');
     } finally {
       setDeletingProject(false);
-    }
-  };
-
-  const handleActivateProject = async () => {
-    if (!projectId) return;
-    setActivateError(null);
-    setActivatingProject(true);
-    try {
-      await api.patch(`/projects/${projectId}`, { status: 'active' });
-      toast.success('Project activated successfully!');
-      setConfirmActivateProject(false);
-      await loadProject();
-    } catch (err) {
-      const msg = err instanceof ApiException ? err.payload.message : 'Could not activate project.';
-      toast.error(msg);
-      setActivateError(msg);
-    } finally {
-      setActivatingProject(false);
     }
   };
 
@@ -412,59 +373,15 @@ export default function ProjectDetail() {
                         <FaTrash className="w-3.5 h-3.5" /> Delete
                       </button>
                     )}
-                    {canActivateProject && (
-                      <button type="button" onClick={() => setConfirmActivateProject(true)}
-                        className="rounded-xl px-4 py-2 bg-[#22C55E] text-white text-sm font-semibold hover:bg-[#16A34A] flex items-center gap-2 transition-colors disabled:opacity-50">
-                        <FaUnlock className="w-3.5 h-3.5" />
-                        Activate Project
+                    {canCompleteProject && (
+                      <button type="button" onClick={() => setConfirmCompleteProject(true)}
+                        className="rounded-xl px-4 py-2 bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white text-sm font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] flex items-center gap-2 transition-colors duration-200 shadow-brand">
+                        <FaCircleCheck className="w-3.5 h-3.5" /> Mark Complete
                       </button>
-                    )}
-                    {!allLocked ? (
-                      <button onClick={handleLockAll} disabled={lockingAll}
-                        className="rounded-xl px-4 py-2 bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white text-sm font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] flex items-center gap-2 transition-colors duration-200 shadow-brand disabled:opacity-50">
-                        <FaLock className="w-3.5 h-3.5" />
-                        {lockingAll ? 'Locking…' : 'Lock Project'}
-                      </button>
-                    ) : (
-                      <div className="rounded-xl px-4 py-2 bg-[#DCFCE7] text-[#15803D] text-sm font-bold flex items-center gap-2">
-                        <FaUnlock className="w-3.5 h-3.5" /> All Locked
-                      </div>
                     )}
                   </div>
                 </div>
               ) : null}
-
-              {allLocked && (
-                <div className="rounded-2xl bg-[#DCFCE7] border border-[#86EFAC] p-4 mb-5 flex items-center gap-3">
-                  <FaLock className="text-[#15803D] shrink-0" />
-                  <div>
-                    <p className="text-sm font-semibold text-[#15803D]">Project is locked</p>
-                    <p className="text-xs text-[#166534] mt-0.5">All confirmed crew and vendors are locked for this project.</p>
-                  </div>
-                </div>
-              )}
-
-              {canCompleteProject && (
-                <div className="rounded-2xl bg-[#E8F0FE] border border-[#3678F1]/20 p-4 mb-5 flex items-center justify-between gap-3">
-                  <div className="flex items-start gap-3 flex-1">
-                    <div className="w-10 h-10 rounded-xl bg-white ring-1 ring-[#3678F1]/15 flex items-center justify-center shrink-0">
-                      <FaCircleCheck className="text-[#3678F1] text-base" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold text-[#1E3A8A]">Ready to complete this project?</p>
-                      <p className="text-xs text-[#2563EB] mt-0.5">All bookings are locked. Marking as complete will finalize the project and move it to Past Projects.</p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setConfirmCompleteProject(true)}
-                    className="rounded-xl px-5 py-2.5 bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white text-sm font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] flex items-center gap-2 transition-colors duration-200 shadow-brand shrink-0"
-                  >
-                    <FaCircleCheck className="w-3.5 h-3.5" />
-                    Mark as Complete
-                  </button>
-                </div>
-              )}
 
               <div id="project-bookings" className="grid grid-cols-1 lg:grid-cols-2 gap-5 scroll-mt-24">
                 {/* Crew */}
@@ -606,8 +523,8 @@ export default function ProjectDetail() {
                               </div>
                               <div className="flex-1 min-w-0">
                                 <p className="text-xs font-bold text-neutral-900 truncate">{getMemberName(booking)}</p>
-                                <p className="text-[11px] text-neutral-500">
-                                  {booking.projectRole?.roleName ?? 'Vendor'}
+                                <p className="text-[11px] text-neutral-500 truncate">
+                                  {booking.vendorEquipment?.name ?? booking.projectRole?.roleName ?? 'Vendor'}
                                   {booking.rateOffered ? ` · ₹${(booking.rateOffered / 100).toLocaleString('en-IN')}/day` : ''}
                                 </p>
                                 {(booking.shootDates?.length || booking.shootLocations?.length || booking.shootDateLocations?.length) ? (
@@ -708,39 +625,6 @@ export default function ProjectDetail() {
         </>
       )}
 
-      {confirmActivateProject && (
-        <>
-          <div className="fixed inset-0 bg-black/40 z-40 backdrop-enter" onClick={() => setConfirmActivateProject(false)} />
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
-              <div className="w-11 h-11 rounded-xl bg-[#DCFCE7] flex items-center justify-center mb-4 border border-[#86EFAC]">
-                <FaUnlock className="text-[#15803D] text-base" />
-              </div>
-              <h2 className="text-base font-bold text-neutral-900 mb-2">Activate project?</h2>
-              <p className="text-sm text-neutral-600 mb-4">
-                {project?.title ? `"${project.title}"` : 'This project'} will become active and visible to all booked crew and vendors. They will be notified about the activation.
-              </p>
-              {activateError && (
-                <div className="flex items-center gap-2 mb-4 p-3 bg-[#FEE2E2] border border-[#F40F02]/30 rounded-xl">
-                  <FaTriangleExclamation className="text-[#F40F02] text-xs shrink-0" />
-                  <p className="text-xs text-[#991B1B]">{activateError}</p>
-                </div>
-              )}
-              <div className="flex gap-3">
-                <button type="button" onClick={() => setConfirmActivateProject(false)}
-                  className="flex-1 rounded-xl py-2.5 border border-neutral-300 text-neutral-700 text-sm font-medium hover:bg-neutral-50 transition-colors">
-                  Cancel
-                </button>
-                <button type="button" disabled={activatingProject} onClick={handleActivateProject}
-                  className="flex-1 rounded-xl py-2.5 bg-[#22C55E] text-white text-sm font-semibold hover:bg-[#16A34A] disabled:opacity-50 flex items-center justify-center gap-2 transition-colors">
-                  <FaUnlock className="w-3 h-3" /> {activatingProject ? 'Activating…' : 'Activate Project'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
-
       {confirmCompleteProject && (
         <>
           <div className="fixed inset-0 bg-black/40 z-40 backdrop-enter" onClick={() => setConfirmCompleteProject(false)} />
@@ -751,7 +635,7 @@ export default function ProjectDetail() {
               </div>
               <h2 className="text-base font-bold text-neutral-900 mb-2">Complete project?</h2>
               <p className="text-sm text-neutral-600 mb-2">
-                {project?.title ? `"${project.title}"` : 'This project'} will be marked as completed. All booked crew and vendors will be notified, and the project will move to your Past Projects.
+                {project?.title ? `"${project.title}"` : 'This project'} will be marked as completed. Booked crew and vendors will be notified, and the project moves to your Past Projects.
               </p>
               <p className="text-xs text-neutral-500 mb-4">
                 Invoices can still be created and managed after completion.
