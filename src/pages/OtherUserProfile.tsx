@@ -142,6 +142,9 @@ export default function OtherUserProfile() {
   const navigate = useNavigate();
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [selectedChatDate, setSelectedChatDate] = useState<string | null>(null);
+  // Date-less inquiry mode — set when a company viewer clicks Chat on another
+  // company's profile. Reuses InquiryRequestModal but skips date selection.
+  const [inquiryWithoutDateOpen, setInquiryWithoutDateOpen] = useState(false);
 
   useEffect(() => {
     if (!userId) return;
@@ -323,25 +326,34 @@ export default function OtherUserProfile() {
 
   // Handle starting inquiry chat after project selection
   const handleStartInquiryChat = async (projectId: string, location: string) => {
-    if (!selectedChatDate || !userId || !profile) return;
-    
+    if (!userId || !profile) return;
+    if (!selectedChatDate && !inquiryWithoutDateOpen) return;
+
     try {
       // First, create or get conversation
       const conv = await api.post<{ id: string; participantA: string; participantB: string; projectId: string }>(
         `/conversations`,
         { projectId, otherUserId: userId }
       );
-      
-      // Format the inquiry message
-      const shootDate = parseIso(selectedChatDate).toLocaleDateString('en-IN', { 
-        day: 'numeric', 
-        month: 'long' 
-      });
+
+      // Format the inquiry message — include the shoot date sentence only
+      // when a specific date was picked (crew/vendor flow). Company→company
+      // inquiries skip the date since there's no calendar context.
       const projectName = activeProjects?.find((p: any) => p.id === projectId)?.title || 'a project';
-      
-      const inquiryMessage = `Hi, hope you're doing well :)
+      let inquiryMessage: string;
+      if (selectedChatDate) {
+        const shootDate = parseIso(selectedChatDate).toLocaleDateString('en-IN', {
+          day: 'numeric',
+          month: 'long',
+        });
+        inquiryMessage = `Hi, hope you're doing well :)
 
 We're working on ${projectName}. The shoot is planned for ${shootDate} at ${location}. Just wanted to check if you'd be interested in being a part of it?`;
+      } else {
+        inquiryMessage = `Hi, hope you're doing well :)
+
+We're working on ${projectName}${location ? ` (${location})` : ''}. Just wanted to check if you'd be interested in collaborating with us on it?`;
+      }
 
       // Send the inquiry message
       await api.post(`/conversations/${conv.id}/messages`, {
@@ -351,7 +363,8 @@ We're working on ${projectName}. The shoot is planned for ${shootDate} at ${loca
 
       toast.success('Inquiry sent!');
       setSelectedChatDate(null);
-      
+      setInquiryWithoutDateOpen(false);
+
       // Navigate to the chat
       navigate(`/chat/${userId}?projectId=${projectId}`);
     } catch (err) {
@@ -368,7 +381,8 @@ We're working on ${projectName}. The shoot is planned for ${shootDate} at ${loca
   const [projectsLoading, setProjectsLoading] = useState(false);
 
   useEffect(() => {
-    if (selectedChatDate && activeProjects.length === 0 && !projectsLoading) {
+    const shouldLoad = selectedChatDate || inquiryWithoutDateOpen;
+    if (shouldLoad && activeProjects.length === 0 && !projectsLoading) {
       setProjectsLoading(true);
       api.get<any>('/projects?limit=50')
         .then((res) => {
@@ -378,7 +392,7 @@ We're working on ${projectName}. The shoot is planned for ${shootDate} at ${loca
         .catch(() => {})
         .finally(() => setProjectsLoading(false));
     }
-  }, [selectedChatDate]);
+  }, [selectedChatDate, inquiryWithoutDateOpen]);
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-neutral-50 dark:bg-bg min-w-0 w-full">
@@ -564,7 +578,14 @@ We're working on ${projectName}. The shoot is planned for ${shootDate} at ${loca
                       <div className="flex flex-wrap gap-2">
                         <button
                           type="button"
-                          onClick={() => navigate(`/chat/${profile.id}`)}
+                          onClick={() => {
+                            // Open inquiry modal in date-less mode — the
+                            // company→company flow has no calendar context, so
+                            // we just need a project selection to scope the
+                            // conversation and send a template message.
+                            setSelectedChatDate(null);
+                            setInquiryWithoutDateOpen(true);
+                          }}
                           className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-neutral-200 bg-white text-sm font-semibold text-neutral-800 hover:border-[#3678F1] hover:text-[#3678F1] transition-colors"
                         >
                           <FaMessage className="w-3.5 h-3.5" />
@@ -900,11 +921,19 @@ We're working on ${projectName}. The shoot is planned for ${shootDate} at ${loca
         />
       )}
 
-      {/* Inquiry Request Modal (for chat before booking) */}
-      {selectedChatDate && activeProjects.length > 0 && (
+      {/* Inquiry Request Modal (for chat before booking).
+          Two entry points share this modal:
+            1. Crew/vendor flow — selectedChatDate is a date string (from the
+               calendar date-detail modal).
+            2. Company→company flow — inquiryWithoutDateOpen is true and there
+               is no selected date; the modal hides its date row. */}
+      {(selectedChatDate || inquiryWithoutDateOpen) && (
         <InquiryRequestModal
-          isOpen={!!selectedChatDate}
-          onClose={() => setSelectedChatDate(null)}
+          isOpen={!!selectedChatDate || inquiryWithoutDateOpen}
+          onClose={() => {
+            setSelectedChatDate(null);
+            setInquiryWithoutDateOpen(false);
+          }}
           targetUserId={userId!}
           targetName={title}
           selectedDate={selectedChatDate}
