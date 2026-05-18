@@ -403,22 +403,34 @@ export default function AvailabilityDateDetailModal({
             </Link>
           ) : null}
           
-          {/* Crew/vendor: self-mark this booking complete. Visible only on an
-              active booking that hasn't been completed yet; parent handles the
-              confirm modal + API call + refetch. */}
-          {!isCompany && booking && (booking.status === 'accepted' || booking.status === 'locked') && !booking.completedByTargetAt && onMarkBookingComplete && (
-            <button
-              type="button"
-              onClick={() => {
-                onMarkBookingComplete(booking);
-                onClose();
-              }}
-              className="w-full rounded-xl py-2.5 bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white text-sm font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] transition-colors shadow-brand"
-            >
-              Mark as Complete
-            </button>
-          )}
-          {!isCompany && booking && booking.completedByTargetAt && (
+          {/* Mark-as-complete for the side this modal represents. The button
+              is per-booking (and thus per-project), so the company hiring
+              flow can wrap one engagement without completing the whole
+              project. Side is derived from `mode`:
+                - self_manage (individual on own calendar) → target side
+                  drives completedByTargetAt
+                - company_readonly (company on someone else's calendar) →
+                  requester side drives completedByRequesterAt. OtherUserProfile
+                  only renders bookingDetails the viewer is party to, so the
+                  viewing company is always the requester here.
+              Parent owns the API call + refetch; modal stays presentational. */}
+          {booking && (booking.status === 'accepted' || booking.status === 'locked') && onMarkBookingComplete && (() => {
+            const completedAt = isCompany ? booking.completedByRequesterAt : booking.completedByTargetAt;
+            if (completedAt) return null;
+            return (
+              <button
+                type="button"
+                onClick={() => {
+                  onMarkBookingComplete(booking);
+                  onClose();
+                }}
+                className="w-full rounded-xl py-2.5 bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white text-sm font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] transition-colors shadow-brand"
+              >
+                Mark as Complete
+              </button>
+            );
+          })()}
+          {booking && (isCompany ? booking.completedByRequesterAt : booking.completedByTargetAt) && (
             <div className="w-full rounded-xl py-2.5 bg-[#DCFCE7] text-[#15803D] text-sm font-bold text-center">
               Marked Complete
             </div>

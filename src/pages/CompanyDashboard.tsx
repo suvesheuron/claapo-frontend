@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useEffect, useState, useMemo, useCallback } from 'react';
-import { FaPlus, FaUsers, FaTruck, FaFolder, FaXmark, FaEye, FaMessage, FaPeopleGroup, FaFileInvoice, FaBan, FaChevronLeft, FaChevronRight } from 'react-icons/fa6';
+import { FaPlus, FaUsers, FaTruck, FaFolder, FaXmark, FaEye, FaMessage, FaPeopleGroup, FaFileInvoice, FaBan, FaChevronLeft, FaChevronRight, FaCircleCheck } from 'react-icons/fa6';
 import DashboardHeader from '../components/DashboardHeader';
 import DashboardSidebar from '../components/DashboardSidebar';
 import AppFooter from '../components/AppFooter';
@@ -10,6 +10,7 @@ import { useApiQuery } from '../hooks/useApiQuery';
 import { useChatUnread } from '../contexts/ChatUnreadContext';
 import { useAuth } from '../contexts/AuthContext';
 import { companyNavLinks } from '../navigation/dashboardNav';
+import toast from 'react-hot-toast';
 import { api, ApiException } from '../services/api';
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -33,8 +34,45 @@ interface Project {
   productionHouseName?: string | null;
   locationCity?: string | null;
   _count?: { bookings: number };
+  // Set when this row represents a project where THIS company is the booking
+  // target (company→company collaboration). Used to label the calendar cell
+  // and route the project-detail link to the read-only view.
+  bookedByCompanyName?: string;
+  bookedFromAnotherCompany?: boolean;
+  // For c2c-target rows: booking ids that brought this project onto the
+  // calendar (the company has been hired on these bookings) and whether
+  // ALL of them are already target-side marked complete. Drives the
+  // per-booking Mark Complete button on the date panel.
+  bookingIds?: string[];
+  allBookingsCompletedByTarget?: boolean;
 }
 interface ProjectsApiResponse { items: Project[]; meta: { total: number } }
+
+// Shape of /bookings/incoming items as far as the dashboard needs to know.
+// The endpoint already strips the heavy fields we don't need on the calendar.
+interface IncomingBookingItem {
+  id: string;
+  projectId: string;
+  status: string;
+  shootDates?: string[];
+  /** Set when this side (target = this company in the c2c flow) has
+      already marked the booking complete; hides the Mark Complete CTA. */
+  completedByTargetAt?: string | null;
+  project: {
+    id: string;
+    title: string;
+    status: keyof typeof statusConfig;
+    startDate: string;
+    endDate: string;
+    locationCity?: string | null;
+  };
+  requester?: {
+    id: string;
+    email?: string | null;
+    companyProfile?: { companyName?: string | null } | null;
+  };
+}
+interface IncomingBookingsResponse { items?: IncomingBookingItem[] }
 
 // Priority order for calendar display: active > open > draft > completed > cancelled
 const STATUS_PRIORITY: Record<string, number> = { active: 0, open: 1, draft: 2, completed: 3, cancelled: 4 };
@@ -144,12 +182,72 @@ export default function CompanyDashboard() {
   const [dateChatGroupsLoading, setDateChatGroupsLoading] = useState(false);
   const [dateChatGroupsError, setDateChatGroupsError] = useState<string | null>(null);
   const [panelClosing, setPanelClosing] = useState(false);
+  // Tracks which project's Mark Complete CTA is busy (per-row spinner). For
+  // c2c-target rows we keep the projectId here while bookings are being
+  // patched; for owned rows we keep the projectId while PATCH /projects
+  // is in flight.
+  const [completingProjectId, setCompletingProjectId] = useState<string | null>(null);
 
-  const { data: projectsData, loading } = useApiQuery<ProjectsApiResponse>(
+  const { data: projectsData, loading, refetch: refetchProjects } = useApiQuery<ProjectsApiResponse>(
     '/projects?limit=100',
     { swr: true },
   );
-  const projects = projectsData?.items ?? [];
+  // Bookings where THIS company is the booking target (company→company). We
+  // surface their shootDates on the calendar so the company sees the dates
+  // they're committed to as a vendor/collaborator, not just their own
+  // projects' shoot dates. Failed/empty responses degrade to an empty list —
+  // never blocks the dashboard from rendering.
+  const { data: incomingData, refetch: refetchIncoming } = useApiQuery<IncomingBookingsResponse>(
+    '/bookings/incoming',
+    { swr: true },
+  );
+  const ownProjects = projectsData?.items ?? [];
+  const projects = useMemo<Project[]>(() => {
+    const incomingItems = incomingData?.items ?? [];
+    // Only accepted / locked bookings actually commit calendar dates.
+    // Pending requests aren't a commitment yet; declined/cancelled freed the dates.
+    const committed = incomingItems.filter(
+      (b) => b.status === 'accepted' || b.status === 'locked',
+    );
+    // Dedupe by projectId — a single project may have several bookings for
+    // this company, all pointing to the same project shell on the calendar.
+    const byProjectId = new Map<string, Project>();
+    for (const b of committed) {
+      if (!b.project || b.project.status === 'cancelled') continue;
+      const companyName =
+        b.requester?.companyProfile?.companyName ?? b.requester?.email ?? 'Another company';
+      const existing = byProjectId.get(b.projectId);
+      const mergedDates = new Set<string>(existing?.shootDates ?? []);
+      for (const d of b.shootDates ?? []) mergedDates.add(d);
+      const mergedBookingIds = new Set<string>(existing?.bookingIds ?? []);
+      mergedBookingIds.add(b.id);
+      // Project is "complete from target side" only when every backing
+      // booking has its completedByTargetAt stamped. Anything pending keeps
+      // the Mark Complete CTA visible.
+      const prevAllCompleted = existing?.allBookingsCompletedByTarget ?? true;
+      const thisCompleted = !!b.completedByTargetAt;
+      byProjectId.set(b.projectId, {
+        id: b.project.id,
+        title: b.project.title,
+        // Always 'active' on the dashboard — a confirmed booking is an ongoing
+        // commitment regardless of where the underlying project sits.
+        status: 'active',
+        startDate: b.project.startDate,
+        endDate: b.project.endDate,
+        shootDates: Array.from(mergedDates),
+        locationCity: b.project.locationCity ?? null,
+        bookedByCompanyName: companyName,
+        bookedFromAnotherCompany: true,
+        bookingIds: Array.from(mergedBookingIds),
+        allBookingsCompletedByTarget: prevAllCompleted && thisCompleted,
+      });
+    }
+    // Drop any incoming-booking entry that collides with the company's own
+    // project (which is impossible in normal flow but cheap to guard).
+    const ownIds = new Set(ownProjects.map((p) => p.id));
+    const incomingProjects = Array.from(byProjectId.values()).filter((p) => !ownIds.has(p.id));
+    return [...ownProjects, ...incomingProjects];
+  }, [ownProjects, incomingData]);
   const { unreadByProject, unreadDateByProject } = useChatUnread();
 
   const displayDate = new Date(calendarYear, calendarMonth, 1);
@@ -175,6 +273,62 @@ export default function CompanyDashboard() {
 
   const isToday = (cell: CalendarCell) => {
     return !cell.muted && cell.d > 0 && cell.d === today.getDate() && displayDate.getMonth() === today.getMonth() && displayDate.getFullYear() === today.getFullYear();
+  };
+
+  /**
+   * Mark a project's bookings/status complete from this date panel.
+   *
+   * Two flows live behind the same button:
+   *   - **c2c-target row** (`bookedFromAnotherCompany`): this company was
+   *     hired on N bookings under the other company's project. We PATCH
+   *     /bookings/:id/complete for every booking that hasn't been
+   *     target-completed yet — the service stamps `completedByTargetAt`.
+   *   - **Owned row**: this company *is* the project owner. We PATCH
+   *     /projects/:id with `{ status: 'completed' }`, same as the existing
+   *     project-level Mark Complete on ProjectDetail.
+   *
+   * Refetches both projects and incoming bookings so the dashboard cell,
+   * the panel state, and project-level filters all converge.
+   */
+  const handleMarkProjectComplete = async (p: Project) => {
+    setCompletingProjectId(p.id);
+    try {
+      if (p.bookedFromAnotherCompany) {
+        const ids = p.bookingIds ?? [];
+        if (ids.length === 0) {
+          toast.error('No bookings linked to this commitment.');
+          return;
+        }
+        // Sweep all backing bookings in parallel; surface a single error
+        // toast if any one of them fails.
+        const settled = await Promise.allSettled(
+          ids.map((id) => api.patch(`/bookings/${id}/complete`, {})),
+        );
+        const firstFailure = settled.find((r): r is PromiseRejectedResult => r.status === 'rejected');
+        if (firstFailure) {
+          throw firstFailure.reason;
+        }
+        toast.success('Booking marked complete.');
+      } else {
+        await api.patch(`/projects/${p.id}`, { status: 'completed' });
+        toast.success('Project marked complete.');
+      }
+      refetchProjects();
+      refetchIncoming();
+      // Drop completed projects from the open panel so the user sees the
+      // CTA disappear; if the panel ends up empty we just leave the shell
+      // (the existing close behavior handles that on next interaction).
+      setPanel((prev) =>
+        prev
+          ? { ...prev, projects: prev.projects.filter((proj) => proj.id !== p.id) }
+          : prev,
+      );
+    } catch (err) {
+      const msg = err instanceof ApiException ? err.payload.message : 'Could not mark complete.';
+      toast.error(msg);
+    } finally {
+      setCompletingProjectId(null);
+    }
   };
 
   const openPanel = (cell: CalendarCell) => {
@@ -777,6 +931,36 @@ export default function CompanyDashboard() {
                                 <FaBan className="w-2.5 h-2.5" /> Cancel
                               </Link>
                             </div>
+                            {/* Mark Complete row:
+                                - c2c-target row: visible until every backing
+                                  booking is target-side completed.
+                                - Owned row: visible while project is still
+                                  Ongoing (open/draft/active); flips to a
+                                  status badge once marked completed elsewhere. */}
+                            {(() => {
+                              const alreadyDone = p.bookedFromAnotherCompany
+                                ? !!p.allBookingsCompletedByTarget
+                                : p.status === 'completed';
+                              if (alreadyDone) {
+                                return (
+                                  <div className="mt-2 flex items-center justify-center gap-1.5 rounded-lg py-2 bg-[#DCFCE7] text-[#15803D] text-[11px] font-bold">
+                                    <FaCircleCheck className="w-2.5 h-2.5" /> Marked Complete
+                                  </div>
+                                );
+                              }
+                              if (isSubuser) return null;
+                              return (
+                                <button
+                                  type="button"
+                                  disabled={completingProjectId === p.id}
+                                  onClick={() => handleMarkProjectComplete(p)}
+                                  className="mt-2 w-full flex items-center justify-center gap-1.5 rounded-lg py-2 bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white text-[11px] font-bold hover:from-[#2563EB] hover:to-[#1D4ED8] shadow-brand transition-all disabled:opacity-50"
+                                >
+                                  <FaCircleCheck className="w-2.5 h-2.5" />
+                                  {completingProjectId === p.id ? 'Marking…' : 'Mark as Complete'}
+                                </button>
+                              );
+                            })()}
                           </div>
                         </article>
                       );

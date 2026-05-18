@@ -299,6 +299,49 @@ export default function OtherUserProfile() {
   ];
   const visiblePlatforms = (isIndividual || isVendor) ? socialPlatforms.filter((pl) => !!pl.url) : [];
 
+  // Company-side mark-complete on a specific booking (today the visible
+  // surface for the company→company hiring flow, but works for any booking
+  // the viewing company is party to). Optimistically updates the date's
+  // entry in profileBookingDetails so the modal reflects the new state
+  // without waiting for the calendar refetch; on failure we roll the local
+  // stamp back. On success we refetch the month so derived state stays in
+  // sync with the server.
+  const handleMarkBookingComplete = async (booking: BookingWithDetails) => {
+    const stamped = new Date().toISOString();
+    const matchKeys = Object.keys(profileBookingDetails).filter((k) => profileBookingDetails[k]?.id === booking.id);
+    setProfileBookingDetails((prev) => {
+      const next = { ...prev };
+      for (const k of matchKeys) {
+        if (next[k]) next[k] = { ...next[k], completedByRequesterAt: stamped };
+      }
+      return next;
+    });
+    try {
+      await api.patch(`/bookings/${booking.id}/complete`, {});
+      toast.success('Booking marked complete.');
+    } catch (err) {
+      setProfileBookingDetails((prev) => {
+        const next = { ...prev };
+        for (const k of matchKeys) {
+          if (next[k]) next[k] = { ...next[k], completedByRequesterAt: null };
+        }
+        return next;
+      });
+      toast.error(err instanceof ApiException ? err.payload.message : 'Could not mark booking complete.');
+      return;
+    }
+    if (userId && profile) {
+      try {
+        const res = await api.get<unknown>(`/availability/${userId}?year=${calYear}&month=${calMonth + 1}`);
+        const parsed = parseAvailabilityMonthResponse(res);
+        setProfileSlotMap(parsed.slots);
+        setProfileBookingDetails(parsed.bookingDetails);
+      } catch {
+        // Non-fatal: optimistic state is already correct from the user's POV.
+      }
+    }
+  };
+
   // Helper to check if a date has an existing confirmed booking
   const getDateBookingStatus = (dateKey: string): 'none' | 'pending' | 'accepted' | 'locked' | 'completed' => {
     const booking = profileBookingDetails[dateKey];
@@ -796,6 +839,7 @@ We're working on ${projectName}${location ? ` (${location})` : ''}. Just wanted 
                     targetUserId={userId}
                     targetUserName={title}
                     onChatClick={() => handleDateChatClick(detailDate!)}
+                    onMarkBookingComplete={handleMarkBookingComplete}
                     onBookCrewClick={() => {
                       // Pre-select the date and open booking modal
                       setDetailDate(null);
@@ -913,7 +957,18 @@ We're working on ${projectName}${location ? ` (${location})` : ''}. Just wanted 
           isOpen={isBookingModalOpen}
           onClose={() => setIsBookingModalOpen(false)}
           userName={title}
-          userRole={isIndividual ? (p?.skills?.[0] ?? 'Individual') : (p?.vendorType ?? 'Vendor')}
+          // Role label is per-target-type. The previous fallback always read
+          // `vendorType ?? 'Vendor'` in the non-individual branch, which made
+          // company→company bookings show the target labeled as "Vendor".
+          userRole={
+            isIndividual
+              ? (p?.skills?.[0] ?? 'Individual')
+              : isVendor
+                ? (p?.vendorType ?? 'Vendor')
+                : isCompany
+                  ? 'Production House'
+                  : '—'
+          }
           userRate={isIndividual && p?.dailyBudget ? formatPaise(p.dailyBudget) + ' /day' : '—'}
           targetUserId={profile.id}
           isVendor={isVendor}

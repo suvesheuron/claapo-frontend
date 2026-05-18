@@ -69,7 +69,11 @@ export function NavBadgesProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      if (user.role === 'individual' || user.role === 'vendor') {
+      // Companies can also be booking targets (company→company bookings), so
+      // they should get the same badge as crew/vendor. The /incoming endpoint
+      // returns only rows where the caller is the target, so a company that's
+      // never been booked simply sees a count of 0 — no extra branch needed.
+      if (user.role === 'individual' || user.role === 'vendor' || user.role === 'company') {
         const res = await api.get<IncomingBookingsResponse>('/bookings/incoming');
         const actionable = (res?.items ?? []).filter(
           (b) =>
