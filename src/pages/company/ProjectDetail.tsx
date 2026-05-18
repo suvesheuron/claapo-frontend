@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import {
-  FaArrowLeft, FaUsers, FaTruck,
+  FaArrowLeft, FaUsers, FaTruck, FaBuilding,
   FaTrash, FaBan, FaMessage, FaFileInvoice,
   FaTriangleExclamation, FaPenToSquare, FaCircleCheck,
 } from 'react-icons/fa6';
@@ -66,6 +66,9 @@ interface Booking {
   shootDates?: string[];
   shootLocations?: string[];
   shootDateLocations?: Array<{ date: string; location: string }> | null;
+  /** Set when this company (the requester) closed out the engagement. Drives
+      the Mark Complete button on the company→company section. */
+  completedByRequesterAt?: string | null;
 }
 
 interface SubUserAssignment {
@@ -165,6 +168,8 @@ export default function ProjectDetail() {
   const [completingProject, setCompletingProject] = useState(false);
   const [confirmCompleteProject, setConfirmCompleteProject] = useState(false);
   const [completeError, setCompleteError] = useState<string | null>(null);
+  // Per-row "Mark Complete" spinner state for the company→company section.
+  const [completingBookingId, setCompletingBookingId] = useState<string | null>(null);
 
   const loadProject = useCallback(async () => {
     if (!projectId) return;
@@ -224,8 +229,13 @@ export default function ProjectDetail() {
     loadSubUsers();
   }, [loadProject, loadBookings, loadSubUsers]);
 
-  const crewBookings   = bookings.filter((b) => b.target.role === 'individual');
-  const vendorBookings = bookings.filter((b) => b.target.role === 'vendor');
+  const crewBookings    = bookings.filter((b) => b.target.role === 'individual');
+  const vendorBookings  = bookings.filter((b) => b.target.role === 'vendor');
+  // Company→company bookings: this project has hired another production house.
+  // These rows have no projectRole / vendorEquipment attached — the "what they
+  // do" is the engagement itself, so the panel just lists the company name +
+  // rate + dates.
+  const companyBookings = bookings.filter((b) => b.target.role === 'company');
   // New project flow (no Lock / Activate step): projects are created as `active`
   // and the only forward action is "Mark Complete". `draft` is treated as
   // ongoing too — legacy rows that haven't been swept by the migration.
@@ -236,7 +246,8 @@ export default function ProjectDetail() {
   const totalBudget = getProjectTotalBudget(project);
   const crewCost    = crewBookings.filter((b) => b.status === 'accepted' || b.status === 'locked').reduce((s, b) => s + (b.rateOffered ?? 0), 0);
   const vendorCost  = vendorBookings.filter((b) => b.status === 'accepted' || b.status === 'locked').reduce((s, b) => s + (b.rateOffered ?? 0), 0);
-  const remaining   = totalBudget - crewCost - vendorCost;
+  const companyCost = companyBookings.filter((b) => b.status === 'accepted' || b.status === 'locked').reduce((s, b) => s + (b.rateOffered ?? 0), 0);
+  const remaining   = totalBudget - crewCost - vendorCost - companyCost;
 
   const handleCancelBooking = async (bookingId: string) => {
     setCancelError(null);
@@ -271,6 +282,23 @@ export default function ProjectDetail() {
       toast.error(err instanceof ApiException ? err.payload.message : 'Failed to delete project.');
     } finally {
       setDeletingProject(false);
+    }
+  };
+
+  // Close one company→company booking from this company's (requester) side.
+  // Independent of the project-level Mark Complete — lets us wrap an
+  // individual hire while the rest of the project is still ongoing.
+  const handleCompleteCompanyBooking = async (bookingId: string) => {
+    setCompletingBookingId(bookingId);
+    try {
+      await api.patch(`/bookings/${bookingId}/complete`, {});
+      toast.success('Booking marked complete.');
+      await loadBookings();
+    } catch (err) {
+      const msg = err instanceof ApiException ? err.payload.message : 'Could not mark booking complete.';
+      toast.error(msg);
+    } finally {
+      setCompletingBookingId(null);
     }
   };
 
@@ -558,6 +586,116 @@ export default function ProjectDetail() {
                     </div>
                   )}
                 </div>
+
+                {/* Companies — company→company bookings on this project.
+                    Hidden when there are none so we don't crowd the layout
+                    for the common crew/vendor-only case. */}
+                {companyBookings.length > 0 && (
+                  <div className="rounded-2xl bg-white border border-neutral-200 p-5 hover:border-[#3678F1] transition-colors duration-200 lg:col-span-2">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg bg-[#E8F0FE] ring-1 ring-[#3678F1]/15 flex items-center justify-center">
+                          <FaBuilding className="text-[#3678F1] text-sm" />
+                        </div>
+                        <h2 className="text-sm font-bold text-neutral-900">
+                          Companies ({companyBookings.length})
+                        </h2>
+                      </div>
+                      <Link to="/search?type=companies" className="text-xs text-[#3678F1] hover:underline font-medium">+ Add Company</Link>
+                    </div>
+
+                    {loadingBookings ? (
+                      <div className="space-y-2">
+                        {[1, 2].map((i) => <div key={i} className="skeleton h-14 rounded-xl" />)}
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
+                        {companyBookings.map((booking) => (
+                          <div key={booking.id} className="rounded-xl border border-neutral-200 p-3 bg-[#FAFAFA]">
+                            {cancellingBookingId === booking.id ? (
+                              <div>
+                                <p className="text-xs text-neutral-700 font-medium mb-2">
+                                  Cancel booking for <span className="font-bold">{getMemberName(booking)}</span>?
+                                </p>
+                                {cancelError && <p className="text-xs text-[#F40F02] mb-2">{cancelError}</p>}
+                                <div className="flex gap-2">
+                                  <button onClick={() => handleCancelBooking(booking.id)}
+                                    className="px-3 py-1.5 bg-[#F40F02] text-white text-xs font-semibold rounded-lg hover:bg-[#C50C00] transition-colors">
+                                    Cancel Booking
+                                  </button>
+                                  <button onClick={() => { setCancellingBookingId(null); setCancelError(null); }}
+                                    className="px-3 py-1.5 bg-neutral-100 text-neutral-700 text-xs font-semibold rounded-lg hover:bg-neutral-200 transition-colors">
+                                    Keep
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 rounded-xl bg-[#E8F0FE] ring-1 ring-[#3678F1]/15 flex items-center justify-center shrink-0">
+                                  <FaBuilding className="text-[#3678F1] text-xs" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs font-bold text-neutral-900 truncate">{getMemberName(booking)}</p>
+                                  <p className="text-[11px] text-neutral-500 truncate">
+                                    Production House
+                                    {booking.rateOffered ? ` · ₹${(booking.rateOffered / 100).toLocaleString('en-IN')}/day` : ''}
+                                  </p>
+                                  {(booking.shootDates?.length || booking.shootLocations?.length || booking.shootDateLocations?.length) ? (
+                                    <p className="text-[10px] text-neutral-400 mt-0.5">
+                                      {getBookingDateLocationSummary(booking)}
+                                    </p>
+                                  ) : null}
+                                </div>
+                                <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
+                                  {statusBadge(booking.status)}
+                                  <Link to={`/chat/${booking.target.id}?projectId=${encodeURIComponent(booking.projectId)}`} title="Chat"
+                                    className="w-7 h-7 rounded-lg bg-[#F3F4F6] flex items-center justify-center text-neutral-500 hover:bg-[#E8F0FE] hover:text-[#3678F1] transition-colors">
+                                    <FaMessage className="text-xs" />
+                                  </Link>
+                                  <Link to={`/invoices/${booking.projectId}`} title="View Invoices"
+                                    className="w-7 h-7 rounded-lg bg-[#F3F4F6] flex items-center justify-center text-neutral-500 hover:bg-[#E8F0FE] hover:text-[#3678F1] transition-colors">
+                                    <FaFileInvoice className="text-xs" />
+                                  </Link>
+                                  {/* Requester-side Mark Complete — only meaningful for
+                                      company→company hires, so it lives in this section
+                                      only. Crew/vendor bookings still wrap via the
+                                      project-level Mark Complete button up top. */}
+                                  {(booking.status === 'accepted' || booking.status === 'locked') && !booking.completedByRequesterAt && (
+                                    <button
+                                      type="button"
+                                      title="Mark this booking complete"
+                                      disabled={completingBookingId === booking.id}
+                                      onClick={() => handleCompleteCompanyBooking(booking.id)}
+                                      className="rounded-lg px-2.5 h-7 bg-[#E8F0FE] text-[#1D4ED8] text-[10px] font-bold flex items-center gap-1 hover:bg-[#DBEAFE] disabled:opacity-50 transition-colors"
+                                    >
+                                      <FaCircleCheck className="text-[10px]" />
+                                      {completingBookingId === booking.id ? 'Saving…' : 'Mark Complete'}
+                                    </button>
+                                  )}
+                                  {booking.completedByRequesterAt && (
+                                    <span
+                                      title={`Marked complete on ${new Date(booking.completedByRequesterAt).toLocaleDateString('en-IN')}`}
+                                      className="rounded-lg px-2 h-7 bg-[#DCFCE7] text-[#15803D] text-[10px] font-bold flex items-center gap-1"
+                                    >
+                                      <FaCircleCheck className="text-[10px]" /> Completed
+                                    </span>
+                                  )}
+                                  {(booking.status === 'pending' || booking.status === 'accepted') && !booking.completedByRequesterAt && (
+                                    <button type="button" title="Cancel company booking"
+                                      onClick={() => { setCancellingBookingId(booking.id); setCancelError(null); }}
+                                      className="w-7 h-7 rounded-lg bg-[#F3F4F6] flex items-center justify-center text-neutral-400 hover:bg-[#FEE2E2] hover:text-[#F40F02] transition-colors">
+                                      <FaBan className="text-xs" />
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Budget Summary */}
@@ -570,15 +708,21 @@ export default function ProjectDetail() {
                     </Link>
                   </div>
                   {loadingBookings ? (
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      {[1,2,3,4].map((i) => <div key={i} className="skeleton h-16 rounded-xl" />)}
+                    <div className={`grid grid-cols-2 ${companyBookings.length > 0 ? 'sm:grid-cols-5' : 'sm:grid-cols-4'} gap-3`}>
+                      {Array.from({ length: companyBookings.length > 0 ? 5 : 4 }).map((_, i) => <div key={i} className="skeleton h-16 rounded-xl" />)}
                     </div>
                   ) : (
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className={`grid grid-cols-2 ${companyBookings.length > 0 ? 'sm:grid-cols-5' : 'sm:grid-cols-4'} gap-3`}>
                       {[
                         { label: 'Total Budget', value: formatBudgetCompact(totalBudget), color: 'text-neutral-900' },
                         { label: 'Crew Cost',    value: formatBudgetCompact(crewCost),    color: 'text-[#3678F1]' },
                         { label: 'Vendor Cost',  value: formatBudgetCompact(vendorCost),  color: 'text-[#2563EB]' },
+                        // Only surface Company Cost when there's at least one
+                        // company booking — keeps the summary uncluttered for
+                        // the common crew/vendor-only flow.
+                        ...(companyBookings.length > 0
+                          ? [{ label: 'Company Cost', value: formatBudgetCompact(companyCost), color: 'text-[#1D4ED8]' }]
+                          : []),
                         { label: 'Remaining',    value: formatBudgetCompact(remaining),   color: remaining >= 0 ? 'text-[#22C55E]' : 'text-[#F40F02]' },
                       ].map(({ label, value, color }) => (
                         <div key={label} className="rounded-xl bg-[#F3F4F6] p-3">

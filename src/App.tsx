@@ -233,7 +233,7 @@ export default function App() {
               enforces that the issuer is a confirmed booking target on the project. */}
           <Route path="/invoice/new" element={<ProtectedRoute allowedRoles={['individual', 'vendor', 'company']}><CreateInvoice /></ProtectedRoute>} />
           <Route path="/invoice/:invoiceId" element={<ProtectedRoute><Invoice /></ProtectedRoute>} />
-          <Route path="/bookings" element={<ProtectedRoute allowedRoles={['individual', 'vendor']}><Bookings /></ProtectedRoute>} />
+          <Route path="/bookings" element={<ProtectedRoute allowedRoles={['individual', 'vendor', 'company']}><Bookings /></ProtectedRoute>} />
           <Route path="/project-details" element={<ProtectedRoute allowedRoles={['individual', 'vendor']}><ProjectDetails /></ProtectedRoute>} />
           <Route path="/ongoing-projects" element={<ProtectedRoute allowedRoles={['individual', 'vendor']}><OngoingProjects /></ProtectedRoute>} />
           <Route path="/team" element={<ProtectedRoute allowedRoles={['company', 'vendor', 'admin']}><VendorSubuserRestricted><TeamPage /></VendorSubuserRestricted></ProtectedRoute>} />

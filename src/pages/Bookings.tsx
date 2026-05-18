@@ -15,7 +15,7 @@ import toast from 'react-hot-toast';
 import { useApiQuery } from '../hooks/useApiQuery';
 import { useRole } from '../contexts/RoleContext';
 import { formatPaise } from '../utils/currency';
-import { individualNavLinks, vendorNavLinks } from '../navigation/dashboardNav';
+import { companyNavLinks, individualNavLinks, vendorNavLinks } from '../navigation/dashboardNav';
 
 type BookingStatus = 'pending' | 'accepted' | 'declined' | 'completed' | 'cancelled' | 'locked' | 'expired' | 'cancel_requested';
 
@@ -107,9 +107,11 @@ export default function Bookings() {
   const { currentRole } = useRole();
 
   const navLinks =
-    currentRole === 'Vendor'
-      ? vendorNavLinks
-      : individualNavLinks;
+    currentRole === 'Company'
+      ? companyNavLinks
+      : currentRole === 'Vendor'
+        ? vendorNavLinks
+        : individualNavLinks;
 
   useEffect(() => { document.title = 'Project Requests – Claapo'; }, []);
 
@@ -117,6 +119,7 @@ export default function Bookings() {
   const [actioning, setActioning] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [reviewBookingId, setReviewBookingId] = useState<string | null>(null);
+  const [completingId, setCompletingId] = useState<string | null>(null);
   const { data, loading, error, refetch } = useApiQuery<BookingsResponse>('/bookings/incoming');
 
   // Exclude cancelled projects (backend also filters; this guards against stale data)
@@ -136,6 +139,22 @@ export default function Bookings() {
       setActionError(msg);
     } finally {
       setActioning(null);
+    }
+  };
+
+  const doMarkComplete = async (bookingId: string) => {
+    setCompletingId(bookingId);
+    setActionError(null);
+    try {
+      await api.patch(`/bookings/${bookingId}/complete`, {});
+      toast.success('Booking marked complete.');
+      refetch();
+    } catch (err) {
+      const msg = err instanceof ApiException ? err.payload.message : 'Failed to mark booking complete.';
+      toast.error(msg);
+      setActionError(msg);
+    } finally {
+      setCompletingId(null);
     }
   };
 
@@ -472,6 +491,26 @@ export default function Bookings() {
                                   {actioning === booking.id + 'deny-company-cancel' ? 'Denying…' : 'Deny — Keep Booked'}
                                 </button>
                               </>
+                            )}
+
+                            {(booking.status === 'accepted' || booking.status === 'locked') && !booking.completedByTargetAt && (
+                              <button
+                                type="button"
+                                onClick={() => doMarkComplete(booking.id)}
+                                disabled={completingId === booking.id}
+                                className="rounded-xl px-4 py-2 bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white text-xs font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] flex items-center gap-1.5 transition-colors disabled:opacity-50 shadow-brand"
+                              >
+                                <FaCircleCheck className="w-3 h-3" />
+                                {completingId === booking.id ? 'Marking…' : 'Mark as Complete'}
+                              </button>
+                            )}
+                            {booking.completedByTargetAt && (
+                              <span
+                                className="rounded-xl px-4 py-2 bg-[#DCFCE7] text-[#15803D] text-xs font-bold flex items-center gap-1.5"
+                                title={`Marked complete on ${new Date(booking.completedByTargetAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}`}
+                              >
+                                <FaCircleCheck className="w-3 h-3" /> Marked Complete
+                              </span>
                             )}
 
                             {(booking.status === 'accepted' || booking.status === 'locked') && (

@@ -23,7 +23,9 @@ interface InquiryRequestModalProps {
   // targetUserId not used currently but kept for future use
   targetUserId?: string;
   targetName: string;
-  selectedDate: string;
+  // Optional: when omitted, the modal renders the date-less variant used for
+  // company→company collaboration inquiries (no calendar context).
+  selectedDate?: string | null;
   projects: Project[];
   projectsLoading: boolean;
   onSendInquiry: (projectId: string, location: string) => Promise<void>;
@@ -85,8 +87,8 @@ export default function InquiryRequestModal({
   const selectedProject = projects.find((p) => p.id === projectId);
   const projectLocations = selectedProject?.shootLocations ?? [];
   const projectDates = selectedProject?.shootDates?.map((d) => toDateOnly(d)) ?? [];
-  const selectedDateOnly = toDateOnly(selectedDate);
-  const matchedDateIndex = projectDates.indexOf(selectedDateOnly);
+  const selectedDateOnly = selectedDate ? toDateOnly(selectedDate) : '';
+  const matchedDateIndex = selectedDateOnly ? projectDates.indexOf(selectedDateOnly) : -1;
   const inferredLocation =
     matchedDateIndex >= 0 ? (projectLocations[matchedDateIndex] ?? '') : '';
   const hasProjectLocations = projectLocations.length > 0;
@@ -126,7 +128,11 @@ export default function InquiryRequestModal({
         <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-100 shrink-0">
           <div>
             <h2 className="text-base font-bold text-neutral-900 tracking-tight">Send Inquiry</h2>
-            <p className="text-xs text-neutral-500 mt-0.5">Check availability with {targetName.split(' ')[0] || 'this person'}</p>
+            <p className="text-xs text-neutral-500 mt-0.5">
+              {selectedDate
+                ? `Check availability with ${targetName.split(' ')[0] || 'this person'}`
+                : `Start a project chat with ${targetName.split(' ')[0] || 'this team'}`}
+            </p>
           </div>
           <button
             onClick={onClose}
@@ -166,15 +172,19 @@ export default function InquiryRequestModal({
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="text-sm font-bold text-neutral-900 truncate">{targetName}</h3>
-                    <p className="text-xs text-neutral-500">Inquiry for specific date</p>
+                    <p className="text-xs text-neutral-500">
+                      {selectedDate ? 'Inquiry for specific date' : 'Project collaboration inquiry'}
+                    </p>
                   </div>
                 </div>
-                <div className="mt-3 pt-3 border-t border-[#3678F1]/15 flex items-center gap-2">
-                  <FaCalendarDay className="w-3.5 h-3.5 text-[#3678F1]" />
-                  <p className="text-sm text-neutral-700">
-                    <span className="font-semibold">Date:</span> {formatDate(selectedDate)}
-                  </p>
-                </div>
+                {selectedDate && (
+                  <div className="mt-3 pt-3 border-t border-[#3678F1]/15 flex items-center gap-2">
+                    <FaCalendarDay className="w-3.5 h-3.5 text-[#3678F1]" />
+                    <p className="text-sm text-neutral-700">
+                      <span className="font-semibold">Date:</span> {formatDate(selectedDate)}
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Project selector */}
@@ -217,7 +227,7 @@ export default function InquiryRequestModal({
                   <div className="w-full px-3.5 py-2.5 border border-neutral-300 rounded-xl bg-neutral-50 text-neutral-900 text-sm">
                     {inferredLocation}
                     <p className="text-[11px] text-neutral-500 mt-1">
-                      Auto-selected from this project&apos;s shoot plan for {formatDate(selectedDate)}.
+                      Auto-selected from this project&apos;s shoot plan for {formatDate(selectedDate ?? '')}.
                     </p>
                   </div>
                 ) : hasProjectLocations ? (
@@ -251,7 +261,9 @@ export default function InquiryRequestModal({
               {/* Info */}
               <div className="rounded-xl bg-[#E8F0FE] border border-[#3678F1]/30 p-3">
                 <p className="text-xs text-[#1D4ED8] leading-relaxed">
-                  This will send an inquiry with date and location to {targetName.split(' ')[0] || 'them'}. They can respond via chat.
+                  {selectedDate
+                    ? `This will send an inquiry with date and location to ${targetName.split(' ')[0] || 'them'}. They can respond via chat.`
+                    : `This will start a project chat with ${targetName.split(' ')[0] || 'them'} so you can coordinate the collaboration.`}
                 </p>
               </div>
 

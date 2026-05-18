@@ -105,19 +105,24 @@ export default function Projects() {
     }
   };
 
-  const projects = data?.items ?? [];
+  // Legacy draft/open projects are hidden from the company list — current
+  // creates go straight to `active`, so anything still in those statuses is
+  // stale data we don't want to surface. Doing this once at the source keeps
+  // the stats, filters, and rendered list consistent.
+  const projects = (data?.items ?? []).filter(
+    (p) => p.status !== 'draft' && p.status !== 'open',
+  );
 
   /* ─── Summary stats (computed, not fetched) ─── */
   const stats = useMemo(() => {
-    let active = 0, planning = 0, completed = 0, cancelled = 0;
+    let active = 0, completed = 0, cancelled = 0;
     for (const p of projects) {
       const d = statusMap[p.status];
       if (d === 'active')    active++;
-      if (d === 'planning')  planning++;
       if (d === 'completed') completed++;
       if (d === 'cancelled') cancelled++;
     }
-    return { total: projects.length, active, planning, completed, cancelled };
+    return { total: projects.length, active, completed, cancelled };
   }, [projects]);
 
   /* ─── Filtered view ─── */
@@ -135,7 +140,6 @@ export default function Projects() {
   const tabs: { key: FilterKey; label: string; count: number }[] = [
     { key: 'all',       label: 'All',       count: stats.total     },
     { key: 'active',    label: 'Active',    count: stats.active    },
-    { key: 'planning',  label: 'Planning',  count: stats.planning  },
     { key: 'completed', label: 'Completed', count: stats.completed },
     { key: 'cancelled', label: 'Cancelled', count: stats.cancelled },
   ];

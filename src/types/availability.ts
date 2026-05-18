@@ -35,6 +35,10 @@ export interface BookingWithDetails {
   conversationId?: string | null;
   /** Set when the booking target self-marks their end complete. */
   completedByTargetAt?: string | null;
+  /** Set when the requester (production company) marks their end complete
+      — used for the company→company hiring flow so the hiring company can
+      wrap a single engagement without completing the whole project. */
+  completedByRequesterAt?: string | null;
 }
 
 export interface ParsedAvailabilityMonth {

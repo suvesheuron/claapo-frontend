@@ -45,6 +45,10 @@ export const companyNavLinks: NavItem[] = [
   { icon: FaMagnifyingGlass, label: 'Search',           to: '/search',                section: 'Overview' },
   { icon: FaFolder,          label: 'Ongoing Projects', to: '/projects',              section: 'Projects' },
   { icon: FaFolder,          label: 'Past Projects',    to: '/company-past-projects', section: 'Projects' },
+  // Companies can also be booked by OTHER companies (company→company
+  // collaboration). Project Requests surfaces those incoming bookings so the
+  // company can accept / decline / mark complete, mirroring the crew flow.
+  { icon: FaClipboardList,   label: 'Project Requests', to: '/bookings',              section: 'Projects',       badgeKey: 'projectRequests' },
   { icon: FaBan,             label: 'Cancel Requests',  to: '/cancel-requests',       section: 'Projects',       badgeKey: 'cancelRequests' },
   { icon: FaMessage,         label: 'Chat',             to: '/conversations',         section: 'Communication', badgeKey: 'chat' },
   { icon: FaFileInvoice,     label: 'Invoices',         to: '/invoices',              section: 'Communication', badgeKey: 'invoices' },

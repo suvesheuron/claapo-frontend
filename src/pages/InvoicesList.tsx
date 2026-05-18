@@ -6,6 +6,7 @@ import DashboardSidebar from '../components/DashboardSidebar';
 import AppFooter from '../components/AppFooter';
 import OfflineInvoiceModal from '../components/OfflineInvoiceModal';
 import { useApiQuery } from '../hooks/useApiQuery';
+import { useAuth } from '../contexts/AuthContext';
 import { useRole } from '../contexts/RoleContext';
 import { formatPaise } from '../utils/currency';
 import { companyNavLinks, individualNavLinks, vendorNavLinks } from '../navigation/dashboardNav';
@@ -133,6 +134,12 @@ type InvoicePaymentFilter = 'all' | 'paid' | 'unpaid';
 export default function InvoicesList() {
   useEffect(() => { document.title = 'Invoices – Claapo'; }, []);
   const { currentRole } = useRole();
+  const { user } = useAuth();
+  // For company viewers, an invoice with issuerUserId matching the company's
+  // own account id means THIS company is the issuer (company→company spec 8),
+  // not the recipient. Sub-users resolve to the main account here so the row
+  // direction is consistent across the whole account.
+  const companyAccountOwnerId = user?.mainUserId ?? user?.id ?? null;
   const [searchParams, setSearchParams] = useSearchParams();
   const { projectId: selectedProjectId } = useParams<{ projectId: string }>();
   const issuedOnRaw = searchParams.get('issuedOn')?.trim() ?? '';
@@ -225,17 +232,37 @@ export default function InvoicesList() {
     : currentRole === 'Vendor' ? vendorNavLinks
     : individualNavLinks;
 
-  const canCreate = currentRole === 'Individual' || currentRole === 'Vendor';
+  // Companies can also create invoices when they were booked by another
+  // company (spec 8 company→company). The Create Invoice page itself filters
+  // /bookings/incoming to accepted/locked rows, so a company with no booked-on
+  // projects sees a friendly empty state instead of being blocked at the gate.
+  const canCreate = currentRole === 'Individual' || currentRole === 'Vendor' || currentRole === 'Company';
 
   // Render one invoice list row. Extracted so the active and cancelled
   // sections share identical row markup without duplication.
   const renderInvoiceRow = (inv: InvoiceItem) => {
     const cfg = STATUS_CFG[inv.status] ?? STATUS_CFG.draft;
     const accent = STATUS_ACCENT[inv.status] ?? STATUS_ACCENT.draft;
-    const counterparty = currentRole === 'Company' ? getIssuerDisplayName(inv) : getPartyName(inv.recipient);
+    // Company viewers can see invoices in BOTH directions now (spec 8): on
+    // their own projects they're the recipient, on booked-on projects they're
+    // the issuer. Detect direction per row so the counterparty / role label
+    // make sense either way. Crew/vendor pages keep the original behavior.
+    const companyIsIssuer =
+      currentRole === 'Company'
+      && !!companyAccountOwnerId
+      && inv.issuer?.id === companyAccountOwnerId;
+    const counterparty =
+      currentRole === 'Company'
+        ? companyIsIssuer
+          ? getPartyName(inv.recipient)
+          : getIssuerDisplayName(inv)
+        : getPartyName(inv.recipient);
     const showProjectFirst = currentRole === 'Vendor' || currentRole === 'Individual';
     const projectTitle = inv.project?.title ?? 'No project';
-    const issuerRole = currentRole === 'Company' ? getIssuerRoleLabel(inv) : null;
+    const issuerRole =
+      currentRole === 'Company' && !companyIsIssuer
+        ? getIssuerRoleLabel(inv)
+        : null;
     const headline = showProjectFirst ? projectTitle : counterparty;
     const isCancelled = inv.status === 'cancelled';
     const paidSoFar = inv.paidAmount ?? 0;
@@ -497,7 +524,7 @@ export default function InvoicesList() {
                           {selectedProject?.title ?? 'Project Invoices'}
                         </h1>
                         <p className="text-sm text-neutral-500 mt-1.5 ml-[46px]">
-                          {currentRole === 'Company' ? 'Invoices received from crew and vendors' : 'Invoices you have sent to clients'}
+                          {currentRole === 'Company' ? 'Invoices on this project — received and issued' : 'Invoices you have sent to clients'}
                         </p>
                         {issuedOn && (
                           <p className="text-xs text-[#3678F1] font-medium mt-2 ml-[46px] flex flex-wrap items-center gap-2">
