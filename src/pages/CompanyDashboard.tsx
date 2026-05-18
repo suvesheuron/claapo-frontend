@@ -58,6 +58,11 @@ interface IncomingBookingItem {
   /** Set when this side (target = this company in the c2c flow) has
       already marked the booking complete; hides the Mark Complete CTA. */
   completedByTargetAt?: string | null;
+  /** Set when the requester (the hiring company) has marked their side
+      complete. From the receiver's perspective the engagement is done as
+      soon as either side closes, so we factor this into the calendar cell
+      color too. */
+  completedByRequesterAt?: string | null;
   project: {
     id: string;
     title: string;
@@ -221,17 +226,25 @@ export default function CompanyDashboard() {
       for (const d of b.shootDates ?? []) mergedDates.add(d);
       const mergedBookingIds = new Set<string>(existing?.bookingIds ?? []);
       mergedBookingIds.add(b.id);
-      // Project is "complete from target side" only when every backing
-      // booking has its completedByTargetAt stamped. Anything pending keeps
-      // the Mark Complete CTA visible.
+      // Aggregate "is this engagement closed from the receiver's POV?". A
+      // booking counts as closed when *either* side has marked complete —
+      // the receiver themselves (completedByTargetAt) OR the hiring
+      // company (completedByRequesterAt). Project-level completion by the
+      // booker also wraps it. The flag is an AND across every backing
+      // booking, so if the project has two booked dates and only one of
+      // them is closed, the cell stays Ongoing.
       const prevAllCompleted = existing?.allBookingsCompletedByTarget ?? true;
-      const thisCompleted = !!b.completedByTargetAt;
+      const thisCompleted =
+        !!b.completedByTargetAt
+        || !!b.completedByRequesterAt
+        || b.project.status === 'completed';
+      const allCompleted = prevAllCompleted && thisCompleted;
       byProjectId.set(b.projectId, {
         id: b.project.id,
         title: b.project.title,
-        // Always 'active' on the dashboard — a confirmed booking is an ongoing
-        // commitment regardless of where the underlying project sits.
-        status: 'active',
+        // Flip the calendar cell to Completed (blue) once every backing
+        // booking is closed; otherwise it's an ongoing commitment.
+        status: allCompleted ? 'completed' : 'active',
         startDate: b.project.startDate,
         endDate: b.project.endDate,
         shootDates: Array.from(mergedDates),
@@ -239,7 +252,7 @@ export default function CompanyDashboard() {
         bookedByCompanyName: companyName,
         bookedFromAnotherCompany: true,
         bookingIds: Array.from(mergedBookingIds),
-        allBookingsCompletedByTarget: prevAllCompleted && thisCompleted,
+        allBookingsCompletedByTarget: allCompleted,
       });
     }
     // Drop any incoming-booking entry that collides with the company's own
