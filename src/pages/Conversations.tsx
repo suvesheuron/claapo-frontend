@@ -202,22 +202,21 @@ export default function Conversations() {
     return (
       <ul className="space-y-2">
         {filteredProjects.map((project) => {
-          const hasConversations = project.conversationCount > 0;
           const unreadForProject = unreadByProject[project.id] ?? 0;
           return (
             <li key={project.id}>
+              {/* Always navigable. We used to disable the link when
+                  conversationCount === 0, but in the company→company flow the
+                  receiver can land here a moment before the auto-message
+                  side-effect has written the conversation (or with the queued
+                  job still in flight) — disabling the link in that window
+                  locked the receiver out of the chat until they accepted the
+                  booking. The project detail view handles the "no
+                  conversations yet" empty state on its own, so it's safe to
+                  let the user navigate in regardless. */}
               <Link
                 to={`/conversations/${project.id}`}
-                className={`relative flex items-start gap-4 px-6 py-5 rounded-2xl border transition-colors duration-200 group overflow-hidden ${
-                  hasConversations
-                    ? 'bg-white border-neutral-200/80 hover:border-[#3678F1]'
-                    : 'bg-white border-neutral-200/80 opacity-60 cursor-not-allowed'
-                }`}
-                onClick={(e) => {
-                  if (!hasConversations) {
-                    e.preventDefault();
-                  }
-                }}
+                className="relative flex items-start gap-4 px-6 py-5 rounded-2xl border transition-colors duration-200 group overflow-hidden bg-white border-neutral-200/80 hover:border-[#3678F1]"
               >
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#E8F0FE] to-[#DBEAFE] flex items-center justify-center shrink-0 border border-[#3678F1]/10">
                   <FaComments className="text-[#3678F1] text-lg" />
@@ -225,7 +224,7 @@ export default function Conversations() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-3 mb-2">
                     <div className="min-w-0">
-                      <p className={`text-base font-semibold truncate ${hasConversations ? 'text-neutral-900 group-hover:text-[#3678F1]' : 'text-neutral-600'}`}>
+                      <p className="text-base font-semibold truncate text-neutral-900 group-hover:text-[#3678F1]">
                         {project.title}
                       </p>
                       <p className="text-xs text-neutral-500 mt-1">
