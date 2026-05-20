@@ -1,14 +1,17 @@
 /**
- * NavBadgesContext — polls small, role-scoped endpoints so the sidebar can
- * show live counts on action-required nav items (Cancel Requests, Project
- * Requests, etc.). Chat unread lives in ChatUnreadContext.
+ * NavBadgesContext — provides role-scoped counts so the sidebar can show
+ * live indicators on action-required nav items (Cancel Requests, Project
+ * Requests, Invoice Alerts). Chat unread lives in ChatUnreadContext.
  *
- * Polling cadence matches ChatUnreadContext (20s) for consistency.
+ * Driven by WebSocket push (`badge_updated` event) — the server tells us when
+ * booking status changes, so we only fetch then. A manual `refetch()` is still
+ * available for callers that need to force a refresh.
  */
 
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 import { useAuth } from './AuthContext';
 import { api } from '../services/api';
+import { ensureChatSocket, onBadgeUpdated } from '../services/chatSocket';
 
 interface CancelRequestsResponse { items: unknown[] }
 
@@ -31,14 +34,12 @@ interface InvoiceListResponse {
 interface NavBadgesValue {
   /** Company: pending cancel-requests waiting for approval. */
   cancelRequestsCount: number;
-  /** Individual / Vendor: pending incoming bookings needing a response. */
+  /** Individual / Vendor / Company: pending incoming bookings needing a response. */
   projectRequestsCount: number;
   /** Company: unread invoice alerts (new invoices received). */
   invoiceAlertsCount: number;
   refetch: () => void;
 }
-
-const POLL_INTERVAL_MS = 20_000;
 
 const NavBadgesContext = createContext<NavBadgesValue | null>(null);
 
@@ -47,7 +48,6 @@ export function NavBadgesProvider({ children }: { children: ReactNode }) {
   const [cancelRequestsCount, setCancelRequestsCount] = useState(0);
   const [projectRequestsCount, setProjectRequestsCount] = useState(0);
   const [invoiceAlertsCount, setInvoiceAlertsCount] = useState(0);
-  const [tick, setTick] = useState(0);
 
   const refetch = useCallback(async () => {
     if (!isAuthenticated || !user) {
@@ -115,15 +115,20 @@ export function NavBadgesProvider({ children }: { children: ReactNode }) {
     }
   }, [isAuthenticated, user]);
 
+  // Initial fetch on mount, then WebSocket push keeps it fresh.
   useEffect(() => {
     refetch();
-  }, [refetch, tick]);
+  }, [refetch]);
 
+  // Listen for server push — booking status changes trigger a refetch of all badges.
   useEffect(() => {
     if (!isAuthenticated) return;
-    const id = setInterval(() => setTick((n) => n + 1), POLL_INTERVAL_MS);
-    return () => clearInterval(id);
-  }, [isAuthenticated]);
+    ensureChatSocket();
+    const cleanup = onBadgeUpdated(() => {
+      refetch();
+    });
+    return cleanup;
+  }, [isAuthenticated, refetch]);
 
   const value: NavBadgesValue = {
     cancelRequestsCount,

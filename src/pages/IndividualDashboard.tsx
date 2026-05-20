@@ -8,6 +8,7 @@ import RoleIndicator from '../components/RoleIndicator';
 import VendorCalendarDayPanel from '../components/VendorCalendarDayPanel';
 import { api, ApiException } from '../services/api';
 import { useApiQuery } from '../hooks/useApiQuery';
+import { useAuth } from '../contexts/AuthContext';
 import { useChatUnread } from '../contexts/ChatUnreadContext';
 import { formatPaise } from '../utils/currency';
 import { individualNavLinks } from '../navigation/dashboardNav';
@@ -109,6 +110,11 @@ function cellStatusToSlotStatus(s: CellStatus | null | undefined): SlotStatus {
 
 export default function IndividualDashboard() {
   useEffect(() => { document.title = 'Dashboard – Claapo'; }, []);
+
+  const { user } = useAuth();
+  const greetingHour = today.getHours();
+  const greeting = greetingHour < 12 ? 'Good morning' : greetingHour < 17 ? 'Good afternoon' : 'Good evening';
+  const firstName = (user?.displayName ?? user?.email?.split('@')[0] ?? '').split(' ')[0];
 
   const [monthOffset, setMonthOffset] = useState(0);
   const [detailDate, setDetailDate] = useState<string | null>(null);
@@ -421,7 +427,9 @@ export default function IndividualDashboard() {
                     <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#3678F1]">
                       {today.toLocaleDateString('en-IN', { weekday: 'long', day: '2-digit', month: 'short' })}
                     </p>
-                    <h1 className="text-[22px] sm:text-[24px] font-extrabold text-neutral-900 tracking-tight leading-tight mt-1">My Dashboard</h1>
+                    <h1 className="text-[22px] sm:text-[24px] font-extrabold text-neutral-900 tracking-tight leading-tight mt-1">
+                      {greeting}{firstName ? <>, <span className="text-[#3678F1]">{firstName}</span></> : ''}
+                    </h1>
                     <p className="text-sm text-neutral-500 mt-1.5">Your availability and booking overview</p>
                   </div>
                   <RoleIndicator />

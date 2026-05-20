@@ -2,13 +2,15 @@
  * ChatUnreadContext — provides total unread message count for the Chat nav badge,
  * plus a per-project breakdown so calendar cells can highlight projects with new messages.
  *
- * Polls every 20s while the user is signed in so the calendar pulse and the nav badge
- * stay reasonably fresh without WebSockets.
+ * Driven by WebSocket push (`unread_updated` event) — the server tells us when
+ * unread counts change, so we only fetch then. A manual `refetch()` is still
+ * available for callers that need to force a refresh (e.g. after marking read).
  */
 
 import { createContext, useContext, useCallback, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { api } from '../services/api';
+import { ensureChatSocket, onUnreadUpdated } from '../services/chatSocket';
 
 interface ConversationItem {
   id: string;
@@ -51,8 +53,6 @@ function toLocalDateKey(iso: string): string {
   return `${y}-${m}-${day}`;
 }
 
-const POLL_INTERVAL_MS = 20_000;
-
 const ChatUnreadContext = createContext<ChatUnreadContextValue | null>(null);
 
 export function ChatUnreadProvider({ children }: { children: React.ReactNode }) {
@@ -61,7 +61,6 @@ export function ChatUnreadProvider({ children }: { children: React.ReactNode }) 
   const [unreadByProject, setUnreadByProject] = useState<Record<string, number>>({});
   const [unreadDateByProject, setUnreadDateByProject] = useState<Record<string, string>>({});
   const [unreadShootDatesByProject, setUnreadShootDatesByProject] = useState<Record<string, string[]>>({});
-  const [tick, setTick] = useState(0);
 
   const refetch = useCallback(async () => {
     if (!user) {
@@ -117,22 +116,26 @@ export function ChatUnreadProvider({ children }: { children: React.ReactNode }) 
     }
   }, [user]);
 
+  // Initial fetch on mount, then WebSocket push keeps it fresh.
   useEffect(() => {
     refetch();
-  }, [refetch, tick]);
+  }, [refetch]);
 
-  // Light polling so the calendar pulse and chat badge stay fresh.
+  // Listen for server push — triggers a refetch to get the full per-project breakdown.
   useEffect(() => {
     if (!user) return;
-    const id = setInterval(() => setTick((n) => n + 1), POLL_INTERVAL_MS);
-    return () => clearInterval(id);
-  }, [user]);
+    ensureChatSocket();
+    const cleanup = onUnreadUpdated(() => {
+      refetch();
+    });
+    return cleanup;
+  }, [user, refetch]);
 
   const markAllConversationsAsRead = useCallback(async (conversations: ConversationItem[]) => {
     const withUnread = conversations.filter((c) => (c.unreadCount ?? 0) > 0);
     await Promise.all(withUnread.map((c) => api.patch(`/conversations/${c.id}/read`, {})));
-    setTick((n) => n + 1);
-  }, []);
+    refetch();
+  }, [refetch]);
 
   const value: ChatUnreadContextValue = {
     totalUnread,
