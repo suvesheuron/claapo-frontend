@@ -73,7 +73,20 @@ export default function DashboardHeader({ userName: propUserName, userAvatar: pr
   const notifications = notifData?.items ?? [];
   const unreadCount = notifData?.meta?.unreadCount ?? 0;
 
-  interface MeResponse { profile?: { companyName?: string; displayName?: string; avatarUrl?: string | null } | null; isMainUser?: boolean }
+  interface MeResponse {
+    profile?: {
+      companyName?: string;
+      displayName?: string;
+      avatarUrl?: string | null;
+      // Role-specific category sources we surface as the header subtitle so
+      // the user sees their craft / business type instead of the generic
+      // role label ("Individual", "Company", "Vendor").
+      skills?: string[];
+      companyType?: string | null;
+      vendorType?: string | null;
+    } | null;
+    isMainUser?: boolean;
+  }
   // SWR: the user widget (avatar + name + role) only changes when the user
   // edits their own profile, so caching is safe. This is what fixes the
   // "loads every time" flash on the top-right widget.
@@ -99,6 +112,29 @@ export default function DashboardHeader({ userName: propUserName, userAvatar: pr
   const displayName = resolvedName ?? 'My account';
   const userAvatar = propUserAvatar ?? profile?.avatarUrl ?? undefined;
   const roleInfo = user?.role ? ROLE_LABELS[user.role] : undefined;
+
+  // Resolve the subtitle the user actually identifies with — their craft
+  // (DOP / Director / Editor for individuals), the business type
+  // (Production House for companies, Camera / Grips / Lighting for vendors)
+  // — and only fall back to the generic role word ("Individual" / "Vendor"
+  // / "Company") when the profile hasn't been filled out yet.
+  const titleCase = (s: string) => s.replace(/\b\w/g, (c) => c.toUpperCase()).toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+  const roleSubtitle = (() => {
+    if (!user?.role) return undefined;
+    if (user.role === 'individual') {
+      const firstSkill = profile?.skills?.find((s) => s && s.trim());
+      return firstSkill ? titleCase(firstSkill) : roleInfo?.label;
+    }
+    if (user.role === 'company') {
+      const t = profile?.companyType?.trim();
+      return t ? t : 'Production House';
+    }
+    if (user.role === 'vendor') {
+      const t = profile?.vendorType?.trim();
+      return t ? titleCase(t) : roleInfo?.label;
+    }
+    return roleInfo?.label;
+  })();
 
   useEffect(() => {
     function handle(e: MouseEvent) {
@@ -284,9 +320,9 @@ export default function DashboardHeader({ userName: propUserName, userAvatar: pr
               ) : (
                 <span className="text-[13px] font-semibold text-neutral-800 dark:text-neutral-100 truncate max-w-full">{displayName}</span>
               )}
-              {roleInfo && (
+              {roleSubtitle && (
                 <span className="text-[10px] font-medium text-neutral-400 dark:text-neutral-500 truncate max-w-full mt-0.5">
-                  {roleInfo.label}{!isMainUser ? ' · Sub-User' : ''}
+                  {roleSubtitle}{!isMainUser ? ' · Sub-User' : ''}
                 </span>
               )}
             </div>

@@ -52,6 +52,7 @@ interface BookingTarget {
   role: string;
   individualProfile?: { displayName?: string } | null;
   vendorProfile?: { companyName?: string } | null;
+  companyProfile?: { companyName?: string } | null;
 }
 
 interface Booking {
@@ -240,7 +241,10 @@ export default function ProjectDetail() {
   // and the only forward action is "Mark Complete". `draft` is treated as
   // ongoing too — legacy rows that haven't been swept by the migration.
   const isOngoingProject = !!project && (project.status === 'active' || project.status === 'open' || project.status === 'draft');
-  const canDeleteProject = !!project && project.status === 'cancelled';
+  // Delete is available on cancelled projects and on ongoing/draft ones (the
+  // confirm dialog catches accidental clicks). It is NOT exposed on completed
+  // projects — those are an immutable historical record.
+  const canDeleteProject = !!project && project.status !== 'completed';
   const canCompleteProject = isOngoingProject;
 
   const totalBudget = getProjectTotalBudget(project);
@@ -323,6 +327,7 @@ export default function ProjectDetail() {
 
   const getMemberName = (b: Booking) =>
     b.target.individualProfile?.displayName ??
+    b.target.companyProfile?.companyName ??
     b.target.vendorProfile?.companyName ??
     b.target.email;
 

@@ -120,6 +120,9 @@ export default function VendorDashboard() {
   useEffect(() => { document.title = 'Dashboard – Claapo'; }, []);
   const { user } = useAuth();
   const isVendorSubuser = !!user?.mainUserId;
+  const greetingHour = new Date().getHours();
+  const greeting = greetingHour < 12 ? 'Good morning' : greetingHour < 17 ? 'Good afternoon' : 'Good evening';
+  const firstName = (user?.displayName ?? user?.email?.split('@')[0] ?? '').split(' ')[0];
 
   const [monthOffset, setMonthOffset] = useState(0);
   const [detailDate, setDetailDate] = useState<string | null>(null);
@@ -453,8 +456,12 @@ export default function VendorDashboard() {
                 <div className="absolute inset-y-0 right-0 w-1/2 bg-gradient-to-l from-[#E8F0FE]/60 to-transparent pointer-events-none" />
                 <span aria-hidden className="absolute left-0 top-6 bottom-6 w-1 rounded-r-full bg-gradient-to-b from-[#3678F1] to-[#5B9DF9]" />
                 <div className="relative pl-3">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#3678F1]">Vendor</p>
-                  <h1 className="text-[26px] sm:text-[28px] font-extrabold text-neutral-900 tracking-tight leading-tight mt-1">Vendor Dashboard</h1>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#3678F1]">
+                    {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
+                  </p>
+                  <h1 className="text-[26px] sm:text-[28px] font-extrabold text-neutral-900 tracking-tight leading-tight mt-1">
+                    {greeting}{firstName ? <>, <span className="text-[#3678F1]">{firstName}</span></> : ''}
+                  </h1>
                   <p className="text-sm text-neutral-500 mt-1.5">Equipment availability and rental management</p>
                 </div>
               </div>

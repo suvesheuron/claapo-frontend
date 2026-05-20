@@ -10,13 +10,30 @@
  *   client → server : join_conversation, leave_conversation, typing_start,
  *                     typing_stop, read_ack, send_message
  *   server → client : new_message, user_typing, user_stopped_typing,
- *                     messages_read
+ *                     messages_read, notification_created,
+ *                     badge_updated, unread_updated
  */
 
 import { io, type Socket } from 'socket.io-client';
 import { getAccessToken, getApiOrigin } from './api';
 
 let socket: Socket | null = null;
+
+type UnreadListener = (totalUnread: number) => void;
+type BadgeListener = (incomingPending: number) => void;
+
+const unreadListeners = new Set<UnreadListener>();
+const badgeListeners = new Set<BadgeListener>();
+
+export function onUnreadUpdated(fn: UnreadListener): () => void {
+  unreadListeners.add(fn);
+  return () => unreadListeners.delete(fn);
+}
+
+export function onBadgeUpdated(fn: BadgeListener): () => void {
+  badgeListeners.add(fn);
+  return () => badgeListeners.delete(fn);
+}
 
 export function ensureChatSocket(): Socket | null {
   if (socket && socket.connected) return socket;
@@ -34,6 +51,21 @@ export function ensureChatSocket(): Socket | null {
     reconnectionDelay: 1000,
     reconnectionDelayMax: 10000,
   });
+
+  socket.on('unread_updated', (data: { totalUnread?: number }) => {
+    const totalUnread = data?.totalUnread;
+    if (typeof totalUnread === 'number') {
+      unreadListeners.forEach((fn) => fn(totalUnread));
+    }
+  });
+
+  socket.on('badge_updated', (data: { incomingPending?: number }) => {
+    const incomingPending = data?.incomingPending;
+    if (typeof incomingPending === 'number') {
+      badgeListeners.forEach((fn) => fn(incomingPending));
+    }
+  });
+
   return socket;
 }
 
@@ -43,6 +75,8 @@ export function getChatSocket(): Socket | null {
 
 export function disconnectChatSocket(): void {
   if (!socket) return;
+  socket.off('unread_updated');
+  socket.off('badge_updated');
   socket.disconnect();
   socket = null;
 }

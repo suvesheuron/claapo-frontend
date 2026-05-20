@@ -37,6 +37,7 @@ interface CrewResult {
 interface CompanyResult {
   userId: string;
   name: string;
+  categoryLabel?: string | null;
   locationCity?: string | null;
   locationState?: string | null;
   avatarUrl?: string | null;
@@ -156,7 +157,7 @@ export default function SearchFilter() {
         if (q.trim()) params.q = q.trim();
         params.category = 'company';
         const qs = new URLSearchParams(params);
-        type PeopleRow = { userId: string; name: string; locationCity?: string | null; locationState?: string | null; avatarUrl?: string | null };
+        type PeopleRow = { userId: string; name: string; categoryLabel?: string | null; locationCity?: string | null; locationState?: string | null; avatarUrl?: string | null };
         const raw = await api.get<{ items?: PeopleRow[]; meta?: { total?: number } }>(`/search/people?${qs.toString()}`);
         const list = Array.isArray(raw?.items) ? raw.items : [];
         const total = raw?.meta?.total ?? 0;
@@ -609,69 +610,72 @@ Please share your best quotation for this requirement.`;
                     </button>
                   </div>
                 </div>
-              </div>
-              )}
 
-              {searchType === 'vendors' && (
-                <div className="rounded-2xl bg-white shadow-sm border border-neutral-200/70 p-4 mb-6 space-y-3">
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                    <select
-                      value={selectedQuotationProjectId}
-                      onChange={(e) => setSelectedQuotationProjectId(e.target.value)}
-                      disabled={projectsLoading || activeProjects.length === 0}
-                      className="h-10 min-w-[240px] px-3 rounded-xl border border-neutral-200 text-sm bg-white text-neutral-700 focus:outline-none focus:border-[#3678F1] disabled:opacity-50"
-                    >
-                      <option value="">
-                        {projectsLoading ? 'Loading projects...' : 'Select project'}
-                      </option>
-                      {activeProjects.map((p) => (
-                        <option key={p.id} value={p.id}>{p.title}</option>
-                      ))}
-                    </select>
-                    <button
-                      type="button"
-                      onClick={() => quotationFileInputRef.current?.click()}
-                      className="h-10 px-4 rounded-xl border border-neutral-200 text-sm font-semibold text-neutral-700 hover:border-[#3678F1] hover:text-[#3678F1] transition-colors"
-                    >
-                      {quotationFile ? `Attached: ${quotationFile.name}` : 'Attach File'}
-                    </button>
-                    <input
-                      ref={quotationFileInputRef}
-                      type="file"
-                      className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0] ?? null;
-                        setQuotationFile(file);
-                        e.target.value = '';
-                      }}
-                    />
-                    <button
-                      type="button"
-                      onClick={sendQuotationToSelectedVendors}
-                      disabled={sendingQuotation || selectedVendorIds.length === 0 || !selectedQuotationProjectId}
-                      className="h-10 px-5 rounded-xl bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white text-sm font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] disabled:opacity-50 transition-colors"
-                    >
-                      {sendingQuotation ? 'Sending...' : 'Get Quotation'}
-                    </button>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <label className="inline-flex items-center gap-2 text-sm font-semibold text-neutral-700 cursor-pointer">
+                {/* Vendor quotation row — kept inside the same filter card so
+                    the Vendors tab has a single unified box like the Crew
+                    tab, instead of two stacked cards. */}
+                {searchType === 'vendors' && (
+                  <div className="mt-5 pt-5 border-t border-neutral-100 space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-3 flex-wrap">
+                      <select
+                        value={selectedQuotationProjectId}
+                        onChange={(e) => setSelectedQuotationProjectId(e.target.value)}
+                        disabled={projectsLoading || activeProjects.length === 0}
+                        className="h-10 min-w-[240px] px-3 rounded-xl border border-neutral-200 text-sm bg-white text-neutral-700 focus:outline-none focus:border-[#3678F1] disabled:opacity-50"
+                      >
+                        <option value="">
+                          {projectsLoading ? 'Loading projects...' : 'Select project'}
+                        </option>
+                        {activeProjects.map((p) => (
+                          <option key={p.id} value={p.id}>{p.title}</option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => quotationFileInputRef.current?.click()}
+                        className="h-10 px-4 rounded-xl border border-neutral-200 text-sm font-semibold text-neutral-700 hover:border-[#3678F1] hover:text-[#3678F1] transition-colors"
+                      >
+                        {quotationFile ? `Attached: ${quotationFile.name}` : 'Attach File'}
+                      </button>
                       <input
-                        type="checkbox"
-                        checked={isAllVendorsMarked}
+                        ref={quotationFileInputRef}
+                        type="file"
+                        className="hidden"
                         onChange={(e) => {
-                          if (e.target.checked) setSelectedVendorIds(vendorResults.map((v) => v.userId));
-                          else setSelectedVendorIds([]);
+                          const file = e.target.files?.[0] ?? null;
+                          setQuotationFile(file);
+                          e.target.value = '';
                         }}
-                        className="w-4 h-4 accent-[#3678F1]"
                       />
-                      Mark All
-                    </label>
-                    <span className="text-xs text-neutral-500">
-                      {selectedVendorIds.length} selected
-                    </span>
+                      <button
+                        type="button"
+                        onClick={sendQuotationToSelectedVendors}
+                        disabled={sendingQuotation || selectedVendorIds.length === 0 || !selectedQuotationProjectId}
+                        className="h-10 px-5 rounded-xl bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white text-sm font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] disabled:opacity-50 transition-colors"
+                      >
+                        {sendingQuotation ? 'Sending...' : 'Get Quotation'}
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <label className="inline-flex items-center gap-2 text-sm font-semibold text-neutral-700 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={isAllVendorsMarked}
+                          onChange={(e) => {
+                            if (e.target.checked) setSelectedVendorIds(vendorResults.map((v) => v.userId));
+                            else setSelectedVendorIds([]);
+                          }}
+                          className="w-4 h-4 accent-[#3678F1]"
+                        />
+                        Mark All
+                      </label>
+                      <span className="text-xs text-neutral-500">
+                        {selectedVendorIds.length} selected
+                      </span>
+                    </div>
                   </div>
-                </div>
+                )}
+              </div>
               )}
 
               {/* Results count + top pagination */}
@@ -897,6 +901,11 @@ Please share your best quotation for this requirement.`;
                           </span>
                         </div>
                         <h3 className="text-[15px] font-bold text-neutral-900 truncate">{r.name || 'Unnamed'}</h3>
+                        {r.categoryLabel && (
+                          <p className="text-[11px] font-semibold text-neutral-500 uppercase tracking-wide mt-0.5 truncate">
+                            {r.categoryLabel}
+                          </p>
+                        )}
                         {(r.locationCity || r.locationState) && (
                           <p className="text-xs text-neutral-500 flex items-center gap-1.5 mt-2">
                             <FaLocationDot className="text-neutral-300 text-[11px]" />

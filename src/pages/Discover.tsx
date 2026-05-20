@@ -15,6 +15,7 @@ interface DirectoryItem {
   userId: string;
   role: 'individual' | 'vendor' | 'company';
   name: string;
+  categoryLabel?: string | null;
   locationCity: string | null;
   locationState: string | null;
   avatarUrl: string | null;
@@ -44,6 +45,11 @@ export default function Discover() {
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [category, setCategory] = useState<Category>('all');
 
+  // Only company viewers see the All/Crew/Vendor/Company tabs. Other roles get
+  // a plain name-search experience without category filtering — the directory
+  // is primarily a hiring tool, so other roles only browse names.
+  const showCategoryTabs = user?.role === 'company' || user?.role === 'admin';
+
   // Pick the sidebar nav matching the viewer's role. Admin reuses company nav
   // (same pattern as Chat.tsx / OtherUserProfile.tsx).
   const navLinks = useMemo(() => {
@@ -62,18 +68,24 @@ export default function Discover() {
     return () => clearTimeout(t);
   }, [query]);
 
+  // Don't fetch (or show profiles) until the user has typed a query. The
+  // landing state is intentionally empty so non-company viewers don't get a
+  // pre-populated directory.
+  const hasQuery = debouncedQuery.length > 0;
+
   // Path is computed from the debounced query + category. useApiQuery handles
   // cancellation on path change so toggling categories quickly doesn't race.
   const path = useMemo(() => {
+    if (!hasQuery) return null;
     const params = new URLSearchParams();
-    if (debouncedQuery) params.set('q', debouncedQuery);
-    if (category !== 'all') params.set('category', category);
+    params.set('q', debouncedQuery);
+    if (showCategoryTabs && category !== 'all') params.set('category', category);
     params.set('limit', '40');
     return `/search/people?${params.toString()}`;
-  }, [debouncedQuery, category]);
+  }, [hasQuery, debouncedQuery, category, showCategoryTabs]);
 
   const { data, loading, error } = useApiQuery<DirectoryResponse>(path);
-  const items = data?.items ?? [];
+  const items = hasQuery ? (data?.items ?? []) : [];
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-neutral-50 dark:bg-bg w-full">
@@ -101,28 +113,36 @@ export default function Discover() {
                     className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-[#3678F1]/30 focus:border-[#3678F1] text-sm"
                   />
                 </div>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {CATEGORY_TABS.map((tab) => {
-                    const active = category === tab.id;
-                    return (
-                      <button
-                        key={tab.id}
-                        type="button"
-                        onClick={() => setCategory(tab.id)}
-                        className={`px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
-                          active
-                            ? 'bg-[#3678F1] text-white border-[#3678F1]'
-                            : 'bg-white text-neutral-700 border-neutral-200 hover:border-[#3678F1]/40 hover:text-[#3678F1]'
-                        }`}
-                      >
-                        {tab.label}
-                      </button>
-                    );
-                  })}
-                </div>
+                {showCategoryTabs && (
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {CATEGORY_TABS.map((tab) => {
+                      const active = category === tab.id;
+                      return (
+                        <button
+                          key={tab.id}
+                          type="button"
+                          onClick={() => setCategory(tab.id)}
+                          className={`px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+                            active
+                              ? 'bg-[#3678F1] text-white border-[#3678F1]'
+                              : 'bg-white text-neutral-700 border-neutral-200 hover:border-[#3678F1]/40 hover:text-[#3678F1]'
+                          }`}
+                        >
+                          {tab.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
-              {error ? (
+              {!hasQuery ? (
+                <div className="rounded-2xl bg-white border border-neutral-100 p-10 text-center">
+                  <p className="text-sm text-neutral-500">
+                    Start typing to find {showCategoryTabs ? 'people, vendors or companies' : 'profiles'} by name.
+                  </p>
+                </div>
+              ) : error ? (
                 <div className="flex items-center gap-3 rounded-2xl bg-[#FEEBEA] border border-[#F40F02]/30 p-4">
                   <FaTriangleExclamation className="text-[#F40F02] shrink-0" />
                   <p className="text-sm text-[#991B1B]">{error}</p>
@@ -136,9 +156,7 @@ export default function Discover() {
               ) : items.length === 0 ? (
                 <div className="rounded-2xl bg-white border border-neutral-100 p-10 text-center">
                   <p className="text-sm text-neutral-500">
-                    {debouncedQuery
-                      ? `No ${category === 'all' ? 'profiles' : category + 's'} match "${debouncedQuery}".`
-                      : 'Start typing to find people, vendors or companies.'}
+                    No {showCategoryTabs && category !== 'all' ? category + 's' : 'profiles'} match "{debouncedQuery}".
                   </p>
                 </div>
               ) : (
@@ -164,6 +182,11 @@ export default function Discover() {
                           <h3 className="text-sm font-bold text-neutral-900 truncate">
                             {item.name || 'Unnamed'}
                           </h3>
+                          {item.categoryLabel && (
+                            <p className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wide mt-0.5 truncate">
+                              {item.categoryLabel}
+                            </p>
+                          )}
                           {location ? (
                             <p className="text-xs text-neutral-500 flex items-center gap-1 mt-1 truncate">
                               <FaLocationDot className="w-3 h-3 text-neutral-400 shrink-0" />
