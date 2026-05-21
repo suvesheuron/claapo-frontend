@@ -29,6 +29,10 @@ interface Project {
   startDate: string;
   endDate: string;
   createdAt: string;
+  // Most recent message timestamp across all conversations on this project.
+  // null when no conversation has any messages yet. Drives the sort so the
+  // freshest project surfaces at the top.
+  lastMessageAt?: string | null;
   conversationCount: number;
   invoiceCount: number;
   bookingCount: number;
@@ -127,14 +131,24 @@ export default function Conversations() {
   const selectedProject = projects.find(p => p.id === selectedProjectId);
 
   // Filter projects by date range (overlap between project dates and selected range)
-  const filteredProjects = projects.filter((project) => {
-    if (!dateFrom && !dateTo) return true;
-    const projStart = new Date(project.startDate).setHours(0, 0, 0, 0);
-    const projEnd = new Date(project.endDate).setHours(23, 59, 59, 999);
-    const filterFrom = dateFrom ? new Date(dateFrom + 'T00:00:00').getTime() : -Infinity;
-    const filterTo = dateTo ? new Date(dateTo + 'T23:59:59').getTime() : Infinity;
-    return projStart <= filterTo && projEnd >= filterFrom;
-  });
+  // and then sort so the project with the most recent chat activity floats to
+  // the top. Projects with no chat activity fall back to their createdAt so
+  // they still get a deterministic position below the active threads. Done
+  // here in a useMemo so the array identity is stable across renders that
+  // don't change inputs.
+  const filteredProjects = useMemo(() => {
+    const visible = projects.filter((project) => {
+      if (!dateFrom && !dateTo) return true;
+      const projStart = new Date(project.startDate).setHours(0, 0, 0, 0);
+      const projEnd = new Date(project.endDate).setHours(23, 59, 59, 999);
+      const filterFrom = dateFrom ? new Date(dateFrom + 'T00:00:00').getTime() : -Infinity;
+      const filterTo = dateTo ? new Date(dateTo + 'T23:59:59').getTime() : Infinity;
+      return projStart <= filterTo && projEnd >= filterFrom;
+    });
+    const sortKey = (p: Project) =>
+      new Date(p.lastMessageAt ?? p.createdAt ?? 0).getTime();
+    return [...visible].sort((a, b) => sortKey(b) - sortKey(a));
+  }, [projects, dateFrom, dateTo]);
 
   const totalProjectsWithUnread = useMemo(
     () => filteredProjects.reduce((sum, p) => sum + ((unreadByProject[p.id] ?? 0) > 0 ? 1 : 0), 0),
@@ -203,6 +217,7 @@ export default function Conversations() {
       <ul className="space-y-2">
         {filteredProjects.map((project) => {
           const unreadForProject = unreadByProject[project.id] ?? 0;
+          const hasUnread = unreadForProject > 0;
           return (
             <li key={project.id}>
               {/* Always navigable. We used to disable the link when
@@ -216,10 +231,25 @@ export default function Conversations() {
                   let the user navigate in regardless. */}
               <Link
                 to={`/conversations/${project.id}`}
-                className="relative flex items-start gap-4 px-6 py-5 rounded-2xl border transition-colors duration-200 group overflow-hidden bg-white border-neutral-200/80 hover:border-[#3678F1]"
+                className={`relative flex items-start gap-4 px-6 py-5 rounded-2xl border transition-colors duration-200 group overflow-hidden ${
+                  hasUnread
+                    ? 'bg-white border-[#3678F1]/25 shadow-sm shadow-[#3678F1]/10 hover:border-[#3678F1]'
+                    : 'bg-white border-neutral-200/80 hover:border-[#3678F1]'
+                }`}
               >
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#E8F0FE] to-[#DBEAFE] flex items-center justify-center shrink-0 border border-[#3678F1]/10">
-                  <FaComments className="text-[#3678F1] text-lg" />
+                <div className="relative shrink-0">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#E8F0FE] to-[#DBEAFE] flex items-center justify-center border border-[#3678F1]/10">
+                    <FaComments className="text-[#3678F1] text-lg" />
+                  </div>
+                  {/* Pulsing red dot — same pattern used on the conversation
+                      list row so the unread signal is consistent across the
+                      project picker and the per-project thread list. */}
+                  {hasUnread && (
+                    <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center">
+                      <span className="absolute inline-flex w-3.5 h-3.5 rounded-full bg-[#F40F02] opacity-60 animate-ping" />
+                      <span className="relative inline-flex w-3.5 h-3.5 rounded-full bg-[#F40F02] border-2 border-white" />
+                    </span>
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-3 mb-2">
@@ -276,7 +306,7 @@ export default function Conversations() {
             <div className="flex items-center gap-3 min-w-0">
               {isCompanyView && selectedProjectId ? (
                 <Link
-                  to="/conversations"
+                  to="/chat"
                   className="w-9 h-9 rounded-lg bg-[#F3F4F6] hover:bg-[#E8F0FE] text-neutral-600 hover:text-[#3678F1] flex items-center justify-center transition-colors shrink-0"
                   aria-label="Back to projects"
                   title="Back to projects"

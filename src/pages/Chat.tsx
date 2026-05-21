@@ -738,9 +738,9 @@ export default function Chat() {
               <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_120%_at_100%_-20%,rgba(255,255,255,0.15),transparent)] pointer-events-none" />
               <Link
                 to={
-                  projectIdFromUrl
-                    ? `/conversations/${projectIdFromUrl}`
-                    : '/conversations'
+                    projectIdFromUrl
+                      ? `/conversations/${projectIdFromUrl}`
+                      : '/chat'
                 }
                 className="relative p-2 hover:bg-white/15 rounded-xl transition-colors shrink-0"
                 aria-label={

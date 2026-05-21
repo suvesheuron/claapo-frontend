@@ -641,7 +641,7 @@ export default function IndividualDashboard() {
                         <span className="flex-1 truncate">Manage Availability</span>
                         <FaChevronRight className="text-[10px] text-neutral-300" />
                       </Link>
-                      <Link to="/conversations" className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-neutral-200/70 text-neutral-700 text-[13px] font-semibold hover:border-[#3678F1] transition-colors duration-200">
+                      <Link to="/chat" className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-neutral-200/70 text-neutral-700 text-[13px] font-semibold hover:border-[#3678F1] transition-colors duration-200">
                         <div className="w-8 h-8 rounded-lg bg-[#E8F0FE] ring-1 ring-[#3678F1]/15 flex items-center justify-center shrink-0">
                           <FaMessage className="w-3.5 h-3.5 text-[#3678F1]" />
                         </div>

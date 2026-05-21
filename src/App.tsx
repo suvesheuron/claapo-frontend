@@ -43,7 +43,7 @@ const CompanyProfile = lazy(() => import('./pages/company/Profile'));
 const VendorProfile = lazy(() => import('./pages/vendor/Profile'));
 
 // Shared routes
-const Chat = lazy(() => import('./pages/Chat'));
+const ChatPage = lazy(() => import('./pages/ChatPage'));
 const Conversations = lazy(() => import('./pages/Conversations'));
 const Invoice = lazy(() => import('./pages/Invoice'));
 const Bookings = lazy(() => import('./pages/Bookings'));
@@ -221,7 +221,8 @@ export default function App() {
           <Route path="/profile/:userId" element={<ProtectedRoute><OtherUserProfile /></ProtectedRoute>} />
 
           {/* Shared routes */}
-          <Route path="/chat/:userId" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
+          <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
+          <Route path="/chat/:userId" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
           <Route path="/conversations" element={<ProtectedRoute><Conversations /></ProtectedRoute>} />
           <Route path="/conversations/:projectId" element={<ProtectedRoute><Conversations /></ProtectedRoute>} />
           <Route path="/invoices" element={<ProtectedRoute><InvoicesList /></ProtectedRoute>} />

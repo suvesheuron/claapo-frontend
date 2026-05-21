@@ -705,7 +705,7 @@ export default function CompanyDashboard() {
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     {[
                       { label: 'Requests',      icon: FaUsers,   to: '/projects',      desc: 'Booking requests' },
-                      { label: 'Chats',         icon: FaMessage, to: '/conversations', desc: 'Open conversations' },
+                      { label: 'Chats',         icon: FaMessage, to: '/chat', desc: 'Open conversations' },
                       { label: 'Notifications', icon: FaFolder,  to: '/projects',      desc: 'Project updates' },
                     ].map(({ label, icon: Icon, to, desc }) => (
                       <Link
