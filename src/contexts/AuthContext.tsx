@@ -32,7 +32,7 @@ import { clearApiQueryCache } from '../hooks/useApiQuery';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export type BackendRole = 'individual' | 'company' | 'vendor' | 'admin';
+export type BackendRole = 'individual' | 'company' | 'vendor' | 'admin' | 'cast';
 
 export interface AuthUser {
   id: string;

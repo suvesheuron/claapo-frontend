@@ -31,11 +31,15 @@ interface PendingProfile {
   companyType?: string;
   vendorType?: string;
   vendorServiceCategory?: string;
+  // Cast-specific
+  roleType?: 'actor' | 'model';
+  age?: number;
+  gender?: 'male' | 'female' | 'other';
 }
 
 interface OtpLocationState {
   phone: string;
-  userType: 'individual' | 'company' | 'vendor';
+  userType: 'individual' | 'company' | 'vendor' | 'cast';
   pendingProfile?: PendingProfile;
 }
 
@@ -199,6 +203,15 @@ export default function OtpVerify() {
             ...(pending.companyName && { companyName: pending.companyName }),
             ...(pending.vendorType && { vendorType: pending.vendorType }),
             ...(pending.vendorServiceCategory && { vendorServiceCategory: pending.vendorServiceCategory }),
+          });
+        } else if (userType === 'cast' && Object.keys(pending).length > 0) {
+          await api.patch('/profile/cast', {
+            ...(pending.displayName && { displayName: pending.displayName }),
+            ...(pending.roleType && { roleType: pending.roleType }),
+            ...(pending.age != null && { age: pending.age }),
+            ...(pending.gender && { gender: pending.gender }),
+            ...(pending.locationCity && { locationCity: pending.locationCity }),
+            ...(pending.locationState && { locationState: pending.locationState }),
           });
         }
       } catch (profileErr) {

@@ -21,6 +21,18 @@ import {
   calculateCompanyCompletion, getProfileImprovementTips 
 } from '../../utils/profileCompletion';
 
+/** Map canonical / legacy companyType values to a friendly display label. */
+function formatCompanyType(value: string | null | undefined): string {
+  if (!value) return '';
+  const map: Record<string, string> = {
+    casting_director: 'Casting Director / Agency',
+    production_house: 'Production House',
+    studio: 'Studio',
+    agency: 'Agency',
+  };
+  return map[value] ?? value;
+}
+
 interface CompanyProfileData {
   companyName: string;
   locationCity: string | null;
@@ -446,7 +458,7 @@ export default function CompanyProfile() {
                       {/* Info */}
                       <div className="px-6 pb-6 text-center">
                         <h2 className="text-xl font-bold text-neutral-900 tracking-tight">{companyName || '—'}</h2>
-                        <p className="text-sm text-neutral-500 mt-1">{companyType || 'Production Company'}</p>
+                        <p className="text-sm text-neutral-500 mt-1">{formatCompanyType(companyType) || 'Production Company'}</p>
                         <div className="flex flex-wrap items-center justify-center gap-2 mt-3">
                           {me?.isVerified && (
                             <span className="inline-flex items-center gap-1.5 text-xs px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200/60">
@@ -545,7 +557,7 @@ export default function CompanyProfile() {
                         >
                           <div className="space-y-1">
                             <InfoRow label="Company Name" value={companyName || '—'} icon={<FaBuilding />} />
-                            <InfoRow label="Company Type" value={companyType || '—'} />
+                            <InfoRow label="Company Type" value={formatCompanyType(companyType) || '—'} />
                             <InfoRow label="Email" value={me?.email ?? '—'} icon={<FaEnvelope />} />
                             <InfoRow label="Phone" value={me?.phone ?? '—'} />
                             <InfoRow label="Location" value={locationCity ? `${locationCity}${locationState ? `, ${locationState}` : ''}` : '—'} icon={<FaLocationDot />} />
@@ -706,14 +718,30 @@ export default function CompanyProfile() {
                               icon={<FaBuilding />}
                               required
                             />
-                            <EditableField
-                              label="Company Type"
-                              value={companyType}
-                              onChange={setCompanyType}
-                              placeholder="e.g., Production House, Ad Agency, OTT Platform"
-                              disabled={saving}
-                              helpText="Describe your company type"
-                            />
+                            <div>
+                              <label className="block text-xs font-medium text-neutral-700 mb-1.5">
+                                Company Type
+                              </label>
+                              <select
+                                value={companyType}
+                                onChange={(e) => setCompanyType(e.target.value)}
+                                disabled={saving}
+                                className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#3678F1]/20 focus:border-[#3678F1] disabled:bg-neutral-50"
+                              >
+                                <option value="">Production House (default)</option>
+                                <option value="production_house">Production House</option>
+                                <option value="studio">Studio</option>
+                                <option value="agency">Agency</option>
+                                <option value="casting_director">Casting Director / Agency</option>
+                                {/* Allow legacy free-text values to display when set. */}
+                                {companyType && !['', 'production_house', 'studio', 'agency', 'casting_director'].includes(companyType) && (
+                                  <option value={companyType}>{companyType}</option>
+                                )}
+                              </select>
+                              <p className="text-[10px] text-neutral-400 mt-1">
+                                Casting Director / Agency unlocks the Cast Search feature on your dashboard.
+                              </p>
+                            </div>
                             <EditableField
                               label="Email"
                               value={me?.email ?? ''}

@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { useEffect, useRef, useState } from 'react';
 import {
   FaTruck, FaCheck, FaArrowRight, FaVideo, FaUsers,
-  FaShieldHalved, FaBolt, FaGift, FaCircleQuestion,
+  FaShieldHalved, FaBolt, FaGift, FaCircleQuestion, FaStar,
 } from 'react-icons/fa6';
 import AppHeader from '../components/AppHeader';
 import AppFooter from '../components/AppFooter';
@@ -24,7 +24,7 @@ function useInView(threshold = 0.12) {
 
 /* ── Account types — equal treatment for all three ── */
 type AccountType = {
-  key: 'company' | 'individual' | 'vendor';
+  key: 'company' | 'individual' | 'vendor' | 'cast';
   icon: typeof FaVideo;
   label: string;
   title: string;
@@ -76,8 +76,8 @@ const accountTypes: AccountType[] = [
   {
     key: 'individual',
     icon: FaUsers,
-    label: 'For Individuals',
-    title: 'Individual',
+    label: 'For Crew',
+    title: 'Crew',
     subtitle: 'Freelance crew & professionals',
     description: 'Get discovered by top agencies, manage your schedule, and get paid faster.',
     features: [
@@ -87,7 +87,7 @@ const accountTypes: AccountType[] = [
       'One-click invoicing with GST',
       'Past work portfolio',
     ],
-    cta: 'Continue as Individual',
+    cta: 'Continue as Crew',
     to: '/register/individual',
     accent: {
       ring: 'hover:border-[#3678F1]',
@@ -120,6 +120,33 @@ const accountTypes: AccountType[] = [
       ring: 'hover:border-[#3678F1]',
       iconBg: 'bg-[#FEF7E0]',
       iconText: 'text-[#8A6508]',
+      check: 'text-[#3678F1]',
+      badge: 'text-[#3678F1]',
+      btnBg: 'bg-gradient-to-br from-[#3678F1] to-[#2563EB]',
+      btnHover: 'hover:from-[#2563EB] hover:to-[#1D4ED8]',
+      shadow: 'shadow-brand',
+    },
+  },
+  {
+    key: 'cast',
+    icon: FaStar,
+    label: 'For Cast',
+    title: 'Cast',
+    subtitle: 'Actors & models',
+    description: 'Get discovered for films, ads and OTT — manage your availability and bookings.',
+    features: [
+      'Detailed cast profile (look, languages)',
+      'Live availability calendar',
+      'Direct casting requests',
+      'One-click invoicing with GST',
+      'Showreel & portfolio',
+    ],
+    cta: 'Continue as Cast',
+    to: '/register/cast',
+    accent: {
+      ring: 'hover:border-[#9333EA]',
+      iconBg: 'bg-[#F3E8FF]',
+      iconText: 'text-[#9333EA]',
       check: 'text-[#3678F1]',
       badge: 'text-[#3678F1]',
       btnBg: 'bg-gradient-to-br from-[#3678F1] to-[#2563EB]',
@@ -197,7 +224,7 @@ export default function UserTypeSelect() {
             Join <span className="text-[#3678F1] dark:text-[#5C9EFF]">Claapo</span>
           </h1>
           <p className="text-base sm:text-lg text-slate-500 dark:text-[#A1ADC4] leading-relaxed max-w-xl mx-auto mb-8">
-            Pick the account that best describes you. Companies, Individuals, and Vendors all get
+            Pick the account that best describes you. Companies, Crew, Vendors and Cast all get
             access to the same powerful tools &mdash; tailored for how you work.
           </p>
 
@@ -213,7 +240,7 @@ export default function UserTypeSelect() {
             </div>
             <div className="text-left">
               <p className="text-sm font-semibold text-slate-700 dark:text-[#F1F5F9]">3,000+ members</p>
-              <p className="text-[11px] text-slate-400 dark:text-[#7A8499]">Companies &middot; Individuals &middot; Vendors</p>
+              <p className="text-[11px] text-slate-400 dark:text-[#7A8499]">Companies &middot; Crew &middot; Vendors &middot; Cast</p>
             </div>
           </div>
         </div>
@@ -228,7 +255,7 @@ export default function UserTypeSelect() {
         style={{ background: bg.cards }}
       >
         <div className="max-w-6xl mx-auto px-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 lg:gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 lg:gap-6">
             {accountTypes.map((type, idx) => (
               <div
                 key={type.key}

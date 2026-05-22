@@ -9,7 +9,7 @@ import { useApiQuery } from '../hooks/useApiQuery';
 import { useAuth } from '../contexts/AuthContext';
 import { useRole } from '../contexts/RoleContext';
 import { formatPaise } from '../utils/currency';
-import { companyNavLinks, individualNavLinks, vendorNavLinks } from '../navigation/dashboardNav';
+import { companyNavLinks, individualNavLinks, vendorNavLinks, castNavLinks } from '../navigation/dashboardNav';
 
 interface InvoiceItem {
   id: string;
@@ -230,13 +230,17 @@ export default function InvoicesList() {
 
   const navLinks = currentRole === 'Company' ? companyNavLinks
     : currentRole === 'Vendor' ? vendorNavLinks
+    : currentRole === 'Cast' ? castNavLinks
     : individualNavLinks;
 
   // Companies can also create invoices when they were booked by another
-  // company (spec 8 company→company). The Create Invoice page itself filters
-  // /bookings/incoming to accepted/locked rows, so a company with no booked-on
-  // projects sees a friendly empty state instead of being blocked at the gate.
-  const canCreate = currentRole === 'Individual' || currentRole === 'Vendor' || currentRole === 'Company';
+  // company (spec 8 company→company). Cast can create invoices for accepted
+  // bookings — same flow as crew/individual.
+  const canCreate =
+    currentRole === 'Individual' ||
+    currentRole === 'Vendor' ||
+    currentRole === 'Company' ||
+    currentRole === 'Cast';
 
   // Render one invoice list row. Extracted so the active and cancelled
   // sections share identical row markup without duplication.

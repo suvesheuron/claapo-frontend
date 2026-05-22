@@ -16,13 +16,13 @@ import InquiryRequestModal from '../components/InquiryRequestModal';
 import { api, ApiException } from '../services/api';
 import { useApiQuery } from '../hooks/useApiQuery';
 import { useAuth } from '../contexts/AuthContext';
-import { companyNavLinks, individualNavLinks, vendorNavLinks } from '../navigation/dashboardNav';
+import { companyNavLinks, individualNavLinks, vendorNavLinks, castNavLinks } from '../navigation/dashboardNav';
 import type { BookingWithDetails, SlotStatus } from '../types/availability';
 import { parseAvailabilityMonthResponse } from '../utils/parseAvailabilityResponse';
 import { formatPaise } from '../utils/currency';
 import StarRating from '../components/StarRating';
 
-type UserRole = 'individual' | 'company' | 'vendor' | 'admin';
+type UserRole = 'individual' | 'company' | 'vendor' | 'admin' | 'cast';
 
 interface VendorEquipment {
   id: string;
@@ -200,6 +200,7 @@ export default function OtherUserProfile() {
   const isIndividual = profile?.role === 'individual';
   const isVendor = profile?.role === 'vendor';
   const isCompany = profile?.role === 'company';
+  const isCast = profile?.role === 'cast';
 
   // Viewer-side context — controls which sections render.
   //
@@ -207,12 +208,15 @@ export default function OtherUserProfile() {
   // simple Discover search they should only see basic info (name, location,
   // ratings, social links, showreel). No calendar, no rates, no booking
   // affordances. Spec 8 adds Chat + Book for company-viewing-company.
+  // Cast targets are treated like Individuals — companies (especially Casting
+  // Directors) see the calendar and booking affordances.
   const viewerIsCompany = viewer?.role === 'company' || viewer?.role === 'admin';
-  const showCalendarSection = viewerIsCompany && (isIndividual || isVendor);
+  const showCalendarSection = viewerIsCompany && (isIndividual || isVendor || isCast);
   const showBookActions = viewerIsCompany; // booking available against any role
   const navLinks = useMemo(() => {
     if (viewer?.role === 'vendor') return vendorNavLinks;
     if (viewer?.role === 'individual') return individualNavLinks;
+    if (viewer?.role === 'cast') return castNavLinks;
     return companyNavLinks;
   }, [viewer?.role]);
   // Where the "Back" link should go — companies have the rich /search filter,
@@ -221,11 +225,14 @@ export default function OtherUserProfile() {
   const backLabel = backTo === '/search' ? 'Back to search' : 'Back to discover';
 
   const title = p?.displayName ?? p?.companyName ?? 'Profile';
+  const castRoleType = isCast ? (p as { roleType?: string } | null)?.roleType ?? null : null;
   const primaryRole = isIndividual
     ? (p?.skills?.[0] ?? 'Individual')
-    : profile?.role
-      ? profile.role.replace(/_/g, ' ')
-      : '—';
+    : isCast
+      ? (castRoleType ? castRoleType.charAt(0).toUpperCase() + castRoleType.slice(1) : 'Cast')
+      : profile?.role
+        ? profile.role.replace(/_/g, ' ')
+        : '—';
   const genreLine = isIndividual
     ? (p?.genres?.length ? p.genres.join(', ') : p?.genre ?? '')
     : '';
@@ -610,10 +617,13 @@ We're working on ${projectName}${location ? ` (${location})` : ''}. Just wanted 
                     </div>
                   </motion.div>
 
-                  {/* Section 8: Chat + Book actions on company profiles (company viewer only).
-                      Calendar is hidden for company-target profiles so we surface these as
-                      explicit primary actions instead of leaving the page without affordances. */}
-                  {showBookActions && isCompany && (
+                  {/* Section 8: Chat + Book actions on company / cast profiles
+                      (company viewer only). For company-target profiles the
+                      calendar is hidden so these are the only booking entry
+                      points. Cast targets DO have a calendar, but we keep the
+                      Chat + Book pair here as a primary action row so casting
+                      directors can hire without scrolling to the calendar. */}
+                  {showBookActions && (isCompany || isCast) && (
                     <motion.div variants={itemVariants} className="rounded-3xl bg-white shadow-soft border border-neutral-100 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-3">
                       <p className="text-sm text-neutral-600 sm:flex-1">
                         Reach out to <span className="font-semibold text-neutral-900">{title}</span> for collaboration or hiring.
@@ -646,14 +656,61 @@ We're working on ${projectName}${location ? ` (${location})` : ''}. Just wanted 
                     </motion.div>
                   )}
 
-                  {((isIndividual && (p.bio || p.aboutMe)) || (isCompany && (p.bio || p.aboutUs)) || (isVendor && p.aboutUs)) && (
+                  {((isIndividual && (p.bio || p.aboutMe)) || (isCompany && (p.bio || p.aboutUs)) || (isVendor && p.aboutUs) || (isCast && ((p as { aboutMe?: string | null }).aboutMe || p.bio))) && (
                     <motion.div variants={itemVariants} className="rounded-3xl bg-white shadow-soft border border-neutral-100 hover:border-[#3678F1] transition-colors duration-200 p-6 sm:p-8">
                       <h2 className="text-base font-bold text-neutral-900 mb-4 flex items-center gap-2">
                         <span className="w-1 h-5 rounded-full bg-[#3678F1]" /> About
                       </h2>
                       <p className="text-sm text-neutral-600 leading-relaxed whitespace-pre-wrap">
-                        {isIndividual ? (p.aboutMe || p.bio) : isVendor ? (p.aboutUs || '—') : (p.aboutUs || p.bio)}
+                        {isIndividual
+                          ? (p.aboutMe || p.bio)
+                          : isVendor
+                            ? (p.aboutUs || '—')
+                            : isCast
+                              ? ((p as { aboutMe?: string | null }).aboutMe || p.bio || '—')
+                              : (p.aboutUs || p.bio)}
                       </p>
+                    </motion.div>
+                  )}
+
+                  {/* Cast-specific physical / look details — only renders for
+                      cast profiles. Mirrors the Personal Details section of
+                      the cast's own profile so casting directors see the same
+                      filterable attributes when picking talent. */}
+                  {isCast && (
+                    <motion.div variants={itemVariants} className="rounded-3xl bg-white shadow-soft border border-neutral-100 hover:border-[#3678F1] transition-colors duration-200 p-6 sm:p-8">
+                      <h2 className="text-base font-bold text-neutral-900 mb-4 flex items-center gap-2">
+                        <span className="w-1 h-5 rounded-full bg-[#9333EA]" /> Cast Details
+                      </h2>
+                      <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                        {(() => {
+                          const cp = p as unknown as {
+                            age?: number | null; gender?: string | null; heightCm?: number | null;
+                            bodyType?: string | null; skinTone?: string | null; eyeColor?: string | null;
+                            lookType?: string | null; hairType?: string | null; languages?: string[] | null;
+                            extraSkills?: string[] | null; dailyBudget?: number | null;
+                          };
+                          const rows: Array<[string, React.ReactNode]> = [
+                            ['Age', cp?.age ?? '—'],
+                            ['Gender', cp?.gender ?? '—'],
+                            ['Height', cp?.heightCm != null ? `${Math.floor((cp.heightCm / 2.54) / 12)}'${Math.round((cp.heightCm / 2.54) % 12)}" (${cp.heightCm} cm)` : '—'],
+                            ['Body Type', cp?.bodyType ?? '—'],
+                            ['Skin Tone', cp?.skinTone ?? '—'],
+                            ['Eye Color', cp?.eyeColor ?? '—'],
+                            ['Look Type', cp?.lookType ?? '—'],
+                            ['Hair Type', cp?.hairType ?? '—'],
+                            ['Languages', cp?.languages?.length ? cp.languages.join(', ') : '—'],
+                            ['Extra Skills', cp?.extraSkills?.length ? cp.extraSkills.join(', ') : '—'],
+                            ['Daily Rate', cp?.dailyBudget != null ? formatPaise(cp.dailyBudget) + ' /day' : '—'],
+                          ];
+                          return rows.map(([label, value]) => (
+                            <div key={label} className="flex items-start gap-3 py-1.5">
+                              <dt className="text-xs font-semibold text-neutral-400 uppercase tracking-wide w-28 shrink-0">{label}</dt>
+                              <dd className="text-sm text-neutral-800 break-words">{value}</dd>
+                            </div>
+                          ));
+                        })()}
+                      </dl>
                     </motion.div>
                   )}
 
@@ -967,9 +1024,11 @@ We're working on ${projectName}${location ? ` (${location})` : ''}. Just wanted 
                 ? (p?.vendorType ?? 'Vendor')
                 : isCompany
                   ? 'Production House'
-                  : '—'
+                  : isCast
+                    ? (castRoleType ? castRoleType.charAt(0).toUpperCase() + castRoleType.slice(1) : 'Cast')
+                    : '—'
           }
-          userRate={isIndividual && p?.dailyBudget ? formatPaise(p.dailyBudget) + ' /day' : '—'}
+          userRate={(isIndividual || isCast) && p?.dailyBudget ? formatPaise(p.dailyBudget) + ' /day' : '—'}
           targetUserId={profile.id}
           isVendor={isVendor}
           onSuccess={() => setIsBookingModalOpen(false)}

@@ -7,7 +7,7 @@ import AppFooter from '../components/AppFooter';
 import Avatar from '../components/Avatar';
 import { useApiQuery } from '../hooks/useApiQuery';
 import { useAuth } from '../contexts/AuthContext';
-import { companyNavLinks, individualNavLinks, vendorNavLinks } from '../navigation/dashboardNav';
+import { companyNavLinks, individualNavLinks, vendorNavLinks, castNavLinks } from '../navigation/dashboardNav';
 
 type Category = 'all' | 'crew' | 'vendor' | 'company';
 
@@ -55,6 +55,7 @@ export default function Discover() {
   const navLinks = useMemo(() => {
     if (user?.role === 'vendor') return vendorNavLinks;
     if (user?.role === 'individual') return individualNavLinks;
+    if (user?.role === 'cast') return castNavLinks;
     return companyNavLinks;
   }, [user?.role]);
 

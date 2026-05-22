@@ -2,6 +2,7 @@ import { useRole } from '../contexts/RoleContext';
 import CompanyDashboard from './CompanyDashboard';
 import IndividualDashboard from './IndividualDashboard';
 import VendorDashboard from './VendorDashboard';
+import CastDashboard from './CastDashboard';
 import OnboardingChecklist from '../components/OnboardingChecklist';
 
 export default function Dashboard() {
@@ -11,6 +12,7 @@ export default function Dashboard() {
   switch (currentRole) {
     case 'Individual': content = <IndividualDashboard />; break;
     case 'Vendor':     content = <VendorDashboard />;    break;
+    case 'Cast':       content = <CastDashboard />;       break;
     case 'Company':
     default:           content = <CompanyDashboard />;   break;
   }

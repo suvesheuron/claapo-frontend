@@ -40,6 +40,18 @@ export const vendorNavLinks: NavItem[] = [
   { icon: FaUser,            label: 'Profile',            to: '/vendor-profile',      section: 'Account' },
 ];
 
+export const castNavLinks: NavItem[] = [
+  { icon: FaHouse,           label: 'Dashboard',          to: '/dashboard',                  section: 'Overview' },
+  { icon: FaMagnifyingGlass, label: 'Discover',           to: '/discover',         section: 'Overview' },
+  { icon: FaCalendar,        label: 'Manage Schedule',    to: '/availability',     section: 'Overview' },
+  { icon: FaFolder,          label: 'Project Requests',   to: '/bookings',         section: 'Projects',       badgeKey: 'projectRequests' },
+  { icon: FaClipboardList,   label: 'Project Details',    to: '/project-details',  section: 'Projects' },
+  { icon: FaMessage,         label: 'Chat',               to: '/chat',              section: 'Communication', badgeKey: 'chat' },
+  { icon: FaFileInvoice,     label: 'Invoices',           to: '/invoices',         section: 'Communication' },
+  { icon: FaChartLine,       label: 'Earnings',           to: '/earnings',         section: 'Communication' },
+  { icon: FaUser,            label: 'Profile',            to: '/cast-profile',     section: 'Account' },
+];
+
 export const companyNavLinks: NavItem[] = [
   { icon: FaHouse,           label: 'Dashboard',        to: '/dashboard',                       section: 'Overview' },
   { icon: FaMagnifyingGlass, label: 'Search',           to: '/search',                section: 'Overview' },

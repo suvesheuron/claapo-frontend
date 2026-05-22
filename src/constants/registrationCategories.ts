@@ -26,7 +26,8 @@ export const REGISTRATION_COMPANY_TYPES = [
   'Line Production',
   'Production House',
   'Freelance Producer',
-'Freelance Line Producer'
+  'Freelance Line Producer',
+  'Casting Director / Agency',
 ] as const;
 
 export const REGISTRATION_INDIVIDUAL_DEPARTMENTS = [

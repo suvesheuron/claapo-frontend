@@ -12,6 +12,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useChatUnread } from '../contexts/ChatUnreadContext';
 import { formatPaise } from '../utils/currency';
 import { individualNavLinks } from '../navigation/dashboardNav';
+import type { NavItem } from '../components/DashboardSidebar';
 import toast from 'react-hot-toast';
 import type { BookingWithDetails, SlotStatus } from '../types/availability';
 import { parseAvailabilityMonthResponse } from '../utils/parseAvailabilityResponse';
@@ -108,8 +109,15 @@ function cellStatusToSlotStatus(s: CellStatus | null | undefined): SlotStatus {
   return s as SlotStatus;
 }
 
-export default function IndividualDashboard() {
-  useEffect(() => { document.title = 'Dashboard – Claapo'; }, []);
+interface IndividualDashboardProps {
+  /** Override the sidebar nav. Used to render the Cast dashboard with castNavLinks. */
+  navLinks?: NavItem[];
+  /** Override the browser tab title (defaults to "Dashboard – Claapo"). */
+  pageTitle?: string;
+}
+
+export default function IndividualDashboard({ navLinks, pageTitle }: IndividualDashboardProps = {}) {
+  useEffect(() => { document.title = pageTitle ?? 'Dashboard – Claapo'; }, [pageTitle]);
 
   const { user } = useAuth();
   const greetingHour = today.getHours();
@@ -414,7 +422,7 @@ export default function IndividualDashboard() {
     <div className="h-screen flex flex-col overflow-hidden bg-[#F3F4F6] w-full">
       <DashboardHeader />
       <div className="flex-1 flex min-h-0 overflow-hidden">
-        <DashboardSidebar links={individualNavLinks} />
+        <DashboardSidebar links={navLinks ?? individualNavLinks} />
         <main className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
           <div className="flex-1 min-h-0 overflow-auto">
             <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-6 xl:px-8 py-5">

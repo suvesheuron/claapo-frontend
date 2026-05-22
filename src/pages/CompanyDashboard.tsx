@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useEffect, useState, useMemo, useCallback } from 'react';
-import { FaPlus, FaUsers, FaTruck, FaFolder, FaXmark, FaEye, FaMessage, FaPeopleGroup, FaFileInvoice, FaBan, FaChevronLeft, FaChevronRight, FaCircleCheck } from 'react-icons/fa6';
+import { FaPlus, FaUsers, FaTruck, FaFolder, FaXmark, FaEye, FaMessage, FaPeopleGroup, FaFileInvoice, FaBan, FaChevronLeft, FaChevronRight, FaCircleCheck, FaStar, FaLock } from 'react-icons/fa6';
 import DashboardHeader from '../components/DashboardHeader';
 import DashboardSidebar from '../components/DashboardSidebar';
 import AppFooter from '../components/AppFooter';
@@ -206,6 +206,14 @@ export default function CompanyDashboard() {
     '/bookings/incoming',
     { swr: true },
   );
+  // Pulled to decide whether the Cast Search action is unlocked. Casting
+  // Director / Agency companies (companyType === 'casting_director') get the
+  // feature; everyone else sees it as a locked upsell.
+  const { data: meData } = useApiQuery<{ profile?: { companyType?: string | null } | null }>(
+    '/profile/me',
+    { swr: true },
+  );
+  const isCastingDirector = meData?.profile?.companyType === 'casting_director';
   const ownProjects = projectsData?.items ?? [];
   const projects = useMemo<Project[]>(() => {
     const incomingItems = incomingData?.items ?? [];
@@ -539,33 +547,50 @@ export default function CompanyDashboard() {
               </motion.div>
 
               {/* ── Quick actions ──────────────────────────────────── */}
-              <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {[
-                  ...(isSubuser ? [] : [{ icon: FaPlus,  title: 'New Project', desc: 'Start a production', to: '/projects/new', primary: true as const }]),
-                  { icon: FaUsers, title: 'Find Crew',    desc: 'Hire freelancers',  to: '/search' },
-                  { icon: FaTruck, title: 'Find Vendors', desc: 'Equipment & services', to: '/search?type=vendors' },
+                  ...(isSubuser ? [] : [{ icon: FaPlus,  title: 'New Project', desc: 'Start a production', to: '/projects/new', primary: true as const, locked: false }]),
+                  { icon: FaUsers, title: 'Find Crew',    desc: 'Hire freelancers',  to: '/search', locked: false },
+                  { icon: FaTruck, title: 'Find Vendors', desc: 'Equipment & services', to: '/search?type=vendors', locked: false },
+                  // Cast Search — unlocked only for Casting Director / Agency
+                  // companyType. Server enforces the same gate, returning 403
+                  // CAST_SEARCH_LOCKED for other companies.
+                  {
+                    icon: isCastingDirector ? FaStar : FaLock,
+                    title: 'Cast Search',
+                    desc: isCastingDirector ? 'Actors & models' : 'Casting Agency plan only',
+                    to: isCastingDirector ? '/search/cast' : '#',
+                    locked: !isCastingDirector,
+                  },
                 ].map((action) => (
                   <Link
                     key={action.title}
                     to={action.to}
+                    onClick={(e) => { if (action.locked) e.preventDefault(); }}
+                    aria-disabled={action.locked || undefined}
+                    title={action.locked ? 'Upgrade to a Casting Director / Agency account to unlock Cast Search' : undefined}
                     className={`rounded-2xl p-5 border flex items-center gap-4 transition-colors duration-200 ${
-                      action.primary
-                        ? 'bg-gradient-to-br from-[#3678F1] to-[#2563EB] border-transparent text-white shadow-brand hover:border-white/40'
-                        : 'bg-white border-neutral-200/70 shadow-soft text-neutral-700 hover:border-[#3678F1]'
+                      action.locked
+                        ? 'bg-neutral-50 border-neutral-200/70 text-neutral-400 cursor-not-allowed hover:border-neutral-200/70'
+                        : action.primary
+                          ? 'bg-gradient-to-br from-[#3678F1] to-[#2563EB] border-transparent text-white shadow-brand hover:border-white/40'
+                          : 'bg-white border-neutral-200/70 shadow-soft text-neutral-700 hover:border-[#3678F1]'
                     }`}
                   >
                     <div
                       className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
-                        action.primary
-                          ? 'bg-white/15 ring-1 ring-white/20'
-                          : 'bg-[#E8F0FE] ring-1 ring-[#3678F1]/15'
+                        action.locked
+                          ? 'bg-neutral-200/70 ring-1 ring-neutral-300/60'
+                          : action.primary
+                            ? 'bg-white/15 ring-1 ring-white/20'
+                            : 'bg-[#E8F0FE] ring-1 ring-[#3678F1]/15'
                       }`}
                     >
-                      <action.icon className={`text-[17px] ${action.primary ? 'text-white' : 'text-[#3678F1]'}`} />
+                      <action.icon className={`text-[17px] ${action.locked ? 'text-neutral-400' : action.primary ? 'text-white' : 'text-[#3678F1]'}`} />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className={`text-[15px] font-bold truncate leading-tight ${action.primary ? 'text-white' : 'text-neutral-900'}`}>{action.title}</p>
-                      <p className={`text-[12px] mt-1 truncate ${action.primary ? 'text-white/80' : 'text-neutral-500'}`}>{action.desc}</p>
+                      <p className={`text-[15px] font-bold truncate leading-tight ${action.locked ? 'text-neutral-500' : action.primary ? 'text-white' : 'text-neutral-900'}`}>{action.title}</p>
+                      <p className={`text-[12px] mt-1 truncate ${action.locked ? 'text-neutral-400' : action.primary ? 'text-white/80' : 'text-neutral-500'}`}>{action.desc}</p>
                     </div>
                     {action.primary && (
                       <span className="hidden sm:inline-flex items-center justify-center w-9 h-9 rounded-full bg-white/15 ring-1 ring-white/25 text-white shrink-0">

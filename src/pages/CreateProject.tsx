@@ -9,9 +9,16 @@ import DashboardSidebar from '../components/DashboardSidebar';
 import AppFooter from '../components/AppFooter';
 import DateInput from '../components/DateInput';
 import { api, ApiException } from '../services/api';
+import { useApiQuery } from '../hooks/useApiQuery';
 import { companyNavLinks } from '../navigation/dashboardNav';
 import { useAuth } from '../contexts/AuthContext';
 import { formatRupees, rupeesToPaise } from '../utils/currency';
+
+interface BillingOption {
+  id: string;
+  label: string;
+  email: string;
+}
 
 interface ProjectResponse {
   id: string;
@@ -39,6 +46,21 @@ export default function CreateProject() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState<string | null>(null);
+
+  // Casting Director billing override. The "Bill invoices to" dropdown is
+  // hidden for non-casting-director companies. Empty string = bill to self
+  // (project owner); any other value = the userId of the hiring company.
+  const [billedToCompanyUserId, setBilledToCompanyUserId] = useState('');
+  const { data: meData } = useApiQuery<{ profile?: { companyType?: string | null } | null }>(
+    '/profile/me',
+    { swr: true },
+  );
+  const isCastingDirector = meData?.profile?.companyType === 'casting_director';
+  const { data: billingOptionsData } = useApiQuery<{ items: BillingOption[] }>(
+    isCastingDirector ? '/projects/billing-options' : null,
+    { swr: true },
+  );
+  const billingOptions = billingOptionsData?.items ?? [];
 
   const addProjectDate = () => setProjectDates(prev => [...prev, { date: '', location: '' }]);
   const removeProjectDate = (i: number) => setProjectDates(prev => prev.filter((_, idx) => idx !== i));
@@ -85,6 +107,9 @@ export default function CreateProject() {
         shootDates: validDates.map(d => d.date),
         shootLocations: validDates.map(d => d.location.trim()),
         budget: budget.trim() ? rupeesToPaise(budget) : undefined,
+        // Casting Director only — server validates that billedToCompanyUserId
+        // is a company that has actually hired the casting director.
+        billedToCompanyUserId: billedToCompanyUserId || undefined,
       });
 
       navigate('/projects');
@@ -205,6 +230,34 @@ export default function CreateProject() {
                           className="rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all disabled:opacity-50"
                         />
                       </div>
+
+                      {/* Bill invoices to — Casting Director / Agency only.
+                          When a casting director hires actors for this project,
+                          their invoices route to the company selected here. If
+                          left as "Yourself", you bill clients separately. */}
+                      {isCastingDirector && billingOptions.length > 0 && (
+                        <div>
+                          <label className="block text-neutral-700 text-xs mb-1.5 font-semibold">
+                            Bill invoices to
+                          </label>
+                          <select
+                            value={billedToCompanyUserId}
+                            onChange={(e) => setBilledToCompanyUserId(e.target.value)}
+                            disabled={loading}
+                            className="rounded-xl w-full px-4 py-2.5 border border-neutral-300 bg-[#F3F4F6] text-neutral-900 focus:outline-none focus:border-[#3678F1] focus:bg-white text-sm transition-all disabled:opacity-50"
+                          >
+                            <option value="">Yourself (default)</option>
+                            {billingOptions.map((opt) => (
+                              <option key={opt.id} value={opt.id}>{opt.label}</option>
+                            ))}
+                          </select>
+                          <p className="text-[10px] text-neutral-400 mt-1">
+                            Actor invoices on this project route to the company you pick here
+                            instead of you. Use this when the production house pre-paid you a
+                            cast budget and you're hiring on their behalf.
+                          </p>
+                        </div>
+                      )}
                       <div>
                         <div className="flex items-center justify-between mb-2">
                           <label className="text-neutral-700 text-xs font-semibold">Project Dates <span className="text-[#F40F02]">*</span></label>

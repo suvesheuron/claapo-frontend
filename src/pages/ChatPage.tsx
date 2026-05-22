@@ -138,8 +138,6 @@ export default function ChatPage() {
   const { currentRole } = useRole();
   const { unreadByProject } = useChatUnread();
 
-  const isCompanyView = currentRole === 'Company';
-
   // ── Left Panel State ────────────────────────────────────────────────
 
   const { data: projectsData } = useApiQuery<ProjectsWithStatsResponse>(
@@ -168,11 +166,10 @@ export default function ChatPage() {
   // in the project's conversation view; clearing the query param (e.g. from
   // Conversations link) must return to the project picker.
   useEffect(() => {
-    if (!isCompanyView) return;
     if (projectIdFromUrl) {
       setSelectedProjectId(projectIdFromUrl);
     }
-  }, [projectIdFromUrl, isCompanyView]);
+  }, [projectIdFromUrl]);
 
   const navLinks =
     currentRole === 'Company'
@@ -185,7 +182,7 @@ export default function ChatPage() {
 
   const filtered = useMemo(() => {
     const result = conversations.filter((conv) => {
-      if (isCompanyView && selectedProjectId && conv.project?.id !== selectedProjectId) return false;
+      if (selectedProjectId && conv.project?.id !== selectedProjectId) return false;
       if (filter === 'unread' && !(conv.unreadCount && conv.unreadCount > 0)) return false;
       if (!search.trim()) return true;
       const other = conv.otherParticipant ?? conv.otherUser;
@@ -199,7 +196,7 @@ export default function ChatPage() {
       const bTime = new Date(b.lastMessage?.createdAt ?? b.lastMessageAt ?? 0).getTime();
       return bTime - aTime;
     });
-  }, [conversations, filter, search, getName, isCompanyView, selectedProjectId]);
+  }, [conversations, filter, search, getName, selectedProjectId]);
 
   // ── Right Panel State ──────────────────────────────────────────────
 
@@ -860,21 +857,18 @@ export default function ChatPage() {
 
   // ── Render Left Panel ───────────────────────────────────────────────
 
-  // Company users with no project selected get a project picker view first.
+  // All roles get a project picker view first when no project is selected.
   // Picking a project transitions the left panel to that project's
   // conversations; the "← Back to Projects" link returns to the picker.
-  const showProjectPickerView = isCompanyView && !selectedProjectId && !targetUserId;
-  const selectedProject = isCompanyView
-    ? projects.find((p) => p.id === selectedProjectId)
-    : undefined;
+  const showProjectPickerView = !selectedProjectId && !targetUserId;
+  const selectedProject = projects.find((p) => p.id === selectedProjectId);
 
   // Project list sorted by latest activity so the freshest threads float up.
   const projectsForPicker = useMemo(() => {
-    if (!isCompanyView) return [];
     const sortKey = (p: Project) =>
       new Date(p.lastMessageAt ?? p.createdAt ?? 0).getTime();
     return [...projects].sort((a, b) => sortKey(b) - sortKey(a));
-  }, [projects, isCompanyView]);
+  }, [projects]);
 
   const projectsWithUnread = useMemo(
     () => projectsForPicker.reduce((sum, p) => sum + ((unreadByProject[p.id] ?? 0) > 0 ? 1 : 0), 0),
@@ -982,7 +976,7 @@ export default function ChatPage() {
     <div className="flex flex-col h-full bg-white border-r border-neutral-200 dark:border-app-border">
       {/* Header */}
       <div className="px-4 py-3 border-b border-neutral-200 dark:border-app-border shrink-0">
-        {isCompanyView && selectedProjectId ? (
+        {selectedProjectId ? (
           <>
             <Link
               to="/chat"

@@ -203,13 +203,21 @@ export default function CompanyRegistration() {
       const otpRes = await api.post<unknown>('/auth/otp/send', { phone: e164Phone });
       console.log('[DEV] OTP send response:', otpRes);
 
+      // Normalize the display label for casting agency to the backend
+      // canonical value so the Cast Search gate (companyType === 'casting_director')
+      // matches without a separate label↔value mapping.
+      const normalizedCompanyType =
+        companyType.trim() === 'Casting Director / Agency'
+          ? 'casting_director'
+          : companyType.trim() || undefined;
+
       navigate('/otp-verify', {
         state: {
           phone: e164Phone,
           userType: 'company',
           pendingProfile: {
             companyName: companyName.trim() || undefined,
-            companyType: companyType.trim() || undefined,
+            companyType: normalizedCompanyType,
           },
         },
       });

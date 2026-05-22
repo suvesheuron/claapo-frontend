@@ -13,9 +13,9 @@ import toast from 'react-hot-toast';
 import { useApiQuery } from '../hooks/useApiQuery';
 import { useRole } from '../contexts/RoleContext';
 import { formatPaise } from '../utils/currency';
-import { individualNavLinks, vendorNavLinks } from '../navigation/dashboardNav';
+import { individualNavLinks, vendorNavLinks, castNavLinks } from '../navigation/dashboardNav';
 
-type BookingStatus = 'accepted' | 'locked' | 'cancel_requested' | 'completed' | 'cancelled';
+type BookingStatus = 'pending' | 'accepted' | 'locked' | 'cancel_requested' | 'completed' | 'cancelled' | 'declined' | 'expired';
 
 interface ProjectBooking {
   id: string;
@@ -40,11 +40,14 @@ interface BookingsResponse {
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 const STATUS_CONFIG: Record<string, { bg: string; text: string; label: string; icon: typeof FaCircleCheck }> = {
+  pending:          { bg: 'bg-[#FEF3C7]',  text: 'text-[#946A00]',  label: 'Pending',            icon: FaClock },
   accepted:         { bg: 'bg-[#DCFCE7]',  text: 'text-[#15803D]',  label: 'Accepted',           icon: FaCircleCheck },
   locked:           { bg: 'bg-[#DBEAFE]',  text: 'text-[#1E3A8A]',  label: 'Locked',             icon: FaLock },
   cancel_requested: { bg: 'bg-[#E8F0FE]',  text: 'text-[#1E3A8A]',  label: 'Cancel Requested',   icon: FaClock },
   completed:        { bg: 'bg-[#DBEAFE]',  text: 'text-[#1E3A8A]',  label: 'Completed',          icon: FaCircleCheck },
   cancelled:        { bg: 'bg-[#FEE2E2]',  text: 'text-[#991B1B]',  label: 'Cancelled',          icon: FaBan },
+  declined:         { bg: 'bg-[#FEE2E2]',  text: 'text-[#991B1B]',  label: 'Declined',           icon: FaBan },
+  expired:          { bg: 'bg-[#F3F4F6]',  text: 'text-[#525252]',  label: 'Expired',            icon: FaBan },
 };
 
 function formatDate(iso: string | null): string {
@@ -59,7 +62,7 @@ function isDateInMonth(date: string, month: number, year: number): boolean {
 
 export default function ProjectDetails() {
   const { currentRole } = useRole();
-  const navLinks = currentRole === 'Vendor' ? vendorNavLinks : individualNavLinks;
+  const navLinks = currentRole === 'Vendor' ? vendorNavLinks : currentRole === 'Cast' ? castNavLinks : individualNavLinks;
 
   useEffect(() => { document.title = 'Project Details – Claapo'; }, []);
 
@@ -76,14 +79,19 @@ export default function ProjectDetails() {
 
   // Filter by month/year or show all.
   //
-  // Project Details is the ONGOING view — completed bookings move out of
-  // here and into the Project Requests > Completed tab. A booking counts as
-  // completed if either the company wrapped the project or the user
-  // self-marked complete.
+  // Project Details is the ONGOING view — only bookings the user has
+  // actually engaged with (accepted / locked / cancel_requested). Pending
+  // requests live on the Project Requests page; declined/expired/cancelled
+  // rows belong in their own histories. Completed bookings move out of here
+  // and into Past Projects.
   const filteredBookings = useMemo(() => {
     if (!data?.items) return [];
     const ongoing = data.items.filter(
-      (b) => !b.completedByTargetAt && b.project.status !== 'completed',
+      (b) =>
+        (b.status === 'accepted' || b.status === 'locked' || b.status === 'cancel_requested')
+        && !b.completedByTargetAt
+        && b.project.status !== 'completed'
+        && b.project.status !== 'cancelled',
     );
     if (showAll) return ongoing;
     return ongoing.filter((booking) => {
