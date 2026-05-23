@@ -4,13 +4,14 @@ import {
   FaArrowLeft, FaUsers, FaTruck, FaBuilding,
   FaTrash, FaBan, FaMessage, FaFileInvoice,
   FaTriangleExclamation, FaPenToSquare, FaCircleCheck,
+  FaStar, FaLock,
 } from 'react-icons/fa6';
 import DashboardHeader from '../../components/DashboardHeader';
 import DashboardSidebar from '../../components/DashboardSidebar';
 import AppFooter from '../../components/AppFooter';
 import Avatar from '../../components/Avatar';
 import { api, ApiException } from '../../services/api';
-import { readApiQueryCache, writeApiQueryCache } from '../../hooks/useApiQuery';
+import { readApiQueryCache, writeApiQueryCache, useApiQuery } from '../../hooks/useApiQuery';
 import toast from 'react-hot-toast';
 import { formatBudgetCompact } from '../../utils/currency';
 import { companyNavLinks } from '../../navigation/dashboardNav';
@@ -53,6 +54,7 @@ interface BookingTarget {
   individualProfile?: { displayName?: string } | null;
   vendorProfile?: { companyName?: string } | null;
   companyProfile?: { companyName?: string } | null;
+  castProfile?: { displayName?: string; roleType?: string } | null;
 }
 
 interface Booking {
@@ -172,6 +174,14 @@ export default function ProjectDetail() {
   // Per-row "Mark Complete" spinner state for the company→company section.
   const [completingBookingId, setCompletingBookingId] = useState<string | null>(null);
 
+  // Pulled so the Cast card on this project can decide whether the "+ Add Cast"
+  // CTA is unlocked (casting director) or routes to the locked upsell page.
+  const { data: meData } = useApiQuery<{ profile?: { companyType?: string | null } | null }>(
+    '/profile/me',
+    { swr: true },
+  );
+  const isCastingDirector = meData?.profile?.companyType === 'casting_director';
+
   const loadProject = useCallback(async () => {
     if (!projectId) return;
     // Don't flip loading on if we already have cached content — refresh
@@ -237,6 +247,9 @@ export default function ProjectDetail() {
   // do" is the engagement itself, so the panel just lists the company name +
   // rate + dates.
   const companyBookings = bookings.filter((b) => b.target.role === 'company');
+  // Cast bookings (actors/models). The "Add Cast" button is unlocked only for
+  // Casting Director / Agency companies; everyone else sees a locked upsell.
+  const castBookings    = bookings.filter((b) => b.target.role === 'cast');
   // New project flow (no Lock / Activate step): projects are created as `active`
   // and the only forward action is "Mark Complete". `draft` is treated as
   // ongoing too — legacy rows that haven't been swept by the migration.
@@ -251,7 +264,8 @@ export default function ProjectDetail() {
   const crewCost    = crewBookings.filter((b) => b.status === 'accepted' || b.status === 'locked').reduce((s, b) => s + (b.rateOffered ?? 0), 0);
   const vendorCost  = vendorBookings.filter((b) => b.status === 'accepted' || b.status === 'locked').reduce((s, b) => s + (b.rateOffered ?? 0), 0);
   const companyCost = companyBookings.filter((b) => b.status === 'accepted' || b.status === 'locked').reduce((s, b) => s + (b.rateOffered ?? 0), 0);
-  const remaining   = totalBudget - crewCost - vendorCost - companyCost;
+  const castCost    = castBookings.filter((b) => b.status === 'accepted' || b.status === 'locked').reduce((s, b) => s + (b.rateOffered ?? 0), 0);
+  const remaining   = totalBudget - crewCost - vendorCost - companyCost - castCost;
 
   const handleCancelBooking = async (bookingId: string) => {
     setCancelError(null);
@@ -329,13 +343,22 @@ export default function ProjectDetail() {
     b.target.individualProfile?.displayName ??
     b.target.companyProfile?.companyName ??
     b.target.vendorProfile?.companyName ??
+    b.target.castProfile?.displayName ??
     b.target.email;
 
   const statusBadge = (status: string) => {
-    if (status === 'locked')   return <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#DCFCE7] text-[#15803D]">Locked</span>;
-    if (status === 'accepted') return <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#DBEAFE] text-[#1D4ED8]">Accepted</span>;
+    if (status === 'pending')          return <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#FEF9E6] text-[#92400E]">Pending</span>;
+    if (status === 'accepted')         return <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#DBEAFE] text-[#1D4ED8]">Accepted</span>;
+    if (status === 'locked')           return <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#DCFCE7] text-[#15803D]">Locked</span>;
     if (status === 'cancel_requested') return <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#FEF3C7] text-[#946A00]">Cancel Requested</span>;
-    return <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#FEF9E6] text-[#92400E]">Pending</span>;
+    if (status === 'declined')         return <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#FEE2E2] text-[#991B1B]">Declined</span>;
+    if (status === 'cancelled')        return <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#FEE2E2] text-[#991B1B]">Cancelled</span>;
+    if (status === 'completed')        return <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#DBEAFE] text-[#1E3A8A]">Completed</span>;
+    if (status === 'expired')          return <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#F3F4F6] text-[#525252]">Expired</span>;
+    // Unknown status — render the raw value so it's obvious something is off
+    // rather than masking it as Pending. Should never happen with backend
+    // statuses but better than misleading.
+    return <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#F3F4F6] text-[#525252]">{status}</span>;
   };
 
   return (
@@ -592,6 +615,114 @@ export default function ProjectDetail() {
                   )}
                 </div>
 
+                {/* Cast (actors/models). Always rendered. The "+ Add Cast"
+                    CTA is unlocked only for Casting Director / Agency
+                    companies; non-casting-directors see a lock that routes to
+                    /search/cast (which renders the upgrade card). The list of
+                    already-booked cast remains visible to every company so
+                    they can still see who's on the project + chat + invoice. */}
+                <div className="rounded-2xl bg-white border border-neutral-200 p-5 hover:border-[#9333EA] transition-colors duration-200 lg:col-span-2">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-[#F3E8FF] ring-1 ring-[#9333EA]/15 flex items-center justify-center">
+                        <FaStar className="text-[#9333EA] text-sm" />
+                      </div>
+                      <h2 className="text-sm font-bold text-neutral-900">
+                        Cast ({castBookings.length})
+                      </h2>
+                    </div>
+                    {isCastingDirector ? (
+                      <Link to="/search/cast" className="text-xs text-[#9333EA] hover:underline font-medium">+ Add Cast</Link>
+                    ) : (
+                      <Link
+                        to="/search/cast"
+                        className="inline-flex items-center gap-1 text-xs text-neutral-400 hover:text-neutral-600 font-medium"
+                        title="Available on Casting Agency plan"
+                      >
+                        <FaLock className="text-[10px]" /> Add Cast
+                      </Link>
+                    )}
+                  </div>
+
+                  {loadingBookings ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {[1, 2].map((i) => <div key={i} className="skeleton h-14 rounded-xl" />)}
+                    </div>
+                  ) : castBookings.length === 0 ? (
+                    <div className="text-center py-8">
+                      <FaStar className="text-neutral-300 text-2xl mx-auto mb-2" />
+                      <p className="text-sm text-neutral-500">No cast assigned</p>
+                      {isCastingDirector ? (
+                        <Link to="/search/cast" className="text-xs text-[#9333EA] hover:underline mt-1 inline-block">Search for cast</Link>
+                      ) : (
+                        <p className="text-[11px] text-neutral-400 mt-1">
+                          Cast hiring is on the Casting Agency plan — switch your Company Type in Profile to unlock.
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {castBookings.map((booking) => (
+                        <div key={booking.id} className="rounded-xl border border-neutral-200 p-3 bg-[#FAFAFA]">
+                          {cancellingId === booking.id ? (
+                            <div>
+                              <p className="text-xs text-neutral-700 font-medium mb-2">
+                                Cancel booking for <span className="font-bold">{getMemberName(booking)}</span>?
+                              </p>
+                              {cancelError && <p className="text-xs text-[#F40F02] mb-2">{cancelError}</p>}
+                              <div className="flex gap-2">
+                                <button onClick={() => handleCancelBooking(booking.id)}
+                                  className="px-3 py-1.5 bg-[#F40F02] text-white text-xs font-semibold rounded-lg hover:bg-[#C50C00] transition-colors">
+                                  Cancel Booking
+                                </button>
+                                <button onClick={() => { setCancellingId(null); setCancelError(null); }}
+                                  className="px-3 py-1.5 bg-neutral-100 text-neutral-700 text-xs font-semibold rounded-lg hover:bg-neutral-200 transition-colors">
+                                  Keep
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-3">
+                              <Avatar name={getMemberName(booking)} size="sm" />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-bold text-neutral-900 truncate">{getMemberName(booking)}</p>
+                                <p className="text-[11px] text-neutral-500 capitalize">
+                                  {booking.target.castProfile?.roleType ?? 'Cast'}
+                                  {booking.rateOffered ? ` · ₹${(booking.rateOffered / 100).toLocaleString('en-IN')}/day` : ''}
+                                </p>
+                                {(booking.shootDates?.length || booking.shootLocations?.length || booking.shootDateLocations?.length) ? (
+                                  <p className="text-[10px] text-neutral-400 mt-0.5">
+                                    {getBookingDateLocationSummary(booking)}
+                                  </p>
+                                ) : null}
+                              </div>
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                {statusBadge(booking.status)}
+                                <Link to={`/chat/${booking.target.id}?projectId=${encodeURIComponent(booking.projectId)}`} title="Chat"
+                                  className="w-7 h-7 rounded-lg bg-[#F3F4F6] flex items-center justify-center text-neutral-500 hover:bg-[#F3E8FF] hover:text-[#9333EA] transition-colors">
+                                  <FaMessage className="text-xs" />
+                                </Link>
+                                {booking.status === 'locked' && (
+                                  <Link to={`/invoices/${booking.projectId}`} title="View Invoices"
+                                    className="w-7 h-7 rounded-lg bg-[#F3F4F6] flex items-center justify-center text-neutral-500 hover:bg-[#F3E8FF] hover:text-[#9333EA] transition-colors">
+                                    <FaFileInvoice className="text-xs" />
+                                  </Link>
+                                )}
+                                {(booking.status === 'pending' || booking.status === 'accepted') && (
+                                  <button type="button" title="Cancel booking" onClick={() => { setCancellingId(booking.id); setCancelError(null); }}
+                                    className="w-7 h-7 rounded-lg bg-[#F3F4F6] flex items-center justify-center text-neutral-400 hover:bg-[#FEE2E2] hover:text-[#F40F02] transition-colors">
+                                    <FaTrash className="text-xs" />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
                 {/* Companies — company→company bookings on this project.
                     Hidden when there are none so we don't crowd the layout
                     for the common crew/vendor-only case. */}
@@ -712,31 +843,39 @@ export default function ProjectDetail() {
                       <FaFileInvoice className="w-3 h-3" /> View Invoices
                     </Link>
                   </div>
-                  {loadingBookings ? (
-                    <div className={`grid grid-cols-2 ${companyBookings.length > 0 ? 'sm:grid-cols-5' : 'sm:grid-cols-4'} gap-3`}>
-                      {Array.from({ length: companyBookings.length > 0 ? 5 : 4 }).map((_, i) => <div key={i} className="skeleton h-16 rounded-xl" />)}
-                    </div>
-                  ) : (
-                    <div className={`grid grid-cols-2 ${companyBookings.length > 0 ? 'sm:grid-cols-5' : 'sm:grid-cols-4'} gap-3`}>
-                      {[
-                        { label: 'Total Budget', value: formatBudgetCompact(totalBudget), color: 'text-neutral-900' },
-                        { label: 'Crew Cost',    value: formatBudgetCompact(crewCost),    color: 'text-[#3678F1]' },
-                        { label: 'Vendor Cost',  value: formatBudgetCompact(vendorCost),  color: 'text-[#2563EB]' },
-                        // Only surface Company Cost when there's at least one
-                        // company booking — keeps the summary uncluttered for
-                        // the common crew/vendor-only flow.
-                        ...(companyBookings.length > 0
-                          ? [{ label: 'Company Cost', value: formatBudgetCompact(companyCost), color: 'text-[#1D4ED8]' }]
-                          : []),
-                        { label: 'Remaining',    value: formatBudgetCompact(remaining),   color: remaining >= 0 ? 'text-[#22C55E]' : 'text-[#F40F02]' },
-                      ].map(({ label, value, color }) => (
-                        <div key={label} className="rounded-xl bg-[#F3F4F6] p-3">
-                          <p className="text-xs text-neutral-500">{label}</p>
-                          <p className={`text-lg font-bold mt-1 ${color}`}>{value}</p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  {(() => {
+                    const extraCount = (companyBookings.length > 0 ? 1 : 0) + (castBookings.length > 0 ? 1 : 0);
+                    const cols = 4 + extraCount; // Total + Crew + Vendor + Remaining + optionals
+                    const colsClass = cols >= 6 ? 'sm:grid-cols-6' : cols === 5 ? 'sm:grid-cols-5' : 'sm:grid-cols-4';
+                    return loadingBookings ? (
+                      <div className={`grid grid-cols-2 ${colsClass} gap-3`}>
+                        {Array.from({ length: cols }).map((_, i) => <div key={i} className="skeleton h-16 rounded-xl" />)}
+                      </div>
+                    ) : (
+                      <div className={`grid grid-cols-2 ${colsClass} gap-3`}>
+                        {[
+                          { label: 'Total Budget', value: formatBudgetCompact(totalBudget), color: 'text-neutral-900' },
+                          { label: 'Crew Cost',    value: formatBudgetCompact(crewCost),    color: 'text-[#3678F1]' },
+                          { label: 'Vendor Cost',  value: formatBudgetCompact(vendorCost),  color: 'text-[#2563EB]' },
+                          // Only surface Company Cost / Cast Cost when there's
+                          // at least one booking of that kind — keeps the
+                          // summary uncluttered for crew/vendor-only flows.
+                          ...(companyBookings.length > 0
+                            ? [{ label: 'Company Cost', value: formatBudgetCompact(companyCost), color: 'text-[#1D4ED8]' }]
+                            : []),
+                          ...(castBookings.length > 0
+                            ? [{ label: 'Cast Cost', value: formatBudgetCompact(castCost), color: 'text-[#9333EA]' }]
+                            : []),
+                          { label: 'Remaining',    value: formatBudgetCompact(remaining),   color: remaining >= 0 ? 'text-[#22C55E]' : 'text-[#F40F02]' },
+                        ].map(({ label, value, color }) => (
+                          <div key={label} className="rounded-xl bg-[#F3F4F6] p-3">
+                            <p className="text-xs text-neutral-500">{label}</p>
+                            <p className={`text-lg font-bold mt-1 ${color}`}>{value}</p>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
 

@@ -22,12 +22,21 @@
  * stores and returns the array.
  */
 
+export interface CachedUserProfile {
+  id?: string;
+  displayName?: string;
+  companyName?: string;
+  avatarUrl?: string;
+  role?: string;
+}
+
 export interface ChatSnapshot<TMessage = unknown> {
   messages: TMessage[];
   activeConversationId: string | null;
   scopedConversationId: string | null;
   noConversation: boolean;
   scopedProjectTitle: string | null;
+  otherUser?: CachedUserProfile | null;
 }
 
 type CacheKey = string;

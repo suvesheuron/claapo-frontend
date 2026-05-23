@@ -44,7 +44,7 @@ import {
 import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 import { useRole } from '../contexts/RoleContext';
-import { individualNavLinks, vendorNavLinks, companyNavLinks } from '../navigation/dashboardNav';
+import { individualNavLinks, vendorNavLinks, companyNavLinks, castNavLinks } from '../navigation/dashboardNav';
 
 interface ChatMessage {
   id: string;
@@ -189,7 +189,9 @@ export default function Chat() {
       ? companyNavLinks
       : currentRole === 'Vendor'
         ? vendorNavLinks
-        : individualNavLinks;
+        : currentRole === 'Cast'
+          ? castNavLinks
+          : individualNavLinks;
 
   useEffect(() => {
     document.title = 'Chat – Claapo';
@@ -738,9 +740,9 @@ export default function Chat() {
               <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_120%_at_100%_-20%,rgba(255,255,255,0.15),transparent)] pointer-events-none" />
               <Link
                 to={
-                  projectIdFromUrl
-                    ? `/conversations/${projectIdFromUrl}`
-                    : '/conversations'
+                    projectIdFromUrl
+                      ? `/conversations/${projectIdFromUrl}`
+                      : '/chat'
                 }
                 className="relative p-2 hover:bg-white/15 rounded-xl transition-colors shrink-0"
                 aria-label={

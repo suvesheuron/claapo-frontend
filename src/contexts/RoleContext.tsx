@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, type ReactNode } from 'react';
 
-export type UserRole = 'Individual' | 'Company' | 'Vendor';
+export type UserRole = 'Individual' | 'Company' | 'Vendor' | 'Cast';
 
 type RoleContextType = {
   currentRole: UserRole;

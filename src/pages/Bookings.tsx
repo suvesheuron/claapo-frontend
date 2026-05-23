@@ -15,7 +15,7 @@ import toast from 'react-hot-toast';
 import { useApiQuery } from '../hooks/useApiQuery';
 import { useRole } from '../contexts/RoleContext';
 import { formatPaise } from '../utils/currency';
-import { companyNavLinks, individualNavLinks, vendorNavLinks } from '../navigation/dashboardNav';
+import { companyNavLinks, individualNavLinks, vendorNavLinks, castNavLinks } from '../navigation/dashboardNav';
 
 type BookingStatus = 'pending' | 'accepted' | 'declined' | 'completed' | 'cancelled' | 'locked' | 'expired' | 'cancel_requested';
 
@@ -111,7 +111,9 @@ export default function Bookings() {
       ? companyNavLinks
       : currentRole === 'Vendor'
         ? vendorNavLinks
-        : individualNavLinks;
+        : currentRole === 'Cast'
+          ? castNavLinks
+          : individualNavLinks;
 
   useEffect(() => { document.title = 'Project Requests – Claapo'; }, []);
 
