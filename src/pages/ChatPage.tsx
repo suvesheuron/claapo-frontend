@@ -863,12 +863,19 @@ export default function ChatPage() {
   const showProjectPickerView = !selectedProjectId && !targetUserId;
   const selectedProject = projects.find((p) => p.id === selectedProjectId);
 
-  // Project list sorted by latest activity so the freshest threads float up.
+  // Projects with unread messages float to the top so the user immediately
+  // sees where the new activity is. Within each tier (unread / read) we sort
+  // by latest message timestamp so the freshest threads come first.
   const projectsForPicker = useMemo(() => {
-    const sortKey = (p: Project) =>
+    const recency = (p: Project) =>
       new Date(p.lastMessageAt ?? p.createdAt ?? 0).getTime();
-    return [...projects].sort((a, b) => sortKey(b) - sortKey(a));
-  }, [projects]);
+    return [...projects].sort((a, b) => {
+      const aHasUnread = (unreadByProject[a.id] ?? 0) > 0;
+      const bHasUnread = (unreadByProject[b.id] ?? 0) > 0;
+      if (aHasUnread !== bHasUnread) return aHasUnread ? -1 : 1;
+      return recency(b) - recency(a);
+    });
+  }, [projects, unreadByProject]);
 
   const projectsWithUnread = useMemo(
     () => projectsForPicker.reduce((sum, p) => sum + ((unreadByProject[p.id] ?? 0) > 0 ? 1 : 0), 0),

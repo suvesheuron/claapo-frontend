@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   FaTriangleExclamation, FaCircleCheck, FaPen, FaUser,
   FaBriefcase, FaMoneyBillWave, FaIdCard, FaGlobe, FaCamera,
+  FaFilm,
 } from 'react-icons/fa6';
 import DashboardHeader from '../../components/DashboardHeader';
 import DashboardSidebar from '../../components/DashboardSidebar';
@@ -40,6 +41,7 @@ interface CastProfileData {
   locationState: string | null;
   avatarUrl?: string | null;
   coverUrl?: string | null;
+  showreelUrl?: string | null;
   // Social
   instagramUrl?: string | null;
   imdbUrl?: string | null;
@@ -82,11 +84,13 @@ export default function CastProfile() {
   const [form, setForm] = useState<CastProfileData | null>(null);
   const [newSkillInput, setNewSkillInput] = useState('');
 
-  // Avatar / cover photo upload
+  // Avatar / cover photo / showreel upload
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
+  const showreelInputRef = useRef<HTMLInputElement>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [coverUploading, setCoverUploading] = useState(false);
+  const [showreelUploading, setShowreelUploading] = useState(false);
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -135,6 +139,34 @@ export default function CastProfile() {
       setCoverUploading(false);
       URL.revokeObjectURL(previewUrl);
       if (coverInputRef.current) coverInputRef.current.value = '';
+    }
+  };
+
+  // Showreel upload. Backend signs the PUT for video/mp4 (see
+  // getPresignedShowreelUrl), so the browser PUT MUST send the same
+  // Content-Type header or S3 will return SignatureDoesNotMatch — same
+  // gotcha as avatar/cover above.
+  const handleShowreelChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('video/')) { setError('Please upload a video file.'); return; }
+    if (file.size > 100 * 1024 * 1024) { setError('Showreel must be under 100MB.'); return; }
+    setError(null);
+    setShowreelUploading(true);
+    const previewUrl = URL.createObjectURL(file);
+    setForm((prev) => prev ? { ...prev, showreelUrl: previewUrl } : prev);
+    try {
+      // The presigner pins contentType to video/mp4, so PUT must match.
+      const { uploadUrl, key } = await api.post<{ uploadUrl: string; key: string }>('/profile/showreel', { contentType: 'video/mp4' });
+      await fetch(uploadUrl, { method: 'PUT', headers: { 'Content-Type': 'video/mp4' }, body: file });
+      await api.post('/profile/showreel/confirm', { key });
+      await refetch();
+    } catch (err) {
+      setError(err instanceof ApiException ? err.payload.message : 'Failed to upload showreel.');
+    } finally {
+      setShowreelUploading(false);
+      URL.revokeObjectURL(previewUrl);
+      if (showreelInputRef.current) showreelInputRef.current.value = '';
     }
   };
 
@@ -192,7 +224,15 @@ export default function CastProfile() {
 
   const handleSave = useCallback(async () => {
     if (!form) return;
-    setSaving(true); setError(null);
+    setError(null);
+    // Address is required for invoices — match the IndividualProfile rule so
+    // cast members can't get into an "issued invoice, no billing address"
+    // state when raising tax invoices.
+    if (!form.address?.trim()) {
+      setError('Address is required for invoices. Please add your mailing address.');
+      return;
+    }
+    setSaving(true);
     try {
       const payload = {
         displayName: form.displayName?.trim() || undefined,
@@ -523,13 +563,14 @@ export default function CastProfile() {
                 </div>
                 <div className="sm:col-span-2">
                   <EditableField
-                    label="Address"
+                    label="Address (required for invoices)"
                     type="textarea"
                     rows={2}
                     value={form.address ?? ''}
                     onChange={(v) => setField('address', v)}
-                    placeholder="Full mailing address — used on invoices"
+                    placeholder="Full street address, city, PIN — used on invoices"
                     helpText="Required for tax-compliant invoices."
+                    required
                   />
                 </div>
                 <EditableField label="City" value={form.locationCity ?? ''} onChange={(v) => setField('locationCity', v)} />
@@ -549,6 +590,72 @@ export default function CastProfile() {
                 <InfoRow label="State" value={form.locationState ?? '—'} />
               </dl>
             )}
+          </ProfileSection>
+
+          {/* Showreel */}
+          <ProfileSection
+            title="Showreel"
+            description="Upload a short reel (MP4, max 100MB). Casting directors see this on your public profile."
+            icon={<FaFilm />}
+            className="mb-6"
+          >
+            <div className="space-y-3">
+              {form.showreelUrl ? (
+                <div className="rounded-xl overflow-hidden bg-black border border-neutral-200">
+                  <video
+                    src={form.showreelUrl}
+                    controls
+                    preload="metadata"
+                    className="w-full max-h-[420px] bg-black"
+                  />
+                </div>
+              ) : (
+                <div className="rounded-xl border border-dashed border-neutral-300 bg-neutral-50 px-4 py-10 text-center">
+                  <FaFilm className="text-neutral-400 text-2xl mx-auto mb-2" />
+                  <p className="text-sm font-semibold text-neutral-700">No showreel uploaded yet</p>
+                  <p className="text-xs text-neutral-500 mt-1">
+                    Upload an MP4 video. Casting directors viewing your profile will see it here.
+                  </p>
+                </div>
+              )}
+
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => showreelInputRef.current?.click()}
+                  disabled={showreelUploading}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#3678F1] text-white text-sm font-semibold hover:bg-[#2563EB] transition-colors disabled:opacity-60"
+                >
+                  {showreelUploading ? (
+                    <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Uploading…</>
+                  ) : (
+                    <><FaFilm className="w-3.5 h-3.5" /> {form.showreelUrl ? 'Replace showreel' : 'Upload showreel'}</>
+                  )}
+                </button>
+                {form.showreelUrl && (
+                  <a
+                    href={form.showreelUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-neutral-300 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 transition-colors"
+                  >
+                    Open in new tab
+                  </a>
+                )}
+              </div>
+
+              <p className="text-[11px] text-neutral-400">
+                MP4 only. Keep it under 100MB for fast playback.
+              </p>
+
+              <input
+                ref={showreelInputRef}
+                type="file"
+                accept="video/mp4,video/*"
+                hidden
+                onChange={handleShowreelChange}
+              />
+            </div>
           </ProfileSection>
 
           {/* Social Links */}

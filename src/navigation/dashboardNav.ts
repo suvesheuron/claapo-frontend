@@ -47,7 +47,7 @@ export const castNavLinks: NavItem[] = [
   { icon: FaFolder,          label: 'Project Requests',   to: '/bookings',         section: 'Projects',       badgeKey: 'projectRequests' },
   { icon: FaClipboardList,   label: 'Project Details',    to: '/project-details',  section: 'Projects' },
   { icon: FaMessage,         label: 'Chat',               to: '/chat',              section: 'Communication', badgeKey: 'chat' },
-  { icon: FaFileInvoice,     label: 'Invoices',           to: '/invoices',         section: 'Communication' },
+  { icon: FaFileInvoice,     label: 'Invoices',           to: '/invoices',         section: 'Communication', badgeKey: 'invoices' },
   { icon: FaChartLine,       label: 'Earnings',           to: '/earnings',         section: 'Communication' },
   { icon: FaUser,            label: 'Profile',            to: '/cast-profile',     section: 'Account' },
 ];

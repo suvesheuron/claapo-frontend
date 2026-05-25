@@ -76,7 +76,10 @@ export default function DashboardHeader({ userName: propUserName, userAvatar: pr
   const { theme, toggleTheme } = useTheme();
 
   const profilePath =
-    user?.role === 'company' ? '/company-profile' : user?.role === 'vendor' ? '/vendor-profile' : '/profile';
+    user?.role === 'company' ? '/company-profile'
+    : user?.role === 'vendor' ? '/vendor-profile'
+    : user?.role === 'cast' ? '/cast-profile'
+    : '/profile';
   const schedulePath =
     user?.role === 'company'
       ? '/company-availability'
