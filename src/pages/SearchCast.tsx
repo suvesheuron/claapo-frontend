@@ -8,8 +8,8 @@ import Avatar from '../components/Avatar';
 import { api, ApiException } from '../services/api';
 import { useApiQuery } from '../hooks/useApiQuery';
 import { companyNavLinks } from '../navigation/dashboardNav';
-import { ROLE_TYPES, LANGUAGES, LOOK_TYPES, BODY_TYPES, GENDERS, cmToFeetInches } from '../constants/castOptions';
-import { paiseToRupees } from '../utils/currency';
+import { ROLE_TYPES, LANGUAGES, LOOK_TYPES, BODY_TYPES, HAIR_TYPES, GENDERS, cmToFeetInches } from '../constants/castOptions';
+import { paiseToRupees, rupeesToPaise } from '../utils/currency';
 
 interface CastResultItem {
   userId: string;
@@ -20,6 +20,7 @@ interface CastResultItem {
   heightCm: number | null;
   bodyType: string | null;
   lookType: string | null;
+  hairType: string | null;
   languages: string[];
   locationCity: string | null;
   locationState: string | null;
@@ -51,8 +52,13 @@ export default function SearchCast() {
   const [language, setLanguage] = useState('');
   const [lookType, setLookType] = useState('');
   const [bodyType, setBodyType] = useState('');
+  const [hairType, setHairType] = useState('');
   const [gender, setGender] = useState('');
   const [city, setCity] = useState('');
+  const [budgetMin, setBudgetMin] = useState('');
+  const [budgetMax, setBudgetMax] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [results, setResults] = useState<CastResultItem[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -65,10 +71,32 @@ export default function SearchCast() {
     if (language) params.set('language', language);
     if (lookType) params.set('lookType', lookType);
     if (bodyType) params.set('bodyType', bodyType);
+    if (hairType) params.set('hairType', hairType);
     if (gender) params.set('gender', gender);
     if (city.trim()) params.set('city', city.trim());
+    // Budgets are entered in rupees; the API expects paise.
+    const minRupees = Number(budgetMin);
+    const maxRupees = Number(budgetMax);
+    if (budgetMin && !Number.isNaN(minRupees) && minRupees >= 0) {
+      params.set('rateMin', String(rupeesToPaise(minRupees)));
+    }
+    if (budgetMax && !Number.isNaN(maxRupees) && maxRupees >= 0) {
+      params.set('rateMax', String(rupeesToPaise(maxRupees)));
+    }
+    // Date filters only take effect when both ends are set — partial date
+    // ranges have ambiguous semantics for availability matching.
+    if (startDate && endDate) {
+      params.set('startDate', startDate);
+      params.set('endDate', endDate);
+    }
     return params.toString();
-  }, [name, roleType, language, lookType, bodyType, gender, city]);
+  }, [name, roleType, language, lookType, bodyType, hairType, gender, city, budgetMin, budgetMax, startDate, endDate]);
+
+  const resetFilters = () => {
+    setName(''); setRoleType(''); setLanguage(''); setLookType('');
+    setBodyType(''); setHairType(''); setGender(''); setCity('');
+    setBudgetMin(''); setBudgetMax(''); setStartDate(''); setEndDate('');
+  };
 
   const runSearch = async () => {
     setLoading(true); setError(null); setLocked(false);
@@ -121,46 +149,116 @@ export default function SearchCast() {
           ) : (
             <>
               {/* Filters */}
-              <div className="rounded-2xl bg-white border border-neutral-200 p-5 mb-6">
+              <div className="rounded-2xl bg-white border border-neutral-200 p-5 mb-6 space-y-3">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Name"
-                    className="px-3 py-2.5 border border-neutral-300 rounded-xl text-sm bg-white"
-                  />
-                  <SelectField label="Role type" value={roleType} onChange={setRoleType}>
-                    {ROLE_TYPES.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
-                  </SelectField>
-                  <SelectField label="Gender" value={gender} onChange={setGender}>
-                    {GENDERS.map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
-                  </SelectField>
-                  <SelectField label="Language" value={language} onChange={setLanguage}>
-                    {LANGUAGES.map((l) => <option key={l} value={l}>{l}</option>)}
-                  </SelectField>
-                  <SelectField label="Look type" value={lookType} onChange={setLookType}>
-                    {LOOK_TYPES.map((l) => <option key={l} value={l}>{l}</option>)}
-                  </SelectField>
-                  <SelectField label="Body type" value={bodyType} onChange={setBodyType}>
-                    {BODY_TYPES.map((b) => <option key={b} value={b}>{b}</option>)}
-                  </SelectField>
-                  <input
-                    type="text"
-                    value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                    placeholder="City"
-                    className="px-3 py-2.5 border border-neutral-300 rounded-xl text-sm bg-white"
-                  />
+                  <FieldWrap label="Name">
+                    <input
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="Search by name"
+                      className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm bg-white"
+                    />
+                  </FieldWrap>
+                  <FieldWrap label="Role type">
+                    <SelectField label="Any role" value={roleType} onChange={setRoleType}>
+                      {ROLE_TYPES.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
+                    </SelectField>
+                  </FieldWrap>
+                  <FieldWrap label="Gender">
+                    <SelectField label="Any gender" value={gender} onChange={setGender}>
+                      {GENDERS.map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
+                    </SelectField>
+                  </FieldWrap>
+                  <FieldWrap label="Language">
+                    <SelectField label="Any language" value={language} onChange={setLanguage}>
+                      {LANGUAGES.map((l) => <option key={l} value={l}>{l}</option>)}
+                    </SelectField>
+                  </FieldWrap>
+                  <FieldWrap label="Look type">
+                    <SelectField label="Any look" value={lookType} onChange={setLookType}>
+                      {LOOK_TYPES.map((l) => <option key={l} value={l}>{l}</option>)}
+                    </SelectField>
+                  </FieldWrap>
+                  <FieldWrap label="Body type">
+                    <SelectField label="Any body type" value={bodyType} onChange={setBodyType}>
+                      {BODY_TYPES.map((b) => <option key={b} value={b}>{b}</option>)}
+                    </SelectField>
+                  </FieldWrap>
+                  <FieldWrap label="Hair type">
+                    <SelectField label="Any hair type" value={hairType} onChange={setHairType}>
+                      {HAIR_TYPES.map((h) => <option key={h} value={h}>{h}</option>)}
+                    </SelectField>
+                  </FieldWrap>
+                  <FieldWrap label="City">
+                    <input
+                      type="text"
+                      value={city}
+                      onChange={(e) => setCity(e.target.value)}
+                      placeholder="e.g. Mumbai"
+                      className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm bg-white"
+                    />
+                  </FieldWrap>
+                </div>
+
+                {/* Budget + availability dates */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                  <FieldWrap label="Budget min (₹/day)">
+                    <input
+                      type="number" min={0}
+                      value={budgetMin}
+                      onChange={(e) => setBudgetMin(e.target.value)}
+                      placeholder="e.g. 15000"
+                      className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm bg-white"
+                    />
+                  </FieldWrap>
+                  <FieldWrap label="Budget max (₹/day)">
+                    <input
+                      type="number" min={0}
+                      value={budgetMax}
+                      onChange={(e) => setBudgetMax(e.target.value)}
+                      placeholder="e.g. 80000"
+                      className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm bg-white"
+                    />
+                  </FieldWrap>
+                  <FieldWrap label="Available from">
+                    <input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm bg-white"
+                    />
+                  </FieldWrap>
+                  <FieldWrap label="Available to">
+                    <input
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm bg-white"
+                    />
+                  </FieldWrap>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={resetFilters}
+                    className="px-4 py-2.5 rounded-xl border border-neutral-300 text-sm font-semibold text-neutral-700 hover:bg-neutral-50"
+                  >
+                    Reset
+                  </button>
                   <button
                     type="button"
                     onClick={runSearch}
                     disabled={loading}
-                    className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#3678F1] text-white text-sm font-semibold hover:bg-[#2563EB] disabled:opacity-50"
+                    className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#3678F1] text-white text-sm font-semibold hover:bg-[#2563EB] disabled:opacity-50"
                   >
                     <FaMagnifyingGlass /> {loading ? 'Searching…' : 'Search'}
                   </button>
                 </div>
+                {startDate && endDate && new Date(startDate) > new Date(endDate) && (
+                  <p className="text-xs text-[#F40F02]">"Available from" must be before "Available to".</p>
+                )}
               </div>
 
               {error && (
@@ -238,11 +336,20 @@ function SelectField({
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="px-3 py-2.5 border border-neutral-300 rounded-xl text-sm bg-white"
+      className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm bg-white"
     >
       <option value="">{label}</option>
       {children}
     </select>
+  );
+}
+
+function FieldWrap({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className="block text-[11px] font-semibold text-neutral-500 uppercase tracking-wide mb-1.5">{label}</label>
+      {children}
+    </div>
   );
 }
 

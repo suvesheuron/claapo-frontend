@@ -547,11 +547,17 @@ export default function CompanyDashboard() {
               </motion.div>
 
               {/* ── Quick actions ──────────────────────────────────── */}
-              <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <motion.div variants={itemVariants} className={`grid grid-cols-1 ${isCastingDirector ? 'md:grid-cols-2' : 'md:grid-cols-2 lg:grid-cols-4'} gap-4`}>
                 {[
                   ...(isSubuser ? [] : [{ icon: FaPlus,  title: 'New Project', desc: 'Start a production', to: '/projects/new', primary: true as const, locked: false }]),
-                  { icon: FaUsers, title: 'Find Crew',    desc: 'Hire freelancers',  to: '/search', locked: false },
-                  { icon: FaTruck, title: 'Find Vendors', desc: 'Equipment & services', to: '/search?type=vendors', locked: false },
+                  // Casting Director / Agency companies don't see Find Crew /
+                  // Find Vendors — their primary discovery surface is Cast
+                  // Search. Hiding these keeps the dashboard focused on cast
+                  // hiring for that subtype.
+                  ...(isCastingDirector ? [] : [
+                    { icon: FaUsers, title: 'Find Crew',    desc: 'Hire freelancers',     to: '/search', locked: false },
+                    { icon: FaTruck, title: 'Find Vendors', desc: 'Equipment & services', to: '/search?type=vendors', locked: false },
+                  ]),
                   // Cast Search — unlocked only for Casting Director / Agency
                   // companyType. Server enforces the same gate, returning 403
                   // CAST_SEARCH_LOCKED for other companies.

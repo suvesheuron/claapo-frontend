@@ -302,6 +302,34 @@ export default function BookingRequestModal({
     isOpen ? '/projects?limit=50' : null
   );
 
+  // Fetch the viewer's company type so the project picker can optionally
+  // include projects the casting director has been HIRED on (in addition to
+  // projects they own). Lets a casting director attached to "Dharma's ABC
+  // Film" hire actors directly under that project. Gated to casting
+  // directors so the existing flow for normal companies is untouched.
+  const { data: meData } = useApiQuery<{ profile?: { companyType?: string | null } | null }>(
+    isOpen ? '/profile/me' : null,
+    { swr: true },
+  );
+  const viewerIsCastingDirector = meData?.profile?.companyType === 'casting_director';
+
+  // Incoming bookings — for a casting director these are the c2c bookings
+  // where another company hired them. We surface the *project* attached to
+  // each accepted/locked booking as a selectable target for the cast booking.
+  interface IncomingBookingProject {
+    id: string; title: string; status: string;
+    startDate: string; endDate: string;
+    shootDates?: string[] | null;
+    shootLocations?: string[] | null;
+  }
+  interface IncomingBookingsResp {
+    items: Array<{ status: string; project: IncomingBookingProject }>;
+  }
+  const { data: incomingBookingsData } = useApiQuery<IncomingBookingsResp>(
+    isOpen && viewerIsCastingDirector ? '/bookings/incoming' : null,
+    { swr: true },
+  );
+
   useEffect(() => {
     if (isOpen) refetchProjects();
   }, [isOpen, refetchProjects]);
@@ -358,9 +386,39 @@ export default function BookingRequestModal({
   })();
 
   const rawItems = Array.isArray(projectsData) ? projectsData : (projectsData as ProjectsResponse | undefined)?.items;
-  const activeProjects = (rawItems ?? []).filter(
+  const ownedActiveProjects = (rawItems ?? []).filter(
     (p) => p.status === 'active' || p.status === 'open' || p.status === 'draft'
   );
+
+  // Merge owned projects with projects the casting director is BOOKED on.
+  // De-dupe by project id (preserves owned-first ordering); a project can't
+  // appear twice. Only active/open/draft projects from the hiring side are
+  // included — completed/cancelled ones are no longer hireable surfaces.
+  const activeProjects = useMemo<Project[]>(() => {
+    if (!viewerIsCastingDirector) return ownedActiveProjects;
+    const incoming = incomingBookingsData?.items ?? [];
+    const hiredProjects: Project[] = incoming
+      .filter((b) => b.status === 'accepted' || b.status === 'locked')
+      .map((b) => b.project)
+      .filter((p) => p.status === 'active' || p.status === 'open' || p.status === 'draft')
+      .map((p) => ({
+        id: p.id,
+        title: p.title,
+        status: p.status,
+        startDate: p.startDate,
+        endDate: p.endDate,
+        shootDates: p.shootDates ?? undefined,
+        shootLocations: p.shootLocations ?? undefined,
+      }));
+    const seen = new Set<string>();
+    const merged: Project[] = [];
+    for (const p of [...ownedActiveProjects, ...hiredProjects]) {
+      if (seen.has(p.id)) continue;
+      seen.add(p.id);
+      merged.push(p);
+    }
+    return merged;
+  }, [viewerIsCastingDirector, ownedActiveProjects, incomingBookingsData]);
 
   // Reset on open
   useEffect(() => {
