@@ -48,7 +48,22 @@ const ROLE_LABELS: Record<string, { label: string; bg: string; text: string }> =
   individual: { label: 'Individual', bg: 'bg-emerald-50 dark:bg-emerald-900/40', text: 'text-emerald-700 dark:text-emerald-300'  },
   vendor:     { label: 'Vendor',     bg: 'bg-[#FEF7E0] dark:bg-[#3B2A10]',  text: 'text-[#8A6508] dark:text-[#FBBF24]'    },
   admin:      { label: 'Admin',      bg: 'bg-[#FEF6DA] dark:bg-[#3B2A10]',  text: 'text-[#946A00] dark:text-[#FBBF24]'    },
+  cast:       { label: 'Cast',       bg: 'bg-[#F3E8FF] dark:bg-[#2A1242]',  text: 'text-[#9333EA] dark:text-[#C084FC]'    },
 };
+
+/** Display label for CompanyProfile.companyType values. Canonical values
+ *  (e.g. 'casting_director') are mapped to friendly text; unknown / legacy
+ *  free-text values pass through unchanged. */
+function formatCompanyTypeForHeader(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const map: Record<string, string> = {
+    casting_director: 'Casting Director',
+    production_house: 'Production House',
+    studio: 'Studio',
+    agency: 'Agency',
+  };
+  return map[value] ?? value;
+}
 
 export default function DashboardHeader({ userName: propUserName, userAvatar: propUserAvatar }: DashboardHeaderProps) {
   const [notifOpen, setNotifOpen] = useState(false);
@@ -127,7 +142,7 @@ export default function DashboardHeader({ userName: propUserName, userAvatar: pr
     }
     if (user.role === 'company') {
       const t = profile?.companyType?.trim();
-      return t ? t : 'Production House';
+      return t ? (formatCompanyTypeForHeader(t) ?? t) : 'Production House';
     }
     if (user.role === 'vendor') {
       const t = profile?.vendorType?.trim();

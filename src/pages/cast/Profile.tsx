@@ -35,6 +35,7 @@ interface CastProfileData {
   bio: string | null;
   extraSkills: string[];
   dailyBudget: number | null;
+  address: string | null;
   locationCity: string | null;
   locationState: string | null;
   avatarUrl?: string | null;
@@ -152,7 +153,7 @@ export default function CastProfile() {
         heightCm: null, bodyType: null, skinTone: null, eyeColor: null,
         lookType: null, hairType: null, languages: [],
         aboutMe: null, bio: null, extraSkills: [],
-        dailyBudget: null, locationCity: null, locationState: null,
+        dailyBudget: null, address: null, locationCity: null, locationState: null,
       });
     }
   }, [me]);
@@ -209,6 +210,7 @@ export default function CastProfile() {
         bio: form.bio || undefined,
         extraSkills: form.extraSkills,
         dailyBudget: form.dailyBudget ?? undefined,
+        address: form.address || undefined,
         locationCity: form.locationCity || undefined,
         locationState: form.locationState || undefined,
         instagramUrl: form.instagramUrl || undefined,
@@ -519,6 +521,17 @@ export default function CastProfile() {
                     </button>
                   </div>
                 </div>
+                <div className="sm:col-span-2">
+                  <EditableField
+                    label="Address"
+                    type="textarea"
+                    rows={2}
+                    value={form.address ?? ''}
+                    onChange={(v) => setField('address', v)}
+                    placeholder="Full mailing address — used on invoices"
+                    helpText="Required for tax-compliant invoices."
+                  />
+                </div>
                 <EditableField label="City" value={form.locationCity ?? ''} onChange={(v) => setField('locationCity', v)} />
                 <EditableField label="State" value={form.locationState ?? ''} onChange={(v) => setField('locationState', v)} />
               </div>
@@ -531,6 +544,7 @@ export default function CastProfile() {
                   label="Extra skills"
                   value={form.extraSkills?.length ? form.extraSkills.join(', ') : '—'}
                 />
+                <InfoRow label="Address" value={form.address ?? '—'} />
                 <InfoRow label="City" value={form.locationCity ?? '—'} />
                 <InfoRow label="State" value={form.locationState ?? '—'} />
               </dl>

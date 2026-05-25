@@ -1,4 +1,4 @@
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { FaMagnifyingGlass, FaChevronLeft, FaChevronRight, FaPlus, FaTriangleExclamation, FaLocationDot, FaBuilding } from 'react-icons/fa6';
@@ -10,6 +10,7 @@ import DashboardHeader from '../components/DashboardHeader';
 import DashboardSidebar from '../components/DashboardSidebar';
 import { useAuth } from '../contexts/AuthContext';
 import { api, ApiException } from '../services/api';
+import { useApiQuery } from '../hooks/useApiQuery';
 import { formatPaise } from '../utils/currency';
 import { companyNavLinks } from '../navigation/dashboardNav';
 import { REGISTRATION_INDIVIDUAL_DEPARTMENTS, REGISTRATION_VENDOR_CATEGORIES, REGISTRATION_GENRES, vendorCategoryToVendorType } from '../constants/registrationCategories';
@@ -93,6 +94,20 @@ function parseBudgetToPaise(input: string): number | null {
 export default function SearchFilter() {
   const { user } = useAuth();
   const isSubuser = user?.mainUserId != null;
+
+  // Casting Director / Agency companies don't have crew/vendor search on
+  // their dashboard at all — their primary discovery surface is Cast Search.
+  // When they (or their subusers) land here via a stale link or sidebar nav,
+  // redirect to /search/cast so they never see the crew/vendor UI. Normal
+  // companies are unaffected.
+  const { data: meData } = useApiQuery<{ profile?: { companyType?: string | null } | null }>(
+    '/profile/me',
+    { swr: true },
+  );
+  const isCastingDirector = meData?.profile?.companyType === 'casting_director';
+  if (isCastingDirector) {
+    return <Navigate to="/search/cast" replace />;
+  }
 
   const [searchParams] = useSearchParams();
 

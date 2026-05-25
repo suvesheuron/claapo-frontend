@@ -69,6 +69,23 @@ function isCompletedForUser(b: Booking): boolean {
 }
 
 function matchesTab(b: Booking, tab: TabFilter): boolean {
+  // Cancel-requested bookings are in flux until the other side approves or
+  // denies — they NEVER belong in Completed, even if the target already
+  // marked themselves complete before the cancellation was requested.
+  // Surfacing them in Pending (when the *other* side requested, so the
+  // current user needs to Approve / Deny) keeps the sidebar badge count and
+  // the Pending tab in agreement: both reflect rows that need action.
+  //
+  // A cancel request the user sent themselves still appears in "All" but
+  // not in Pending — they're waiting on the other side, not acting.
+  if (b.status === 'cancel_requested') {
+    if (tab === 'completed') return false;
+    if (tab === 'cancelled') return false;
+    if (tab === 'accepted') return false;
+    if (tab === 'all') return true;
+    if (tab === 'pending') return b.cancelRequestedBySide === 'company';
+    return false;
+  }
   if (tab === 'completed') return isCompletedForUser(b);
   // Completed rows must not double-count under All/Pending/Accepted — they live
   // exclusively in the Completed tab.
