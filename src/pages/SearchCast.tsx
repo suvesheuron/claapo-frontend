@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaLock, FaUser, FaMagnifyingGlass } from 'react-icons/fa6';
+import { FaLock, FaUser, FaChevronDown, FaXmark } from 'react-icons/fa6';
+import LocationAutocomplete from '../components/LocationAutocomplete';
 import DashboardHeader from '../components/DashboardHeader';
 import DashboardSidebar from '../components/DashboardSidebar';
 import AppFooter from '../components/AppFooter';
@@ -49,7 +50,7 @@ export default function SearchCast() {
 
   const [name, setName] = useState('');
   const [roleType, setRoleType] = useState('');
-  const [language, setLanguage] = useState('');
+  const [languages, setLanguages] = useState<string[]>([]);
   const [lookType, setLookType] = useState('');
   const [bodyType, setBodyType] = useState('');
   const [hairType, setHairType] = useState('');
@@ -68,7 +69,9 @@ export default function SearchCast() {
     const params = new URLSearchParams();
     if (name.trim()) params.set('name', name.trim());
     if (roleType) params.set('roleType', roleType);
-    if (language) params.set('language', language);
+    // Backend accepts comma-separated languages and matches with hasSome
+    // (see search.service.ts language filter). Empty array → no param.
+    if (languages.length > 0) params.set('language', languages.join(','));
     if (lookType) params.set('lookType', lookType);
     if (bodyType) params.set('bodyType', bodyType);
     if (hairType) params.set('hairType', hairType);
@@ -90,10 +93,10 @@ export default function SearchCast() {
       params.set('endDate', endDate);
     }
     return params.toString();
-  }, [name, roleType, language, lookType, bodyType, hairType, gender, city, budgetMin, budgetMax, startDate, endDate]);
+  }, [name, roleType, languages, lookType, bodyType, hairType, gender, city, budgetMin, budgetMax, startDate, endDate]);
 
   const resetFilters = () => {
-    setName(''); setRoleType(''); setLanguage(''); setLookType('');
+    setName(''); setRoleType(''); setLanguages([]); setLookType('');
     setBodyType(''); setHairType(''); setGender(''); setCity('');
     setBudgetMin(''); setBudgetMax(''); setStartDate(''); setEndDate('');
   };
@@ -120,14 +123,25 @@ export default function SearchCast() {
     }
   };
 
-  // Run an initial empty search to populate results when the page loads (for
-  // casting directors). Skip for normal companies — they'll just see the lock.
+  // Auto-apply filters: any filter change re-fires the search after a short
+  // debounce. Matches the crew/vendor Search page UX where results update
+  // live without the user clicking a Search button. The explicit Search
+  // button remains for users who prefer a manual trigger and as a retry
+  // affordance after an error.
   useEffect(() => {
-    if (isCastingDirector) {
+    if (!isCastingDirector) return;
+    // Don't re-run while a previous request is still in flight — let it
+    // settle, then react to whatever the final filter state is.
+    if (loading) return;
+    const handle = setTimeout(() => {
       runSearch();
-    }
+    }, 350);
+    return () => clearTimeout(handle);
+    // We intentionally depend on `query` (the URLSearchParams string) so
+    // any filter mutation re-fires; runSearch is recreated each render
+    // and listing it here would re-fire infinitely.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isCastingDirector]);
+  }, [isCastingDirector, query]);
 
   return (
     <div className="min-h-screen bg-[#F3F4F6] flex">
@@ -171,9 +185,15 @@ export default function SearchCast() {
                     </SelectField>
                   </FieldWrap>
                   <FieldWrap label="Language">
-                    <SelectField label="Any language" value={language} onChange={setLanguage}>
-                      {LANGUAGES.map((l) => <option key={l} value={l}>{l}</option>)}
-                    </SelectField>
+                    <LanguageMultiSelect
+                      selected={languages}
+                      onToggle={(lang) =>
+                        setLanguages((prev) =>
+                          prev.includes(lang) ? prev.filter((l) => l !== lang) : [...prev, lang],
+                        )
+                      }
+                      onClear={() => setLanguages([])}
+                    />
                   </FieldWrap>
                   <FieldWrap label="Look type">
                     <SelectField label="Any look" value={lookType} onChange={setLookType}>
@@ -191,12 +211,11 @@ export default function SearchCast() {
                     </SelectField>
                   </FieldWrap>
                   <FieldWrap label="City">
-                    <input
-                      type="text"
-                      value={city}
-                      onChange={(e) => setCity(e.target.value)}
-                      placeholder="e.g. Mumbai"
-                      className="w-full px-3 py-2.5 border border-neutral-300 rounded-xl text-sm bg-white"
+                    <LocationAutocomplete
+                      compact
+                      city={city}
+                      onSelect={(loc) => setCity(loc.city ?? '')}
+                      placeholder="Search by city…"
                     />
                   </FieldWrap>
                 </div>
@@ -239,21 +258,16 @@ export default function SearchCast() {
                   </FieldWrap>
                 </div>
 
-                <div className="flex items-center justify-end gap-2 pt-1">
+                <div className="flex items-center justify-between gap-2 pt-1">
+                  <p className="text-[11px] text-neutral-400">
+                    {loading ? 'Searching…' : 'Filters apply automatically.'}
+                  </p>
                   <button
                     type="button"
                     onClick={resetFilters}
                     className="px-4 py-2.5 rounded-xl border border-neutral-300 text-sm font-semibold text-neutral-700 hover:bg-neutral-50"
                   >
                     Reset
-                  </button>
-                  <button
-                    type="button"
-                    onClick={runSearch}
-                    disabled={loading}
-                    className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#3678F1] text-white text-sm font-semibold hover:bg-[#2563EB] disabled:opacity-50"
-                  >
-                    <FaMagnifyingGlass /> {loading ? 'Searching…' : 'Search'}
                   </button>
                 </div>
                 {startDate && endDate && new Date(startDate) > new Date(endDate) && (
@@ -353,6 +367,119 @@ function FieldWrap({ label, children }: { label: string; children: React.ReactNo
   );
 }
 
+/**
+ * LanguageMultiSelect — compact dropdown that mirrors the single-select trigger
+ * style of SelectField but lets the user pick multiple languages. Selected
+ * languages show as removable chips inside the trigger; clicking the trigger
+ * opens a panel with toggle-able items.
+ */
+function LanguageMultiSelect({
+  selected,
+  onToggle,
+  onClear,
+}: {
+  selected: string[];
+  onToggle: (lang: string) => void;
+  onClear: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onDocClick(e: MouseEvent) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, [open]);
+
+  const label = selected.length === 0
+    ? 'Any language'
+    : selected.length === 1
+      ? selected[0]
+      : `${selected.length} languages`;
+
+  return (
+    <div ref={wrapRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="w-full flex items-center justify-between gap-2 px-3 py-2.5 border border-neutral-300 rounded-xl text-sm bg-white text-left hover:border-[#3678F1]/40"
+      >
+        <span className={`truncate ${selected.length === 0 ? 'text-neutral-500' : 'text-neutral-900 font-medium'}`}>
+          {label}
+        </span>
+        <span className="flex items-center gap-1 shrink-0">
+          {selected.length > 0 && (
+            <span
+              role="button"
+              tabIndex={0}
+              aria-label="Clear languages"
+              onClick={(e) => { e.stopPropagation(); onClear(); }}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onClear(); } }}
+              className="text-neutral-400 hover:text-neutral-700"
+            >
+              <FaXmark className="w-3 h-3" />
+            </span>
+          )}
+          <FaChevronDown className={`w-2.5 h-2.5 text-neutral-400 transition-transform ${open ? 'rotate-180' : ''}`} />
+        </span>
+      </button>
+
+      {open && (
+        <div className="absolute z-30 mt-1 w-full max-h-72 overflow-y-auto rounded-xl border border-neutral-200 bg-white shadow-lg">
+          <ul className="py-1">
+            {LANGUAGES.map((l) => {
+              const active = selected.includes(l);
+              return (
+                <li key={l}>
+                  <button
+                    type="button"
+                    onClick={() => onToggle(l)}
+                    className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2 ${
+                      active ? 'bg-[#E8F0FE] text-[#1D4ED8] font-semibold' : 'hover:bg-neutral-50'
+                    }`}
+                  >
+                    <span
+                      className={`w-4 h-4 rounded border flex items-center justify-center ${
+                        active
+                          ? 'bg-[#3678F1] border-[#3678F1] text-white'
+                          : 'border-neutral-300 bg-white'
+                      }`}
+                    >
+                      {active && <span className="text-[10px] leading-none">✓</span>}
+                    </span>
+                    {l}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+
+      {selected.length > 1 && (
+        <div className="flex flex-wrap gap-1 mt-1.5">
+          {selected.map((l) => (
+            <span key={l} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#E8F0FE] text-[#1D4ED8] text-[10px] font-semibold">
+              {l}
+              <button
+                type="button"
+                onClick={() => onToggle(l)}
+                aria-label={`Remove ${l}`}
+                className="hover:text-[#0F3FBF]"
+              >
+                <FaXmark className="w-2.5 h-2.5" />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function LockedCard() {
   return (
     <div className="rounded-2xl bg-white border border-neutral-200 p-10 text-center">
@@ -361,7 +488,7 @@ function LockedCard() {
       </div>
       <h2 className="text-xl font-bold text-neutral-900 mb-2">Cast Search is locked</h2>
       <p className="text-sm text-neutral-500 max-w-md mx-auto mb-6">
-        Cast Search is available only for Casting Director / Agency accounts. Update your
+        Cast Search is available only for Casting Director / Agency . Update your
         Company Type in Profile to unlock actor and model discovery.
       </p>
       <div className="flex items-center justify-center gap-3">

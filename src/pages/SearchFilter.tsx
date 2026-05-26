@@ -8,12 +8,13 @@ import Avatar from '../components/Avatar';
 import DateInput from '../components/DateInput';
 import DashboardHeader from '../components/DashboardHeader';
 import DashboardSidebar from '../components/DashboardSidebar';
+import LocationAutocomplete from '../components/LocationAutocomplete';
 import { useAuth } from '../contexts/AuthContext';
 import { api, ApiException } from '../services/api';
 import { useApiQuery } from '../hooks/useApiQuery';
 import { formatPaise } from '../utils/currency';
 import { companyNavLinks } from '../navigation/dashboardNav';
-import { REGISTRATION_INDIVIDUAL_DEPARTMENTS, REGISTRATION_VENDOR_CATEGORIES, REGISTRATION_GENRES, vendorCategoryToVendorType } from '../constants/registrationCategories';
+import { REGISTRATION_INDIVIDUAL_DEPARTMENTS, REGISTRATION_VENDOR_CATEGORIES, REGISTRATION_GENRES, REGISTRATION_COMPANY_TYPES, vendorCategoryToVendorType } from '../constants/registrationCategories';
 
 type SearchType = 'crew' | 'vendors' | 'companies';
 
@@ -91,6 +92,20 @@ function parseBudgetToPaise(input: string): number | null {
   return Math.round(value * 100);
 }
 
+/**
+ * Convert a Company Type display label (as picked from the dropdown) to the
+ * canonical slug the backend persists on CompanyProfile.companyType. Without
+ * this mapping the filter sends e.g. "Casting Director / Agency" while rows
+ * store "casting_director" → zero matches. Labels with no canonical slug
+ * (Line Production / Freelance variants) pass through unchanged because
+ * those are stored as-is.
+ */
+function companyTypeLabelToCanonical(label: string): string {
+  const v = label.trim();
+  if (v === 'Casting Director / Agency') return 'casting_director';
+  return v;
+}
+
 export default function SearchFilter() {
   const { user } = useAuth();
   const isSubuser = user?.mainUserId != null;
@@ -122,6 +137,7 @@ export default function SearchFilter() {
   const [location, setLocation] = useState('');
   const [skillFilter, setSkillFilter] = useState('');
   const [genreFilter, setGenreFilter] = useState('');
+  const [companyTypeFilter, setCompanyTypeFilter] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [budgetMin, setBudgetMin] = useState('');
@@ -151,6 +167,7 @@ export default function SearchFilter() {
     loc: string,
     skill: string,
     genre: string,
+    cmpType: string,
     sDate: string,
     eDate: string,
     minBudgetInr: string,
@@ -166,10 +183,16 @@ export default function SearchFilter() {
         limit: String(PAGE_SIZE),
       };
 
-      // Companies tab uses the simple directory endpoint — name-only, no filters
-      // (spec 8). Branching early keeps the existing crew/vendor logic untouched.
+      // Companies tab uses the directory endpoint. Now accepts city +
+      // companyType server-side (see search.service.ts searchPeople).
       if (type === 'companies') {
         if (q.trim()) params.q = q.trim();
+        if (loc.trim()) params.city = loc.trim();
+        if (cmpType.trim()) {
+          // Backend stores canonical slugs (e.g. 'casting_director'); the
+          // dropdown shows the human label. Translate before sending.
+          params.companyType = companyTypeLabelToCanonical(cmpType);
+        }
         params.category = 'company';
         const qs = new URLSearchParams(params);
         type PeopleRow = { userId: string; name: string; categoryLabel?: string | null; locationCity?: string | null; locationState?: string | null; avatarUrl?: string | null };
@@ -238,6 +261,7 @@ export default function SearchFilter() {
     loc: string,
     skill: string,
     genre: string,
+    cmpType: string,
     sDate: string,
     eDate: string,
     minBudgetInr: string,
@@ -247,14 +271,14 @@ export default function SearchFilter() {
   ) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(
-      () => doSearch(q, loc, skill, genre, sDate, eDate, minBudgetInr, maxBudgetInr, pg, type),
+      () => doSearch(q, loc, skill, genre, cmpType, sDate, eDate, minBudgetInr, maxBudgetInr, pg, type),
       300,
     );
   }, [doSearch]);
 
   useEffect(() => {
-    triggerSearch(query, location, skillFilter, genreFilter, startDate, endDate, budgetMin, budgetMax, page, searchType);
-  }, [query, location, skillFilter, genreFilter, startDate, endDate, budgetMin, budgetMax, page, searchType, triggerSearch]);
+    triggerSearch(query, location, skillFilter, genreFilter, companyTypeFilter, startDate, endDate, budgetMin, budgetMax, page, searchType);
+  }, [query, location, skillFilter, genreFilter, companyTypeFilter, startDate, endDate, budgetMin, budgetMax, page, searchType, triggerSearch]);
 
   useEffect(() => {
     if (searchType !== 'vendors') return;
@@ -275,6 +299,7 @@ export default function SearchFilter() {
     setLocation('');
     setSkillFilter('');
     setGenreFilter('');
+    setCompanyTypeFilter('');
     setStartDate('');
     setEndDate('');
     setBudgetMin('');
@@ -489,22 +514,65 @@ Please share your best quotation for this requirement.`;
                 ))}
               </div>
 
-              {/* Companies tab: simple name-only search bar (no filters per spec 8). */}
+              {/* Companies tab: name + city + companyType filters. The
+                  /search/people endpoint now respects city (case-insensitive
+                  contains) and companyType (exact match) for category=company. */}
               {isCompaniesTab && (
                 <div className="rounded-2xl bg-white shadow-sm border border-neutral-200/70 hover:border-[#3678F1] transition-colors duration-200 p-5 sm:p-6 mb-6">
-                  <label className="block text-[11px] font-bold text-neutral-500 mb-2 uppercase tracking-widest">
-                    Company Name
-                  </label>
-                  <div className="relative group max-w-xl">
-                    <input
-                      type="text"
-                      value={query}
-                      onChange={(e) => { setQuery(e.target.value); setPage(1); }}
-                      placeholder="Search by company name"
-                      className="w-full pl-10 pr-4 py-3 border border-neutral-200 rounded-xl text-sm bg-neutral-50 placeholder-neutral-400 focus:bg-white focus:outline-none focus:border-[#3678F1] focus:ring-2 focus:ring-[#3678F1]/20 transition-colors duration-200"
-                    />
-                    <FaMagnifyingGlass className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 text-sm group-focus-within:text-[#3678F1] transition-colors" />
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-[11px] font-bold text-neutral-500 mb-2 uppercase tracking-widest">
+                        Company Name
+                      </label>
+                      <div className="relative group">
+                        <input
+                          type="text"
+                          value={query}
+                          onChange={(e) => { setQuery(e.target.value); setPage(1); }}
+                          placeholder="Search by company name"
+                          className="w-full pl-10 pr-4 py-3 border border-neutral-200 rounded-xl text-sm bg-neutral-50 placeholder-neutral-400 focus:bg-white focus:outline-none focus:border-[#3678F1] focus:ring-2 focus:ring-[#3678F1]/20 transition-colors duration-200"
+                        />
+                        <FaMagnifyingGlass className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 text-sm group-focus-within:text-[#3678F1] transition-colors" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-neutral-500 mb-2 uppercase tracking-widest">
+                        City
+                      </label>
+                      <LocationAutocomplete
+                        compact
+                        city={location}
+                        onSelect={(loc) => { setLocation(loc.city ?? ''); setPage(1); }}
+                        placeholder="Search by city…"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-neutral-500 mb-2 uppercase tracking-widest">
+                        Type
+                      </label>
+                      <select
+                        value={companyTypeFilter}
+                        onChange={(e) => { setCompanyTypeFilter(e.target.value); setPage(1); }}
+                        className="w-full px-4 py-3 border border-neutral-200 rounded-xl text-sm bg-neutral-50 focus:bg-white focus:outline-none focus:border-[#3678F1] focus:ring-2 focus:ring-[#3678F1]/20 transition-colors duration-200 appearance-none"
+                      >
+                        <option value="">All types</option>
+                        {REGISTRATION_COMPANY_TYPES.map((t) => (
+                          <option key={t} value={t}>{t}</option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
+                  {(query.trim() || location.trim() || companyTypeFilter) && (
+                    <div className="flex justify-end mt-4">
+                      <button
+                        type="button"
+                        onClick={() => { setQuery(''); setLocation(''); setCompanyTypeFilter(''); setPage(1); }}
+                        className="text-xs font-semibold text-[#3678F1] hover:underline"
+                      >
+                        Clear filters
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -526,15 +594,16 @@ Please share your best quotation for this requirement.`;
                     </div>
                   </div>
 
-                  {/* Location */}
+                  {/* City — suggestion-based picker so spelling slips don't
+                      kill the search. Same component used in profile edit. */}
                   <div>
                     <label className="block text-[11px] font-bold text-neutral-500 mb-2 uppercase tracking-widest">City</label>
-                    <div className="relative group">
-                      <input type="text" value={location} onChange={(e) => { setLocation(e.target.value); setPage(1); }}
-                        placeholder="e.g. Mumbai"
-                        className="w-full pl-10 pr-4 py-3 border border-neutral-200 rounded-xl text-sm bg-neutral-50 placeholder-neutral-400 focus:bg-white focus:outline-none focus:border-[#3678F1] focus:ring-2 focus:ring-[#3678F1]/20 transition-colors duration-200" />
-                      <FaLocationDot className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 text-sm group-focus-within:text-[#3678F1] transition-colors" />
-                    </div>
+                    <LocationAutocomplete
+                      compact
+                      city={location}
+                      onSelect={(loc) => { setLocation(loc.city ?? ''); setPage(1); }}
+                      placeholder="e.g. Mumbai"
+                    />
                   </div>
 
                   {/* Skill filter for crew */}
@@ -757,51 +826,53 @@ Please share your best quotation for this requirement.`;
                 ) : (
                   <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {crewResults.map((r) => (
-                      <motion.div
-                        variants={itemVariants}
-                        key={r.userId}
-                        className="rounded-2xl bg-white shadow-sm border border-neutral-200/70 hover:border-[#3678F1] transition-colors duration-200 flex flex-col p-5"
-                      >
-                        {/* Header: avatar + status pill */}
-                        <div className="flex items-start justify-between gap-3 mb-4">
-                          <Avatar src={r.avatarUrl ?? undefined} name={r.displayName} size="lg" />
-                          <span
-                            className={`inline-flex items-center gap-1.5 h-6 px-2.5 rounded-full text-[10.5px] font-bold tracking-wide shrink-0 ${
-                              r.isAvailable
-                                ? 'bg-[#DCFCE7] text-[#15803D]'
-                                : 'bg-[#F3F4F6] text-neutral-500'
-                            }`}
-                          >
-                            <span className={`w-1.5 h-1.5 rounded-full ${r.isAvailable ? 'bg-[#22C55E]' : 'bg-neutral-400'}`} />
-                            {r.isAvailable ? 'Available' : 'Unavailable'}
-                          </span>
-                        </div>
-
-                        {/* Name + skills */}
-                        <h3 className="text-[15px] font-bold text-neutral-900 truncate">{r.displayName}</h3>
-                        <p className="text-[10.5px] uppercase tracking-widest text-neutral-400 font-semibold mt-1 mb-4 truncate">
-                          {r.skills?.join(' · ') || '—'}
-                        </p>
-
-                        {/* Meta row */}
-                        <div className="flex flex-col gap-2 pt-4 border-t border-neutral-100">
-                          {r.locationCity && (
-                            <span className="text-xs text-neutral-500 flex items-center gap-1.5">
-                              <FaLocationDot className="text-neutral-300 text-[11px]" />
-                              {r.locationCity}{r.locationState ? `, ${r.locationState}` : ''}
-                            </span>
-                          )}
-                          <span className="inline-flex items-center text-[12px] font-bold text-[#2563EB] bg-[#E8F0FE] px-2.5 py-1.5 rounded-lg w-fit">
-                            {r.dailyBudget ? formatPaise(r.dailyBudget) + ' /day' : 'Rate on request'}
-                          </span>
-                        </div>
-
-                        {/* CTA */}
+                      <motion.div variants={itemVariants} key={r.userId}>
+                        {/* Entire card is the link — mirrors Cast Search behavior so
+                            users don't need a separate "View Profile" CTA. */}
                         <Link
                           to={`/profile/${r.userId}`}
-                          className="mt-4 w-full inline-flex items-center justify-center h-10 rounded-xl bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white text-[13px] font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] shadow-brand transition-colors duration-200"
+                          className="block h-full rounded-2xl bg-white shadow-sm border border-neutral-200/70 hover:border-[#3678F1] hover:shadow-md transition-all duration-200 p-5"
                         >
-                          View Profile
+                          {/* Header: avatar + status pill */}
+                          <div className="flex items-start justify-between gap-3 mb-3">
+                            <Avatar src={r.avatarUrl ?? undefined} name={r.displayName} size="lg" />
+                            <span
+                              className={`inline-flex items-center gap-1.5 h-6 px-2.5 rounded-full text-[10.5px] font-bold tracking-wide shrink-0 ${
+                                r.isAvailable
+                                  ? 'bg-[#DCFCE7] text-[#15803D]'
+                                  : 'bg-[#F3F4F6] text-neutral-500'
+                              }`}
+                            >
+                              <span className={`w-1.5 h-1.5 rounded-full ${r.isAvailable ? 'bg-[#22C55E]' : 'bg-neutral-400'}`} />
+                              {r.isAvailable ? 'Available' : 'Unavailable'}
+                            </span>
+                          </div>
+
+                          {/* Name + skills */}
+                          <h3 className="text-[15px] font-bold text-neutral-900 truncate">{r.displayName}</h3>
+                          <p className="text-[10.5px] uppercase tracking-widest text-neutral-400 font-semibold mt-1 mb-3 truncate">
+                            {r.skills?.join(' · ') || '—'}
+                          </p>
+
+                          {/* Bio snippet — same role as the Cast card's aboutMe
+                              line; keeps the card height meaningful without the
+                              bottom CTA padding. */}
+                          {r.bio && (
+                            <p className="text-xs text-neutral-600 line-clamp-2 mb-3">{r.bio}</p>
+                          )}
+
+                          {/* Meta row */}
+                          <div className="flex flex-col gap-2 pt-3 border-t border-neutral-100">
+                            {r.locationCity && (
+                              <span className="text-xs text-neutral-500 flex items-center gap-1.5">
+                                <FaLocationDot className="text-neutral-300 text-[11px]" />
+                                {r.locationCity}{r.locationState ? `, ${r.locationState}` : ''}
+                              </span>
+                            )}
+                            <span className="inline-flex items-center text-[12px] font-bold text-[#2563EB] bg-[#E8F0FE] px-2.5 py-1.5 rounded-lg w-fit">
+                              {r.dailyBudget ? formatPaise(r.dailyBudget) + ' /day' : 'Rate on request'}
+                            </span>
+                          </div>
                         </Link>
                       </motion.div>
                     ))}
@@ -825,10 +896,11 @@ Please share your best quotation for this requirement.`;
                       <motion.div
                         variants={itemVariants}
                         key={r.userId}
-                        className="rounded-2xl bg-white shadow-sm border border-neutral-200/70 hover:border-[#3678F1] transition-colors duration-200 flex flex-col p-5"
+                        className="rounded-2xl bg-white shadow-sm border border-neutral-200/70 hover:border-[#3678F1] hover:shadow-md transition-all duration-200 flex flex-col p-5"
                       >
-                        {/* Top row: Mark checkbox + GST badge (kept here so the header below
-                            has a single status pill on the right, matching the crew card height). */}
+                        {/* Top row: Mark checkbox + GST badge (kept OUTSIDE the
+                            profile link below so the checkbox remains
+                            interactive and clicking it doesn't navigate away). */}
                         <div className="flex items-center justify-between mb-3 min-h-[24px]">
                           <label className="inline-flex items-center gap-2 text-xs font-semibold text-neutral-600 cursor-pointer">
                             <input
@@ -846,6 +918,8 @@ Please share your best quotation for this requirement.`;
                           )}
                         </div>
 
+                        {/* Everything below the checkbox row is the profile link. */}
+                        <Link to={`/profile/${r.userId}`} className="block flex-1 flex flex-col">
                         {/* Header: avatar + availability pill (mirrors the crew layout). */}
                         <div className="flex items-start justify-between gap-3 mb-4">
                           <Avatar src={r.avatarUrl ?? undefined} name={r.companyName} size="lg" />
@@ -866,21 +940,13 @@ Please share your best quotation for this requirement.`;
                         </p>
 
                         {/* Meta row — always rendered (with a graceful fallback) so every
-                            card in the grid has the same vertical rhythm and the CTA below
-                            stays on the same baseline. */}
+                            card in the grid has the same vertical rhythm. */}
                         <div className="flex flex-col gap-2 pt-4 border-t border-neutral-100 mt-auto">
                           <span className="text-xs text-neutral-500 flex items-center gap-1.5">
                             <FaLocationDot className="text-neutral-300 text-[11px]" />
                             {r.locationCity || 'Location on request'}
                           </span>
                         </div>
-
-                        {/* CTA */}
-                        <Link
-                          to={`/profile/${r.userId}`}
-                          className="mt-4 w-full inline-flex items-center justify-center h-10 rounded-xl bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white text-[13px] font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] shadow-brand transition-colors duration-200"
-                        >
-                          View Profile
                         </Link>
                       </motion.div>
                     ))}
@@ -888,7 +954,7 @@ Please share your best quotation for this requirement.`;
                 )
               )}
 
-              {/* Vertical result list — Companies (name-only directory) */}
+              {/* Vertical result list — Companies (name + city + type) */}
               {!loading && searchType === 'companies' && (
                 companyResults.length === 0 ? (
                   <div className="rounded-2xl bg-white border border-neutral-200/70 shadow-sm p-16 text-center">
@@ -897,41 +963,38 @@ Please share your best quotation for this requirement.`;
                     </div>
                     <p className="text-base font-semibold text-neutral-900 mb-1.5">No companies found</p>
                     <p className="text-sm text-neutral-500 max-w-xs mx-auto">
-                      {query.trim() ? 'Try a different name' : 'Type a company name to start searching'}
+                      {(query.trim() || location.trim() || companyTypeFilter)
+                        ? 'Try a different name, city, or type — or clear filters.'
+                        : 'Browse the directory or filter by name, city, or type.'}
                     </p>
                   </div>
                 ) : (
                   <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {companyResults.map((r) => (
-                      <motion.div
-                        variants={itemVariants}
-                        key={r.userId}
-                        className="rounded-2xl bg-white shadow-sm border border-neutral-200/70 hover:border-[#3678F1] transition-colors duration-200 flex flex-col p-5"
-                      >
-                        <div className="flex items-start gap-3 mb-4">
-                          <Avatar src={r.avatarUrl ?? undefined} name={r.name || '—'} size="lg" />
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border bg-[#DCFCE7] text-[#15803D] border-[#86EFAC]">
-                            <FaBuilding className="w-2.5 h-2.5" />
-                            Company
-                          </span>
-                        </div>
-                        <h3 className="text-[15px] font-bold text-neutral-900 truncate">{r.name || 'Unnamed'}</h3>
-                        {r.categoryLabel && (
-                          <p className="text-[11px] font-semibold text-neutral-500 uppercase tracking-wide mt-0.5 truncate">
-                            {r.categoryLabel}
-                          </p>
-                        )}
-                        {(r.locationCity || r.locationState) && (
-                          <p className="text-xs text-neutral-500 flex items-center gap-1.5 mt-2">
-                            <FaLocationDot className="text-neutral-300 text-[11px]" />
-                            {[r.locationCity, r.locationState].filter(Boolean).join(', ')}
-                          </p>
-                        )}
+                      <motion.div variants={itemVariants} key={r.userId}>
                         <Link
                           to={`/profile/${r.userId}`}
-                          className="mt-4 w-full inline-flex items-center justify-center h-10 rounded-xl bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white text-[13px] font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] shadow-brand transition-colors duration-200"
+                          className="block h-full rounded-2xl bg-white shadow-sm border border-neutral-200/70 hover:border-[#3678F1] hover:shadow-md transition-all duration-200 p-5"
                         >
-                          View Profile
+                          <div className="flex items-start gap-3 mb-3">
+                            <Avatar src={r.avatarUrl ?? undefined} name={r.name || '—'} size="lg" />
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border bg-[#DCFCE7] text-[#15803D] border-[#86EFAC]">
+                              <FaBuilding className="w-2.5 h-2.5" />
+                              Company
+                            </span>
+                          </div>
+                          <h3 className="text-[15px] font-bold text-neutral-900 truncate">{r.name || 'Unnamed'}</h3>
+                          {r.categoryLabel && (
+                            <p className="text-[11px] font-semibold text-neutral-500 uppercase tracking-wide mt-0.5 truncate">
+                              {r.categoryLabel}
+                            </p>
+                          )}
+                          {(r.locationCity || r.locationState) && (
+                            <p className="text-xs text-neutral-500 flex items-center gap-1.5 mt-2">
+                              <FaLocationDot className="text-neutral-300 text-[11px]" />
+                              {[r.locationCity, r.locationState].filter(Boolean).join(', ')}
+                            </p>
+                          )}
                         </Link>
                       </motion.div>
                     ))}

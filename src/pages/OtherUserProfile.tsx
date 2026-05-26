@@ -434,12 +434,33 @@ We're working on ${projectName}${location ? ` (${location})` : ''}. Just wanted 
     const shouldLoad = selectedChatDate || inquiryWithoutDateOpen;
     if (shouldLoad && activeProjects.length === 0 && !projectsLoading) {
       setProjectsLoading(true);
-      api.get<any>('/projects?limit=50')
-        .then((res) => {
-          const items = res?.items || res?.data || [];
-          setActiveProjects(items.filter((p: any) => p.status === 'active' || p.status === 'open' || p.status === 'draft'));
+      // Fetch BOTH owned projects and incoming-bookings projects so the
+      // inquiry picker includes "projects I'm hired on" for casting
+      // directors (and any other company that's a booking target). The web
+      // BookingRequestModal merges these too — keep them in sync so an
+      // inquiry and a booking offer the same set of projects.
+      Promise.all([
+        api.get<any>('/projects?limit=50').catch(() => null),
+        api.get<any>('/bookings/incoming').catch(() => null),
+      ])
+        .then(([projectsRes, incomingRes]) => {
+          const isActive = (p: any) => p.status === 'active' || p.status === 'open' || p.status === 'draft';
+          const owned = (projectsRes?.items || projectsRes?.data || []).filter(isActive);
+          const hired = (incomingRes?.items || [])
+            .filter((b: any) => b.status === 'accepted' || b.status === 'locked')
+            .map((b: any) => b.project)
+            .filter((p: any) => p && isActive(p));
+          // De-dupe by project id, owned first so user-created projects
+          // appear at the top of the dropdown.
+          const seen = new Set<string>();
+          const merged: any[] = [];
+          for (const p of [...owned, ...hired]) {
+            if (!p?.id || seen.has(p.id)) continue;
+            seen.add(p.id);
+            merged.push(p);
+          }
+          setActiveProjects(merged);
         })
-        .catch(() => {})
         .finally(() => setProjectsLoading(false));
     }
   }, [selectedChatDate, inquiryWithoutDateOpen]);

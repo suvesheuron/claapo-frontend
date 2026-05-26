@@ -10,6 +10,7 @@ import {
   FaEyeSlash,
 } from 'react-icons/fa6';
 import AuthLayout from '../components/AuthLayout';
+import LocationAutocomplete from '../components/LocationAutocomplete';
 import { api, ApiException } from '../services/api';
 import { PHONE_COUNTRY_CODES, toE164WithCountryCode } from '../utils/phone';
 import { REGISTRATION_INDIVIDUAL_DEPARTMENTS, REGISTRATION_GENRES } from '../constants/registrationCategories';
@@ -400,16 +401,19 @@ export default function IndividualRegistration() {
           </div>
           <div>
             <label className="block text-[13px] text-neutral-700 mb-1.5 font-semibold">
-              Location <span className="text-[#F40F02]">*</span>
+              City <span className="text-[#F40F02]">*</span>
             </label>
-            <input
-              type="text"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              onBlur={() => handleBlur('location')}
-              placeholder="Mumbai, Maharashtra"
+            <LocationAutocomplete
+              compact
+              city={location.split(',')[0]?.trim() ?? ''}
+              state={location.split(',')[1]?.trim() ?? ''}
+              onSelect={(loc) => {
+                const joined = [loc.city, loc.state].filter(Boolean).join(', ');
+                setLocation(joined);
+                handleBlur('location');
+              }}
               disabled={loading}
-              className={`${inputBase} ${borderClass('location')}`}
+              placeholder="Search city or pin code…"
             />
             {fieldErrors.location && <p className="text-xs text-[#F40F02] mt-1.5">{fieldErrors.location}</p>}
           </div>

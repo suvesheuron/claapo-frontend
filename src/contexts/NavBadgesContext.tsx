@@ -73,7 +73,12 @@ export function NavBadgesProvider({ children }: { children: ReactNode }) {
       // they should get the same badge as crew/vendor. The /incoming endpoint
       // returns only rows where the caller is the target, so a company that's
       // never been booked simply sees a count of 0 — no extra branch needed.
-      if (user.role === 'individual' || user.role === 'vendor' || user.role === 'company') {
+      if (
+        user.role === 'individual' ||
+        user.role === 'vendor' ||
+        user.role === 'company' ||
+        user.role === 'cast'
+      ) {
         const res = await api.get<IncomingBookingsResponse>('/bookings/incoming');
         const actionable = (res?.items ?? []).filter(
           (b) =>
@@ -92,7 +97,12 @@ export function NavBadgesProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      if (user.role === 'company' || user.role === 'admin') {
+      // Cast issuers also need an "invoice activity" badge so they see when
+      // their newly-issued invoices flip status (declined / paid). Re-use
+      // the company invoice-alert pipeline by including cast here. Crew and
+      // vendor already had this gap historically — leaving them as-is to
+      // avoid wider surface changes.
+      if (user.role === 'company' || user.role === 'admin' || user.role === 'cast') {
         const [notifRes, invoiceRes] = await Promise.all([
           api.get<NotificationsResponse>('/notifications?limit=100'),
           api.get<InvoiceListResponse>('/invoices?limit=100'),

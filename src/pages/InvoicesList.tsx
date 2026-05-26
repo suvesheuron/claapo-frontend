@@ -33,12 +33,14 @@ interface InvoiceItem {
     individualProfile?: { displayName: string; skills?: string[] | null } | null;
     vendorProfile?: { companyName: string; vendorServiceCategory?: string | null } | null;
     companyProfile?: { companyName: string } | null;
+    castProfile?: { displayName: string; roleType?: string | null } | null;
   };
   recipient: {
     id: string;
     individualProfile?: { displayName: string; skills?: string[] | null } | null;
     vendorProfile?: { companyName: string; vendorServiceCategory?: string | null } | null;
     companyProfile?: { companyName: string } | null;
+    castProfile?: { displayName: string; roleType?: string | null } | null;
   };
 }
 
@@ -90,7 +92,13 @@ function formatDate(iso: string) {
 }
 
 function getPartyName(u: InvoiceItem['issuer']) {
-  return u.individualProfile?.displayName ?? u.vendorProfile?.companyName ?? u.companyProfile?.companyName ?? '—';
+  return (
+    u.individualProfile?.displayName
+    ?? u.vendorProfile?.companyName
+    ?? u.companyProfile?.companyName
+    ?? u.castProfile?.displayName
+    ?? '—'
+  );
 }
 
 function getIssuerDisplayName(inv: InvoiceItem) {
@@ -118,6 +126,11 @@ function getIssuerRoleLabel(inv: InvoiceItem): string | null {
     return vend.vendorServiceCategory?.trim() || 'Vendor';
   }
   if (inv.issuer?.companyProfile) return 'Company';
+  const cast = inv.issuer?.castProfile;
+  if (cast) {
+    const rt = cast.roleType?.trim();
+    return rt ? rt.charAt(0).toUpperCase() + rt.slice(1) : 'Cast';
+  }
   return null;
 }
 
@@ -151,12 +164,39 @@ export default function InvoicesList() {
 
   // Fetch projects list
   const { data: projectsData, loading: projectsLoading, refetch: refetchProjects } = useApiQuery<ProjectsWithStatsResponse>('/projects/my/with-stats?limit=100');
-  const projects = projectsData?.items ?? [];
+  // For Cast users, additionally restrict the project list to projects where
+  // they have an accepted/locked booking — without this filter the with-stats
+  // endpoint surfaces inquiry-only projects (no booking yet) here, which is
+  // wrong on the Invoices page since they cannot issue an invoice until the
+  // booking is accepted. Crew/vendor have the same upstream behavior; leaving
+  // them as-is to avoid changing their existing experience.
+  const { data: castIncomingBookings } = useApiQuery<{ items: Array<{ status: string; project?: { id: string } }> }>(
+    currentRole === 'Cast' ? '/bookings/incoming' : null,
+    { swr: true },
+  );
+  const castInvoiceableProjectIds = useMemo(() => {
+    if (currentRole !== 'Cast') return null;
+    const ids = new Set<string>();
+    for (const b of castIncomingBookings?.items ?? []) {
+      if (b.status === 'accepted' || b.status === 'locked') {
+        if (b.project?.id) ids.add(b.project.id);
+      }
+    }
+    return ids;
+  }, [currentRole, castIncomingBookings]);
+  const projects = useMemo(() => {
+    const all = projectsData?.items ?? [];
+    if (!castInvoiceableProjectIds) return all;
+    return all.filter((p) => castInvoiceableProjectIds.has(p.id));
+  }, [projectsData, castInvoiceableProjectIds]);
   const { data: notificationsData } = useApiQuery<NotificationsResponse>(
     currentRole === 'Company' ? '/notifications?limit=100' : null,
   );
-  const { data: companyInvoicesForAlerts } = useApiQuery<InvoicesResponse>(
-    currentRole === 'Company' ? '/invoices?limit=100' : null,
+  // Pulled in for ALL roles now — the project list needs the most-recent
+  // invoice timestamp per project so we can sort projects by latest invoice
+  // activity. The company "new invoice" badge still uses this same data.
+  const { data: allInvoicesForSort } = useApiQuery<InvoicesResponse>(
+    '/invoices?limit=100',
   );
 
   // Build invoice list URL with optional project filter
@@ -348,7 +388,7 @@ export default function InvoicesList() {
   const unreadInvoiceByProject = useMemo(() => {
     if (currentRole !== 'Company') return {} as Record<string, number>;
     const statusByInvoiceId = new Map(
-      (companyInvoicesForAlerts?.items ?? []).map((inv) => [inv.id, inv.status]),
+      (allInvoicesForSort?.items ?? []).map((inv) => [inv.id, inv.status]),
     );
     const counts: Record<string, number> = {};
     for (const n of notificationsData?.items ?? []) {
@@ -360,12 +400,46 @@ export default function InvoicesList() {
       counts[rawProjectId] = (counts[rawProjectId] ?? 0) + 1;
     }
     return counts;
-  }, [currentRole, notificationsData, companyInvoicesForAlerts]);
+  }, [currentRole, notificationsData, allInvoicesForSort]);
 
   const unreadInvoiceProjectCount = useMemo(
     () => filteredProjects.reduce((sum, p) => sum + ((unreadInvoiceByProject[p.id] ?? 0) > 0 ? 1 : 0), 0),
     [filteredProjects, unreadInvoiceByProject],
   );
+
+  // Most recent invoice timestamp per project — drives the sort so the project
+  // whose latest invoice arrived most recently shows at the top.
+  const lastInvoiceAtByProject = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const inv of allInvoicesForSort?.items ?? []) {
+      const pid = inv.project?.id;
+      if (!pid) continue;
+      const t = new Date(inv.createdAt).getTime();
+      if (!Number.isFinite(t)) continue;
+      if (!(pid in map) || t > map[pid]) map[pid] = t;
+    }
+    return map;
+  }, [allInvoicesForSort]);
+
+  const sortedProjects = useMemo(() => {
+    return [...filteredProjects].sort((a, b) => {
+      // Tier 1: projects with unread invoice notifications.
+      const aUnread = (unreadInvoiceByProject[a.id] ?? 0) > 0;
+      const bUnread = (unreadInvoiceByProject[b.id] ?? 0) > 0;
+      if (aUnread !== bUnread) return aUnread ? -1 : 1;
+      // Tier 2: by most-recent invoice timestamp. Projects with no invoices
+      // fall through to the project's createdAt below.
+      const aLast = lastInvoiceAtByProject[a.id];
+      const bLast = lastInvoiceAtByProject[b.id];
+      if (aLast != null && bLast != null && aLast !== bLast) return bLast - aLast;
+      if (aLast != null && bLast == null) return -1;
+      if (aLast == null && bLast != null) return 1;
+      // Tier 3: newest project first.
+      const aCreated = new Date(a.createdAt ?? 0).getTime();
+      const bCreated = new Date(b.createdAt ?? 0).getTime();
+      return bCreated - aCreated;
+    });
+  }, [filteredProjects, unreadInvoiceByProject, lastInvoiceAtByProject]);
 
   function clearProjectListFilters() {
     setSearchParams((prev) => {
@@ -443,7 +517,7 @@ export default function InvoicesList() {
 
     return (
       <ul className="space-y-2">
-        {filteredProjects.map((project) => {
+        {sortedProjects.map((project) => {
           const unreadForProject = unreadInvoiceByProject[project.id] ?? 0;
           return (
             <li key={project.id}>
