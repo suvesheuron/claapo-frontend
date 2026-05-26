@@ -488,7 +488,7 @@ function LockedCard() {
       </div>
       <h2 className="text-xl font-bold text-neutral-900 mb-2">Cast Search is locked</h2>
       <p className="text-sm text-neutral-500 max-w-md mx-auto mb-6">
-        Cast Search is available only for Casting Director / Agency accounts. Update your
+        Cast Search is available only for Casting Director / Agency . Update your
         Company Type in Profile to unlock actor and model discovery.
       </p>
       <div className="flex items-center justify-center gap-3">
