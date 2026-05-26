@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams, useParams } from 'react-router-dom';
 import { FaFileInvoice, FaPlus, FaTriangleExclamation, FaMagnifyingGlass, FaFolder, FaArrowLeft, FaUpload, FaCloudArrowUp } from 'react-icons/fa6';
 import DashboardHeader from '../components/DashboardHeader';
@@ -8,6 +8,7 @@ import OfflineInvoiceModal from '../components/OfflineInvoiceModal';
 import { useApiQuery } from '../hooks/useApiQuery';
 import { useAuth } from '../contexts/AuthContext';
 import { useRole } from '../contexts/RoleContext';
+import { onInvoiceUpdated } from '../services/chatSocket';
 import { formatPaise } from '../utils/currency';
 import { companyNavLinks, individualNavLinks, vendorNavLinks, castNavLinks } from '../navigation/dashboardNav';
 
@@ -162,8 +163,14 @@ export default function InvoicesList() {
   const dateToRaw = searchParams.get('dateTo')?.trim() ?? '';
   const dateTo = ISO_DAY.test(dateToRaw) ? dateToRaw : '';
 
-  // Fetch projects list
-  const { data: projectsData, loading: projectsLoading, refetch: refetchProjects } = useApiQuery<ProjectsWithStatsResponse>('/projects/my/with-stats?limit=100');
+  // Fetch projects list. SWR: render cached items synchronously on mount
+  // while a fresh fetch runs in the background — combined with the
+  // push-driven socket subscription below, re-entering this tab feels
+  // instant instead of spinning for 500ms+ on every visit.
+  const { data: projectsData, loading: projectsLoading, refetch: refetchProjects } = useApiQuery<ProjectsWithStatsResponse>(
+    '/projects/my/with-stats?limit=100',
+    { swr: true },
+  );
   // For Cast users, additionally restrict the project list to projects where
   // they have an accepted/locked booking — without this filter the with-stats
   // endpoint surfaces inquiry-only projects (no booking yet) here, which is
@@ -184,20 +191,60 @@ export default function InvoicesList() {
     }
     return ids;
   }, [currentRole, castIncomingBookings]);
+  // ── Optimistic overlay state ────────────────────────────────────────
+  //
+  // Two maps, each cleared by the data source that supersedes it. Handler
+  // populates both on an incoming-invoice event; they tick down as their
+  // respective refetches resolve.
+  //
+  // - `optimisticInvoiceBumps`     → overlays project.invoiceCount;
+  //                                  cleared on projectsData refetch.
+  // - `optimisticLastInvoiceAt`    → overlays lastInvoiceAtByProject (sort);
+  //                                  cleared on allInvoicesForSort refetch.
+  const [optimisticInvoiceBumps, setOptimisticInvoiceBumps] = useState<Record<string, number>>({});
+  const [optimisticLastInvoiceAt, setOptimisticLastInvoiceAt] = useState<Record<string, number>>({});
+  useEffect(() => {
+    // projectsData changed → server invoice counts are now authoritative.
+    // Functional setState + identity check so the steady-state empty case
+    // doesn't trigger a pointless re-render.
+    if (projectsData !== undefined) {
+      setOptimisticInvoiceBumps((prev) => (Object.keys(prev).length === 0 ? prev : {}));
+    }
+  }, [projectsData]);
+
   const projects = useMemo(() => {
     const all = projectsData?.items ?? [];
-    if (!castInvoiceableProjectIds) return all;
-    return all.filter((p) => castInvoiceableProjectIds.has(p.id));
-  }, [projectsData, castInvoiceableProjectIds]);
-  const { data: notificationsData } = useApiQuery<NotificationsResponse>(
+    const filtered = !castInvoiceableProjectIds
+      ? all
+      : all.filter((p) => castInvoiceableProjectIds.has(p.id));
+    // Overlay any pending optimistic bumps so the UI is instant even if the
+    // refetch is still in flight. No-op when the map is empty (steady state).
+    const bumpKeys = Object.keys(optimisticInvoiceBumps);
+    if (bumpKeys.length === 0) return filtered;
+    return filtered.map((p) => {
+      const bump = optimisticInvoiceBumps[p.id];
+      return bump ? { ...p, invoiceCount: (p.invoiceCount ?? 0) + bump } : p;
+    });
+  }, [projectsData, castInvoiceableProjectIds, optimisticInvoiceBumps]);
+  const { data: notificationsData, refetch: refetchNotifications } = useApiQuery<NotificationsResponse>(
     currentRole === 'Company' ? '/notifications?limit=100' : null,
+    { swr: true },
   );
   // Pulled in for ALL roles now — the project list needs the most-recent
   // invoice timestamp per project so we can sort projects by latest invoice
   // activity. The company "new invoice" badge still uses this same data.
-  const { data: allInvoicesForSort } = useApiQuery<InvoicesResponse>(
+  const { data: allInvoicesForSort, refetch: refetchAllInvoicesForSort } = useApiQuery<InvoicesResponse>(
     '/invoices?limit=100',
+    { swr: true },
   );
+  useEffect(() => {
+    // allInvoicesForSort changed → the sort source is now authoritative.
+    // Same idempotent pattern as the bumps clear above — skip the re-render
+    // when there's nothing to clear (the common case).
+    if (allInvoicesForSort !== undefined) {
+      setOptimisticLastInvoiceAt((prev) => (Object.keys(prev).length === 0 ? prev : {}));
+    }
+  }, [allInvoicesForSort]);
 
   // Build invoice list URL with optional project filter
   const listPath = useMemo(() => {
@@ -209,8 +256,72 @@ export default function InvoicesList() {
     return `/invoices?${q.toString()}`;
   }, [issuedOn, dateFrom, dateTo, selectedProjectId]);
 
-  const { data, loading, error, refetch: refetchInvoices } = useApiQuery<InvoicesResponse>(listPath);
+  const { data, loading, error, refetch: refetchInvoices } = useApiQuery<InvoicesResponse>(listPath, { swr: true });
   const allInvoices = data?.items ?? [];
+
+  // ── Push-driven refresh — single trigger, debounced reconciliation ─────
+  //
+  // The optimistic patch (above) makes the UI instant: when invoice_updated
+  // arrives with isIncoming=true + projectId, the affected project row's
+  // count bumps in the same render that processes the event (~5ms).
+  //
+  // The refetch is just a slow background reconciliation — it loads the
+  // authoritative state, then the clear effects on projectsData/
+  // allInvoicesForSort drop the optimistic overlay. With the optimistic
+  // path carrying the speed, redundant triggers (notification_created,
+  // invoiceAlertsCount-change) were causing the page to fire refreshAll
+  // multiple times per event — combined with NavBadgesContext also firing
+  // its own 3-query refetch, the local backend was processing ~14
+  // concurrent requests per invoice. Down to ONE trigger now.
+  //
+  // Refetches are debounced ~300ms so back-to-back events (e.g. a status
+  // flip followed by a paid event) collapse into a single reconcile cycle
+  // instead of cancelling each other and starting fresh.
+  const refreshAll = useMemo(
+    () => () => {
+      refetchProjects();
+      refetchInvoices();
+      refetchAllInvoicesForSort();
+      refetchNotifications();
+    },
+    [refetchProjects, refetchInvoices, refetchAllInvoicesForSort, refetchNotifications],
+  );
+  const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const debouncedRefreshAll = useMemo(
+    () => () => {
+      if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
+      refreshTimerRef.current = setTimeout(() => {
+        refreshTimerRef.current = null;
+        refreshAll();
+      }, 300);
+    },
+    [refreshAll],
+  );
+
+  useEffect(() => {
+    const cleanupInvoice = onInvoiceUpdated((payload) => {
+      // Optimistic patch — incoming invoices bump the target project's count
+      // and timestamp synchronously. Visible inside one React render cycle.
+      // Outgoing events and non-`sent` status flips skip the bump because
+      // they don't change the per-project invoice count.
+      if (payload.isIncoming && payload.status === 'sent' && payload.projectId) {
+        const pid = payload.projectId;
+        setOptimisticInvoiceBumps((prev) => ({ ...prev, [pid]: (prev[pid] ?? 0) + 1 }));
+        setOptimisticLastInvoiceAt((prev) => ({ ...prev, [pid]: Date.now() }));
+      }
+      // Schedule reconciliation; NOT awaited — UI is already correct via
+      // the optimistic patch. The fetch just confirms.
+      debouncedRefreshAll();
+    });
+    return () => {
+      cleanupInvoice();
+      if (refreshTimerRef.current) {
+        clearTimeout(refreshTimerRef.current);
+        refreshTimerRef.current = null;
+      }
+    };
+  }, [debouncedRefreshAll]);
+
   const [projectListSearch, setProjectListSearch] = useState('');
   const [projectListPaymentFilter, setProjectListPaymentFilter] = useState<InvoicePaymentFilter>('all');
   const [projectListTaxOnly, setProjectListTaxOnly] = useState(false);
@@ -408,7 +519,9 @@ export default function InvoicesList() {
   );
 
   // Most recent invoice timestamp per project — drives the sort so the project
-  // whose latest invoice arrived most recently shows at the top.
+  // whose latest invoice arrived most recently shows at the top. Overlays
+  // any optimistic `invoice_updated` timestamp so the affected project jumps
+  // to the top before the background refetch returns.
   const lastInvoiceAtByProject = useMemo(() => {
     const map: Record<string, number> = {};
     for (const inv of allInvoicesForSort?.items ?? []) {
@@ -418,8 +531,11 @@ export default function InvoicesList() {
       if (!Number.isFinite(t)) continue;
       if (!(pid in map) || t > map[pid]) map[pid] = t;
     }
+    for (const [pid, t] of Object.entries(optimisticLastInvoiceAt)) {
+      if (!(pid in map) || t > map[pid]) map[pid] = t;
+    }
     return map;
-  }, [allInvoicesForSort]);
+  }, [allInvoicesForSort, optimisticLastInvoiceAt]);
 
   const sortedProjects = useMemo(() => {
     return [...filteredProjects].sort((a, b) => {

@@ -45,6 +45,7 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 import { useRole } from '../contexts/RoleContext';
 import { individualNavLinks, vendorNavLinks, companyNavLinks, castNavLinks } from '../navigation/dashboardNav';
+import { linkifyText } from '../utils/linkify';
 
 interface ChatMessage {
   id: string;
@@ -1054,7 +1055,7 @@ export default function Chat() {
                             ) : null}
                             {msg.type !== 'file' || !msg.mediaKey ? (
                               <p className={`text-[14px] leading-relaxed break-words whitespace-pre-wrap ${isMe ? 'text-white' : 'text-[#111B21] dark:text-slate-200'}`}>
-                                {msg.content ?? ''}
+                                {linkifyText(msg.content ?? '', isMe ? 'underline break-all hover:opacity-80 text-white' : 'underline break-all hover:opacity-80 text-[#1D4ED8] dark:text-[#A8C6F7]')}
                                 {/* Invisible spacer for timestamp */}
                                 <span className="invisible text-[11px] pl-4">
                                   {formatTime(msg.createdAt)}

@@ -11,7 +11,7 @@
  *                     typing_stop, read_ack, send_message
  *   server → client : new_message, user_typing, user_stopped_typing,
  *                     messages_read, notification_created,
- *                     badge_updated, unread_updated
+ *                     badge_updated, unread_updated, invoice_updated
  */
 
 import { io, type Socket } from 'socket.io-client';
@@ -21,9 +21,20 @@ let socket: Socket | null = null;
 
 type UnreadListener = (totalUnread: number) => void;
 type BadgeListener = (incomingPending: number) => void;
+export interface InvoiceUpdatedPayload {
+  invoiceId: string;
+  status: string;
+  // Rich payload (added when the optimistic-patch path was introduced).
+  // Older backends won't send these; clients should treat them as optional
+  // and fall back to a plain refetch when they're absent.
+  projectId?: string | null;
+  isIncoming?: boolean;
+}
+type InvoiceUpdatedListener = (data: InvoiceUpdatedPayload) => void;
 
 const unreadListeners = new Set<UnreadListener>();
 const badgeListeners = new Set<BadgeListener>();
+const invoiceUpdatedListeners = new Set<InvoiceUpdatedListener>();
 
 export function onUnreadUpdated(fn: UnreadListener): () => void {
   unreadListeners.add(fn);
@@ -35,9 +46,24 @@ export function onBadgeUpdated(fn: BadgeListener): () => void {
   return () => badgeListeners.delete(fn);
 }
 
+export function onInvoiceUpdated(fn: InvoiceUpdatedListener): () => void {
+  invoiceUpdatedListeners.add(fn);
+  return () => invoiceUpdatedListeners.delete(fn);
+}
+
 export function ensureChatSocket(): Socket | null {
-  if (socket && socket.connected) return socket;
-  if (socket) return socket; // connecting / reconnecting
+  // If we have a singleton but it's currently disconnected (browser tab was
+  // backgrounded long enough, network blip, sleep/wake), kick off a reconnect
+  // attempt immediately instead of waiting for socket.io's internal backoff
+  // timer to notice. Without this, returning a dead socket means push events
+  // (badge_updated / invoice_updated / notification_created) silently stop
+  // arriving until the next backoff tick — which can be 1–10s.
+  if (socket) {
+    if (!socket.connected) {
+      try { socket.connect(); } catch { /* socket.io throws if already connecting; ignore */ }
+    }
+    return socket;
+  }
 
   const token = getAccessToken();
   if (!token) return null;
@@ -66,6 +92,22 @@ export function ensureChatSocket(): Socket | null {
     }
   });
 
+  socket.on('invoice_updated', (data: Partial<InvoiceUpdatedPayload> | null | undefined) => {
+    const invoiceId = data?.invoiceId;
+    const status = data?.status;
+    if (typeof invoiceId !== 'string' || typeof status !== 'string') return;
+    const payload: InvoiceUpdatedPayload = {
+      invoiceId,
+      status,
+      // Defensively pass through optional rich-payload fields; default
+      // projectId to null and isIncoming to false when missing so consumers
+      // always see well-typed values.
+      projectId: typeof data?.projectId === 'string' ? data.projectId : null,
+      isIncoming: data?.isIncoming === true,
+    };
+    invoiceUpdatedListeners.forEach((fn) => fn(payload));
+  });
+
   return socket;
 }
 
@@ -77,6 +119,7 @@ export function disconnectChatSocket(): void {
   if (!socket) return;
   socket.off('unread_updated');
   socket.off('badge_updated');
+  socket.off('invoice_updated');
   socket.disconnect();
   socket = null;
 }
