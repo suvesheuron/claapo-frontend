@@ -68,6 +68,8 @@ interface InvoiceData {
   issuerId: string;
   recipientId: string;
   attachments?: InvoiceAttachment[];
+  /** True when this is an offline invoice (company-recorded or vendor-sent). */
+  isOfflineInvoice?: boolean;
   /** True when company recorded this invoice for a party not on Claapo. */
   recordedOfflineByCompany?: boolean;
   offlineBillingName?: string | null;
@@ -199,6 +201,7 @@ export default function Invoice() {
   const remainingPaise = invoice ? Math.max(0, invoice.totalPaise - paidPaise) : 0;
   const isPartiallyPaid = !!invoice && paidPaise > 0 && paidPaise < invoice.totalPaise;
   const canRecordPayment = !!(isRecipient && invoice && invoice.status === 'sent' && remainingPaise > 0);
+  const isOffline = invoice ? (invoice.isOfflineInvoice ?? invoice.recordedOfflineByCompany ?? false) : false;
 
   const handleAddAttachment = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -234,7 +237,7 @@ export default function Invoice() {
 
   const handleCancelInvoice = async () => {
     if (!invoiceId || !invoice) return;
-    const isOffline = invoice.recordedOfflineByCompany;
+    const isOffline = invoice.isOfflineInvoice ?? invoice.recordedOfflineByCompany ?? false;
     const verb = isOffline ? 'delete' : 'cancel';
     const ok = window.confirm(
       isOffline
@@ -393,7 +396,7 @@ export default function Invoice() {
                             </button>
                           )}
 
-                          {!invoice.recordedOfflineByCompany && (
+                          {!isOffline && (
                             <button
                               onClick={handlePrint}
                               className="no-print px-3 py-2 border border-neutral-200 text-neutral-600 rounded-xl hover:bg-neutral-50 text-sm font-semibold flex items-center gap-1.5 transition-colors"
@@ -416,8 +419,8 @@ export default function Invoice() {
                             >
                               <FaTrash className="w-3.5 h-3.5" />
                               {cancelling
-                                ? (invoice.recordedOfflineByCompany ? 'Deleting…' : 'Cancelling…')
-                                : (invoice.recordedOfflineByCompany ? 'Delete' : 'Cancel Invoice')}
+                                ? (isOffline ? 'Deleting…' : 'Cancelling…')
+                                : (isOffline ? 'Delete' : 'Cancel Invoice')}
                             </button>
                           )}
                         </div>
@@ -526,7 +529,7 @@ export default function Invoice() {
                     {/* Offline-only: compact summary + prominent attached invoice document.
                         For offline invoices the rest of the auto-generated invoice
                         template is hidden — only the uploaded file is shown. */}
-                    {invoice.recordedOfflineByCompany && (
+                    {isOffline && (
                       <div className="mb-5 bg-white rounded-2xl border border-neutral-200 p-5">
                         <div className="flex flex-wrap items-start justify-between gap-4">
                           <div className="min-w-0">
@@ -574,7 +577,7 @@ export default function Invoice() {
                     )}
 
                     {/* Offline-only: prominent attached invoice document */}
-                    {invoice.recordedOfflineByCompany && (() => {
+                    {isOffline && (() => {
                       const primary = attachments[0] ?? null;
                       const isImage = !!primary && (primary.mimeType ?? '').toLowerCase().startsWith('image/');
                       const isPdf = !!primary && (primary.mimeType ?? '').toLowerCase().includes('pdf');
@@ -699,7 +702,7 @@ export default function Invoice() {
                         Offline invoices represent parties not on Claapo, so the
                         auto-generated invoice template doesn't apply; only the
                         uploaded document is shown above. */}
-                    {!invoice.recordedOfflineByCompany && (
+                    {!isOffline && (
                     <div id="invoice-print-area" ref={printRef} className="bg-white rounded-2xl border border-neutral-200 p-6 sm:p-10">
                       {/* Claapo Logo + Invoice Header */}
                       <div className="flex items-start justify-between mb-8 pb-6 border-b-2 border-neutral-900">
@@ -970,10 +973,10 @@ export default function Invoice() {
                         prominent section above; only render this block if there
                         are extras or it's a non-offline invoice. */}
                     {(() => {
-                      const visibleAttachments = invoice.recordedOfflineByCompany
+                      const visibleAttachments = isOffline
                         ? attachments.slice(1)
                         : attachments;
-                      if (invoice.recordedOfflineByCompany && visibleAttachments.length === 0 && !canEditAttachments) {
+                      if (isOffline && visibleAttachments.length === 0 && !canEditAttachments) {
                         return null;
                       }
                       return (
@@ -981,7 +984,7 @@ export default function Invoice() {
                           <div className="flex items-center justify-between gap-2 mb-3">
                             <div>
                               <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">
-                                {invoice.recordedOfflineByCompany ? 'Additional Documents' : 'Supporting Documents'}
+                                {isOffline ? 'Additional Documents' : 'Supporting Documents'}
                               </p>
                               <p className="text-[11px] text-neutral-400 mt-0.5">Files attached for reference — not included in the printed invoice.</p>
                             </div>

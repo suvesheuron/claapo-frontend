@@ -10,7 +10,7 @@ import DashboardHeader from '../../components/DashboardHeader';
 import DashboardSidebar from '../../components/DashboardSidebar';
 import AppFooter from '../../components/AppFooter';
 import Avatar from '../../components/Avatar';
-import { api, ApiException } from '../../services/api';
+import { api, ApiException, getMediaUrl } from '../../services/api';
 import { readApiQueryCache, writeApiQueryCache, useApiQuery } from '../../hooks/useApiQuery';
 import toast from 'react-hot-toast';
 import { formatBudgetCompact } from '../../utils/currency';
@@ -58,10 +58,27 @@ interface BookingTarget {
   id: string;
   email: string;
   role: string;
-  individualProfile?: { displayName?: string } | null;
-  vendorProfile?: { companyName?: string } | null;
-  companyProfile?: { companyName?: string } | null;
-  castProfile?: { displayName?: string; roleType?: string } | null;
+  individualProfile?: {
+    displayName?: string;
+    skills?: string[];
+    avatarKey?: string | null;
+  } | null;
+  vendorProfile?: {
+    companyName?: string;
+    vendorServiceCategory?: string | null;
+    vendorType?: string | null;
+    logoKey?: string | null;
+  } | null;
+  companyProfile?: {
+    companyName?: string;
+    companyType?: string | null;
+    logoKey?: string | null;
+  } | null;
+  castProfile?: {
+    displayName?: string;
+    roleType?: string;
+    avatarKey?: string | null;
+  } | null;
 }
 
 interface Booking {
@@ -364,6 +381,55 @@ export default function ProjectDetail() {
     b.target.castProfile?.displayName ??
     b.target.email;
 
+  // The line under the name on each booking card — image #37 asked for the
+  // person's actual role instead of the generic word "Crew". Falls back per
+  // target type so we never end up with a blank line.
+  const getMemberRoleLabel = (b: Booking): string => {
+    if (b.target.role === 'individual') {
+      const skill = b.target.individualProfile?.skills?.[0]?.trim();
+      return b.projectRole?.roleName?.trim() || skill || 'Crew';
+    }
+    if (b.target.role === 'vendor') {
+      return (
+        b.vendorEquipment?.name?.trim() ||
+        b.target.vendorProfile?.vendorServiceCategory?.trim() ||
+        b.target.vendorProfile?.vendorType?.trim() ||
+        b.projectRole?.roleName?.trim() ||
+        'Vendor'
+      );
+    }
+    if (b.target.role === 'cast') {
+      const role = b.target.castProfile?.roleType?.trim();
+      // Capitalize "actor" → "Actor" for display.
+      return role ? role.charAt(0).toUpperCase() + role.slice(1) : 'Cast';
+    }
+    if (b.target.role === 'company') {
+      const type = b.target.companyProfile?.companyType?.trim();
+      if (type === 'casting_director') return 'Casting Director';
+      // Title-case any free-form companyType so "production_house" reads as
+      // "Production House" without forcing a separate label map.
+      return type
+        ? type
+            .replace(/_/g, ' ')
+            .replace(/\b\w/g, (c) => c.toUpperCase())
+        : 'Production House';
+    }
+    return b.projectRole?.roleName?.trim() || 'Member';
+  };
+
+  // Build the avatar URL for a booking target. IndividualProfile and
+  // CastProfile use avatarKey; CompanyProfile and VendorProfile use logoKey.
+  // Avatar component already handles the initials fallback when src is null.
+  const getMemberAvatarUrl = (b: Booking): string | undefined => {
+    const key =
+      b.target.individualProfile?.avatarKey ??
+      b.target.castProfile?.avatarKey ??
+      b.target.companyProfile?.logoKey ??
+      b.target.vendorProfile?.logoKey ??
+      null;
+    return getMediaUrl(key) ?? undefined;
+  };
+
   const statusBadge = (status: string) => {
     if (status === 'pending')          return <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#FEF9E6] text-[#92400E]">Pending</span>;
     if (status === 'accepted')         return <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#DBEAFE] text-[#1D4ED8]">Accepted</span>;
@@ -508,11 +574,11 @@ export default function ProjectDetail() {
                             </div>
                           ) : (
                             <div className="flex items-center gap-3">
-                              <Avatar name={getMemberName(booking)} size="sm" />
+                              <Avatar src={getMemberAvatarUrl(booking)} name={getMemberName(booking)} size="sm" />
                               <div className="flex-1 min-w-0">
                                 <p className="text-xs font-bold text-neutral-900 truncate">{getMemberName(booking)}</p>
                                 <p className="text-[11px] text-neutral-500">
-                                  {booking.projectRole?.roleName ?? 'Crew'}
+                                  {getMemberRoleLabel(booking)}
                                   {booking.rateOffered ? ` · ₹${(booking.rateOffered / 100).toLocaleString('en-IN')}/day` : ''}
                                 </p>
                                 {(booking.shootDates?.length || booking.shootLocations?.length || booking.shootDateLocations?.length) ? (
@@ -597,13 +663,17 @@ export default function ProjectDetail() {
                             </div>
                           ) : (
                             <div className="flex items-center gap-3">
-                              <div className="w-9 h-9 rounded-xl bg-[#E8F0FE] ring-1 ring-[#3678F1]/15 flex items-center justify-center shrink-0">
-                                <FaTruck className="text-[#3678F1] text-xs" />
-                              </div>
+                              {getMemberAvatarUrl(booking) ? (
+                                <Avatar src={getMemberAvatarUrl(booking)} name={getMemberName(booking)} size="sm" />
+                              ) : (
+                                <div className="w-9 h-9 rounded-xl bg-[#E8F0FE] ring-1 ring-[#3678F1]/15 flex items-center justify-center shrink-0">
+                                  <FaTruck className="text-[#3678F1] text-xs" />
+                                </div>
+                              )}
                               <div className="flex-1 min-w-0">
                                 <p className="text-xs font-bold text-neutral-900 truncate">{getMemberName(booking)}</p>
                                 <p className="text-[11px] text-neutral-500 truncate">
-                                  {booking.vendorEquipment?.name ?? booking.projectRole?.roleName ?? 'Vendor'}
+                                  {getMemberRoleLabel(booking)}
                                   {booking.rateOffered ? ` · ₹${(booking.rateOffered / 100).toLocaleString('en-IN')}/day` : ''}
                                 </p>
                                 {(booking.shootDates?.length || booking.shootLocations?.length || booking.shootDateLocations?.length) ? (
@@ -709,11 +779,11 @@ export default function ProjectDetail() {
                             </div>
                           ) : (
                             <div className="flex items-center gap-3">
-                              <Avatar name={getMemberName(booking)} size="sm" />
+                              <Avatar src={getMemberAvatarUrl(booking)} name={getMemberName(booking)} size="sm" />
                               <div className="flex-1 min-w-0">
                                 <p className="text-xs font-bold text-neutral-900 truncate">{getMemberName(booking)}</p>
                                 <p className="text-[11px] text-neutral-500 capitalize">
-                                  {booking.target.castProfile?.roleType ?? 'Cast'}
+                                  {getMemberRoleLabel(booking)}
                                   {booking.rateOffered ? ` · ₹${(booking.rateOffered / 100).toLocaleString('en-IN')}/day` : ''}
                                 </p>
                                 {(booking.shootDates?.length || booking.shootLocations?.length || booking.shootDateLocations?.length) ? (
@@ -794,13 +864,17 @@ export default function ProjectDetail() {
                               </div>
                             ) : (
                               <div className="flex items-center gap-3">
-                                <div className="w-9 h-9 rounded-xl bg-[#E8F0FE] ring-1 ring-[#3678F1]/15 flex items-center justify-center shrink-0">
-                                  <FaBuilding className="text-[#3678F1] text-xs" />
-                                </div>
+                                {getMemberAvatarUrl(booking) ? (
+                                  <Avatar src={getMemberAvatarUrl(booking)} name={getMemberName(booking)} size="sm" />
+                                ) : (
+                                  <div className="w-9 h-9 rounded-xl bg-[#E8F0FE] ring-1 ring-[#3678F1]/15 flex items-center justify-center shrink-0">
+                                    <FaBuilding className="text-[#3678F1] text-xs" />
+                                  </div>
+                                )}
                                 <div className="flex-1 min-w-0">
                                   <p className="text-xs font-bold text-neutral-900 truncate">{getMemberName(booking)}</p>
                                   <p className="text-[11px] text-neutral-500 truncate">
-                                    Production House
+                                    {getMemberRoleLabel(booking)}
                                     {booking.rateOffered ? ` · ₹${(booking.rateOffered / 100).toLocaleString('en-IN')}/day` : ''}
                                   </p>
                                   {(booking.shootDates?.length || booking.shootLocations?.length || booking.shootDateLocations?.length) ? (
