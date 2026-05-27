@@ -3,15 +3,31 @@
  * live indicators on action-required nav items (Cancel Requests, Project
  * Requests, Invoice Alerts). Chat unread lives in ChatUnreadContext.
  *
- * Driven by WebSocket push (`badge_updated` event) — the server tells us when
- * booking status changes, so we only fetch then. A manual `refetch()` is still
- * available for callers that need to force a refresh.
+ * Driven by WebSocket push:
+ *   - `badge_updated`       → booking status changes (cancel requests, incoming pending)
+ *   - `invoice_updated`     → invoice status flips (send / pay / decline / cancel)
+ *   - `notification_created`→ redundant trigger for invoice-related notifications,
+ *                              ensures the invoice-alert badge stays live even if
+ *                              an `invoice_updated` event is missed (dead socket
+ *                              window, etc.). The bell badge already proves this
+ *                              event arrives reliably.
+ * Any of these triggers a full refetch of all three counts. A manual
+ * `refetch()` is still available for callers that need to force a refresh.
  */
 
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 import { useAuth } from './AuthContext';
 import { api } from '../services/api';
-import { ensureChatSocket, onBadgeUpdated } from '../services/chatSocket';
+import { ensureChatSocket, onBadgeUpdated, onInvoiceUpdated } from '../services/chatSocket';
+
+// Notification types that should also bump the invoice-alert badge — invoice
+// flows create these via NotificationsService.createForUser. Keep this list in
+// sync with InvoicesService emit sites.
+const INVOICE_NOTIFICATION_TYPES = new Set<string>([
+  'invoice_sent',
+  'invoice_declined',
+  'invoice_paid',
+]);
 
 interface CancelRequestsResponse { items: unknown[] }
 
@@ -130,14 +146,33 @@ export function NavBadgesProvider({ children }: { children: ReactNode }) {
     refetch();
   }, [refetch]);
 
-  // Listen for server push — booking status changes trigger a refetch of all badges.
+  // Listen for server push — booking status changes, invoice status flips,
+  // AND invoice-related notification_created events all trigger a refetch.
+  // notification_created is the safety-net trigger: if invoice_updated is ever
+  // missed (dead socket window, reconnect race), the bell badge still bumps
+  // because notifications.createForUser fires notification_created — so we
+  // ride on that to keep the invoice-alert count in lockstep with the bell.
   useEffect(() => {
     if (!isAuthenticated) return;
-    ensureChatSocket();
-    const cleanup = onBadgeUpdated(() => {
-      refetch();
-    });
-    return cleanup;
+    const socket = ensureChatSocket();
+    const cleanupBadge = onBadgeUpdated(() => { refetch(); });
+    const cleanupInvoice = onInvoiceUpdated(() => { refetch(); });
+
+    const onNotificationCreated = (payload: { type?: string } | null | undefined) => {
+      if (payload && typeof payload.type === 'string' && INVOICE_NOTIFICATION_TYPES.has(payload.type)) {
+        refetch();
+      }
+    };
+    // Direct socket.on (not a listener-set) because DashboardHeader also
+    // listens for notification_created with its own handler; socket.io
+    // supports multiple handlers per event so the two coexist cleanly.
+    socket?.on('notification_created', onNotificationCreated);
+
+    return () => {
+      cleanupBadge();
+      cleanupInvoice();
+      socket?.off('notification_created', onNotificationCreated);
+    };
   }, [isAuthenticated, refetch]);
 
   const value: NavBadgesValue = {

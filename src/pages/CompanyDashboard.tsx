@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { useEffect, useState, useMemo, useCallback } from 'react';
-import { FaPlus, FaUsers, FaTruck, FaFolder, FaXmark, FaEye, FaMessage, FaPeopleGroup, FaFileInvoice, FaBan, FaChevronLeft, FaChevronRight, FaCircleCheck, FaStar, FaLock } from 'react-icons/fa6';
+import { useEffect, useState, useMemo } from 'react';
+import { FaPlus, FaUsers, FaTruck, FaFolder, FaXmark, FaEye, FaMessage, FaPeopleGroup, FaFileInvoice, FaChevronLeft, FaChevronRight, FaStar, FaLock } from 'react-icons/fa6';
 import DashboardHeader from '../components/DashboardHeader';
 import DashboardSidebar from '../components/DashboardSidebar';
 import AppFooter from '../components/AppFooter';
@@ -10,8 +10,6 @@ import { useApiQuery } from '../hooks/useApiQuery';
 import { useChatUnread } from '../contexts/ChatUnreadContext';
 import { useAuth } from '../contexts/AuthContext';
 import { companyNavLinks } from '../navigation/dashboardNav';
-import toast from 'react-hot-toast';
-import { api, ApiException } from '../services/api';
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -85,44 +83,7 @@ const STATUS_PRIORITY: Record<string, number> = { active: 0, open: 1, draft: 2, 
 interface CalendarCell { d: number; muted: boolean; projects: Project[] }
 interface PanelData { date: number; month: string; year: number; projects: Project[]; dateIso: string }
 
-interface DayChatMessage {
-  id: string;
-  content: string | null;
-  createdAt: string;
-  senderId: string;
-  senderLabel: string;
-  conversationId: string;
-  otherParticipantId: string;
-  otherParticipantName?: string;
-  isSameAccount?: boolean;
-}
 
-interface ProjectDayChatGroup {
-  projectId: string;
-  projectTitle: string;
-  items: DayChatMessage[];
-}
-
-interface ProjectDayChatsResponse {
-  items?: Array<{
-    id: string;
-    content: string | null;
-    createdAt: string;
-    conversationId: string;
-    otherParticipantId: string;
-    otherParticipant?: { id: string; displayName: string };
-    sender?: { id?: string; displayName?: string };
-    isSameAccount?: boolean;
-  }>;
-  meta?: { pages?: number };
-}
-
-function getDateRangeIso(dateIso: string): { startIso: string; endIso: string } {
-  const dayStart = new Date(`${dateIso}T00:00:00`);
-  const dayEnd = new Date(dayStart);
-  dayEnd.setDate(dayEnd.getDate() + 1);
-  return { startIso: dayStart.toISOString(), endIso: dayEnd.toISOString() };
-}
 
 function buildCalendar(year: number, month: number, projects: Project[]): CalendarCell[] {
   const firstDay = new Date(year, month, 1).getDay();
@@ -178,22 +139,9 @@ export default function CompanyDashboard() {
   const [calendarYear, setCalendarYear] = useState(() => today.getFullYear());
   const [calendarMonth, setCalendarMonth] = useState(() => today.getMonth());
   const [panel, setPanel] = useState<PanelData | null>(null);
-  const [dateChatGroups, setDateChatGroups] = useState<ProjectDayChatGroup[]>([]);
-  const [expandedChatProject, setExpandedChatProject] = useState<string | null>(null);
-  const [expandedChatPerson, setExpandedChatPerson] = useState<string | null>(null);
-  const [personChatMessages, setPersonChatMessages] = useState<Array<{ id: string; senderId: string; senderLabel: string; content: string | null; createdAt: string; isSameAccount?: boolean }>>([]);
-  const [personChatLoading, setPersonChatLoading] = useState(false);
-  const [personChatError, setPersonChatError] = useState<string | null>(null);
-  const [dateChatGroupsLoading, setDateChatGroupsLoading] = useState(false);
-  const [dateChatGroupsError, setDateChatGroupsError] = useState<string | null>(null);
   const [panelClosing, setPanelClosing] = useState(false);
-  // Tracks which project's Mark Complete CTA is busy (per-row spinner). For
-  // c2c-target rows we keep the projectId here while bookings are being
-  // patched; for owned rows we keep the projectId while PATCH /projects
-  // is in flight.
-  const [completingProjectId, setCompletingProjectId] = useState<string | null>(null);
 
-  const { data: projectsData, loading, refetch: refetchProjects } = useApiQuery<ProjectsApiResponse>(
+  const { data: projectsData, loading } = useApiQuery<ProjectsApiResponse>(
     '/projects?limit=100',
     { swr: true },
   );
@@ -202,7 +150,7 @@ export default function CompanyDashboard() {
   // they're committed to as a vendor/collaborator, not just their own
   // projects' shoot dates. Failed/empty responses degrade to an empty list —
   // never blocks the dashboard from rendering.
-  const { data: incomingData, refetch: refetchIncoming } = useApiQuery<IncomingBookingsResponse>(
+  const { data: incomingData } = useApiQuery<IncomingBookingsResponse>(
     '/bookings/incoming',
     { swr: true },
   );
@@ -296,205 +244,22 @@ export default function CompanyDashboard() {
     return !cell.muted && cell.d > 0 && cell.d === today.getDate() && displayDate.getMonth() === today.getMonth() && displayDate.getFullYear() === today.getFullYear();
   };
 
-  /**
-   * Mark a project's bookings/status complete from this date panel.
-   *
-   * Two flows live behind the same button:
-   *   - **c2c-target row** (`bookedFromAnotherCompany`): this company was
-   *     hired on N bookings under the other company's project. We PATCH
-   *     /bookings/:id/complete for every booking that hasn't been
-   *     target-completed yet — the service stamps `completedByTargetAt`.
-   *   - **Owned row**: this company *is* the project owner. We PATCH
-   *     /projects/:id with `{ status: 'completed' }`, same as the existing
-   *     project-level Mark Complete on ProjectDetail.
-   *
-   * Refetches both projects and incoming bookings so the dashboard cell,
-   * the panel state, and project-level filters all converge.
-   */
-  const handleMarkProjectComplete = async (p: Project) => {
-    setCompletingProjectId(p.id);
-    try {
-      if (p.bookedFromAnotherCompany) {
-        const ids = p.bookingIds ?? [];
-        if (ids.length === 0) {
-          toast.error('No bookings linked to this commitment.');
-          return;
-        }
-        // Sweep all backing bookings in parallel; surface a single error
-        // toast if any one of them fails.
-        const settled = await Promise.allSettled(
-          ids.map((id) => api.patch(`/bookings/${id}/complete`, {})),
-        );
-        const firstFailure = settled.find((r): r is PromiseRejectedResult => r.status === 'rejected');
-        if (firstFailure) {
-          throw firstFailure.reason;
-        }
-        toast.success('Booking marked complete.');
-      } else {
-        await api.patch(`/projects/${p.id}`, { status: 'completed' });
-        toast.success('Project marked complete.');
-      }
-      refetchProjects();
-      refetchIncoming();
-      // Drop completed projects from the open panel so the user sees the
-      // CTA disappear; if the panel ends up empty we just leave the shell
-      // (the existing close behavior handles that on next interaction).
-      setPanel((prev) =>
-        prev
-          ? { ...prev, projects: prev.projects.filter((proj) => proj.id !== p.id) }
-          : prev,
-      );
-    } catch (err) {
-      const msg = err instanceof ApiException ? err.payload.message : 'Could not mark complete.';
-      toast.error(msg);
-    } finally {
-      setCompletingProjectId(null);
-    }
-  };
-
   const openPanel = (cell: CalendarCell) => {
     if (cell.muted || cell.d === 0) return;
     const m = displayDate.getMonth();
     const y = displayDate.getFullYear();
     const dateIso = `${y}-${String(m + 1).padStart(2, '0')}-${String(cell.d).padStart(2, '0')}`;
-    setDateChatGroups([]);
-    setDateChatGroupsError(null);
-    setExpandedChatProject(null);
-    setExpandedChatPerson(null);
-    setPersonChatMessages([]);
-    setPersonChatError(null);
-    setPersonChatLoading(false);
     setPanel({ date: cell.d, month: monthLabel, year: yearLabel, projects: cell.projects, dateIso });
   };
-
-  const fetchProjectDayChats = useCallback(async (projectId: string, dateIso: string) => {
-    const { startIso, endIso } = getDateRangeIso(dateIso);
-    const out: DayChatMessage[] = [];
-    const firstRes = await api.get<ProjectDayChatsResponse>(
-      `/conversations/project/${projectId}/messages/by-date?start=${encodeURIComponent(startIso)}&end=${encodeURIComponent(endIso)}&page=1&limit=50`,
-    );
-    for (const m of firstRes.items ?? []) {
-      out.push({
-        id: m.id,
-        content: m.content,
-        createdAt: m.createdAt,
-        senderId: m.sender?.id ?? '',
-        senderLabel: m.sender?.displayName ?? '—',
-        conversationId: m.conversationId,
-        otherParticipantId: m.otherParticipantId,
-        otherParticipantName: m.otherParticipant?.displayName,
-        isSameAccount: m.isSameAccount,
-      });
-    }
-    const pages = Math.max(1, firstRes.meta?.pages ?? 1);
-    for (let page = 2; page <= pages; page++) {
-      const pageRes = await api.get<ProjectDayChatsResponse>(
-        `/conversations/project/${projectId}/messages/by-date?start=${encodeURIComponent(startIso)}&end=${encodeURIComponent(endIso)}&page=${page}&limit=50`,
-      );
-      for (const m of pageRes.items ?? []) {
-        out.push({
-          id: m.id,
-          content: m.content,
-          createdAt: m.createdAt,
-          senderId: m.sender?.id ?? '',
-          senderLabel: m.sender?.displayName ?? '—',
-          conversationId: m.conversationId,
-          otherParticipantId: m.otherParticipantId,
-          otherParticipantName: m.otherParticipant?.displayName,
-          isSameAccount: m.isSameAccount,
-        });
-      }
-    }
-    out.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-    return out;
-  }, []);
-
-  const loadDateChatGroups = useCallback(async (dateIso: string) => {
-    const eligibleProjects = projects;
-    if (eligibleProjects.length === 0) return [];
-    const groups = await Promise.all(
-      eligibleProjects.map(async (project) => {
-        const items = await fetchProjectDayChats(project.id, dateIso);
-        return { projectId: project.id, projectTitle: project.title, items };
-      }),
-    );
-    return groups.filter((group) => group.items.length > 0);
-  }, [fetchProjectDayChats, projects]);
 
   const closePanel = () => {
     if (panelClosing) return;
     setPanelClosing(true);
-    // Match the exit animation duration in index.css (.panel-exit = 240ms)
     window.setTimeout(() => {
       setPanel(null);
       setPanelClosing(false);
-      setDateChatGroups([]);
-      setDateChatGroupsError(null);
-      setExpandedChatProject(null);
-      setExpandedChatPerson(null);
-      setPersonChatMessages([]);
-      setPersonChatError(null);
-      setPersonChatLoading(false);
     }, 240);
   };
-
-  useEffect(() => {
-    if (!panel) return;
-    setDateChatGroupsLoading(true);
-    setDateChatGroups([]);
-    setDateChatGroupsError(null);
-    void loadDateChatGroups(panel.dateIso)
-      .then((groups) => setDateChatGroups(groups))
-      .catch((err) => {
-        setDateChatGroups([]);
-        setDateChatGroupsError(err instanceof ApiException ? err.payload.message : 'Could not load project chats for this date.');
-      })
-      .finally(() => setDateChatGroupsLoading(false));
-  }, [loadDateChatGroups, panel]);
-
-  // When a person is selected inside a project, load THEIR messages for THAT DAY only
-  useEffect(() => {
-    if (!expandedChatPerson || !expandedChatProject) {
-      setPersonChatMessages([]);
-      setPersonChatError(null);
-      setPersonChatLoading(false);
-      return;
-    }
-    // Get the date range from the panel
-    if (!panel?.dateIso) return;
-    
-    // Filter messages: only from selected day AND from/to this person
-    const group = dateChatGroups.find((g) => g.projectId === expandedChatProject);
-    if (!group) {
-      setPersonChatMessages([]);
-      setPersonChatLoading(false);
-      return;
-    }
-    
-    // Filter to only messages involving this person on this day
-    const personMessages = group.items
-      .filter((m) =>
-        m.otherParticipantId === expandedChatPerson ||
-        m.senderId === expandedChatPerson
-      )
-      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
-      .map((m) => ({
-        id: m.id,
-        senderId: m.senderId,
-        senderLabel: m.senderLabel,
-        content: m.content,
-        createdAt: m.createdAt,
-        conversationId: m.conversationId,
-        otherParticipantId: m.otherParticipantId,
-        isSameAccount: m.isSameAccount,
-      }));
-    
-    setPersonChatMessages(personMessages);
-    setPersonChatLoading(false);
-  }, [expandedChatPerson, expandedChatProject, dateChatGroups, panel]);
-
-  const fmtChatTime = (iso: string) =>
-    new Date(iso).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
 
   const greetingHour = today.getHours();
   const greeting = greetingHour < 12 ? 'Good morning' : greetingHour < 17 ? 'Good afternoon' : 'Good evening';
@@ -856,7 +621,6 @@ export default function CompanyDashboard() {
       {panel && (() => {
         const activeProjectsList = panel.projects.filter(p => p.status !== 'cancelled');
         const cancelledProjectsList = panel.projects.filter(p => p.status === 'cancelled');
-        const totalChats = dateChatGroups.reduce((acc, g) => acc + g.items.length, 0);
         const weekday = new Date(`${panel.dateIso}T00:00:00`).toLocaleDateString('en-IN', { weekday: 'long' });
         return (
         <>
@@ -895,10 +659,6 @@ export default function CompanyDashboard() {
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-neutral-200 text-[11px] font-semibold text-neutral-700 shadow-sm">
                   <FaFolder className="w-2.5 h-2.5 text-[#3678F1]" />
                   {panel.projects.length} {panel.projects.length === 1 ? 'project' : 'projects'}
-                </span>
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-neutral-200 text-[11px] font-semibold text-neutral-700 shadow-sm">
-                  <FaMessage className="w-2.5 h-2.5 text-[#3678F1]" />
-                  {totalChats} {totalChats === 1 ? 'message' : 'messages'}
                 </span>
               </div>
             </div>
@@ -965,46 +725,19 @@ export default function CompanyDashboard() {
                               <Link to={`/projects/${p.id}`} className="flex items-center justify-center gap-1 rounded-lg py-2 bg-[#3678F1] text-white text-[11px] font-semibold hover:bg-[#2563EB] shadow-sm transition-all">
                                 <FaEye className="w-2.5 h-2.5" /> View
                               </Link>
-                              <Link to="/search" className="flex items-center justify-center gap-1 rounded-lg py-2 bg-white border border-neutral-200 text-neutral-700 text-[11px] font-semibold hover:bg-neutral-50 hover:border-neutral-300 transition-all">
-                                <FaUsers className="w-2.5 h-2.5" /> Crew
+                              <Link
+                                to={`/chat?projectId=${encodeURIComponent(p.id)}`}
+                                className="flex items-center justify-center gap-1 rounded-lg py-2 bg-white border border-neutral-200 text-neutral-700 text-[11px] font-semibold hover:bg-neutral-50 hover:border-neutral-300 transition-all"
+                              >
+                                <FaMessage className="w-2.5 h-2.5" /> Chat
                               </Link>
                               <Link
-                                to="/cancel-requests"
-                                className="flex items-center justify-center gap-1 rounded-lg py-2 bg-white border border-[#F4C430]/50 text-[#946A00] text-[11px] font-semibold hover:bg-[#FEF3C7] hover:border-[#F4C430] transition-all"
+                                to={`/invoices/${encodeURIComponent(p.id)}`}
+                                className="flex items-center justify-center gap-1 rounded-lg py-2 bg-white border border-neutral-200 text-neutral-700 text-[11px] font-semibold hover:bg-neutral-50 hover:border-neutral-300 transition-all"
                               >
-                                <FaBan className="w-2.5 h-2.5" /> Cancel
+                                <FaFileInvoice className="w-2.5 h-2.5" /> Invoice
                               </Link>
                             </div>
-                            {/* Mark Complete row:
-                                - c2c-target row: visible until every backing
-                                  booking is target-side completed.
-                                - Owned row: visible while project is still
-                                  Ongoing (open/draft/active); flips to a
-                                  status badge once marked completed elsewhere. */}
-                            {(() => {
-                              const alreadyDone = p.bookedFromAnotherCompany
-                                ? !!p.allBookingsCompletedByTarget
-                                : p.status === 'completed';
-                              if (alreadyDone) {
-                                return (
-                                  <div className="mt-2 flex items-center justify-center gap-1.5 rounded-lg py-2 bg-[#DCFCE7] text-[#15803D] text-[11px] font-bold">
-                                    <FaCircleCheck className="w-2.5 h-2.5" /> Marked Complete
-                                  </div>
-                                );
-                              }
-                              if (isSubuser) return null;
-                              return (
-                                <button
-                                  type="button"
-                                  disabled={completingProjectId === p.id}
-                                  onClick={() => handleMarkProjectComplete(p)}
-                                  className="mt-2 w-full flex items-center justify-center gap-1.5 rounded-lg py-2 bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white text-[11px] font-bold hover:from-[#2563EB] hover:to-[#1D4ED8] shadow-brand transition-all disabled:opacity-50"
-                                >
-                                  <FaCircleCheck className="w-2.5 h-2.5" />
-                                  {completingProjectId === p.id ? 'Marking…' : 'Mark as Complete'}
-                                </button>
-                              );
-                            })()}
                           </div>
                         </article>
                       );
@@ -1031,287 +764,6 @@ export default function CompanyDashboard() {
                 )}
               </section>
 
-              {/* Divider */}
-              <div className="mx-5 sm:mx-6 my-4 border-t border-dashed border-neutral-200" />
-
-              {/* ── Chats section ────────────────────────────────────── */}
-              <section className="px-5 sm:px-6 pb-5">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="text-[11px] font-bold text-neutral-500 uppercase tracking-wider flex items-center gap-2">
-                    <span className="w-1 h-3.5 rounded-full bg-[#3678F1]" />
-                    Chats on this day
-                  </h4>
-                  {totalChats > 0 && (
-                    <span className="text-[11px] font-semibold text-neutral-400 tabular-nums">{totalChats}</span>
-                  )}
-                </div>
-
-                {dateChatGroupsLoading && (
-                  <div className="flex flex-col items-center justify-center py-8 gap-2">
-                    <span className="w-7 h-7 border-[2.5px] border-[#3678F1]/15 border-t-[#3678F1] border-r-[#3678F1] rounded-full animate-spin" />
-                    <span className="text-[11px] text-neutral-400 font-medium">Loading messages…</span>
-                  </div>
-                )}
-
-                {!dateChatGroupsLoading && dateChatGroupsError && (
-                  <div className="rounded-xl border border-[#F40F02]/30 bg-[#FEEBEA] px-3 py-3">
-                    <p className="text-xs text-[#991B1B] font-medium">{dateChatGroupsError}</p>
-                  </div>
-                )}
-
-                {!dateChatGroupsLoading && !dateChatGroupsError && dateChatGroups.length === 0 && (
-                  <div className="text-center py-8 rounded-2xl border border-dashed border-neutral-200 bg-neutral-50/50">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#E8F0FE] to-[#DBEAFE] flex items-center justify-center mx-auto mb-2">
-                      <FaMessage className="text-[#3678F1] text-sm" />
-                    </div>
-                    <p className="text-xs font-semibold text-neutral-700">No messages on this day</p>
-                    <p className="text-[11px] text-neutral-400 mt-0.5">Conversations will appear here</p>
-                  </div>
-                )}
-
-                {!dateChatGroupsLoading && !dateChatGroupsError && dateChatGroups.length > 0 && (
-                  <div className="space-y-2.5">
-                    {dateChatGroups.map((group) => {
-                      const isExpanded = expandedChatProject === group.projectId;
-                      // Build unique participants with aggregated stats
-                      const participantMap = new Map<string, { id: string; name: string; messageCount: number; lastAt: string; lastContent: string | null }>();
-                      for (const m of group.items) {
-                        const pid = m.otherParticipantId;
-                        if (!pid) continue;
-                        const existing = participantMap.get(pid);
-                        
-                        // Get the participant name - prefer otherParticipantName from backend
-                        // This is the most reliable source as it comes from the user's profile
-                        const participantName = m.otherParticipantName || 
-                                               (m.senderId === pid ? m.senderLabel : null) ||
-                                               existing?.name ||
-                                               '—';
-                        
-                        if (!existing) {
-                          participantMap.set(pid, {
-                            id: pid,
-                            name: participantName,
-                            messageCount: 1,
-                            lastAt: m.createdAt,
-                            lastContent: m.content,
-                          });
-                        } else {
-                          existing.messageCount += 1;
-                          // Update name if we found a better one (from otherParticipantName)
-                          if (m.otherParticipantName && existing.name === '—') {
-                            existing.name = m.otherParticipantName;
-                          }
-                          if (new Date(m.createdAt).getTime() > new Date(existing.lastAt).getTime()) {
-                            existing.lastAt = m.createdAt;
-                            existing.lastContent = m.content;
-                          }
-                        }
-                      }
-                      const participants = Array.from(participantMap.values()).sort(
-                        (a, b) => new Date(b.lastAt).getTime() - new Date(a.lastAt).getTime(),
-                      );
-                      return (
-                        <div key={group.projectId} className="rounded-2xl border border-neutral-200/80 bg-white overflow-hidden transition-all">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setExpandedChatProject(isExpanded ? null : group.projectId);
-                              setExpandedChatPerson(null);
-    setPersonChatMessages([]);
-    setPersonChatError(null);
-    setPersonChatLoading(false);
-                            }}
-                            aria-expanded={isExpanded}
-                            className={`w-full flex items-center gap-2.5 px-3.5 py-3 text-left transition-colors ${
-                              isExpanded
-                                ? 'bg-gradient-to-r from-[#E8F0FE] to-white border-b border-neutral-100'
-                                : 'bg-gradient-to-r from-[#F4F8FE] to-white hover:from-[#E8F0FE]'
-                            }`}
-                          >
-                            <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
-                              isExpanded ? 'bg-[#3678F1] text-white' : 'bg-[#E8F0FE] text-[#3678F1]'
-                            }`}>
-                              <FaFolder className="w-3 h-3" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs font-bold text-neutral-900 truncate">{group.projectTitle}</p>
-                              <p className="text-[10px] text-neutral-500 font-medium mt-0.5">
-                                <span className="inline-flex items-center gap-1">
-                                  <FaPeopleGroup className="w-2.5 h-2.5" /> {participants.length} {participants.length === 1 ? 'person' : 'people'}
-                                </span>
-                                <span className="mx-1.5 text-neutral-300">·</span>
-                                <span className="inline-flex items-center gap-1">
-                                  <FaMessage className="w-2.5 h-2.5" /> {group.items.length} {group.items.length === 1 ? 'msg' : 'msgs'}
-                                </span>
-                              </p>
-                            </div>
-                            <FaChevronRight
-                              className={`w-2.5 h-2.5 text-neutral-400 shrink-0 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
-                            />
-                          </button>
-
-                          {isExpanded && (
-                            <div className="bg-white">
-                              {participants.length === 0 ? (
-                                <p className="px-4 py-4 text-[11px] text-neutral-400 text-center">No participants found.</p>
-                              ) : expandedChatPerson && participantMap.has(expandedChatPerson) ? (
-                                (() => {
-                                  const person = participantMap.get(expandedChatPerson)!;
-                                  const initial = (person.name?.trim()?.[0] ?? '?').toUpperCase();
-                                  return (
-                                    <div className="flex flex-col">
-                                      {/* Person header with back */}
-                                      <div className="flex items-center gap-2.5 px-3.5 py-2.5 border-b border-neutral-100 bg-gradient-to-r from-[#F4F8FE] to-white">
-                                        <button
-                                          type="button"
-                                          onClick={() => setExpandedChatPerson(null)}
-                                          aria-label="Back to people"
-                                          className="w-7 h-7 rounded-lg bg-white border border-neutral-200 flex items-center justify-center text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800 shrink-0 transition-all"
-                                        >
-                                          <FaChevronLeft className="w-2.5 h-2.5" />
-                                        </button>
-                                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#3678F1] to-[#5B9DF9] text-white text-[11px] font-extrabold flex items-center justify-center shrink-0 shadow-sm">
-                                          {initial}
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                          <p className="text-xs font-bold text-neutral-900 truncate">{person.name}</p>
-                                          <p className="text-[10px] text-neutral-500 font-medium">
-                                            {personChatLoading
-                                              ? 'Loading conversation…'
-                                              : `${personChatMessages.length} ${personChatMessages.length === 1 ? 'message' : 'messages'} · full history`}
-                                          </p>
-                                        </div>
-                                        <Link
-                                          to={`/chat/${person.id}?projectId=${encodeURIComponent(group.projectId)}`}
-                                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#3678F1] text-white text-[10px] font-bold hover:bg-[#2563EB] shrink-0 transition-all"
-                                        >
-                                          <FaMessage className="w-2.5 h-2.5" /> Open
-                                        </Link>
-                                      </div>
-
-                                      {/* Messages — full history, chat-bubble scroll region */}
-                                      <div className="max-h-[22rem] min-h-[12rem] overflow-y-auto overscroll-contain px-3.5 py-3 bg-[#F4F8FE]/60 space-y-2">
-                                        {personChatLoading ? (
-                                          <div className="flex flex-col items-center justify-center gap-2 py-8">
-                                            <span className="w-7 h-7 border-[2.5px] border-[#3678F1]/15 border-t-[#3678F1] border-r-[#3678F1] rounded-full animate-spin" />
-                                            <span className="text-[11px] text-neutral-400 font-medium">Loading conversation…</span>
-                                          </div>
-                                        ) : personChatError ? (
-                                          <div className="rounded-xl border border-[#F40F02]/30 bg-[#FEEBEA] px-3 py-2.5 mx-1">
-                                            <p className="text-[11px] text-[#991B1B] font-medium">{personChatError}</p>
-                                          </div>
-                                        ) : personChatMessages.length === 0 ? (
-                                          <p className="text-center text-[11px] text-neutral-400 py-8">No messages in this conversation.</p>
-                                        ) : (
-                                          (() => {
-                                            let lastDateLabel = '';
-                                            return personChatMessages.map((m) => {
-                                              const isFromPerson = m.isSameAccount !== undefined ? !m.isSameAccount : m.senderId === person.id;
-                                              const dateLabel = new Date(m.createdAt).toLocaleDateString('en-IN', {
-                                                day: 'numeric',
-                                                month: 'short',
-                                                year: 'numeric',
-                                              });
-                                              const showDivider = dateLabel !== lastDateLabel;
-                                              lastDateLabel = dateLabel;
-                                              return (
-                                                <div key={m.id}>
-                                                  {showDivider && (
-                                                    <div className="flex items-center justify-center my-2">
-                                                      <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider bg-white border border-neutral-200 rounded-full px-2.5 py-0.5 shadow-sm">
-                                                        {dateLabel}
-                                                      </span>
-                                                    </div>
-                                                  )}
-                                                  <div className={`flex flex-col ${isFromPerson ? 'items-start' : 'items-end'}`}>
-                                                    <div
-                                                      className={`max-w-[85%] rounded-2xl px-3 py-2 shadow-sm break-words ${
-                                                        isFromPerson
-                                                          ? 'bg-white border border-neutral-200 text-neutral-800 rounded-tl-sm'
-                                                          : 'bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white rounded-tr-sm'
-                                                      }`}
-                                                    >
-                                                      <p className="text-[11px] whitespace-pre-wrap leading-snug">
-                                                        {m.content?.trim() || (
-                                                          <span className={`italic ${isFromPerson ? 'text-neutral-400' : 'text-white/75'}`}>
-                                                            (attachment or empty)
-                                                          </span>
-                                                        )}
-                                                      </p>
-                                                    </div>
-                                                    <span className="text-[9px] text-neutral-400 tabular-nums font-medium mt-0.5 px-1">
-                                                      {fmtChatTime(m.createdAt)}
-                                                    </span>
-                                                  </div>
-                                                </div>
-                                              );
-                                            });
-                                          })()
-                                        )}
-                                      </div>
-                                    </div>
-                                  );
-                                })()
-                              ) : (
-                                <ul className="divide-y divide-neutral-100 max-h-72 overflow-y-auto">
-                                  {participants.map((person) => {
-                                    const initial = (person.name?.trim()?.[0] ?? '?').toUpperCase();
-                                    return (
-                                      <li key={person.id}>
-                                        <button
-                                          type="button"
-                                          onClick={() => setExpandedChatPerson(person.id)}
-                                          className="w-full flex items-center gap-3 px-3.5 py-3 hover:bg-[#F4F8FE] transition-colors group/person text-left"
-                                        >
-                                          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#3678F1] to-[#5B9DF9] text-white text-xs font-extrabold flex items-center justify-center shrink-0 shadow-sm">
-                                            {initial}
-                                          </div>
-                                          <div className="flex-1 min-w-0">
-                                            <div className="flex items-center justify-between gap-2">
-                                              <p className="text-xs font-bold text-neutral-900 truncate">{person.name}</p>
-                                              <span className="text-[10px] text-neutral-400 tabular-nums font-medium shrink-0">
-                                                {fmtChatTime(person.lastAt)}
-                                              </span>
-                                            </div>
-                                            <div className="flex items-center justify-between gap-2 mt-0.5">
-                                              <p className="text-[11px] text-neutral-500 truncate leading-snug">
-                                                {person.lastContent?.trim() || <span className="italic text-neutral-400">(attachment)</span>}
-                                              </p>
-                                              <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1.5 rounded-full bg-[#E8F0FE] text-[#3678F1] text-[9px] font-extrabold tabular-nums shrink-0">
-                                                {person.messageCount}
-                                              </span>
-                                            </div>
-                                          </div>
-                                          <FaChevronRight className="w-2.5 h-2.5 text-neutral-300 group-hover/person:text-[#3678F1] shrink-0 transition-colors" />
-                                        </button>
-                                      </li>
-                                    );
-                                  })}
-                                </ul>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </section>
-            </div>
-
-            {/* Footer actions */}
-            <div className="px-5 sm:px-6 py-4 border-t border-neutral-100 bg-white space-y-2.5 shrink-0">
-              <Link
-                to={`/invoices?issuedOn=${panel.dateIso}`}
-                className="flex items-center justify-center gap-2 w-full rounded-xl py-2.5 bg-[#E8F0FE] text-[#3678F1] text-xs font-bold border border-[#3678F1]/20 hover:bg-[#DBEAFE] transition-all"
-              >
-                <FaFileInvoice className="w-3.5 h-3.5" /> Invoices issued on this date
-              </Link>
-              {panel.projects.length > 0 && !isSubuser && (
-                <Link to="/projects/new" className="flex items-center justify-center gap-2 w-full rounded-xl py-2.5 bg-gradient-to-r from-[#F4C430] to-[#D9A916] text-neutral-900 text-xs font-bold hover:shadow-md hover:shadow-[#F4C430]/30 transition-all duration-200">
-                  <FaPlus className="w-3 h-3" /> New Project
-                </Link>
-              )}
             </div>
           </aside>
         </>

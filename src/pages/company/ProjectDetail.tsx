@@ -10,7 +10,7 @@ import DashboardHeader from '../../components/DashboardHeader';
 import DashboardSidebar from '../../components/DashboardSidebar';
 import AppFooter from '../../components/AppFooter';
 import Avatar from '../../components/Avatar';
-import { api, ApiException } from '../../services/api';
+import { api, ApiException, getMediaUrl } from '../../services/api';
 import { readApiQueryCache, writeApiQueryCache, useApiQuery } from '../../hooks/useApiQuery';
 import toast from 'react-hot-toast';
 import { formatBudgetCompact } from '../../utils/currency';
@@ -32,6 +32,13 @@ interface Project {
   budgetMax?: number | null;
   locationCity?: string | null;
   roles?: Array<{ id: string; roleName: string; qty: number }>;
+  /** Project owner — used to detect CD-owned projects on the frontend so we
+      can hide Crew/Vendor sections regardless of who's viewing. */
+  companyUser?: {
+    id: string;
+    email: string;
+    companyProfile?: { companyType?: string | null; companyName?: string | null } | null;
+  } | null;
 }
 
 /** Total budget from project (supports camelCase or snake_case from API) */
@@ -51,10 +58,27 @@ interface BookingTarget {
   id: string;
   email: string;
   role: string;
-  individualProfile?: { displayName?: string } | null;
-  vendorProfile?: { companyName?: string } | null;
-  companyProfile?: { companyName?: string } | null;
-  castProfile?: { displayName?: string; roleType?: string } | null;
+  individualProfile?: {
+    displayName?: string;
+    skills?: string[];
+    avatarKey?: string | null;
+  } | null;
+  vendorProfile?: {
+    companyName?: string;
+    vendorServiceCategory?: string | null;
+    vendorType?: string | null;
+    logoKey?: string | null;
+  } | null;
+  companyProfile?: {
+    companyName?: string;
+    companyType?: string | null;
+    logoKey?: string | null;
+  } | null;
+  castProfile?: {
+    displayName?: string;
+    roleType?: string;
+    avatarKey?: string | null;
+  } | null;
 }
 
 interface Booking {
@@ -133,13 +157,18 @@ export default function ProjectDetail() {
   // never appear on a repeat "View details" click. Cache misses (first
   // visit) behave exactly like before.
   const projectCacheKey = projectId ? `/projects/${projectId}` : null;
-  const bookingsCacheKey = '/bookings/outgoing';
+  // Project-scoped bookings: returns ALL bookings on this project (including
+  // ones requested by a hired Casting Director). Switched away from
+  // /bookings/outgoing so the project owner can see CD-requested cast hires.
+  const bookingsCacheKey = projectId ? `/projects/${projectId}/bookings` : null;
   const subUsersCacheKey = projectId ? `/projects/${projectId}/sub-users` : null;
 
   const cachedProject = projectCacheKey
     ? readApiQueryCache<Project>(projectCacheKey)
     : undefined;
-  const cachedBookingsPayload = readApiQueryCache<{ items: Booking[] }>(bookingsCacheKey);
+  const cachedBookingsPayload = bookingsCacheKey
+    ? readApiQueryCache<{ items: Booking[] }>(bookingsCacheKey)
+    : undefined;
   const cachedSubUsers = subUsersCacheKey
     ? readApiQueryCache<{ items: SubUserAssignment[] }>(subUsersCacheKey)
     : undefined;
@@ -148,10 +177,8 @@ export default function ProjectDetail() {
     () => cachedProject ?? null,
   );
   const [bookings, setBookings] = useState<Booking[]>(() => {
-    if (!cachedBookingsPayload || !projectId) return [];
-    return cachedBookingsPayload.items.filter(
-      (b) => b.projectId === projectId && ACTIVE_STATUSES.includes(b.status),
-    );
+    if (!cachedBookingsPayload) return [];
+    return cachedBookingsPayload.items.filter((b) => ACTIVE_STATUSES.includes(b.status));
   });
   const [subUsers, setSubUsers] = useState<SubUserAssignment[]>(
     () => cachedSubUsers?.items ?? [],
@@ -175,12 +202,19 @@ export default function ProjectDetail() {
   const [completingBookingId, setCompletingBookingId] = useState<string | null>(null);
 
   // Pulled so the Cast card on this project can decide whether the "+ Add Cast"
-  // CTA is unlocked (casting director) or routes to the locked upsell page.
+  // CTA is unlocked (casting director viewing) or routes to the locked upsell
+  // page. This is the VIEWER's company type — used only for the Add-Cast CTA.
   const { data: meData } = useApiQuery<{ profile?: { companyType?: string | null } | null }>(
     '/profile/me',
     { swr: true },
   );
-  const isCastingDirector = meData?.profile?.companyType === 'casting_director';
+  const viewerIsCastingDirector = meData?.profile?.companyType === 'casting_director';
+  // Whether this PROJECT is owned by a casting director. Drives the "hide
+  // Crew/Vendor sections" UI rule — a CD-owned project is cast-only,
+  // regardless of who is currently viewing it (a CD viewing their own
+  // project, a sub-user, an actor with a confirmed booking, etc.).
+  const projectIsCastingDirectorOwned =
+    project?.companyUser?.companyProfile?.companyType === 'casting_director';
 
   const loadProject = useCallback(async () => {
     if (!projectId) return;
@@ -204,12 +238,13 @@ export default function ProjectDetail() {
 
   const loadBookings = useCallback(async () => {
     if (!projectId) return;
-    const hasCached = readApiQueryCache<{ items: Booking[] }>('/bookings/outgoing') !== undefined;
+    const cacheKey = `/projects/${projectId}/bookings`;
+    const hasCached = readApiQueryCache<{ items: Booking[] }>(cacheKey) !== undefined;
     if (!hasCached) setLoadingBookings(true);
     try {
-      const res = await api.get<{ items: Booking[] }>('/bookings/outgoing');
-      setBookings(res.items.filter((b) => b.projectId === projectId && ACTIVE_STATUSES.includes(b.status)));
-      writeApiQueryCache('/bookings/outgoing', res);
+      const res = await api.get<{ items: Booking[] }>(cacheKey);
+      setBookings(res.items.filter((b) => ACTIVE_STATUSES.includes(b.status)));
+      writeApiQueryCache(cacheKey, res);
     } catch {
       if (!hasCached) setBookings([]);
     } finally {
@@ -346,6 +381,55 @@ export default function ProjectDetail() {
     b.target.castProfile?.displayName ??
     b.target.email;
 
+  // The line under the name on each booking card — image #37 asked for the
+  // person's actual role instead of the generic word "Crew". Falls back per
+  // target type so we never end up with a blank line.
+  const getMemberRoleLabel = (b: Booking): string => {
+    if (b.target.role === 'individual') {
+      const skill = b.target.individualProfile?.skills?.[0]?.trim();
+      return b.projectRole?.roleName?.trim() || skill || 'Crew';
+    }
+    if (b.target.role === 'vendor') {
+      return (
+        b.vendorEquipment?.name?.trim() ||
+        b.target.vendorProfile?.vendorServiceCategory?.trim() ||
+        b.target.vendorProfile?.vendorType?.trim() ||
+        b.projectRole?.roleName?.trim() ||
+        'Vendor'
+      );
+    }
+    if (b.target.role === 'cast') {
+      const role = b.target.castProfile?.roleType?.trim();
+      // Capitalize "actor" → "Actor" for display.
+      return role ? role.charAt(0).toUpperCase() + role.slice(1) : 'Cast';
+    }
+    if (b.target.role === 'company') {
+      const type = b.target.companyProfile?.companyType?.trim();
+      if (type === 'casting_director') return 'Casting Director';
+      // Title-case any free-form companyType so "production_house" reads as
+      // "Production House" without forcing a separate label map.
+      return type
+        ? type
+            .replace(/_/g, ' ')
+            .replace(/\b\w/g, (c) => c.toUpperCase())
+        : 'Production House';
+    }
+    return b.projectRole?.roleName?.trim() || 'Member';
+  };
+
+  // Build the avatar URL for a booking target. IndividualProfile and
+  // CastProfile use avatarKey; CompanyProfile and VendorProfile use logoKey.
+  // Avatar component already handles the initials fallback when src is null.
+  const getMemberAvatarUrl = (b: Booking): string | undefined => {
+    const key =
+      b.target.individualProfile?.avatarKey ??
+      b.target.castProfile?.avatarKey ??
+      b.target.companyProfile?.logoKey ??
+      b.target.vendorProfile?.logoKey ??
+      null;
+    return getMediaUrl(key) ?? undefined;
+  };
+
   const statusBadge = (status: string) => {
     if (status === 'pending')          return <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#FEF9E6] text-[#92400E]">Pending</span>;
     if (status === 'accepted')         return <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#DBEAFE] text-[#1D4ED8]">Accepted</span>;
@@ -440,7 +524,10 @@ export default function ProjectDetail() {
               ) : null}
 
               <div id="project-bookings" className="grid grid-cols-1 lg:grid-cols-2 gap-5 scroll-mt-24">
-                {/* Crew */}
+                {/* Crew — hidden on Casting Director-owned projects, which are
+                    cast-only. Regardless of who is viewing, if the project
+                    owner is a CD we suppress the Crew/Vendor cards. */}
+                {!projectIsCastingDirectorOwned && (
                 <div className="rounded-2xl bg-white border border-neutral-200 p-5 hover:border-[#3678F1] transition-colors duration-200">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
@@ -487,11 +574,11 @@ export default function ProjectDetail() {
                             </div>
                           ) : (
                             <div className="flex items-center gap-3">
-                              <Avatar name={getMemberName(booking)} size="sm" />
+                              <Avatar src={getMemberAvatarUrl(booking)} name={getMemberName(booking)} size="sm" />
                               <div className="flex-1 min-w-0">
                                 <p className="text-xs font-bold text-neutral-900 truncate">{getMemberName(booking)}</p>
                                 <p className="text-[11px] text-neutral-500">
-                                  {booking.projectRole?.roleName ?? 'Crew'}
+                                  {getMemberRoleLabel(booking)}
                                   {booking.rateOffered ? ` · ₹${(booking.rateOffered / 100).toLocaleString('en-IN')}/day` : ''}
                                 </p>
                                 {(booking.shootDates?.length || booking.shootLocations?.length || booking.shootDateLocations?.length) ? (
@@ -526,8 +613,10 @@ export default function ProjectDetail() {
                     </div>
                   )}
                 </div>
+                )}
 
-                {/* Vendors */}
+                {/* Vendors — hidden on CD-owned projects (cast-only). */}
+                {!projectIsCastingDirectorOwned && (
                 <div className="rounded-2xl bg-white border border-neutral-200 p-5 hover:border-[#3678F1] transition-colors duration-200">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
@@ -574,13 +663,17 @@ export default function ProjectDetail() {
                             </div>
                           ) : (
                             <div className="flex items-center gap-3">
-                              <div className="w-9 h-9 rounded-xl bg-[#E8F0FE] ring-1 ring-[#3678F1]/15 flex items-center justify-center shrink-0">
-                                <FaTruck className="text-[#3678F1] text-xs" />
-                              </div>
+                              {getMemberAvatarUrl(booking) ? (
+                                <Avatar src={getMemberAvatarUrl(booking)} name={getMemberName(booking)} size="sm" />
+                              ) : (
+                                <div className="w-9 h-9 rounded-xl bg-[#E8F0FE] ring-1 ring-[#3678F1]/15 flex items-center justify-center shrink-0">
+                                  <FaTruck className="text-[#3678F1] text-xs" />
+                                </div>
+                              )}
                               <div className="flex-1 min-w-0">
                                 <p className="text-xs font-bold text-neutral-900 truncate">{getMemberName(booking)}</p>
                                 <p className="text-[11px] text-neutral-500 truncate">
-                                  {booking.vendorEquipment?.name ?? booking.projectRole?.roleName ?? 'Vendor'}
+                                  {getMemberRoleLabel(booking)}
                                   {booking.rateOffered ? ` · ₹${(booking.rateOffered / 100).toLocaleString('en-IN')}/day` : ''}
                                 </p>
                                 {(booking.shootDates?.length || booking.shootLocations?.length || booking.shootDateLocations?.length) ? (
@@ -614,13 +707,16 @@ export default function ProjectDetail() {
                     </div>
                   )}
                 </div>
+                )}
 
                 {/* Cast (actors/models). Always rendered. The "+ Add Cast"
                     CTA is unlocked only for Casting Director / Agency
                     companies; non-casting-directors see a lock that routes to
                     /search/cast (which renders the upgrade card). The list of
                     already-booked cast remains visible to every company so
-                    they can still see who's on the project + chat + invoice. */}
+                    they can still see who's on the project + chat + invoice.
+                    On CD-owned projects Crew/Vendor cards are hidden, so this
+                    card sits alone on the row and still spans full width. */}
                 <div className="rounded-2xl bg-white border border-neutral-200 p-5 hover:border-[#9333EA] transition-colors duration-200 lg:col-span-2">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
@@ -631,7 +727,7 @@ export default function ProjectDetail() {
                         Cast ({castBookings.length})
                       </h2>
                     </div>
-                    {isCastingDirector ? (
+                    {viewerIsCastingDirector ? (
                       <Link to="/search/cast" className="text-xs text-[#9333EA] hover:underline font-medium">+ Add Cast</Link>
                     ) : (
                       <Link
@@ -652,7 +748,7 @@ export default function ProjectDetail() {
                     <div className="text-center py-8">
                       <FaStar className="text-neutral-300 text-2xl mx-auto mb-2" />
                       <p className="text-sm text-neutral-500">No cast assigned</p>
-                      {isCastingDirector ? (
+                      {viewerIsCastingDirector ? (
                         <Link to="/search/cast" className="text-xs text-[#9333EA] hover:underline mt-1 inline-block">Search for cast</Link>
                       ) : (
                         <p className="text-[11px] text-neutral-400 mt-1">
@@ -683,11 +779,11 @@ export default function ProjectDetail() {
                             </div>
                           ) : (
                             <div className="flex items-center gap-3">
-                              <Avatar name={getMemberName(booking)} size="sm" />
+                              <Avatar src={getMemberAvatarUrl(booking)} name={getMemberName(booking)} size="sm" />
                               <div className="flex-1 min-w-0">
                                 <p className="text-xs font-bold text-neutral-900 truncate">{getMemberName(booking)}</p>
                                 <p className="text-[11px] text-neutral-500 capitalize">
-                                  {booking.target.castProfile?.roleType ?? 'Cast'}
+                                  {getMemberRoleLabel(booking)}
                                   {booking.rateOffered ? ` · ₹${(booking.rateOffered / 100).toLocaleString('en-IN')}/day` : ''}
                                 </p>
                                 {(booking.shootDates?.length || booking.shootLocations?.length || booking.shootDateLocations?.length) ? (
@@ -725,8 +821,9 @@ export default function ProjectDetail() {
 
                 {/* Companies — company→company bookings on this project.
                     Hidden when there are none so we don't crowd the layout
-                    for the common crew/vendor-only case. */}
-                {companyBookings.length > 0 && (
+                    for the common crew/vendor-only case. Also hidden on
+                    Casting Director-owned projects, which are cast-only. */}
+                {!projectIsCastingDirectorOwned && companyBookings.length > 0 && (
                   <div className="rounded-2xl bg-white border border-neutral-200 p-5 hover:border-[#3678F1] transition-colors duration-200 lg:col-span-2">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-2">
@@ -767,13 +864,17 @@ export default function ProjectDetail() {
                               </div>
                             ) : (
                               <div className="flex items-center gap-3">
-                                <div className="w-9 h-9 rounded-xl bg-[#E8F0FE] ring-1 ring-[#3678F1]/15 flex items-center justify-center shrink-0">
-                                  <FaBuilding className="text-[#3678F1] text-xs" />
-                                </div>
+                                {getMemberAvatarUrl(booking) ? (
+                                  <Avatar src={getMemberAvatarUrl(booking)} name={getMemberName(booking)} size="sm" />
+                                ) : (
+                                  <div className="w-9 h-9 rounded-xl bg-[#E8F0FE] ring-1 ring-[#3678F1]/15 flex items-center justify-center shrink-0">
+                                    <FaBuilding className="text-[#3678F1] text-xs" />
+                                  </div>
+                                )}
                                 <div className="flex-1 min-w-0">
                                   <p className="text-xs font-bold text-neutral-900 truncate">{getMemberName(booking)}</p>
                                   <p className="text-[11px] text-neutral-500 truncate">
-                                    Production House
+                                    {getMemberRoleLabel(booking)}
                                     {booking.rateOffered ? ` · ₹${(booking.rateOffered / 100).toLocaleString('en-IN')}/day` : ''}
                                   </p>
                                   {(booking.shootDates?.length || booking.shootLocations?.length || booking.shootDateLocations?.length) ? (
@@ -844,9 +945,16 @@ export default function ProjectDetail() {
                     </Link>
                   </div>
                   {(() => {
-                    const extraCount = (companyBookings.length > 0 ? 1 : 0) + (castBookings.length > 0 ? 1 : 0);
-                    const cols = 4 + extraCount; // Total + Crew + Vendor + Remaining + optionals
-                    const colsClass = cols >= 6 ? 'sm:grid-cols-6' : cols === 5 ? 'sm:grid-cols-5' : 'sm:grid-cols-4';
+                    // On CD-owned projects the Crew/Vendor cards are hidden
+                    // — drop those cost cells from the summary too so the
+                    // grid doesn't show zero-valued boxes for hires that
+                    // aren't possible on this project.
+                    const showCrew = !projectIsCastingDirectorOwned;
+                    const showVendor = !projectIsCastingDirectorOwned;
+                    const showCompany = !projectIsCastingDirectorOwned && companyBookings.length > 0;
+                    const extraCount = (showCompany ? 1 : 0) + (castBookings.length > 0 ? 1 : 0);
+                    const cols = 2 + (showCrew ? 1 : 0) + (showVendor ? 1 : 0) + extraCount; // Total + (Crew?) + (Vendor?) + Remaining + optionals
+                    const colsClass = cols >= 6 ? 'sm:grid-cols-6' : cols === 5 ? 'sm:grid-cols-5' : cols === 4 ? 'sm:grid-cols-4' : cols === 3 ? 'sm:grid-cols-3' : 'sm:grid-cols-2';
                     return loadingBookings ? (
                       <div className={`grid grid-cols-2 ${colsClass} gap-3`}>
                         {Array.from({ length: cols }).map((_, i) => <div key={i} className="skeleton h-16 rounded-xl" />)}
@@ -855,12 +963,16 @@ export default function ProjectDetail() {
                       <div className={`grid grid-cols-2 ${colsClass} gap-3`}>
                         {[
                           { label: 'Total Budget', value: formatBudgetCompact(totalBudget), color: 'text-neutral-900' },
-                          { label: 'Crew Cost',    value: formatBudgetCompact(crewCost),    color: 'text-[#3678F1]' },
-                          { label: 'Vendor Cost',  value: formatBudgetCompact(vendorCost),  color: 'text-[#2563EB]' },
+                          ...(showCrew
+                            ? [{ label: 'Crew Cost', value: formatBudgetCompact(crewCost), color: 'text-[#3678F1]' }]
+                            : []),
+                          ...(showVendor
+                            ? [{ label: 'Vendor Cost', value: formatBudgetCompact(vendorCost), color: 'text-[#2563EB]' }]
+                            : []),
                           // Only surface Company Cost / Cast Cost when there's
                           // at least one booking of that kind — keeps the
                           // summary uncluttered for crew/vendor-only flows.
-                          ...(companyBookings.length > 0
+                          ...(showCompany
                             ? [{ label: 'Company Cost', value: formatBudgetCompact(companyCost), color: 'text-[#1D4ED8]' }]
                             : []),
                           ...(castBookings.length > 0

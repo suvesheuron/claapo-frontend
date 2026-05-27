@@ -37,6 +37,7 @@ interface InvoiceItem {
   issuer: {
     id: string;
     individualProfile?: { displayName: string } | null;
+    castProfile?: { displayName: string } | null;
     vendorProfile?: { companyName: string } | null;
     companyProfile?: { companyName: string } | null;
   };
@@ -72,6 +73,7 @@ function getIssuerLabel(inv: InvoiceItem): string {
   if (inv.offlineBillingName?.trim()) return inv.offlineBillingName.trim();
   return (
     inv.issuer.individualProfile?.displayName ??
+    inv.issuer.castProfile?.displayName ??
     inv.issuer.vendorProfile?.companyName ??
     inv.issuer.companyProfile?.companyName ??
     '—'
