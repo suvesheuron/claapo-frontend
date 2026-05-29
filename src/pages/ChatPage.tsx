@@ -24,6 +24,7 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 import { useRole } from '../contexts/RoleContext';
 import { useChatUnread } from '../contexts/ChatUnreadContext';
+import { linkifyText } from '../utils/linkify';
 import { individualNavLinks, vendorNavLinks, companyNavLinks } from '../navigation/dashboardNav';
 
 // ── Types ──────────────────────────────────────────────────────────────
@@ -1416,7 +1417,7 @@ export default function ChatPage() {
                             ) : null}
                             {msg.type !== 'file' || !msg.mediaKey ? (
                               <p className={`text-[14px] leading-relaxed break-words whitespace-pre-wrap ${isMe ? 'text-white' : 'text-[#111B21] dark:text-slate-200'}`}>
-                                {msg.content ?? ''}
+                                {linkifyText(msg.content ?? '', isMe ? 'underline break-all hover:opacity-80 text-white font-semibold' : 'underline break-all hover:opacity-80 text-[#1D4ED8] dark:text-[#A8C6F7] font-semibold')}
                                 <span className="invisible text-[11px] pl-4">
                                   {formatTime(msg.createdAt)}
                                   {isMe && '  ✓✓'}

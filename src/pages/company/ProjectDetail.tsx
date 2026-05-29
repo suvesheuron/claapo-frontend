@@ -12,6 +12,7 @@ import AppFooter from '../../components/AppFooter';
 import Avatar from '../../components/Avatar';
 import { api, ApiException, getMediaUrl } from '../../services/api';
 import { readApiQueryCache, writeApiQueryCache, useApiQuery } from '../../hooks/useApiQuery';
+import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
 import { formatBudgetCompact } from '../../utils/currency';
 import { companyNavLinks } from '../../navigation/dashboardNav';
@@ -204,7 +205,7 @@ export default function ProjectDetail() {
   // Pulled so the Cast card on this project can decide whether the "+ Add Cast"
   // CTA is unlocked (casting director viewing) or routes to the locked upsell
   // page. This is the VIEWER's company type — used only for the Add-Cast CTA.
-  const { data: meData } = useApiQuery<{ profile?: { companyType?: string | null } | null }>(
+  const { data: meData, loading: meLoading } = useApiQuery<{ profile?: { companyType?: string | null } | null }>(
     '/profile/me',
     { swr: true },
   );
@@ -215,6 +216,37 @@ export default function ProjectDetail() {
   // project, a sub-user, an actor with a confirmed booking, etc.).
   const projectIsCastingDirectorOwned =
     project?.companyUser?.companyProfile?.companyType === 'casting_director';
+  // A CD viewing someone else's project (Dharma hired Taran, Taran opens
+  // Dharma's Fevicol Marine) should ALSO see Cast-only — they don't own the
+  // crew/vendor side of that project. Combine viewer + owner so the rule
+  // hides Crew/Vendor/Company whenever either is true. The project owner's
+  // own view of their project is untouched (image #39).
+  const showCastOnly = projectIsCastingDirectorOwned || viewerIsCastingDirector;
+  // Same shape but for budget: when a CD is hired ON someone else's project,
+  // the budget belongs to the project owner, not the CD. Hide both the
+  // "Budget: ₹X" line in the header and the Budget Summary card so the CD
+  // only sees their cast assignments. CDs viewing their OWN project keep
+  // the budget summary (image #40 — Total/Cast Cost/Remaining still appear).
+  const hideBudgetForViewer = viewerIsCastingDirector && !projectIsCastingDirectorOwned;
+  // The CD gates above depend on the viewer's company type from /profile/me.
+  // On a cold cache the project loads a tick before that endpoint, so the
+  // page used to flash the full Crew/Vendor/Budget view for ~100ms before
+  // collapsing to cast-only. `gateReady` lets us hold the gated sections
+  // until BOTH project and profile have landed (or, for SWR cache hits,
+  // resolve immediately on first render).
+  const gateReady = !!project && !meLoading;
+
+  // True only when the current viewer actually owns the project (main account
+  // or a sub-user under the owning account). Drives the sub-user fetch —
+  // hired companies (e.g. a Casting Director on someone else's project) don't
+  // own the project, so the backend returns 403 there and there's no useful
+  // sub-user data for them anyway. Without this gate, the CD's first open of
+  // a hired project sprays /sub-users 403s in the backend logs.
+  const { user } = useAuth();
+  const accountOwnerId = user?.mainUserId ?? user?.id ?? null;
+  const isProjectOwner = !!project?.companyUser?.id
+    && !!accountOwnerId
+    && project.companyUser.id === accountOwnerId;
 
   const loadProject = useCallback(async () => {
     if (!projectId) return;
@@ -272,8 +304,14 @@ export default function ProjectDetail() {
     document.title = 'Project Details – Claapo';
     loadProject();
     loadBookings();
-    loadSubUsers();
-  }, [loadProject, loadBookings, loadSubUsers]);
+  }, [loadProject, loadBookings]);
+
+  // Defer the sub-users fetch until we know the viewer actually owns the
+  // project. CDs (and other hired companies) skip the call entirely so the
+  // backend doesn't log a 403 every time they open a project they're hired on.
+  useEffect(() => {
+    if (isProjectOwner) loadSubUsers();
+  }, [isProjectOwner, loadSubUsers]);
 
   const crewBookings    = bookings.filter((b) => b.target.role === 'individual');
   const vendorBookings  = bookings.filter((b) => b.target.role === 'vendor');
@@ -289,11 +327,13 @@ export default function ProjectDetail() {
   // and the only forward action is "Mark Complete". `draft` is treated as
   // ongoing too — legacy rows that haven't been swept by the migration.
   const isOngoingProject = !!project && (project.status === 'active' || project.status === 'open' || project.status === 'draft');
-  // Delete is available on cancelled projects and on ongoing/draft ones (the
-  // confirm dialog catches accidental clicks). It is NOT exposed on completed
-  // projects — those are an immutable historical record.
-  const canDeleteProject = !!project && project.status !== 'completed';
-  const canCompleteProject = isOngoingProject;
+  // Owner-only project actions. A Casting Director hired on someone else's
+  // project (Dharma's) must not see Edit / Delete / Mark Complete — the
+  // backend rejects those calls anyway; this removes the affordance from
+  // the UI. Project owner (Dharma) and their sub-users still see them.
+  const canEditProject     = !!project && isProjectOwner;
+  const canDeleteProject   = !!project && project.status !== 'completed' && isProjectOwner;
+  const canCompleteProject = isOngoingProject && isProjectOwner;
 
   const totalBudget = getProjectTotalBudget(project);
   const crewCost    = crewBookings.filter((b) => b.status === 'accepted' || b.status === 'locked').reduce((s, b) => s + (b.rateOffered ?? 0), 0);
@@ -479,7 +519,7 @@ export default function ProjectDetail() {
                     <h1 className="text-xl font-bold text-neutral-900">{project.title}</h1>
                     <p className="text-sm text-neutral-500 mt-0.5">
                       {formatDateRange(project.startDate, project.endDate)}
-                      {getProjectTotalBudget(project) > 0 ? ` · Budget: ${formatBudgetCompact(getProjectTotalBudget(project))}` : ''}
+                      {gateReady && !hideBudgetForViewer && getProjectTotalBudget(project) > 0 ? ` · Budget: ${formatBudgetCompact(getProjectTotalBudget(project))}` : ''}
                       {project.locationCity ? ` · ${project.locationCity}` : ''}
                     </p>
                     {(project.shootDates?.length || project.shootLocations?.length) ? (
@@ -501,12 +541,14 @@ export default function ProjectDetail() {
                     )}
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <Link
-                      to={`/projects/${projectId}/edit`}
-                      className="rounded-xl px-4 py-2 border border-neutral-200 text-neutral-800 text-sm font-semibold hover:border-[#3678F1] hover:bg-[#E8F0FE] hover:text-[#3678F1] flex items-center gap-2 transition-colors"
-                    >
-                      <FaPenToSquare className="w-3.5 h-3.5" /> Edit
-                    </Link>
+                    {canEditProject && (
+                      <Link
+                        to={`/projects/${projectId}/edit`}
+                        className="rounded-xl px-4 py-2 border border-neutral-200 text-neutral-800 text-sm font-semibold hover:border-[#3678F1] hover:bg-[#E8F0FE] hover:text-[#3678F1] flex items-center gap-2 transition-colors"
+                      >
+                        <FaPenToSquare className="w-3.5 h-3.5" /> Edit
+                      </Link>
+                    )}
                     {canDeleteProject && (
                       <button type="button" onClick={() => setConfirmDeleteProject(true)}
                         className="rounded-xl px-4 py-2 border border-[#FEE2E2] text-[#991B1B] text-sm font-semibold hover:bg-[#FEE2E2] hover:border-[#F40F02]/30 flex items-center gap-2 transition-colors">
@@ -523,11 +565,24 @@ export default function ProjectDetail() {
                 </div>
               ) : null}
 
+              {/* Booking sections are gated on `gateReady` so we don't flash
+                  the full Crew/Vendor/Cast view for ~100ms before the CD
+                  detection lands. Until then, render a tall skeleton block
+                  so the page still has the right rough height. */}
+              {!gateReady && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                  <div className="skeleton h-44 rounded-2xl" />
+                  <div className="skeleton h-44 rounded-2xl" />
+                  <div className="skeleton h-44 rounded-2xl lg:col-span-2" />
+                </div>
+              )}
+
+              {gateReady && (
               <div id="project-bookings" className="grid grid-cols-1 lg:grid-cols-2 gap-5 scroll-mt-24">
                 {/* Crew — hidden on Casting Director-owned projects, which are
                     cast-only. Regardless of who is viewing, if the project
                     owner is a CD we suppress the Crew/Vendor cards. */}
-                {!projectIsCastingDirectorOwned && (
+                {!showCastOnly && (
                 <div className="rounded-2xl bg-white border border-neutral-200 p-5 hover:border-[#3678F1] transition-colors duration-200">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
@@ -616,7 +671,7 @@ export default function ProjectDetail() {
                 )}
 
                 {/* Vendors — hidden on CD-owned projects (cast-only). */}
-                {!projectIsCastingDirectorOwned && (
+                {!showCastOnly && (
                 <div className="rounded-2xl bg-white border border-neutral-200 p-5 hover:border-[#3678F1] transition-colors duration-200">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
@@ -823,7 +878,7 @@ export default function ProjectDetail() {
                     Hidden when there are none so we don't crowd the layout
                     for the common crew/vendor-only case. Also hidden on
                     Casting Director-owned projects, which are cast-only. */}
-                {!projectIsCastingDirectorOwned && companyBookings.length > 0 && (
+                {!showCastOnly && companyBookings.length > 0 && (
                   <div className="rounded-2xl bg-white border border-neutral-200 p-5 hover:border-[#3678F1] transition-colors duration-200 lg:col-span-2">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-2">
@@ -934,9 +989,12 @@ export default function ProjectDetail() {
                   </div>
                 )}
               </div>
+              )}
 
-              {/* Budget Summary */}
-              {project && (
+              {/* Budget Summary — hidden for CDs viewing a project they're
+                  hired on. The budget there belongs to the project owner.
+                  Also gated on `gateReady` to avoid the same flash. */}
+              {gateReady && project && !hideBudgetForViewer && (
                 <div className="rounded-2xl bg-white border border-neutral-200 p-5 mt-5 hover:border-[#3678F1] transition-colors duration-200">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-sm font-bold text-neutral-900">Budget Summary</h3>
@@ -949,9 +1007,9 @@ export default function ProjectDetail() {
                     // — drop those cost cells from the summary too so the
                     // grid doesn't show zero-valued boxes for hires that
                     // aren't possible on this project.
-                    const showCrew = !projectIsCastingDirectorOwned;
-                    const showVendor = !projectIsCastingDirectorOwned;
-                    const showCompany = !projectIsCastingDirectorOwned && companyBookings.length > 0;
+                    const showCrew = !showCastOnly;
+                    const showVendor = !showCastOnly;
+                    const showCompany = !showCastOnly && companyBookings.length > 0;
                     const extraCount = (showCompany ? 1 : 0) + (castBookings.length > 0 ? 1 : 0);
                     const cols = 2 + (showCrew ? 1 : 0) + (showVendor ? 1 : 0) + extraCount; // Total + (Crew?) + (Vendor?) + Remaining + optionals
                     const colsClass = cols >= 6 ? 'sm:grid-cols-6' : cols === 5 ? 'sm:grid-cols-5' : cols === 4 ? 'sm:grid-cols-4' : cols === 3 ? 'sm:grid-cols-3' : 'sm:grid-cols-2';
