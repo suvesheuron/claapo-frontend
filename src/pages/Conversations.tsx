@@ -279,15 +279,14 @@ export default function Conversations() {
                       </span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-4 mt-2">
-                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#E8F0FE] border border-[#3678F1]/10">
-                      <FaComments className="text-[#3678F1] text-xs" />
-                      <span className="text-xs font-semibold text-[#3678F1]">{project.conversationCount} {project.conversationCount === 1 ? 'chat' : 'chats'}</span>
+                  {project.conversationCount > 0 && (
+                    <div className="flex items-center gap-4 mt-2">
+                      <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#E8F0FE] border border-[#3678F1]/10">
+                        <FaComments className="text-[#3678F1] text-xs" />
+                        <span className="text-xs font-semibold text-[#3678F1]">{project.conversationCount} {project.conversationCount === 1 ? 'chat' : 'chats'}</span>
+                      </div>
                     </div>
-                    {project.conversationCount === 0 && (
-                      <p className="text-xs text-neutral-400">No conversations yet</p>
-                    )}
-                  </div>
+                  )}
                 </div>
               </Link>
             </li>

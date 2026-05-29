@@ -960,9 +960,11 @@ export default function ChatPage() {
                         </span>
                       </div>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="text-[11px] text-neutral-500">
-                          {project.conversationCount} {project.conversationCount === 1 ? 'chat' : 'chats'}
-                        </span>
+                        {project.conversationCount > 0 && (
+                          <span className="text-[11px] text-neutral-500">
+                            {project.conversationCount} {project.conversationCount === 1 ? 'chat' : 'chats'}
+                          </span>
+                        )}
                         {hasUnread && (
                           <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-[#F40F02] text-white text-[10px] font-bold">
                             {unreadForProject > 99 ? '99+' : unreadForProject} new
