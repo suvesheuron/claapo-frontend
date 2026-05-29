@@ -13,7 +13,7 @@ type Category = 'all' | 'crew' | 'vendor' | 'company';
 
 interface DirectoryItem {
   userId: string;
-  role: 'individual' | 'vendor' | 'company';
+  role: 'individual' | 'vendor' | 'company' | 'cast';
   name: string;
   categoryLabel?: string | null;
   locationCity: string | null;
@@ -33,11 +33,13 @@ const CATEGORY_TABS: Array<{ id: Category; label: string }> = [
   { id: 'company', label: 'Company' },
 ];
 
-const ROLE_BADGE: Record<DirectoryItem['role'], { label: string; Icon: typeof FaUser; chipClass: string }> = {
+const ROLE_BADGE: Record<string, { label: string; Icon: typeof FaUser; chipClass: string }> = {
   individual: { label: 'Crew',    Icon: FaUser,     chipClass: 'bg-[#E8F0FE] text-[#1D4ED8] border-[#3678F1]/20' },
   vendor:     { label: 'Vendor',  Icon: FaTruck,    chipClass: 'bg-[#FEF3C7] text-[#92400E] border-[#F59E0B]/30' },
   company:    { label: 'Company', Icon: FaBuilding, chipClass: 'bg-[#DCFCE7] text-[#15803D] border-[#86EFAC]' },
+  cast:       { label: 'Cast',    Icon: FaUser,     chipClass: 'bg-[#F3E8FF] text-[#7C3AED] border-[#A855F7]/30' },
 };
+const BADGE_FALLBACK = { label: 'User', Icon: FaUser, chipClass: 'bg-neutral-100 text-neutral-600 border-neutral-200' };
 
 export default function Discover() {
   const { user } = useAuth();
@@ -163,7 +165,7 @@ export default function Discover() {
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {items.map((item) => {
-                    const badge = ROLE_BADGE[item.role];
+                    const badge = ROLE_BADGE[item.role] ?? BADGE_FALLBACK;
                     const BadgeIcon = badge.Icon;
                     const location = [item.locationCity, item.locationState].filter(Boolean).join(', ');
                     return (
