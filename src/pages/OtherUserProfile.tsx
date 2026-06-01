@@ -21,6 +21,8 @@ import type { BookingWithDetails, SlotStatus } from '../types/availability';
 import { parseAvailabilityMonthResponse } from '../utils/parseAvailabilityResponse';
 import { formatPaise } from '../utils/currency';
 import StarRating from '../components/StarRating';
+import WorkShowcase, { type ShowcaseItem } from '../components/profile/WorkShowcase';
+import CoverMedia, { type CoverType } from '../components/profile/CoverMedia';
 
 type UserRole = 'individual' | 'company' | 'vendor' | 'admin' | 'cast';
 
@@ -239,6 +241,9 @@ export default function OtherUserProfile() {
   const coverPhotoUrl = (p as { coverPhotoUrl?: string; coverImageUrl?: string } | null)?.coverPhotoUrl
     ?? (p as { coverUrl?: string } | null)?.coverUrl
     ?? (p as { coverPhotoUrl?: string; coverImageUrl?: string } | null)?.coverImageUrl;
+  const coverType: CoverType = (p as { coverType?: CoverType } | null)?.coverType ?? 'image';
+  // A motion-banner (video) cover isn't opened in the image lightbox.
+  const coverClickable = !!coverPhotoUrl && coverType !== 'video';
   // Resolve avatar URL across the various shapes the API may return
   // (individual = avatarUrl, company/vendor = logoUrl).
   const avatarUrl = (p as { avatarUrl?: string; logoUrl?: string } | null)?.avatarUrl
@@ -501,40 +506,21 @@ We're working on ${projectName}${location ? ` (${location})` : ''}. Just wanted 
                   <motion.div variants={itemVariants} className="rounded-3xl bg-white shadow-soft border border-neutral-100 hover:border-[#3678F1] transition-colors duration-200 overflow-hidden">
                     <div
                       className={`relative h-56 sm:h-72 lg:h-80 border-b border-neutral-100 overflow-hidden bg-gradient-to-r from-[#3678F1]/15 via-[#7c96ff]/10 to-[#E8F0FE]/60 ${
-                        coverPhotoUrl ? 'cursor-zoom-in group' : ''
+                        coverClickable ? 'cursor-zoom-in group' : ''
                       }`}
-                      onClick={() => coverPhotoUrl && setCoverPreviewOpen(true)}
-                      role={coverPhotoUrl ? 'button' : undefined}
-                      tabIndex={coverPhotoUrl ? 0 : undefined}
-                      aria-label={coverPhotoUrl ? 'Open cover photo preview' : undefined}
+                      onClick={() => coverClickable && setCoverPreviewOpen(true)}
+                      role={coverClickable ? 'button' : undefined}
+                      tabIndex={coverClickable ? 0 : undefined}
+                      aria-label={coverClickable ? 'Open cover photo preview' : undefined}
                       onKeyDown={(e) => {
-                        if (!coverPhotoUrl) return;
+                        if (!coverClickable) return;
                         if (e.key === 'Enter' || e.key === ' ') {
                           e.preventDefault();
                           setCoverPreviewOpen(true);
                         }
                       }}
                     >
-                      {coverPhotoUrl ? (
-                        <>
-                          {/* Blurred backdrop — same image scaled + blurred,
-                              fills any empty space left by object-contain
-                              with the cover's own colors. */}
-                          <img
-                            src={coverPhotoUrl}
-                            alt=""
-                            aria-hidden
-                            draggable={false}
-                            className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-80 select-none pointer-events-none"
-                          />
-                          <img
-                            src={coverPhotoUrl}
-                            alt="Cover"
-                            draggable={false}
-                            className="absolute inset-0 w-full h-full object-contain"
-                          />
-                        </>
-                      ) : null}
+                      {coverPhotoUrl ? <CoverMedia url={coverPhotoUrl} type={coverType} /> : null}
                       {/* Soft fade at the bottom of the cover so the transition
                           into the white content area is gradual and the
                           avatar's drop-shadow has something to land on. */}
@@ -732,6 +718,17 @@ We're working on ${projectName}${location ? ` (${location})` : ''}. Just wanted 
                           ));
                         })()}
                       </dl>
+                    </motion.div>
+                  )}
+
+                  {/* Cast Work Showcase — photos / videos / documents the cast
+                      member uploaded. Read-only on a public profile. */}
+                  {isCast && ((p as { showcaseItems?: ShowcaseItem[] }).showcaseItems?.length ?? 0) > 0 && (
+                    <motion.div variants={itemVariants} className="rounded-3xl bg-white shadow-soft border border-neutral-100 hover:border-[#3678F1] transition-colors duration-200 p-6 sm:p-8">
+                      <h2 className="text-base font-bold text-neutral-900 mb-4 flex items-center gap-2">
+                        <span className="w-1 h-5 rounded-full bg-[#9333EA]" /> Work Showcase
+                      </h2>
+                      <WorkShowcase items={(p as { showcaseItems?: ShowcaseItem[] }).showcaseItems ?? []} />
                     </motion.div>
                   )}
 

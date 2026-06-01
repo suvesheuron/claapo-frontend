@@ -190,13 +190,18 @@ export default function VendorRegistration() {
       });
 
       // Step 2: send OTP
-      const otpRes = await api.post<unknown>('/auth/otp/send', { phone: e164Phone });
+      // OTP delivery: launch uses email (DLT for SMS pending).
+      // --- Active (email OTP) ---
+      const otpRes = await api.post<unknown>('/auth/otp/email/send', { email: email.trim() });
+      // --- Phone OTP (revive after DLT approval) ---
+      // const otpRes = await api.post<unknown>('/auth/otp/send', { phone: e164Phone });
       console.log('[DEV] OTP send response:', otpRes);
 
       // Step 3: go to OTP verification with pending profile data
       navigate('/otp-verify', {
         state: {
-          phone: e164Phone,
+          // After DLT: swap `email` for `phone: e164Phone`.
+          email: email.trim(),
           userType: 'vendor',
           pendingProfile: {
             companyName: businessName.trim() || undefined,

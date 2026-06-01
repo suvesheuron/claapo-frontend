@@ -198,7 +198,12 @@ export default function IndividualRegistration() {
         password,
       });
 
-      const otpRes = await api.post<unknown>('/auth/otp/send', { phone: e164Phone });
+      // OTP delivery: launch uses email (DLT for SMS pending). When DLT registration
+      // is approved, swap the active call to the phone version and update navigate state.
+      // --- Active (email OTP) ---
+      const otpRes = await api.post<unknown>('/auth/otp/email/send', { email: email.trim() });
+      // --- Phone OTP (revive after DLT approval) ---
+      // const otpRes = await api.post<unknown>('/auth/otp/send', { phone: e164Phone });
       console.log('[DEV] OTP send response:', otpRes);
 
       const [locationCity = '', locationState = ''] = location.trim().split(',').map((s) => s.trim());
@@ -207,7 +212,8 @@ export default function IndividualRegistration() {
 
       navigate('/otp-verify', {
         state: {
-          phone: e164Phone,
+          // After DLT: swap `email` for `phone: e164Phone`.
+          email: email.trim(),
           userType: 'individual',
           pendingProfile: {
             displayName: fullName.trim() || undefined,

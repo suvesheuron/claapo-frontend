@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   FaTriangleExclamation, FaCircleCheck, FaPen, FaUser,
   FaBriefcase, FaMoneyBillWave, FaIdCard, FaGlobe, FaCamera,
-  FaFilm,
+  FaFilm, FaPlus,
 } from 'react-icons/fa6';
 import DashboardHeader from '../../components/DashboardHeader';
 import DashboardSidebar from '../../components/DashboardSidebar';
@@ -19,6 +19,22 @@ import {
   ROLE_TYPES, GENDERS, BODY_TYPES, SKIN_TONES, EYE_COLORS,
   LOOK_TYPES, HAIR_TYPES, LANGUAGES, buildHeightOptions, cmToFeetInches,
 } from '../../constants/castOptions';
+import WorkShowcase, { type ShowcaseItem } from '../../components/profile/WorkShowcase';
+import CoverMedia, { type CoverType } from '../../components/profile/CoverMedia';
+
+// File types accepted by the Work Showcase upload (images, videos, documents —
+// no audio). Kept in sync with the backend SHOWCASE_MIME_MAP.
+const SHOWCASE_ACCEPT = [
+  'image/jpeg', 'image/png', 'image/webp', 'image/gif',
+  'video/mp4', 'video/quicktime', 'video/webm',
+  'application/pdf', 'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-powerpoint',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  'text/plain',
+].join(',');
 
 interface CastProfileData {
   displayName: string;
@@ -41,7 +57,8 @@ interface CastProfileData {
   locationState: string | null;
   avatarUrl?: string | null;
   coverUrl?: string | null;
-  showreelUrl?: string | null;
+  coverType?: CoverType;
+  showcaseItems?: ShowcaseItem[];
   // Social
   instagramUrl?: string | null;
   imdbUrl?: string | null;
@@ -84,13 +101,14 @@ export default function CastProfile() {
   const [form, setForm] = useState<CastProfileData | null>(null);
   const [newSkillInput, setNewSkillInput] = useState('');
 
-  // Avatar / cover photo / showreel upload
+  // Avatar / cover photo / work showcase upload
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
-  const showreelInputRef = useRef<HTMLInputElement>(null);
+  const showcaseInputRef = useRef<HTMLInputElement>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [coverUploading, setCoverUploading] = useState(false);
-  const [showreelUploading, setShowreelUploading] = useState(false);
+  const [showcaseUploading, setShowcaseUploading] = useState(false);
+  const [showcaseDeletingId, setShowcaseDeletingId] = useState<string | null>(null);
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -121,12 +139,13 @@ export default function CastProfile() {
   const handleCoverChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.type.startsWith('image/')) { setError('Please upload an image file.'); return; }
-    if (file.size > 8 * 1024 * 1024) { setError('Cover photo must be under 8MB.'); return; }
+    const isVideo = file.type.startsWith('video/');
+    if (!file.type.startsWith('image/') && !isVideo) { setError('Please upload an image or video file for the cover.'); return; }
+    if (file.size > (isVideo ? 50 : 8) * 1024 * 1024) { setError(isVideo ? 'Cover video must be under 50MB.' : 'Cover photo must be under 8MB.'); return; }
     setError(null);
     setCoverUploading(true);
     const previewUrl = URL.createObjectURL(file);
-    setForm((prev) => prev ? { ...prev, coverUrl: previewUrl } : prev);
+    setForm((prev) => prev ? { ...prev, coverUrl: previewUrl, coverType: isVideo ? 'video' : 'image' } : prev);
     try {
       const contentType = file.type || 'image/jpeg';
       const { uploadUrl, key } = await api.post<{ uploadUrl: string; key: string }>('/profile/cover', { contentType });
@@ -142,31 +161,55 @@ export default function CastProfile() {
     }
   };
 
-  // Showreel upload. Backend signs the PUT for video/mp4 (see
-  // getPresignedShowreelUrl), so the browser PUT MUST send the same
-  // Content-Type header or S3 will return SignatureDoesNotMatch — same
-  // gotcha as avatar/cover above.
-  const handleShowreelChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Work Showcase upload. Two-step like avatar/cover: the backend signs the PUT
+  // for the file's exact Content-Type (see getShowcaseUploadUrl), so the browser
+  // PUT MUST send the same header or S3 returns SignatureDoesNotMatch. The
+  // server tells us the resolved mediaType (image | video | document).
+  const handleShowcaseChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.type.startsWith('video/')) { setError('Please upload a video file.'); return; }
-    if (file.size > 100 * 1024 * 1024) { setError('Showreel must be under 100MB.'); return; }
+    const contentType = file.type;
+    if (!contentType) { setError('Could not detect this file type. Try a different file.'); return; }
+    const isVideo = contentType.startsWith('video/');
+    const maxBytes = isVideo ? 100 * 1024 * 1024 : 25 * 1024 * 1024;
+    if (file.size > maxBytes) {
+      setError(isVideo ? 'Videos must be under 100MB.' : 'Files must be under 25MB.');
+      return;
+    }
     setError(null);
-    setShowreelUploading(true);
-    const previewUrl = URL.createObjectURL(file);
-    setForm((prev) => prev ? { ...prev, showreelUrl: previewUrl } : prev);
+    setShowcaseUploading(true);
     try {
-      // The presigner pins contentType to video/mp4, so PUT must match.
-      const { uploadUrl, key } = await api.post<{ uploadUrl: string; key: string }>('/profile/showreel', { contentType: 'video/mp4' });
-      await fetch(uploadUrl, { method: 'PUT', headers: { 'Content-Type': 'video/mp4' }, body: file });
-      await api.post('/profile/showreel/confirm', { key });
+      const { uploadUrl, key, mediaType } = await api.post<{ uploadUrl: string; key: string; mediaType: ShowcaseItem['mediaType'] }>(
+        '/profile/showcase/upload-url',
+        { contentType },
+      );
+      await fetch(uploadUrl, { method: 'PUT', headers: { 'Content-Type': contentType }, body: file });
+      await api.post('/profile/showcase', {
+        key,
+        mediaType,
+        title: file.name.replace(/\.[^.]+$/, ''),
+        fileName: file.name,
+        mimeType: contentType,
+      });
       await refetch();
     } catch (err) {
-      setError(err instanceof ApiException ? err.payload.message : 'Failed to upload showreel.');
+      setError(err instanceof ApiException ? err.payload.message : 'Failed to upload file.');
     } finally {
-      setShowreelUploading(false);
-      URL.revokeObjectURL(previewUrl);
-      if (showreelInputRef.current) showreelInputRef.current.value = '';
+      setShowcaseUploading(false);
+      if (showcaseInputRef.current) showcaseInputRef.current.value = '';
+    }
+  };
+
+  const handleShowcaseDelete = async (id: string) => {
+    setError(null);
+    setShowcaseDeletingId(id);
+    try {
+      await api.delete(`/profile/showcase/${id}`);
+      await refetch();
+    } catch (err) {
+      setError(err instanceof ApiException ? err.payload.message : 'Failed to remove item.');
+    } finally {
+      setShowcaseDeletingId(null);
     }
   };
 
@@ -303,11 +346,9 @@ export default function CastProfile() {
         <main className="flex-1 px-6 py-8 max-w-5xl w-full mx-auto">
           {/* Header card — cover banner + avatar + actions */}
           <div className="rounded-2xl bg-white border border-neutral-200 overflow-hidden mb-6">
-            {/* Cover banner */}
-            <div
-              className="relative h-40 sm:h-48 bg-gradient-to-br from-[#E8F0FE] to-[#DBEAFE]"
-              style={form.coverUrl ? { backgroundImage: `url(${form.coverUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
-            >
+            {/* Cover banner — image or motion (video) banner */}
+            <div className="relative h-40 sm:h-48 overflow-hidden bg-gradient-to-br from-[#E8F0FE] to-[#DBEAFE] group">
+              <CoverMedia url={form.coverUrl} type={form.coverType} />
               <button
                 type="button"
                 onClick={() => coverInputRef.current?.click()}
@@ -324,7 +365,7 @@ export default function CastProfile() {
               <input
                 ref={coverInputRef}
                 type="file"
-                accept="image/*"
+                accept="image/*,video/*"
                 hidden
                 onChange={handleCoverChange}
               />
@@ -592,68 +633,46 @@ export default function CastProfile() {
             )}
           </ProfileSection>
 
-          {/* Showreel */}
+          {/* Work Showcase */}
           <ProfileSection
-            title="Showreel"
-            description="Upload a short reel (MP4, max 100MB). Casting directors see this on your public profile."
+            title="Work Showcase"
+            description="Show off your work — photos, videos and documents. Casting directors see this on your public profile."
             icon={<FaFilm />}
             className="mb-6"
           >
-            <div className="space-y-3">
-              {form.showreelUrl ? (
-                <div className="rounded-xl overflow-hidden bg-black border border-neutral-200">
-                  <video
-                    src={form.showreelUrl}
-                    controls
-                    preload="metadata"
-                    className="w-full max-h-[420px] bg-black"
-                  />
-                </div>
-              ) : (
-                <div className="rounded-xl border border-dashed border-neutral-300 bg-neutral-50 px-4 py-10 text-center">
-                  <FaFilm className="text-neutral-400 text-2xl mx-auto mb-2" />
-                  <p className="text-sm font-semibold text-neutral-700">No showreel uploaded yet</p>
-                  <p className="text-xs text-neutral-500 mt-1">
-                    Upload an MP4 video. Casting directors viewing your profile will see it here.
-                  </p>
-                </div>
-              )}
-
+            <div className="space-y-4">
               <div className="flex items-center gap-2 flex-wrap">
                 <button
                   type="button"
-                  onClick={() => showreelInputRef.current?.click()}
-                  disabled={showreelUploading}
+                  onClick={() => showcaseInputRef.current?.click()}
+                  disabled={showcaseUploading}
                   className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#3678F1] text-white text-sm font-semibold hover:bg-[#2563EB] transition-colors disabled:opacity-60"
                 >
-                  {showreelUploading ? (
+                  {showcaseUploading ? (
                     <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Uploading…</>
                   ) : (
-                    <><FaFilm className="w-3.5 h-3.5" /> {form.showreelUrl ? 'Replace showreel' : 'Upload showreel'}</>
+                    <><FaPlus className="w-3.5 h-3.5" /> Add media</>
                   )}
                 </button>
-                {form.showreelUrl && (
-                  <a
-                    href={form.showreelUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-neutral-300 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 transition-colors"
-                  >
-                    Open in new tab
-                  </a>
-                )}
+                <p className="text-[11px] text-neutral-400">
+                  Images & docs up to 25MB, videos up to 100MB. No audio.
+                </p>
               </div>
 
-              <p className="text-[11px] text-neutral-400">
-                MP4 only. Keep it under 100MB for fast playback.
-              </p>
+              <WorkShowcase
+                items={form.showcaseItems ?? []}
+                editable
+                onDelete={handleShowcaseDelete}
+                deletingId={showcaseDeletingId}
+                emptyMessage="No work showcased yet — add photos, videos or documents."
+              />
 
               <input
-                ref={showreelInputRef}
+                ref={showcaseInputRef}
                 type="file"
-                accept="video/mp4,video/*"
+                accept={SHOWCASE_ACCEPT}
                 hidden
-                onChange={handleShowreelChange}
+                onChange={handleShowcaseChange}
               />
             </div>
           </ProfileSection>

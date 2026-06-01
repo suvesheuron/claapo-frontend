@@ -193,11 +193,16 @@ export default function CastRegistration() {
         gender: gender || undefined,
         locationCity: locationCity || undefined,
       });
-      await api.post<unknown>('/auth/otp/send', { phone: e164Phone });
+      // OTP delivery: launch uses email (DLT for SMS pending).
+      // --- Active (email OTP) ---
+      await api.post<unknown>('/auth/otp/email/send', { email: email.trim() });
+      // --- Phone OTP (revive after DLT approval) ---
+      // await api.post<unknown>('/auth/otp/send', { phone: e164Phone });
       const [, locationState = ''] = location.trim().split(',').map((s) => s.trim());
       navigate('/otp-verify', {
         state: {
-          phone: e164Phone,
+          // After DLT: swap `email` for `phone: e164Phone`.
+          email: email.trim(),
           userType: 'cast',
           pendingProfile: {
             displayName: fullName.trim() || undefined,

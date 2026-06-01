@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom';
 import { useEffect, useRef, useState } from 'react';
 import {
-  FaTruck, FaCheck, FaArrowRight, FaVideo, FaUsers,
-  FaShieldHalved, FaBolt, FaGift, FaCircleQuestion, FaStar,
+  FaTruck, FaArrowRight, FaVideo, FaUsers, FaChevronRight,
+  FaShieldHalved, FaBolt, FaGift, FaStar,
 } from 'react-icons/fa6';
 import AppHeader from '../components/AppHeader';
 import AppFooter from '../components/AppFooter';
@@ -22,137 +22,53 @@ function useInView(threshold = 0.12) {
   return { ref, visible };
 }
 
-/* ── Account types — equal treatment for all three ── */
+/* ── Account types — compact picker rows (Company / Crew / Vendor / Cast) ── */
 type AccountType = {
   key: 'company' | 'individual' | 'vendor' | 'cast';
   icon: typeof FaVideo;
-  label: string;
   title: string;
   subtitle: string;
-  description: string;
-  features: string[];
-  cta: string;
   to: string;
-  accent: {
-    ring: string;     // border/ring hover color
-    iconBg: string;   // icon pill bg
-    iconText: string; // icon color
-    check: string;    // feature check color
-    badge: string;    // "For X" overline
-    btnBg: string;    // CTA background
-    btnHover: string; // CTA hover
-    shadow: string;   // CTA shadow
-  };
+  iconBg: string;
+  iconText: string;
 };
 
 const accountTypes: AccountType[] = [
   {
     key: 'company',
     icon: FaVideo,
-    label: 'For Companies',
     title: 'Company',
     subtitle: 'Production houses & agencies',
-    description: 'Centralize hiring, manage projects end-to-end, and collaborate with your team.',
-    features: [
-      'Verified crew & vendor database',
-      'Project & budget management',
-      'Team collaboration & sub-users',
-      'Real-time availability checks',
-      'Integrated payments',
-    ],
-    cta: 'Continue as Company',
     to: '/register/company',
-    accent: {
-      ring: 'hover:border-[#3678F1]',
-      iconBg: 'bg-[#E8F0FE]',
-      iconText: 'text-[#3678F1]',
-      check: 'text-[#3678F1]',
-      badge: 'text-[#3678F1]',
-      btnBg: 'bg-gradient-to-br from-[#3678F1] to-[#2563EB]',
-      btnHover: 'hover:from-[#2563EB] hover:to-[#1D4ED8]',
-      shadow: 'shadow-brand',
-    },
+    iconBg: 'bg-[#E8F0FE] dark:bg-[#3678F1]/15',
+    iconText: 'text-[#3678F1] dark:text-[#5C9EFF]',
   },
   {
     key: 'individual',
     icon: FaUsers,
-    label: 'For Crew',
     title: 'Crew',
     subtitle: 'Freelance crew & professionals',
-    description: 'Get discovered by top agencies, manage your schedule, and get paid faster.',
-    features: [
-      'Professional profile & showreel',
-      'Live availability calendar',
-      'Booking notifications',
-      'One-click invoicing with GST',
-      'Past work portfolio',
-    ],
-    cta: 'Continue as Crew',
     to: '/register/individual',
-    accent: {
-      ring: 'hover:border-[#3678F1]',
-      iconBg: 'bg-[#DCFCE7]',
-      iconText: 'text-[#22C55E]',
-      check: 'text-[#3678F1]',
-      badge: 'text-[#3678F1]',
-      btnBg: 'bg-gradient-to-br from-[#3678F1] to-[#2563EB]',
-      btnHover: 'hover:from-[#2563EB] hover:to-[#1D4ED8]',
-      shadow: 'shadow-brand',
-    },
+    iconBg: 'bg-[#DCFCE7] dark:bg-[#22C55E]/15',
+    iconText: 'text-[#22C55E]',
   },
   {
     key: 'vendor',
     icon: FaTruck,
-    label: 'For Vendors',
     title: 'Vendor',
     subtitle: 'Equipment & rental providers',
-    description: 'List equipment, manage rental calendars, and receive direct booking requests.',
-    features: [
-      'Equipment inventory management',
-      'Rental calendar & scheduling',
-      'Direct quote requests',
-      'GST verified badges',
-      'Multi-city availability',
-    ],
-    cta: 'Continue as Vendor',
     to: '/register/vendor',
-    accent: {
-      ring: 'hover:border-[#3678F1]',
-      iconBg: 'bg-[#FEF7E0]',
-      iconText: 'text-[#8A6508]',
-      check: 'text-[#3678F1]',
-      badge: 'text-[#3678F1]',
-      btnBg: 'bg-gradient-to-br from-[#3678F1] to-[#2563EB]',
-      btnHover: 'hover:from-[#2563EB] hover:to-[#1D4ED8]',
-      shadow: 'shadow-brand',
-    },
+    iconBg: 'bg-[#FEF7E0] dark:bg-[#F4C430]/15',
+    iconText: 'text-[#8A6508] dark:text-[#F4C430]',
   },
   {
     key: 'cast',
     icon: FaStar,
-    label: 'For Cast',
     title: 'Cast',
     subtitle: 'Actors & models',
-    description: 'Get discovered for films, ads and OTT — manage your availability and bookings.',
-    features: [
-      'Detailed cast profile (look, languages)',
-      'Live availability calendar',
-      'Direct casting requests',
-      'One-click invoicing with GST',
-      'Showreel & portfolio',
-    ],
-    cta: 'Continue as Cast',
     to: '/register/cast',
-    accent: {
-      ring: 'hover:border-[#9333EA]',
-      iconBg: 'bg-[#F3E8FF]',
-      iconText: 'text-[#9333EA]',
-      check: 'text-[#3678F1]',
-      badge: 'text-[#3678F1]',
-      btnBg: 'bg-gradient-to-br from-[#3678F1] to-[#2563EB]',
-      btnHover: 'hover:from-[#2563EB] hover:to-[#1D4ED8]',
-      shadow: 'shadow-brand',
-    },
+    iconBg: 'bg-[#F3E8FF] dark:bg-[#9333EA]/20',
+    iconText: 'text-[#9333EA] dark:text-[#C084FC]',
   },
 ];
 
@@ -161,7 +77,7 @@ const avatarInitials = ['Co', 'In', 'Vd'];
 
 export default function UserTypeSelect() {
   useEffect(() => {
-    document.title = 'Join Claapo \u2014 Choose Your Account Type';
+    document.title = 'Join Claapo — Choose Your Account Type';
   }, []);
 
   const { theme } = useTheme();
@@ -178,14 +94,10 @@ export default function UserTypeSelect() {
     blob2:  isDark
       ? 'radial-gradient(circle, rgba(59,91,219,0.20) 0%, transparent 70%)'
       : 'radial-gradient(circle, rgba(59,91,219,0.12) 0%, transparent 70%)',
-    cards:  isDark
-      ? 'linear-gradient(180deg, #0D1326 0%, #0A0E17 100%)'
-      : 'linear-gradient(180deg, #eaf3fd 0%, #eef5fd 100%)',
     bottom: isDark ? '#0D1326' : '#f0f6fd',
   };
 
   const hero = useInView(0.05);
-  const cards = useInView(0.08);
   const bottom = useInView(0.1);
 
   return (
@@ -193,151 +105,120 @@ export default function UserTypeSelect() {
       <AppHeader variant="landing" />
 
       {/* ══════════════════════════════════════════════════════
-          HERO
+          HERO — two columns: pitch (left) + profile picker (right)
          ══════════════════════════════════════════════════════ */}
       <section
         ref={hero.ref}
-        className="relative overflow-hidden pt-16 pb-10 lg:pt-24 lg:pb-14"
+        className="relative overflow-hidden flex-1 pt-14 pb-16 lg:pt-20 lg:pb-24"
         style={{ background: bg.hero }}
       >
         {/* Decorative blobs */}
         <div className="absolute -top-24 -left-24 w-[500px] h-[500px] rounded-full pointer-events-none"
           style={{ background: bg.blob1 }} />
-        <div className="absolute -bottom-32 -right-32 w-[400px] h-[400px] rounded-full pointer-events-none"
+        <div className="absolute -bottom-32 -right-32 w-[420px] h-[420px] rounded-full pointer-events-none"
           style={{ background: bg.blob2 }} />
 
-        <div className={`max-w-4xl mx-auto px-6 text-center relative z-10 transition-all duration-700 ${hero.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
-          {/* Step indicator */}
-          <div className="inline-flex items-center gap-2.5 mb-6">
-            <span className="flex items-center gap-2 text-[11px] font-bold tracking-[0.18em] uppercase text-[#3678F1] dark:text-[#5C9EFF]">
-              <span className="w-6 h-6 rounded-full bg-[#3678F1] dark:bg-[#5C9EFF] text-white flex items-center justify-center text-[11px] font-bold">1</span>
-              Choose Account
-            </span>
-            <span className="w-8 h-px bg-slate-300 dark:bg-[#354763]" />
-            <span className="flex items-center gap-2 text-[11px] font-bold tracking-[0.18em] uppercase text-slate-400 dark:text-[#7A8499]">
-              <span className="w-6 h-6 rounded-full border border-slate-300 dark:border-[#354763] text-slate-400 dark:text-[#7A8499] flex items-center justify-center text-[11px] font-bold">2</span>
-              Create Profile
-            </span>
-          </div>
-
-          <h1 className="text-4xl sm:text-5xl lg:text-[56px] font-extrabold text-[#0f172a] dark:text-[#F1F5F9] leading-[1.08] mb-5 tracking-tight">
-            Join <span className="text-[#3678F1] dark:text-[#5C9EFF]">Claapo</span>
-          </h1>
-          <p className="text-base sm:text-lg text-slate-500 dark:text-[#A1ADC4] leading-relaxed max-w-xl mx-auto mb-8">
-            Pick the account that best describes you. Companies, Crew, Vendors and Cast all get
-            access to the same powerful tools &mdash; tailored for how you work.
-          </p>
-
-          {/* Social proof — mirrors landing page */}
-          <div className="inline-flex items-center gap-3 bg-white/60 dark:bg-[#141A28]/70 backdrop-blur rounded-full px-5 py-2.5 border border-white/70 dark:border-white/10 shadow-sm">
-            <div className="flex -space-x-2">
-              {avatarInitials.map((init, i) => (
-                <div key={i} className={`w-7 h-7 rounded-full border-2 border-white dark:border-[#141A28] flex items-center justify-center text-[9px] font-bold text-white shadow-sm ${avatarColors[i]}`}>
-                  {init}
-                </div>
-              ))}
-              <div className="w-7 h-7 rounded-full border-2 border-white dark:border-[#141A28] bg-[#3678F1] flex items-center justify-center text-[8px] font-bold text-white shadow-sm">+3k</div>
-            </div>
-            <div className="text-left">
-              <p className="text-sm font-semibold text-slate-700 dark:text-[#F1F5F9]">3,000+ members</p>
-              <p className="text-[11px] text-slate-400 dark:text-[#7A8499]">Companies &middot; Crew &middot; Vendors &middot; Cast</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════════════════
-          ACCOUNT TYPE CARDS — equal weight, three accents
-         ══════════════════════════════════════════════════════ */}
-      <section
-        ref={cards.ref}
-        className="py-14 lg:py-20 flex-1"
-        style={{ background: bg.cards }}
-      >
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 lg:gap-6">
-            {accountTypes.map((type, idx) => (
-              <div
-                key={type.key}
-                className={`
-                  group relative rounded-2xl bg-white dark:bg-[#141A28] border border-slate-100 dark:border-[#1F2940] p-7 sm:p-8 flex flex-col
-                  shadow-sm
-                  transition-colors duration-200 ${type.accent.ring}
-                  ${cards.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}
-                `}
-                style={{ transitionDelay: `${idx * 120}ms` }}
-              >
-                {/* Overline label */}
-                <span className={`text-[10px] font-bold tracking-[0.2em] uppercase mb-3 ${type.accent.badge} dark:text-[#5C9EFF]`}>
-                  {type.label}
+        <div className="max-w-6xl mx-auto px-6 relative z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+            {/* ── Left: pitch ── */}
+            <div className={`transition-all duration-700 ${hero.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
+              {/* Step indicator */}
+              <div className="inline-flex items-center gap-2.5 mb-7">
+                <span className="flex items-center gap-2 text-[11px] font-bold tracking-[0.18em] uppercase text-[#3678F1] dark:text-[#5C9EFF]">
+                  <span className="w-6 h-6 rounded-full bg-[#3678F1] dark:bg-[#5C9EFF] text-white flex items-center justify-center text-[11px] font-bold">1</span>
+                  Choose Account
                 </span>
+                <span className="w-8 h-px bg-slate-300 dark:bg-[#354763]" />
+                <span className="flex items-center gap-2 text-[11px] font-bold tracking-[0.18em] uppercase text-slate-400 dark:text-[#7A8499]">
+                  <span className="w-6 h-6 rounded-full border border-slate-300 dark:border-[#354763] text-slate-400 dark:text-[#7A8499] flex items-center justify-center text-[11px] font-bold">2</span>
+                  Create Profile
+                </span>
+              </div>
 
-                {/* Icon */}
-                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 ${type.accent.iconBg}`}>
-                  <type.icon className={`text-xl ${type.accent.iconText}`} />
-                </div>
+              <h1 className="text-4xl sm:text-5xl lg:text-[64px] font-extrabold text-[#0f172a] dark:text-[#F1F5F9] leading-[1.05] mb-5 tracking-tight">
+                Join <span className="text-[#3678F1] dark:text-[#5C9EFF]">Claapo</span>
+              </h1>
+              <p className="text-base sm:text-lg text-slate-500 dark:text-[#A1ADC4] leading-relaxed max-w-md mb-8">
+                Pick the account that best describes you. Companies, Crew, Vendors and Cast all get
+                access to the same powerful tools &mdash; tailored for how you work.
+              </p>
 
-                {/* Title */}
-                <h3 className="text-2xl font-bold text-slate-900 dark:text-[#F1F5F9] mb-1 tracking-tight">
-                  {type.title}
-                </h3>
-                <p className="text-sm text-slate-400 dark:text-[#7A8499] mb-5">
-                  {type.subtitle}
-                </p>
-
-                {/* Divider */}
-                <div className="h-px bg-slate-100 dark:bg-[#1F2940] mb-5" />
-
-                {/* Description */}
-                <p className="text-sm text-slate-500 dark:text-[#A1ADC4] leading-relaxed mb-6">
-                  {type.description}
-                </p>
-
-                {/* Features */}
-                <ul className="space-y-3 mb-8 flex-1">
-                  {type.features.map((f) => (
-                    <li key={f} className="flex items-start gap-2.5">
-                      <FaCheck className={`${type.accent.check} dark:text-[#5C9EFF] text-[11px] shrink-0 mt-1`} />
-                      <span className="text-sm text-slate-600 dark:text-[#A1ADC4] leading-snug">{f}</span>
-                    </li>
+              {/* Social proof */}
+              <div className="inline-flex items-center gap-3 bg-white/60 dark:bg-[#141A28]/70 backdrop-blur rounded-full px-5 py-2.5 border border-white/70 dark:border-white/10 shadow-sm">
+                <div className="flex -space-x-2">
+                  {avatarInitials.map((init, i) => (
+                    <div key={i} className={`w-7 h-7 rounded-full border-2 border-white dark:border-[#141A28] flex items-center justify-center text-[9px] font-bold text-white shadow-sm ${avatarColors[i]}`}>
+                      {init}
+                    </div>
                   ))}
-                </ul>
+                  <div className="w-7 h-7 rounded-full border-2 border-white dark:border-[#141A28] bg-[#3678F1] flex items-center justify-center text-[8px] font-bold text-white shadow-sm">+3k</div>
+                </div>
+                <div className="text-left">
+                  <p className="text-sm font-semibold text-slate-700 dark:text-[#F1F5F9]">3,000+ members</p>
+                  <p className="text-[11px] text-slate-400 dark:text-[#7A8499]">Companies &middot; Crew &middot; Vendors &middot; Cast</p>
+                </div>
+              </div>
+            </div>
 
-                {/* CTA Button */}
+            {/* ── Right: profile picker list ── */}
+            <div className={`transition-all duration-700 ${hero.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`} style={{ transitionDelay: '120ms' }}>
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-[#0f172a] dark:text-[#F1F5F9] tracking-tight">
+                Select which profile
+              </h2>
+              <p className="text-sm text-slate-500 dark:text-[#A1ADC4] mb-6">suits best for you.</p>
+
+              <div className="space-y-3.5">
+                {accountTypes.map((type, idx) => (
+                  <Link
+                    key={type.key}
+                    to={type.to}
+                    aria-label={`Continue as ${type.title}`}
+                    className={`
+                      group flex items-center gap-4 rounded-2xl bg-white dark:bg-[#141A28]
+                      border border-white/70 dark:border-[#1F2940] shadow-sm
+                      px-5 py-4
+                      transition-all duration-200 hover:shadow-md hover:border-[#3678F1]/40 hover:-translate-y-0.5
+                      ${hero.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}
+                    `}
+                    style={{ transitionDelay: `${180 + idx * 80}ms` }}
+                  >
+                    <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${type.iconBg}`}>
+                      <type.icon className={`text-lg ${type.iconText}`} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-base font-bold text-slate-900 dark:text-[#F1F5F9] leading-tight">{type.title}</p>
+                      <p className="text-xs text-slate-400 dark:text-[#7A8499] mt-0.5 truncate">{type.subtitle}</p>
+                    </div>
+                    <FaChevronRight className="text-slate-300 dark:text-[#4B5676] text-sm shrink-0 transition-all group-hover:text-[#3678F1] group-hover:translate-x-0.5" />
+                  </Link>
+                ))}
+              </div>
+
+              {/* Sign in */}
+              <div className="mt-6 flex items-center justify-center gap-2 text-sm">
+                <span className="text-slate-500 dark:text-[#A1ADC4]">Already have an account?</span>
                 <Link
-                  to={type.to}
-                  className={`
-                    inline-flex items-center justify-center gap-2 rounded-xl w-full py-3.5 text-sm font-bold text-white
-                    transition-colors duration-200
-                    ${type.accent.btnBg} ${type.accent.btnHover} ${type.accent.shadow}
-                  `}
+                  to="/login"
+                  className="inline-flex items-center gap-1.5 text-[#3678F1] dark:text-[#5C9EFF] font-bold hover:gap-2 transition-all"
                 >
-                  {type.cta}
-                  <FaArrowRight className="text-xs" />
+                  Sign in <FaArrowRight className="text-[10px]" />
                 </Link>
               </div>
-            ))}
-          </div>
-
-          {/* Help text under cards */}
-          <div className={`mt-10 flex items-center justify-center gap-2 text-xs text-slate-400 dark:text-[#7A8499] transition-all duration-700 ${cards.visible ? 'opacity-100' : 'opacity-0'}`} style={{ transitionDelay: '500ms' }}>
-            <FaCircleQuestion className="text-slate-300 dark:text-[#4B5676]" />
-            <span>Not sure which one fits you? All accounts are free to start &mdash; you can switch anytime.</span>
+            </div>
           </div>
         </div>
       </section>
 
       {/* ══════════════════════════════════════════════════════
-          BOTTOM: TRUST + SIGN IN
+          BOTTOM: TRUST
          ══════════════════════════════════════════════════════ */}
       <section
         ref={bottom.ref}
-        className="py-16 border-t border-slate-200/60 dark:border-[#1F2940]"
+        className="py-14 border-t border-slate-200/60 dark:border-[#1F2940]"
         style={{ background: bg.bottom }}
       >
         <div className={`max-w-4xl mx-auto px-6 transition-all duration-700 ${bottom.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-          {/* Trust indicators */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-12">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {[
               { Icon: FaShieldHalved, title: 'Secure & Encrypted', desc: 'Bank-grade encryption & JWT auth' },
               { Icon: FaBolt,          title: 'Setup in 2 Minutes', desc: 'Simple onboarding, no paperwork' },
@@ -353,19 +234,6 @@ export default function UserTypeSelect() {
                 </div>
               </div>
             ))}
-          </div>
-
-          {/* Sign in link */}
-          <div className="text-center">
-            <div className="bg-white dark:bg-[#141A28] rounded-2xl border border-slate-100 dark:border-[#1F2940] shadow-sm px-8 py-5 inline-flex items-center gap-3">
-              <p className="text-sm text-slate-600 dark:text-[#A1ADC4]">Already have an account?</p>
-              <Link
-                to="/login"
-                className="inline-flex items-center gap-1.5 text-sm text-[#3678F1] dark:text-[#5C9EFF] font-bold hover:gap-2 transition-all"
-              >
-                Sign in <FaArrowRight className="text-[10px]" />
-              </Link>
-            </div>
           </div>
         </div>
       </section>
