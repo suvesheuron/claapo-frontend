@@ -1,23 +1,31 @@
 /**
  * OTP Verification page — reached after registration.
  *
- * Location state expected (passed from registration pages):
- *   phone        — E.164 phone number that OTP was sent to
- *   userType     — 'individual' | 'company' | 'vendor'
- *   pendingProfile — extra profile fields collected during registration to PATCH
- *                    after OTP verify succeeds and tokens are available
+ * CURRENTLY: email-based (for launch, while DLT for SMS is pending).
+ *   Location state: { email, userType, pendingProfile }
+ *   Endpoints: POST /auth/otp/email/send, POST /auth/otp/email/verify
  *
- * When SMS is not configured, the API may return `devOtp` and we show it on
- * this page for demos and client review.
+ * TO REVIVE PHONE OTP after DLT approval, swap each occurrence below:
+ *   - import: `maskEmail` from '../utils/email' → `maskPhone` from '../utils/phone'
+ *   - icon:   FaEnvelope → FaMobileScreenButton
+ *   - state field:   `email` → `phone`
+ *   - endpoints:     '/auth/otp/email/send' → '/auth/otp/send' (and same for verify)
+ *   - request body:  `{ email }` → `{ phone }`
+ *   - guard copy:    "No email found" → "No phone number found"
+ *   - heading:       "Verify your email" → "Verify your phone"
+ *   - mask call:     maskEmail(email) → maskPhone(phone)
+ *
+ * pendingProfile, devOtp display, resend countdown, profile patch logic are
+ * unchanged between the two modes.
  */
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { FaVideo, FaTriangleExclamation, FaMobileScreenButton } from 'react-icons/fa6';
+import { FaVideo, FaTriangleExclamation, FaEnvelope } from 'react-icons/fa6';
 import AppLayout from '../components/AppLayout';
 import { api, ApiException } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
-import { maskPhone } from '../utils/phone';
+import { maskEmail } from '../utils/email';
 import { devOtpFromResponse } from '../utils/devOtp';
 
 interface PendingProfile {
@@ -38,7 +46,7 @@ interface PendingProfile {
 }
 
 interface OtpLocationState {
-  phone: string;
+  email: string;
   userType: 'individual' | 'company' | 'vendor' | 'cast';
   pendingProfile?: PendingProfile;
 }
@@ -58,7 +66,7 @@ export default function OtpVerify() {
   const { setSession } = useAuth();
 
   const state = location.state as OtpLocationState | null;
-  const phone      = state?.phone      ?? '';
+  const email      = state?.email      ?? '';
   const userType   = state?.userType   ?? 'individual';
   const pending    = state?.pendingProfile ?? {};
 
@@ -96,11 +104,11 @@ export default function OtpVerify() {
   // ── send OTP on mount ─────────────────────────────────────────────────────
 
   useEffect(() => {
-    if (!phone) return;
+    if (!email) return;
 
     async function sendOtp() {
       try {
-        const res = await api.post<unknown>('/auth/otp/send', { phone });
+        const res = await api.post<unknown>('/auth/otp/email/send', { email });
         setDevOtpDisplay(devOtpFromResponse(res));
         startCountdown();
       } catch (err) {
@@ -150,7 +158,7 @@ export default function OtpVerify() {
     setError(null);
     setResending(true);
     try {
-      const res = await api.post<unknown>('/auth/otp/send', { phone });
+      const res = await api.post<unknown>('/auth/otp/email/send', { email });
       setDevOtpDisplay(devOtpFromResponse(res));
       setDigits(Array(OTP_LENGTH).fill(''));
       inputRefs.current[0]?.focus();
@@ -177,7 +185,7 @@ export default function OtpVerify() {
 
     setVerifying(true);
     try {
-      const tokenRes = await api.post<TokenResponse>('/auth/otp/verify', { phone, otp });
+      const tokenRes = await api.post<TokenResponse>('/auth/otp/email/verify', { email, otp });
 
       // Hydrate auth context immediately (also updates module-level token)
       setSession(tokenRes.accessToken, tokenRes.refreshToken);
@@ -231,12 +239,12 @@ export default function OtpVerify() {
 
   // ── guard: if landed here without state, send back ────────────────────────
 
-  if (!phone) {
+  if (!email) {
     return (
       <AppLayout headerVariant="back" backTo="/register" backLabel="Back">
         <div className="flex-1 flex items-center justify-center px-4 py-10">
           <div className="text-center">
-            <p className="text-neutral-600 mb-4">No phone number found. Please register again.</p>
+            <p className="text-neutral-600 mb-4">No email found. Please register again.</p>
             <Link to="/register" className="text-[#3678F1] font-semibold hover:underline text-sm">
               Go to Registration
             </Link>
@@ -253,22 +261,22 @@ export default function OtpVerify() {
           {/* Icon + heading */}
           <div className="flex flex-col items-center mb-8">
             <div className="w-14 h-14 rounded-2xl bg-[#E8F0FE] ring-1 ring-[#3678F1]/15 flex items-center justify-center mb-4">
-              <FaMobileScreenButton className="text-[#3678F1] text-2xl" />
+              <FaEnvelope className="text-[#3678F1] text-2xl" />
             </div>
-            <h1 className="text-2xl font-bold text-neutral-900">Verify your phone</h1>
+            <h1 className="text-2xl font-bold text-neutral-900">Verify your email</h1>
             <p className="text-sm text-neutral-500 mt-2 text-center leading-relaxed">
               We sent a 6-digit code to{' '}
-              <span className="font-semibold text-neutral-700">{maskPhone(phone)}</span>
+              <span className="font-semibold text-neutral-700">{maskEmail(email)}</span>
             </p>
           </div>
 
           {devOtpDisplay && (
             <div className="mb-5 rounded-2xl border-2 border-dashed border-amber-300 bg-gradient-to-b from-amber-50 to-amber-50/80 px-4 py-5 text-center shadow-sm">
               <p className="text-[10px] font-bold uppercase tracking-widest text-amber-800/90 mb-1">
-                Demo — SMS not active
+                Demo — email delivery pending verification
               </p>
               <p className="text-xs text-amber-900/75 mb-4 max-w-[280px] mx-auto leading-relaxed">
-                Your one-time code appears below so you can complete signup without a text message.
+                Your one-time code appears below so you can complete signup without an email.
               </p>
               <p
                 className="text-3xl sm:text-4xl font-extrabold tracking-[0.2em] font-mono text-neutral-900 tabular-nums select-all"

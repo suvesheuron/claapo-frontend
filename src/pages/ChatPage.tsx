@@ -25,6 +25,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useRole } from '../contexts/RoleContext';
 import { useChatUnread } from '../contexts/ChatUnreadContext';
 import { linkifyText } from '../utils/linkify';
+import MediaLightbox, { type LightboxMedia } from '../components/MediaLightbox';
 import { individualNavLinks, vendorNavLinks, companyNavLinks } from '../navigation/dashboardNav';
 
 // ── Types ──────────────────────────────────────────────────────────────
@@ -240,6 +241,7 @@ export default function ChatPage() {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   const [forwardMsg, setForwardMsg] = useState<ChatMessage | null>(null);
+  const [lightbox, setLightbox] = useState<LightboxMedia | null>(null);
   const [conversationsForForward, setConversationsForForward] = useState<Conversation[]>([]);
   const [forwardSearch, setForwardSearch] = useState('');
 
@@ -960,9 +962,11 @@ export default function ChatPage() {
                         </span>
                       </div>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="text-[11px] text-neutral-500">
-                          {project.conversationCount} {project.conversationCount === 1 ? 'chat' : 'chats'}
-                        </span>
+                        {project.conversationCount > 0 && (
+                          <span className="text-[11px] text-neutral-500">
+                            {project.conversationCount} {project.conversationCount === 1 ? 'chat' : 'chats'}
+                          </span>
+                        )}
                         {hasUnread && (
                           <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-[#F40F02] text-white text-[10px] font-bold">
                             {unreadForProject > 99 ? '99+' : unreadForProject} new
@@ -1376,13 +1380,17 @@ export default function ChatPage() {
                               (() => {
                                 const url = getMediaUrl(msg.mediaKey);
                                 return url ? (
-                                  <a href={url} target="_blank" rel="noreferrer" className="block mb-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => setLightbox({ url, type: 'image', title: msg.content ?? 'Shared image' })}
+                                    className="block mb-2"
+                                  >
                                     <img
                                       src={url}
                                       alt={msg.content ?? 'Shared image'}
                                       className="rounded-xl max-w-full max-h-60 object-cover shadow-sm border border-black/5 cursor-zoom-in"
                                     />
-                                  </a>
+                                  </button>
                                 ) : null;
                               })()
                             ) : null}
@@ -1501,6 +1509,8 @@ export default function ChatPage() {
       })()}
 
       {/* Forward Modal */}
+      <MediaLightbox media={lightbox} onClose={() => setLightbox(null)} />
+
       {forwardMsg && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center" onClick={() => setForwardMsg(null)}>
           <div className="bg-white dark:bg-surface-1 rounded-xl shadow-2xl w-full max-w-md mx-4" onClick={(e) => e.stopPropagation()}>

@@ -1,12 +1,25 @@
+/**
+ * Forgot password — email-based for launch (SMS DLT pending).
+ *
+ * TO REVIVE PHONE-BASED RESET after DLT approval:
+ *   - import: `maskEmail` from '../utils/email' → `maskPhone, toE164India` from '../utils/phone'
+ *   - Step type: 'email' → 'phone'
+ *   - state field: `email` → `phone` + `e164Phone`
+ *   - endpoint: '/auth/password/reset/email/request' → '/auth/password/reset/request' (and confirm)
+ *   - request body field: `email` → `phone: e164Phone`
+ *   - UI label: 'Email' → 'Mobile Number'
+ *   - mask:  maskEmail(email) → maskPhone(e164Phone)
+ */
+
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaVideo, FaTriangleExclamation, FaCircleCheck, FaChevronLeft, FaEye, FaEyeSlash } from 'react-icons/fa6';
 import AppLayout from '../components/AppLayout';
 import { api, ApiException } from '../services/api';
-import { toE164India, maskPhone } from '../utils/phone';
+import { maskEmail } from '../utils/email';
 import { devOtpFromResponse } from '../utils/devOtp';
 
-type Step = 'phone' | 'otp';
+type Step = 'email' | 'otp';
 
 const OTP_LENGTH = 6;
 const RESEND_SECONDS = 60;
@@ -14,9 +27,8 @@ const RESEND_SECONDS = 60;
 export default function ForgotPassword() {
   const navigate = useNavigate();
 
-  const [step, setStep]           = useState<Step>('phone');
-  const [phone, setPhone]         = useState('');
-  const [e164Phone, setE164Phone] = useState('');
+  const [step, setStep]           = useState<Step>('email');
+  const [email, setEmail]         = useState('');
   const [digits, setDigits]       = useState<string[]>(Array(OTP_LENGTH).fill(''));
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -49,23 +61,23 @@ export default function ForgotPassword() {
     }, 1000);
   }, []);
 
-  // ── Step 1: request OTP ──────────────────────────────────────────────────
+  // ── Step 1: request OTP via email ────────────────────────────────────────
 
-  const handlePhoneSubmit = async (e: React.FormEvent) => {
+  const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    const formatted = toE164India(phone.trim());
-    if (formatted.replace(/\D/g, '').length < 10) {
-      setError('Please enter a valid 10-digit mobile number.');
+    const trimmed = email.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      setError('Please enter a valid email address.');
       return;
     }
 
     setLoading(true);
     try {
-      const res = await api.post<unknown>('/auth/password/reset/request', { phone: formatted });
+      const res = await api.post<unknown>('/auth/password/reset/email/request', { email: trimmed });
       setDevOtpDisplay(devOtpFromResponse(res));
-      setE164Phone(formatted);
+      setEmail(trimmed);
       startCountdown();
       setStep('otp');
     } catch (err) {
@@ -108,7 +120,7 @@ export default function ForgotPassword() {
     setResending(true);
     setError(null);
     try {
-      const res = await api.post<unknown>('/auth/password/reset/request', { phone: e164Phone });
+      const res = await api.post<unknown>('/auth/password/reset/email/request', { email });
       setDevOtpDisplay(devOtpFromResponse(res));
       setDigits(Array(OTP_LENGTH).fill(''));
       inputRefs.current[0]?.focus();
@@ -144,8 +156,8 @@ export default function ForgotPassword() {
 
     setLoading(true);
     try {
-      await api.post('/auth/password/reset/confirm', {
-        phone: e164Phone,
+      await api.post('/auth/password/reset/email/confirm', {
+        email,
         otp,
         newPassword,
       });
@@ -196,19 +208,19 @@ export default function ForgotPassword() {
               <FaVideo className="text-[#3678F1] text-lg" />
             </div>
             <h1 className="text-2xl font-bold text-neutral-900">
-              {step === 'phone' ? 'Reset your password' : 'Enter verification code'}
+              {step === 'email' ? 'Reset your password' : 'Enter verification code'}
             </h1>
             <p className="text-sm text-neutral-500 mt-1 text-center">
-              {step === 'phone'
-                ? 'Enter your registered phone number to receive a reset code.'
-                : <>Code sent to <span className="font-semibold text-neutral-700">{maskPhone(e164Phone)}</span></>
+              {step === 'email'
+                ? 'Enter your registered email to receive a reset code.'
+                : <>Code sent to <span className="font-semibold text-neutral-700">{maskEmail(email)}</span></>
               }
             </p>
           </div>
 
           {/* Step indicator */}
           <div className="flex items-center justify-center gap-2 mb-6">
-            {(['phone', 'otp'] as Step[]).map((s, i) => (
+            {(['email', 'otp'] as Step[]).map((s, i) => (
               <div key={s} className="flex items-center gap-2">
                 <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
                   step === s ? 'bg-[#3678F1] text-white' :
@@ -224,18 +236,18 @@ export default function ForgotPassword() {
 
           <div className="rounded-2xl bg-white border border-neutral-200 p-6 shadow-sm">
 
-            {/* ── Step 1: phone ── */}
-            {step === 'phone' && (
-              <form className="space-y-4" onSubmit={handlePhoneSubmit}>
+            {/* ── Step 1: email ── */}
+            {step === 'email' && (
+              <form className="space-y-4" onSubmit={handleEmailSubmit}>
                 <div>
                   <label className="block text-neutral-700 text-sm mb-1.5 font-medium">
-                    Mobile Number
+                    Email
                   </label>
                   <input
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+91 98765 43210"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@example.com"
                     required
                     disabled={loading}
                     autoFocus
@@ -269,20 +281,20 @@ export default function ForgotPassword() {
                 <button
                   type="button"
                   onClick={() => {
-                    setStep('phone');
+                    setStep('email');
                     setError(null);
                     setDigits(Array(OTP_LENGTH).fill(''));
                     setDevOtpDisplay(null);
                   }}
                   className="flex items-center gap-1.5 text-xs text-neutral-500 hover:text-neutral-700 mb-1 -mt-1"
                 >
-                  <FaChevronLeft className="text-[10px]" /> Change number
+                  <FaChevronLeft className="text-[10px]" /> Change email
                 </button>
 
                 {devOtpDisplay && (
                   <div className="rounded-2xl border-2 border-dashed border-amber-300 bg-gradient-to-b from-amber-50 to-amber-50/80 px-4 py-4 text-center shadow-sm mb-1">
                     <p className="text-[10px] font-bold uppercase tracking-widest text-amber-800/90 mb-1">
-                      Demo — SMS not active
+                      Demo — email delivery pending verification
                     </p>
                     <p className="text-xs text-amber-900/75 mb-3">Your reset code:</p>
                     <p className="text-2xl sm:text-3xl font-extrabold tracking-[0.2em] font-mono text-neutral-900 tabular-nums select-all">

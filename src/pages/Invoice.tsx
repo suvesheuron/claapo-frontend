@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FaArrowLeft, FaPrint, FaTriangleExclamation, FaPaperPlane, FaPaperclip, FaDownload, FaTrash } from 'react-icons/fa6';
+import { FaArrowLeft, FaPrint, FaTriangleExclamation, FaPaperPlane, FaPaperclip, FaDownload, FaTrash, FaPlay } from 'react-icons/fa6';
 import DashboardHeader from '../components/DashboardHeader';
 import AppFooter from '../components/AppFooter';
 import toast from 'react-hot-toast';
@@ -8,6 +8,15 @@ import { useApiQuery } from '../hooks/useApiQuery';
 import { useAuth } from '../contexts/AuthContext';
 import { api, ApiException } from '../services/api';
 import { formatPaise } from '../utils/currency';
+import MediaLightbox, { type LightboxMedia } from '../components/MediaLightbox';
+
+/** Which attachments preview in the in-app lightbox vs download externally. */
+function attachmentMediaType(mime?: string | null): 'image' | 'video' | null {
+  const m = (mime ?? '').toLowerCase();
+  if (m.startsWith('image/')) return 'image';
+  if (m.startsWith('video/')) return 'video';
+  return null;
+}
 
 interface InvoiceLineItem {
   description: string;
@@ -108,6 +117,7 @@ export default function Invoice() {
   const [declineReason, setDeclineReason] = useState('');
   const [uploadingAttachment, setUploadingAttachment] = useState(false);
   const [deletingAttachmentId, setDeletingAttachmentId] = useState<string | null>(null);
+  const [lightbox, setLightbox] = useState<LightboxMedia | null>(null);
   const [cancelling, setCancelling] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -580,6 +590,7 @@ export default function Invoice() {
                     {isOffline && (() => {
                       const primary = attachments[0] ?? null;
                       const isImage = !!primary && (primary.mimeType ?? '').toLowerCase().startsWith('image/');
+                      const isVideo = !!primary && (primary.mimeType ?? '').toLowerCase().startsWith('video/');
                       const isPdf = !!primary && (primary.mimeType ?? '').toLowerCase().includes('pdf');
                       return (
                         <div className="no-print mb-5 bg-white rounded-2xl border border-[#3678F1]/30 overflow-hidden">
@@ -619,18 +630,30 @@ export default function Invoice() {
                             ) : (
                               <div className="space-y-3">
                                 {isImage && primary.downloadUrl ? (
-                                  <a
-                                    href={primary.downloadUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="block rounded-xl overflow-hidden border border-neutral-200 bg-neutral-50"
+                                  <button
+                                    type="button"
+                                    onClick={() => setLightbox({ url: primary.downloadUrl!, type: 'image', title: primary.fileName })}
+                                    className="block w-full rounded-xl overflow-hidden border border-neutral-200 bg-neutral-50"
                                   >
                                     <img
                                       src={primary.downloadUrl}
                                       alt={primary.fileName}
-                                      className="w-full max-h-[480px] object-contain bg-neutral-50"
+                                      className="w-full max-h-[480px] object-contain bg-neutral-50 cursor-zoom-in"
                                     />
-                                  </a>
+                                  </button>
+                                ) : isVideo && primary.downloadUrl ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => setLightbox({ url: primary.downloadUrl!, type: 'video', title: primary.fileName })}
+                                    className="relative block w-full rounded-xl overflow-hidden border border-neutral-200 bg-black"
+                                  >
+                                    <video src={primary.downloadUrl} muted preload="metadata" className="w-full max-h-[480px] object-contain bg-black pointer-events-none" />
+                                    <span className="absolute inset-0 flex items-center justify-center">
+                                      <span className="w-14 h-14 rounded-full bg-black/55 backdrop-blur-sm flex items-center justify-center">
+                                        <FaPlay className="text-white text-lg ml-0.5" />
+                                      </span>
+                                    </span>
+                                  </button>
                                 ) : isPdf && primary.downloadUrl ? (
                                   <object
                                     data={primary.downloadUrl}
@@ -668,15 +691,26 @@ export default function Invoice() {
                                   </p>
                                   <div className="flex items-center gap-2">
                                     {primary.downloadUrl ? (
-                                      <a
-                                        href={primary.downloadUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#3678F1] text-white text-xs font-semibold hover:bg-[#2563EB]"
-                                      >
-                                        <FaDownload className="w-3 h-3" />
-                                        Open
-                                      </a>
+                                      (isImage || isVideo) ? (
+                                        <button
+                                          type="button"
+                                          onClick={() => setLightbox({ url: primary.downloadUrl!, type: isVideo ? 'video' : 'image', title: primary.fileName })}
+                                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#3678F1] text-white text-xs font-semibold hover:bg-[#2563EB]"
+                                        >
+                                          <FaDownload className="w-3 h-3" />
+                                          Open
+                                        </button>
+                                      ) : (
+                                        <a
+                                          href={primary.downloadUrl}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#3678F1] text-white text-xs font-semibold hover:bg-[#2563EB]"
+                                        >
+                                          <FaDownload className="w-3 h-3" />
+                                          Open
+                                        </a>
+                                      )
                                     ) : null}
                                     {canEditAttachments && (
                                       <button
@@ -1009,11 +1043,26 @@ export default function Invoice() {
                             <ul className="space-y-2">
                               {visibleAttachments.map((a) => (
                                 <li key={a.id} className="flex items-center justify-between gap-2 py-1.5 px-2 rounded-lg bg-neutral-50 border border-neutral-100">
-                                  <a href={a.downloadUrl ?? '#'} target="_blank" rel="noopener noreferrer" className="text-sm text-[#3678F1] hover:underline truncate flex items-center gap-2 min-w-0">
-                                    <FaDownload className="w-3 h-3 shrink-0" />
-                                    <span className="truncate">{a.fileName}</span>
-                                    <span className="text-xs text-neutral-400 shrink-0">({(a.size / 1024).toFixed(1)} KB)</span>
-                                  </a>
+                                  {(() => {
+                                    const mt = attachmentMediaType(a.mimeType);
+                                    const cls = 'text-sm text-[#3678F1] hover:underline truncate flex items-center gap-2 min-w-0 text-left';
+                                    const inner = (
+                                      <>
+                                        <FaDownload className="w-3 h-3 shrink-0" />
+                                        <span className="truncate">{a.fileName}</span>
+                                        <span className="text-xs text-neutral-400 shrink-0">({(a.size / 1024).toFixed(1)} KB)</span>
+                                      </>
+                                    );
+                                    return mt && a.downloadUrl ? (
+                                      <button type="button" onClick={() => setLightbox({ url: a.downloadUrl!, type: mt, title: a.fileName })} className={cls}>
+                                        {inner}
+                                      </button>
+                                    ) : (
+                                      <a href={a.downloadUrl ?? '#'} target="_blank" rel="noopener noreferrer" className={cls}>
+                                        {inner}
+                                      </a>
+                                    );
+                                  })()}
                                   {canEditAttachments && (
                                     <button
                                       type="button"
@@ -1044,6 +1093,7 @@ export default function Invoice() {
         </div>
       </div>
 
+      <MediaLightbox media={lightbox} onClose={() => setLightbox(null)} />
     </>
   );
 }

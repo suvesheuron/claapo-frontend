@@ -10,6 +10,7 @@ import DashboardSidebar from '../../components/DashboardSidebar';
 import AppFooter from '../../components/AppFooter';
 import Avatar from '../../components/Avatar';
 import ImagePreviewModal from '../../components/ImagePreviewModal';
+import CoverMedia, { type CoverType } from '../../components/profile/CoverMedia';
 import { api, ApiException } from '../../services/api';
 import { useApiQuery } from '../../hooks/useApiQuery';
 import { vendorNavLinks } from '../../navigation/dashboardNav';
@@ -93,6 +94,7 @@ export default function VendorProfile() {
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
   const [coverUploading, setCoverUploading] = useState(false);
+  const [coverType, setCoverType] = useState<CoverType>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
   // Lightbox preview state
@@ -146,18 +148,20 @@ export default function VendorProfile() {
   const handleCoverChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.type.startsWith('image/')) {
-      setError('Please upload an image file for cover photo.');
+    const isVideo = file.type.startsWith('video/');
+    if (!file.type.startsWith('image/') && !isVideo) {
+      setError('Please upload an image or video file for the cover.');
       return;
     }
-    if (file.size > 8 * 1024 * 1024) {
-      setError('Cover photo must be under 8MB.');
+    if (file.size > (isVideo ? 50 : 8) * 1024 * 1024) {
+      setError(isVideo ? 'Cover video must be under 50MB.' : 'Cover photo must be under 8MB.');
       return;
     }
     setError(null);
     setCoverUploading(true);
     const previewUrl = URL.createObjectURL(file);
     setCoverUrl(previewUrl);
+    setCoverType(isVideo ? 'video' : 'image');
     try {
       // Same critical rule as avatar: signed Content-Type must match the PUT header.
       const contentType = file.type || 'image/jpeg';
@@ -180,7 +184,7 @@ export default function VendorProfile() {
     if (!me?.profile) return;
     const p = me.profile as VendorProfileData & { avatarUrl?: string; logoUrl?: string; coverUrl?: string };
     if (p.logoUrl || p.avatarUrl) setAvatarUrl(p.logoUrl ?? p.avatarUrl ?? null);
-    if (p.coverUrl) setCoverUrl(p.coverUrl);
+    if (p.coverUrl) { setCoverUrl(p.coverUrl); setCoverType((p as { coverType?: CoverType }).coverType ?? 'image'); }
     setCompanyName(p.companyName ?? '');
     setVendorServiceCategory(p.vendorServiceCategory ?? '');
     setLocationCity(p.locationCity ?? '');
@@ -323,46 +327,18 @@ export default function VendorProfile() {
                       {/* Cover Banner — click to preview, hover to reveal upload pill */}
                       <div
                         className="h-36 bg-gradient-to-br from-[#3678F1] via-[#2563EB] to-[#1D4ED8] relative overflow-hidden cursor-zoom-in group"
-                        onClick={() => setCoverPreviewOpen(true)}
+                        onClick={() => { if (coverType !== 'video') setCoverPreviewOpen(true); }}
                         role="button"
                         tabIndex={0}
-                        aria-label="Open cover photo preview"
+                        aria-label="Open cover preview"
                         onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
+                          if ((e.key === 'Enter' || e.key === ' ') && coverType !== 'video') {
                             e.preventDefault();
                             setCoverPreviewOpen(true);
                           }
                         }}
                       >
-                        {coverUrl ? (
-                          <>
-                            {/* Blurred backdrop: same image scaled + blurred,
-                                fills any empty space left by object-contain
-                                with the cover's own colors instead of the
-                                raw blue gradient. */}
-                            <img
-                              src={coverUrl}
-                              alt=""
-                              aria-hidden
-                              draggable={false}
-                              className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-80 select-none pointer-events-none"
-                            />
-                            <img
-                              src={coverUrl}
-                              alt="Cover"
-                              draggable={false}
-                              className="absolute inset-0 w-full h-full object-contain transition-transform duration-500 group-hover:scale-[1.03]"
-                            />
-                          </>
-                        ) : (
-                          <div
-                            className="absolute inset-0 opacity-25"
-                            style={{
-                              backgroundImage:
-                                'radial-gradient(circle at 20% 50%, rgba(255,255,255,0.35) 0%, transparent 50%), radial-gradient(circle at 80% 30%, rgba(255,255,255,0.25) 0%, transparent 50%)',
-                            }}
-                          />
-                        )}
+                        <CoverMedia url={coverUrl} type={coverType} />
                         <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                         <button
                           type="button"
@@ -384,7 +360,7 @@ export default function VendorProfile() {
                             </>
                           )}
                         </button>
-                        <input ref={coverInputRef} type="file" accept="image/*" className="hidden" onChange={handleCoverChange} />
+                        <input ref={coverInputRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleCoverChange} />
                       </div>
 
                       {/* Avatar (= vendor logo) — bigger, pure circular, gradient ring */}
