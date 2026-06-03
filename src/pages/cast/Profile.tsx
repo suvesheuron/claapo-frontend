@@ -141,7 +141,7 @@ export default function CastProfile() {
     if (!file) return;
     const isVideo = file.type.startsWith('video/');
     if (!file.type.startsWith('image/') && !isVideo) { setError('Please upload an image or video file for the cover.'); return; }
-    if (file.size > (isVideo ? 50 : 8) * 1024 * 1024) { setError(isVideo ? 'Cover video must be under 50MB.' : 'Cover photo must be under 8MB.'); return; }
+    if (file.size > (isVideo ? 200 : 8) * 1024 * 1024) { setError(isVideo ? 'Cover video must be under 200MB.' : 'Cover photo must be under 8MB.'); return; }
     setError(null);
     setCoverUploading(true);
     const previewUrl = URL.createObjectURL(file);

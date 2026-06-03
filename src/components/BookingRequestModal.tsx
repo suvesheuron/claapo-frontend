@@ -71,6 +71,10 @@ type BookingRequestModalProps = {
   isVendor?: boolean;
   /** When booking a vendor, pre-select this equipment (e.g. from search result) */
   initialVendorEquipmentId?: string;
+  /** True when booking a location provider (fetch + show their properties) */
+  isLocation?: boolean;
+  /** When booking a location, pre-select this property */
+  initialLocationPropertyId?: string;
   onSuccess?: () => void;
 };
 
@@ -285,6 +289,8 @@ export default function BookingRequestModal({
   targetUserId,
   isVendor = false,
   initialVendorEquipmentId,
+  isLocation = false,
+  initialLocationPropertyId,
   onSuccess,
 }: BookingRequestModalProps) {
   const [projectId, setProjectId] = useState('');
@@ -293,6 +299,7 @@ export default function BookingRequestModal({
   const [bookingDates, setBookingDates] = useState<string[]>([]);
   const [shootDateLocations, setShootDateLocations] = useState<ShootDateLocation[]>([]);
   const [selectedEquipmentIds, setSelectedEquipmentIds] = useState<string[]>([]);
+  const [selectedPropertyIds, setSelectedPropertyIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
@@ -339,6 +346,13 @@ export default function BookingRequestModal({
   );
   const rawList = Array.isArray(vendorEquipment) ? vendorEquipment : (vendorEquipment as { data?: unknown[]; items?: unknown[] })?.data ?? (vendorEquipment as { items?: unknown[] })?.items ?? [];
   const equipmentList = (Array.isArray(rawList) ? rawList : []) as VendorEquipmentItem[];
+
+  // Location properties — fetched when booking a location provider so the
+  // company can pick which property/setup the request is for.
+  const { data: propertyData, loading: propertyLoading } = useApiQuery<Array<{ id: string; name: string; subTypes?: string[]; dailyBudget?: number | null }>>(
+    isOpen && targetUserId && isLocation ? `/properties/location/${targetUserId}` : null
+  );
+  const propertyList = Array.isArray(propertyData) ? propertyData : [];
 
   const getPaise = (eq: VendorEquipmentItem): number[] => {
     const budget = (eq.dailyBudget ?? eq.daily_budget) as number | null | undefined;
@@ -431,9 +445,19 @@ export default function BookingRequestModal({
       setError(null);
       setSent(false);
       setSelectedEquipmentIds([]);
+      setSelectedPropertyIds([]);
       setLocationInputs({});
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || !isLocation) return;
+    if (initialLocationPropertyId && propertyList.some((pr) => pr.id === initialLocationPropertyId)) {
+      setSelectedPropertyIds([initialLocationPropertyId]);
+    } else if (propertyList.length === 1 && propertyList[0]?.id) {
+      setSelectedPropertyIds([propertyList[0].id]);
+    }
+  }, [isOpen, isLocation, initialLocationPropertyId, propertyList]);
 
   useEffect(() => {
     if (!isOpen || !isVendor) return;
@@ -495,12 +519,19 @@ export default function BookingRequestModal({
     setLoading(true);
 
     try {
-      const equipmentIdsForRequest = isVendor && selectedEquipmentIds.length > 0 ? selectedEquipmentIds : [undefined];
-      for (const equipmentId of equipmentIdsForRequest) {
+      // One request per selected item. Vendors loop over equipment, locations
+      // over properties; everyone else sends a single request with neither.
+      const selections: Array<{ vendorEquipmentId?: string; locationPropertyId?: string }> =
+        isVendor && selectedEquipmentIds.length > 0
+          ? selectedEquipmentIds.map((id) => ({ vendorEquipmentId: id }))
+          : isLocation && selectedPropertyIds.length > 0
+            ? selectedPropertyIds.map((id) => ({ locationPropertyId: id }))
+            : [{}];
+      for (const sel of selections) {
         await api.post('/bookings/request', {
           projectId,
           targetUserId,
-          vendorEquipmentId: equipmentId,
+          ...sel,
           rateOffered: rateOffered ? Math.round(parseFloat(rateOffered.replace(/[^0-9.]/g, '')) * 100) : undefined,
           message: message.trim() || undefined,
           shootDates: bookingDates,
@@ -795,6 +826,48 @@ export default function BookingRequestModal({
                   </div>
                   <p className="text-[11px] text-neutral-500 mt-1.5">
                     If you select multiple items, separate booking requests will be sent for each equipment.
+                  </p>
+                </div>
+              )}
+
+              {/* Location property selector — pick which property/setup this
+                  request is for. Sent as locationPropertyId so the provider's
+                  per-property calendar conflict check applies on accept. */}
+              {isLocation && (
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-700 mb-1.5 uppercase tracking-wide">
+                    Property for this request
+                    <span className="ml-2 text-[9px] font-normal text-neutral-400 normal-case">(Optional)</span>
+                  </label>
+                  <div className="rounded-xl border border-neutral-200 bg-white p-2.5 space-y-2 max-h-44 overflow-auto">
+                    {propertyList.map((pr) => {
+                      const checked = selectedPropertyIds.includes(pr.id);
+                      return (
+                        <label key={pr.id} className="flex items-center gap-2.5 text-sm text-neutral-700">
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            disabled={loading || propertyLoading}
+                            onChange={(e) => {
+                              setSelectedPropertyIds((prev) =>
+                                e.target.checked ? [...prev, pr.id] : prev.filter((x) => x !== pr.id),
+                              );
+                            }}
+                            className="h-4 w-4 rounded border-neutral-300 text-[#0F766E] focus:ring-[#0F766E]/30"
+                          />
+                          <span className="truncate">{pr.name}</span>
+                          {(pr.subTypes?.length ?? 0) > 0 && (
+                            <span className="text-[10px] text-neutral-500 truncate">({pr.subTypes!.slice(0, 2).join(', ')})</span>
+                          )}
+                        </label>
+                      );
+                    })}
+                    {!propertyLoading && propertyList.length === 0 && (
+                      <p className="text-xs text-neutral-500 px-1 py-1">This provider hasn't listed any properties yet.</p>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-neutral-500 mt-1.5">
+                    If you select multiple properties, separate booking requests will be sent for each.
                   </p>
                 </div>
               )}

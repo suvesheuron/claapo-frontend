@@ -31,6 +31,7 @@ interface Booking {
   project: { id: string; title: string; startDate: string; endDate: string; status?: string; locationCity?: string | null };
   requester: { id: string; email: string; companyProfile?: { companyName?: string } | null };
   vendorEquipment?: { id: string; name: string } | null;
+  locationProperty?: { id: string; name: string } | null;
   equipmentAlreadyBookedFor?: { projectTitle: string; startDate: string; endDate: string } | null;
   cancelRequestReason?: string | null;
   cancelRequestedAt?: string | null;
@@ -385,6 +386,18 @@ export default function Bookings() {
                                 <div className="min-w-0">
                                   <p className="text-[10px] uppercase tracking-wider font-semibold text-neutral-400">Equipment</p>
                                   <p className="text-sm font-semibold text-neutral-900 truncate">{booking.vendorEquipment.name}</p>
+                                </div>
+                              </div>
+                            )}
+
+                            {booking.locationProperty && (
+                              <div className="flex items-start gap-2.5">
+                                <div className="w-8 h-8 rounded-lg bg-[#E0F2F1] ring-1 ring-[#0F766E]/15 flex items-center justify-center shrink-0">
+                                  <FaBriefcase className="w-3.5 h-3.5 text-[#0F766E]" />
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-[10px] uppercase tracking-wider font-semibold text-neutral-400">Property</p>
+                                  <p className="text-sm font-semibold text-neutral-900 truncate">{booking.locationProperty.name}</p>
                                 </div>
                               </div>
                             )}

@@ -1376,6 +1376,7 @@ We're working on ${projectName}${location ? ` (${location})` : ''}. Just wanted 
           userRate={(isIndividual || isCast) && p?.dailyBudget ? formatPaise(p.dailyBudget) + ' /day' : '—'}
           targetUserId={profile.id}
           isVendor={isVendor}
+          isLocation={isLocation}
           onSuccess={() => setIsBookingModalOpen(false)}
         />
       )}

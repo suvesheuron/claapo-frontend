@@ -93,7 +93,8 @@ export function NavBadgesProvider({ children }: { children: ReactNode }) {
         user.role === 'individual' ||
         user.role === 'vendor' ||
         user.role === 'company' ||
-        user.role === 'cast'
+        user.role === 'cast' ||
+        user.role === 'location'
       ) {
         const res = await api.get<IncomingBookingsResponse>('/bookings/incoming');
         const actionable = (res?.items ?? []).filter(
