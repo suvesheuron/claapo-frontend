@@ -16,6 +16,7 @@ const CompanyRegistration = lazy(() => import('./pages/CompanyRegistration'));
 const IndividualRegistration = lazy(() => import('./pages/IndividualRegistration'));
 const VendorRegistration = lazy(() => import('./pages/VendorRegistration'));
 const CastRegistration = lazy(() => import('./pages/CastRegistration'));
+const LocationRegistration = lazy(() => import('./pages/LocationRegistration'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const CreateProject = lazy(() => import('./pages/CreateProject'));
 const EditProject = lazy(() => import('./pages/EditProject'));
@@ -36,6 +37,11 @@ const CastProfile = lazy(() => import('./pages/cast/Profile'));
 const VendorEquipment = lazy(() => import('./pages/vendor/Equipment'));
 const VendorAvailability = lazy(() => import('./pages/vendor/Availability'));
 const VendorPastRentals = lazy(() => import('./pages/vendor/PastRentals'));
+
+// Location routes
+const LocationProfile = lazy(() => import('./pages/location/Profile'));
+const LocationProperties = lazy(() => import('./pages/location/Properties'));
+const LocationAvailability = lazy(() => import('./pages/location/Availability'));
 
 // Company routes
 const Projects = lazy(() => import('./pages/company/Projects'));
@@ -99,6 +105,7 @@ const ROLE_MAP: Record<BackendRole, UserRole> = {
   vendor: 'Vendor',
   admin: 'Company', // admin uses the company dashboard view
   cast: 'Cast',
+  location: 'Location',
 };
 
 function AuthRoleSyncBridge() {
@@ -215,6 +222,7 @@ export default function App() {
           <Route path="/register/individual" element={<IndividualRegistration />} />
           <Route path="/register/vendor" element={<VendorRegistration />} />
           <Route path="/register/cast" element={<CastRegistration />} />
+          <Route path="/register/location" element={<LocationRegistration />} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/projects" element={<ProtectedRoute allowedRoles={['company', 'admin']}><Projects /></ProtectedRoute>} />
           <Route path="/projects/:id" element={<ProtectedRoute><ProjectDetail /></ProtectedRoute>} />
@@ -240,15 +248,15 @@ export default function App() {
           {/* Companies can also reach the create-invoice page now (spec 8 — booked
               companies raise invoices to the production house). The server still
               enforces that the issuer is a confirmed booking target on the project. */}
-          <Route path="/invoice/new" element={<ProtectedRoute allowedRoles={['individual', 'vendor', 'company', 'cast']}><CreateInvoice /></ProtectedRoute>} />
+          <Route path="/invoice/new" element={<ProtectedRoute allowedRoles={['individual', 'vendor', 'company', 'cast', 'location']}><CreateInvoice /></ProtectedRoute>} />
           <Route path="/invoice/:invoiceId" element={<ProtectedRoute><Invoice /></ProtectedRoute>} />
-          <Route path="/bookings" element={<ProtectedRoute allowedRoles={['individual', 'vendor', 'company', 'cast']}><Bookings /></ProtectedRoute>} />
-          <Route path="/project-details" element={<ProtectedRoute allowedRoles={['individual', 'vendor', 'cast']}><ProjectDetails /></ProtectedRoute>} />
-          <Route path="/ongoing-projects" element={<ProtectedRoute allowedRoles={['individual', 'vendor', 'cast']}><OngoingProjects /></ProtectedRoute>} />
+          <Route path="/bookings" element={<ProtectedRoute allowedRoles={['individual', 'vendor', 'company', 'cast', 'location']}><Bookings /></ProtectedRoute>} />
+          <Route path="/project-details" element={<ProtectedRoute allowedRoles={['individual', 'vendor', 'cast', 'location']}><ProjectDetails /></ProtectedRoute>} />
+          <Route path="/ongoing-projects" element={<ProtectedRoute allowedRoles={['individual', 'vendor', 'cast', 'location']}><OngoingProjects /></ProtectedRoute>} />
           <Route path="/team" element={<ProtectedRoute allowedRoles={['company', 'vendor', 'admin']}><VendorSubuserRestricted><TeamPage /></VendorSubuserRestricted></ProtectedRoute>} />
 
           {/* Reports */}
-          <Route path="/earnings" element={<ProtectedRoute allowedRoles={['individual', 'vendor', 'cast']}><VendorSubuserRestricted><EarningsDashboard /></VendorSubuserRestricted></ProtectedRoute>} />
+          <Route path="/earnings" element={<ProtectedRoute allowedRoles={['individual', 'vendor', 'cast', 'location']}><VendorSubuserRestricted><EarningsDashboard /></VendorSubuserRestricted></ProtectedRoute>} />
           <Route path="/spending" element={<ProtectedRoute allowedRoles={['company', 'admin']}><SpendingDashboard /></ProtectedRoute>} />
 
           {/* Individual + Cast routes (Cast reuses individual availability/past-projects pages) */}
@@ -256,6 +264,11 @@ export default function App() {
           <Route path="/past-projects" element={<ProtectedRoute allowedRoles={['individual', 'cast']}><IndividualPastProjects /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute allowedRoles={['individual']}><IndividualProfile /></ProtectedRoute>} />
           <Route path="/cast-profile" element={<ProtectedRoute allowedRoles={['cast']}><CastProfile /></ProtectedRoute>} />
+
+          {/* Location routes */}
+          <Route path="/location-profile" element={<ProtectedRoute allowedRoles={['location']}><LocationProfile /></ProtectedRoute>} />
+          <Route path="/properties" element={<ProtectedRoute allowedRoles={['location']}><LocationProperties /></ProtectedRoute>} />
+          <Route path="/location-availability" element={<ProtectedRoute allowedRoles={['location']}><LocationAvailability /></ProtectedRoute>} />
 
           {/* Vendor routes */}
           <Route path="/equipment" element={<ProtectedRoute allowedRoles={['vendor']}><VendorEquipment /></ProtectedRoute>} />

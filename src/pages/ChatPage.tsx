@@ -26,7 +26,7 @@ import { useRole } from '../contexts/RoleContext';
 import { useChatUnread } from '../contexts/ChatUnreadContext';
 import { linkifyText } from '../utils/linkify';
 import MediaLightbox, { type LightboxMedia } from '../components/MediaLightbox';
-import { individualNavLinks, vendorNavLinks, companyNavLinks } from '../navigation/dashboardNav';
+import { individualNavLinks, vendorNavLinks, companyNavLinks, castNavLinks, locationNavLinks } from '../navigation/dashboardNav';
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -178,7 +178,11 @@ export default function ChatPage() {
       ? companyNavLinks
       : currentRole === 'Vendor'
         ? vendorNavLinks
-        : individualNavLinks;
+        : currentRole === 'Location'
+          ? locationNavLinks
+          : currentRole === 'Cast'
+            ? castNavLinks
+            : individualNavLinks;
 
   const getName = (u: Participant) => u.displayName ?? u.companyName ?? u.email ?? 'Unknown';
 

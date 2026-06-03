@@ -10,7 +10,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useRole } from '../contexts/RoleContext';
 import { onInvoiceUpdated } from '../services/chatSocket';
 import { formatPaise } from '../utils/currency';
-import { companyNavLinks, individualNavLinks, vendorNavLinks, castNavLinks } from '../navigation/dashboardNav';
+import { companyNavLinks, individualNavLinks, vendorNavLinks, castNavLinks, locationNavLinks } from '../navigation/dashboardNav';
 
 interface InvoiceItem {
   id: string;
@@ -381,6 +381,7 @@ export default function InvoicesList() {
 
   const navLinks = currentRole === 'Company' ? companyNavLinks
     : currentRole === 'Vendor' ? vendorNavLinks
+    : currentRole === 'Location' ? locationNavLinks
     : currentRole === 'Cast' ? castNavLinks
     : individualNavLinks;
 

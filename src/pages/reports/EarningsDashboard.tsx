@@ -17,7 +17,7 @@ import DateInput from '../../components/DateInput';
 import { useApiQuery } from '../../hooks/useApiQuery';
 import { useRole } from '../../contexts/RoleContext';
 import { formatPaise } from '../../utils/currency';
-import { individualNavLinks, vendorNavLinks, castNavLinks } from '../../navigation/dashboardNav';
+import { individualNavLinks, vendorNavLinks, castNavLinks, locationNavLinks } from '../../navigation/dashboardNav';
 
 interface Invoice {
   id: string;
@@ -70,7 +70,7 @@ function downloadCSV(invoices: Invoice[]) {
 
 export default function EarningsDashboard() {
   const { currentRole } = useRole();
-  const navLinks = currentRole === 'Vendor' ? vendorNavLinks : currentRole === 'Cast' ? castNavLinks : individualNavLinks;
+  const navLinks = currentRole === 'Vendor' ? vendorNavLinks : currentRole === 'Location' ? locationNavLinks : currentRole === 'Cast' ? castNavLinks : individualNavLinks;
 
   useEffect(() => { document.title = 'Earnings – Claapo'; }, []);
 
