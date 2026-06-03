@@ -43,11 +43,15 @@ interface PendingProfile {
   roleType?: 'actor' | 'model';
   age?: number;
   gender?: 'male' | 'female' | 'other';
+  // Location-specific
+  propertyName?: string;
+  locationType?: string;
+  gstNumber?: string;
 }
 
 interface OtpLocationState {
   email: string;
-  userType: 'individual' | 'company' | 'vendor' | 'cast';
+  userType: 'individual' | 'company' | 'vendor' | 'cast' | 'location';
   pendingProfile?: PendingProfile;
 }
 
@@ -218,6 +222,14 @@ export default function OtpVerify() {
             ...(pending.roleType && { roleType: pending.roleType }),
             ...(pending.age != null && { age: pending.age }),
             ...(pending.gender && { gender: pending.gender }),
+            ...(pending.locationCity && { locationCity: pending.locationCity }),
+            ...(pending.locationState && { locationState: pending.locationState }),
+          });
+        } else if (userType === 'location' && Object.keys(pending).length > 0) {
+          await api.patch('/profile/location', {
+            ...(pending.propertyName && { propertyName: pending.propertyName }),
+            ...(pending.locationType && { locationType: pending.locationType }),
+            ...(pending.gstNumber && { gstNumber: pending.gstNumber }),
             ...(pending.locationCity && { locationCity: pending.locationCity }),
             ...(pending.locationState && { locationState: pending.locationState }),
           });

@@ -18,6 +18,7 @@ import {
   individualNavLinks,
   vendorNavLinks,
   castNavLinks,
+  locationNavLinks,
 } from '../navigation/dashboardNav';
 
 interface InvoiceItem {
@@ -95,9 +96,11 @@ export default function OfflineInvoices() {
       ? companyNavLinks
       : currentRole === 'Vendor'
         ? vendorNavLinks
-        : currentRole === 'Cast'
-          ? castNavLinks
-          : individualNavLinks;
+        : currentRole === 'Location'
+          ? locationNavLinks
+          : currentRole === 'Cast'
+            ? castNavLinks
+            : individualNavLinks;
 
   const listUrl = projectId
     ? `/invoices?projectId=${encodeURIComponent(projectId)}&limit=200`

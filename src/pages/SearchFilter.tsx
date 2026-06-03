@@ -15,8 +15,9 @@ import { useApiQuery } from '../hooks/useApiQuery';
 import { formatPaise } from '../utils/currency';
 import { companyNavLinks } from '../navigation/dashboardNav';
 import { REGISTRATION_INDIVIDUAL_DEPARTMENTS, REGISTRATION_VENDOR_CATEGORIES, REGISTRATION_GENRES, REGISTRATION_COMPANY_TYPES, vendorCategoryToVendorType } from '../constants/registrationCategories';
+import { LOCATION_TYPES, LOCATION_TYPE_LABELS } from '../constants/locationCategories';
 
-type SearchType = 'crew' | 'vendors' | 'companies';
+type SearchType = 'crew' | 'vendors' | 'companies' | 'locations';
 
 interface CrewResult {
   userId: string;
@@ -58,6 +59,25 @@ interface VendorResult {
   locationCity?: string;
   isGstVerified: boolean;
   equipment?: VendorEquipmentItem[];
+  avatarUrl?: string | null;
+}
+
+interface LocationPropertyResult {
+  id: string;
+  name: string;
+  subTypes?: string[];
+  city?: string | null;
+  dailyBudget?: number | null;
+  photoUrls?: string[];
+}
+interface LocationResult {
+  userId: string;
+  propertyName: string;
+  locationType: string;
+  subTypes?: string[];
+  locationCity?: string | null;
+  isGstVerified?: boolean;
+  properties?: LocationPropertyResult[];
   avatarUrl?: string | null;
 }
 
@@ -130,6 +150,7 @@ export default function SearchFilter() {
   const initType: SearchType =
     initTypeRaw === 'vendors' ? 'vendors'
     : initTypeRaw === 'companies' ? 'companies'
+    : initTypeRaw === 'locations' ? 'locations'
     : 'crew';
   const [searchType, setSearchType] = useState<SearchType>(initType);
 
@@ -147,6 +168,7 @@ export default function SearchFilter() {
   const [crewResults, setCrewResults] = useState<CrewResult[]>([]);
   const [vendorResults, setVendorResults] = useState<VendorResult[]>([]);
   const [companyResults, setCompanyResults] = useState<CompanyResult[]>([]);
+  const [locationResults, setLocationResults] = useState<LocationResult[]>([]);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -200,6 +222,22 @@ export default function SearchFilter() {
         const list = Array.isArray(raw?.items) ? raw.items : [];
         const total = raw?.meta?.total ?? 0;
         setCompanyResults(list);
+        setTotalPages(Math.max(1, Math.ceil(total / PAGE_SIZE)));
+        return;
+      }
+
+      // Locations tab — provider + property search by city / type / dates.
+      if (type === 'locations') {
+        if (q.trim()) params.propertyName = q.trim();
+        if (loc.trim()) params.city = loc.trim();
+        if (skill.trim()) params.locationType = skill.trim(); // skill slot reused as locationType
+        if (sDate) params.startDate = new Date(sDate).toISOString();
+        if (eDate) params.endDate = new Date(eDate).toISOString();
+        const qs = new URLSearchParams(params);
+        const raw = await api.get<{ items?: LocationResult[]; meta?: { total?: number } }>(`/search/locations?${qs.toString()}`);
+        const list = Array.isArray(raw?.items) ? raw.items : [];
+        const total = raw?.meta?.total ?? 0;
+        setLocationResults(list);
         setTotalPages(Math.max(1, Math.ceil(total / PAGE_SIZE)));
         return;
       }
@@ -468,11 +506,14 @@ Please share your best quotation for this requirement.`;
   };
 
   const isCompaniesTab = searchType === 'companies';
+  const isLocationsTab = searchType === 'locations';
   const results = searchType === 'crew'
     ? (crewResults ?? [])
     : searchType === 'vendors'
       ? (vendorResults ?? [])
-      : (companyResults ?? []);
+      : searchType === 'locations'
+        ? (locationResults ?? [])
+        : (companyResults ?? []);
   const resultCount = Array.isArray(results) ? results.length : 0;
 
   return (
@@ -488,12 +529,14 @@ Please share your best quotation for this requirement.`;
               <div className="flex items-center justify-between gap-4 mb-6">
                 <div>
                   <h1 className="text-2xl font-bold tracking-tight text-neutral-900">
-                    {isCompaniesTab ? 'Find Companies' : 'Find Crew & Vendors'}
+                    {isCompaniesTab ? 'Find Companies' : isLocationsTab ? 'Find Locations' : 'Find Crew & Vendors'}
                   </h1>
                   <p className="text-sm text-neutral-500 mt-1">
                     {isCompaniesTab
                       ? 'Discover production houses on Claapo by name'
-                      : 'Search and hire the best talent for your productions'}
+                      : isLocationsTab
+                        ? 'Find bungalows, studios and set-ups by city, type and dates'
+                        : 'Search and hire the best talent for your productions'}
                   </p>
                 </div>
                 {!isSubuser && (
@@ -506,10 +549,10 @@ Please share your best quotation for this requirement.`;
 
               {/* Crew / Vendor toggle — pill-shaped tabs */}
               <div className="flex items-center gap-1 mb-5 bg-[#E8F0FE] rounded-full p-1 w-fit">
-                {(['crew', 'vendors', 'companies'] as SearchType[]).map((type) => (
+                {(['crew', 'vendors', 'companies', 'locations'] as SearchType[]).map((type) => (
                   <button key={type} type="button" onClick={() => switchType(type)}
                     className={`rounded-full px-6 py-2 text-sm font-semibold transition-colors duration-200 capitalize ${searchType === type ? 'bg-white text-[#3678F1] shadow-sm' : 'text-[#2563EB] hover:text-[#1D4ED8]'}`}>
-                    {type === 'crew' ? 'Crew' : type === 'vendors' ? 'Vendors' : 'Companies'}
+                    {type === 'crew' ? 'Crew' : type === 'vendors' ? 'Vendors' : type === 'companies' ? 'Companies' : 'Locations'}
                   </button>
                 ))}
               </div>
@@ -638,6 +681,18 @@ Please share your best quotation for this requirement.`;
                         className="w-full px-4 py-3 border border-neutral-200 rounded-xl text-sm bg-neutral-50 focus:bg-white focus:outline-none focus:border-[#3678F1] focus:ring-2 focus:ring-[#3678F1]/20 transition-colors duration-200 appearance-none">
                         <option value="">All types</option>
                         {REGISTRATION_VENDOR_CATEGORIES.map(t => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                    </div>
+                  )}
+
+                  {/* Location type filter (skillFilter slot reused) */}
+                  {searchType === 'locations' && (
+                    <div>
+                      <label className="block text-[11px] font-bold text-neutral-500 mb-2 uppercase tracking-widest">Location Type</label>
+                      <select value={skillFilter} onChange={(e) => { setSkillFilter(e.target.value); setPage(1); }}
+                        className="w-full px-4 py-3 border border-neutral-200 rounded-xl text-sm bg-neutral-50 focus:bg-white focus:outline-none focus:border-[#3678F1] focus:ring-2 focus:ring-[#3678F1]/20 transition-colors duration-200 appearance-none">
+                        <option value="">All types</option>
+                        {LOCATION_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
                       </select>
                     </div>
                   )}
@@ -998,6 +1053,54 @@ Please share your best quotation for this requirement.`;
                         </Link>
                       </motion.div>
                     ))}
+                  </motion.div>
+                )
+              )}
+
+              {/* Result grid — Locations (provider + matched properties) */}
+              {!loading && searchType === 'locations' && (
+                locationResults.length === 0 ? (
+                  <div className="rounded-2xl bg-white border border-neutral-200/70 shadow-sm p-16 text-center">
+                    <div className="w-16 h-16 rounded-2xl bg-[#E0F2F1] flex items-center justify-center mx-auto mb-4">
+                      <FaBuilding className="text-[#0F766E] text-xl" />
+                    </div>
+                    <p className="text-base font-semibold text-neutral-900 mb-1.5">No locations found</p>
+                    <p className="text-sm text-neutral-500 max-w-xs mx-auto">Try a different city, type, or dates — or clear filters.</p>
+                  </div>
+                ) : (
+                  <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {locationResults.map((r) => {
+                      const photo = r.properties?.find((pr) => pr.photoUrls?.length)?.photoUrls?.[0];
+                      return (
+                        <motion.div variants={itemVariants} key={r.userId}>
+                          <Link to={`/profile/${r.userId}`} className="block h-full rounded-2xl bg-white shadow-sm border border-neutral-200/70 hover:border-[#0F766E] hover:shadow-md transition-all duration-200 overflow-hidden">
+                            <div className="h-36 bg-gradient-to-br from-[#E0F2F1] to-[#CCFBF1] flex items-center justify-center overflow-hidden">
+                              {photo ? <img src={photo} alt={r.propertyName} className="w-full h-full object-cover" loading="lazy" /> : <FaBuilding className="text-4xl text-[#0F766E]/40" />}
+                            </div>
+                            <div className="p-5">
+                              <div className="flex items-start gap-3 mb-2">
+                                <Avatar src={r.avatarUrl ?? undefined} name={r.propertyName || '—'} size="md" />
+                                <div className="min-w-0">
+                                  <h3 className="text-[15px] font-bold text-neutral-900 truncate">{r.propertyName || 'Unnamed'}</h3>
+                                  <p className="text-[11px] font-semibold text-[#0F766E] uppercase tracking-wide mt-0.5 truncate">
+                                    {LOCATION_TYPE_LABELS[r.locationType] ?? 'Location'}
+                                  </p>
+                                </div>
+                              </div>
+                              {(r.properties?.length ?? 0) > 0 && (
+                                <p className="text-xs text-neutral-500 mb-2">{r.properties!.length} matching propert{r.properties!.length === 1 ? 'y' : 'ies'}</p>
+                              )}
+                              <div className="flex flex-col gap-2 pt-3 border-t border-neutral-100 mt-auto">
+                                <span className="text-xs text-neutral-500 flex items-center gap-1.5">
+                                  <FaLocationDot className="text-neutral-300 text-[11px]" />
+                                  {r.locationCity || 'Location on request'}
+                                </span>
+                              </div>
+                            </div>
+                          </Link>
+                        </motion.div>
+                      );
+                    })}
                   </motion.div>
                 )
               )}

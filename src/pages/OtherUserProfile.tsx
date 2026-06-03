@@ -16,7 +16,8 @@ import InquiryRequestModal from '../components/InquiryRequestModal';
 import { api, ApiException } from '../services/api';
 import { useApiQuery } from '../hooks/useApiQuery';
 import { useAuth } from '../contexts/AuthContext';
-import { companyNavLinks, individualNavLinks, vendorNavLinks, castNavLinks } from '../navigation/dashboardNav';
+import { companyNavLinks, individualNavLinks, vendorNavLinks, castNavLinks, locationNavLinks } from '../navigation/dashboardNav';
+import { LOCATION_TYPE_LABELS } from '../constants/locationCategories';
 import type { BookingWithDetails, SlotStatus } from '../types/availability';
 import { parseAvailabilityMonthResponse } from '../utils/parseAvailabilityResponse';
 import { formatPaise } from '../utils/currency';
@@ -24,7 +25,7 @@ import StarRating from '../components/StarRating';
 import WorkShowcase, { type ShowcaseItem } from '../components/profile/WorkShowcase';
 import CoverMedia, { type CoverType } from '../components/profile/CoverMedia';
 
-type UserRole = 'individual' | 'company' | 'vendor' | 'admin' | 'cast';
+type UserRole = 'individual' | 'company' | 'vendor' | 'admin' | 'cast' | 'location';
 
 interface VendorEquipment {
   id: string;
@@ -35,6 +36,21 @@ interface VendorEquipment {
   dailyBudget?: number | null; // paise
   quantityTotal?: number | null;
   availabilities?: Array<{ locationCity?: string | null }>;
+}
+
+interface LocationProperty {
+  id: string;
+  name: string;
+  description?: string | null;
+  subTypes?: string[];
+  city?: string | null;
+  address?: string | null;
+  addressLat?: number | null;
+  addressLng?: number | null;
+  dailyBudget?: number | null; // paise
+  photoUrls?: string[];
+  pdfUrl?: string | null;
+  pdfName?: string | null;
 }
 
 interface PublicProfileResponse {
@@ -65,6 +81,16 @@ interface PublicProfileResponse {
     vimeoUrl?: string;
     isAvailable?: boolean;
     equipment?: VendorEquipment[];
+    // Location-specific
+    propertyName?: string;
+    locationType?: string;
+    subTypes?: string[];
+    address?: string;
+    addressLat?: number | null;
+    addressLng?: number | null;
+    detailPdfUrl?: string | null;
+    detailPdfName?: string | null;
+    properties?: LocationProperty[];
   } | null;
 }
 
@@ -158,7 +184,7 @@ export default function OtherUserProfile() {
   // specific: 'showreel' for cast (Work Showcase) or individual (video) and
   // 'equipment' for vendors (their inventory is the main offering). Defaults
   // to About so the bio/details are visible on landing.
-  type ProfileTab = 'schedule' | 'about' | 'showreel' | 'equipment';
+  type ProfileTab = 'schedule' | 'about' | 'showreel' | 'equipment' | 'properties';
   const [activeTab, setActiveTab] = useState<ProfileTab>('about');
 
   useEffect(() => {
@@ -184,7 +210,7 @@ export default function OtherUserProfile() {
   useEffect(() => {
     if (!userId || !profile) return;
     const role = profile.role;
-    if (role !== 'individual' && role !== 'vendor') {
+    if (role !== 'individual' && role !== 'vendor' && role !== 'location') {
       setProfileSlotMap({});
       setProfileBookingDetails({});
       return;
@@ -216,6 +242,7 @@ export default function OtherUserProfile() {
   const isVendor = profile?.role === 'vendor';
   const isCompany = profile?.role === 'company';
   const isCast = profile?.role === 'cast';
+  const isLocation = profile?.role === 'location';
 
   // Viewer-side context — controls which sections render.
   //
@@ -226,12 +253,13 @@ export default function OtherUserProfile() {
   // Cast targets are treated like Individuals — companies (especially Casting
   // Directors) see the calendar and booking affordances.
   const viewerIsCompany = viewer?.role === 'company' || viewer?.role === 'admin';
-  const showCalendarSection = viewerIsCompany && (isIndividual || isVendor || isCast);
+  const showCalendarSection = viewerIsCompany && (isIndividual || isVendor || isCast || isLocation);
   const showBookActions = viewerIsCompany; // booking available against any role
   const navLinks = useMemo(() => {
     if (viewer?.role === 'vendor') return vendorNavLinks;
     if (viewer?.role === 'individual') return individualNavLinks;
     if (viewer?.role === 'cast') return castNavLinks;
+    if (viewer?.role === 'location') return locationNavLinks;
     return companyNavLinks;
   }, [viewer?.role]);
   // Where the "Back" link should go — companies have the rich /search filter,
@@ -239,15 +267,17 @@ export default function OtherUserProfile() {
   const backTo = viewer?.role === 'company' || viewer?.role === 'admin' ? '/search' : '/discover';
   const backLabel = backTo === '/search' ? 'Back to search' : 'Back to discover';
 
-  const title = p?.displayName ?? p?.companyName ?? 'Profile';
+  const title = p?.displayName ?? p?.companyName ?? p?.propertyName ?? 'Profile';
   const castRoleType = isCast ? (p as { roleType?: string } | null)?.roleType ?? null : null;
   const primaryRole = isIndividual
     ? (p?.skills?.[0] ?? 'Individual')
     : isCast
       ? (castRoleType ? castRoleType.charAt(0).toUpperCase() + castRoleType.slice(1) : 'Cast')
-      : profile?.role
-        ? profile.role.replace(/_/g, ' ')
-        : '—';
+      : isLocation
+        ? (p?.locationType ? (LOCATION_TYPE_LABELS[p.locationType] ?? 'Location') : 'Location')
+        : profile?.role
+          ? profile.role.replace(/_/g, ' ')
+          : '—';
   const genreLine = isIndividual
     ? (p?.genres?.length ? p.genres.join(', ') : p?.genre ?? '')
     : '';
@@ -637,9 +667,9 @@ We're working on ${projectName}${location ? ` (${location})` : ''}. Just wanted 
                             Shown for every bookable target (company/cast/
                             vendor); individuals also get it so company viewers
                             can fire off a quick inquiry from the top. */}
-                        {(visiblePlatforms.length > 0 || (showBookActions && (isCompany || isCast || isVendor || isIndividual))) && (
+                        {(visiblePlatforms.length > 0 || (showBookActions && (isCompany || isCast || isVendor || isIndividual || isLocation))) && (
                           <div className="flex flex-col gap-3 lg:items-end lg:pt-1">
-                            {showBookActions && (isCompany || isCast || isVendor || isIndividual) && (
+                            {showBookActions && (isCompany || isCast || isVendor || isIndividual || isLocation) && (
                               <div className="flex flex-wrap gap-2">
                                 <button
                                   type="button"
@@ -703,6 +733,7 @@ We're working on ${projectName}${location ? ` (${location})` : ''}. Just wanted 
                     const showreelUrl = (p as { showreelUrl?: string | null } | null)?.showreelUrl ?? null;
                     const hasShowcase = (p as { showcaseItems?: ShowcaseItem[] } | null)?.showcaseItems?.length ?? 0;
                     const equipmentCount = p?.equipment?.length ?? 0;
+                    const propertyCount = p?.properties?.length ?? 0;
                     const tabs: { key: ProfileTab; label: string; Icon: typeof FaCalendarDays }[] = [];
                     if (showCalendarSection) tabs.push({ key: 'schedule', label: 'Schedule', Icon: FaCalendarDays });
                     tabs.push({ key: 'about', label: 'About', Icon: FaCircleInfo });
@@ -715,6 +746,9 @@ We're working on ${projectName}${location ? ` (${location})` : ''}. Just wanted 
                     // an explicit "no equipment listed yet" state instead of
                     // wondering why a vendor profile is missing a section.
                     if (isVendor) tabs.push({ key: 'equipment', label: `Equipment${equipmentCount ? ` (${equipmentCount})` : ''}`, Icon: FaVideo });
+                    // Properties are the location analogue of equipment — the
+                    // listed spaces ARE the offering. Always shown for locations.
+                    if (isLocation) tabs.push({ key: 'properties', label: `Properties${propertyCount ? ` (${propertyCount})` : ''}`, Icon: FaLocationDot });
                     if (tabs.length < 2) return null;
                     // If the current tab isn't in the available set, fall back to About.
                     const safeActive = tabs.some((t) => t.key === activeTab) ? activeTab : 'about';
@@ -748,7 +782,7 @@ We're working on ${projectName}${location ? ` (${location})` : ''}. Just wanted 
                     );
                   })()}
 
-                  {activeTab === 'about' && ((isIndividual && (p.bio || p.aboutMe)) || (isCompany && (p.bio || p.aboutUs)) || (isVendor && p.aboutUs) || (isCast && ((p as { aboutMe?: string | null }).aboutMe || p.bio))) && (
+                  {activeTab === 'about' && ((isIndividual && (p.bio || p.aboutMe)) || (isCompany && (p.bio || p.aboutUs)) || (isVendor && p.aboutUs) || (isCast && ((p as { aboutMe?: string | null }).aboutMe || p.bio)) || (isLocation && (p.aboutUs || p.bio))) && (
                     <motion.div variants={itemVariants} className="rounded-3xl bg-white shadow-soft border border-neutral-100 hover:border-[#3678F1] transition-colors duration-200 p-6 sm:p-8">
                       <h2 className="text-base font-bold text-neutral-900 mb-4 flex items-center gap-2">
                         <span className="w-1 h-5 rounded-full bg-[#3678F1]" /> About
@@ -762,6 +796,59 @@ We're working on ${projectName}${location ? ` (${location})` : ''}. Just wanted 
                               ? ((p as { aboutMe?: string | null }).aboutMe || p.bio || '—')
                               : (p.aboutUs || p.bio)}
                       </p>
+                    </motion.div>
+                  )}
+
+                  {/* Location Details — type, sub-types, Google map pin, and the
+                      profile-level detailed PDF. Always shown in the About tab
+                      for location targets. */}
+                  {activeTab === 'about' && isLocation && (
+                    <motion.div variants={itemVariants} className="rounded-3xl bg-white shadow-soft border border-neutral-100 hover:border-[#3678F1] transition-colors duration-200 p-6 sm:p-8">
+                      <h2 className="text-base font-bold text-neutral-900 mb-4 flex items-center gap-2">
+                        <span className="w-1 h-5 rounded-full bg-[#0F766E]" /> Location Details
+                      </h2>
+                      <dl className="space-y-3 text-sm">
+                        <div>
+                          <dt className="text-xs font-semibold text-neutral-400 uppercase tracking-wide mb-1">Location Type</dt>
+                          <dd className="text-neutral-800">{p.locationType ? (LOCATION_TYPE_LABELS[p.locationType] ?? p.locationType) : '—'}</dd>
+                        </div>
+                        <div>
+                          <dt className="text-xs font-semibold text-neutral-400 uppercase tracking-wide mb-1.5">Sub-Types</dt>
+                          {(p.subTypes?.length ?? 0) > 0 ? (
+                            <div className="flex flex-wrap gap-1.5">
+                              {p.subTypes!.map((s) => (
+                                <span key={s} className="px-2.5 py-1 bg-[#E0F2F1] text-[#0F766E] text-xs font-semibold rounded-md border border-[#0F766E]/20">{s}</span>
+                              ))}
+                            </div>
+                          ) : <dd className="text-neutral-800">—</dd>}
+                        </div>
+                        {p.address && (
+                          <div>
+                            <dt className="text-xs font-semibold text-neutral-400 uppercase tracking-wide mb-1">Address</dt>
+                            <dd className="text-neutral-800">{p.address}</dd>
+                          </div>
+                        )}
+                        {p.addressLat != null && p.addressLng != null && (
+                          <div>
+                            <dt className="text-xs font-semibold text-neutral-400 uppercase tracking-wide mb-1">Map Pin</dt>
+                            <dd>
+                              <a href={`https://www.google.com/maps/search/?api=1&query=${p.addressLat},${p.addressLng}`} target="_blank" rel="noreferrer" className="text-[#0F766E] hover:underline inline-flex items-center gap-1.5">
+                                <FaLocationDot className="w-3.5 h-3.5" /> Open in Google Maps
+                              </a>
+                            </dd>
+                          </div>
+                        )}
+                        {p.detailPdfUrl && (
+                          <div>
+                            <dt className="text-xs font-semibold text-neutral-400 uppercase tracking-wide mb-1">Detailed PDF</dt>
+                            <dd>
+                              <a href={p.detailPdfUrl} target="_blank" rel="noreferrer" className="text-[#0F766E] hover:underline inline-flex items-center gap-1.5">
+                                <FaVideo className="w-3.5 h-3.5" /> {p.detailPdfName || 'View PDF'}
+                              </a>
+                            </dd>
+                          </div>
+                        )}
+                      </dl>
                     </motion.div>
                   )}
 
@@ -1129,6 +1216,87 @@ We're working on ${projectName}${location ? ` (${location})` : ''}. Just wanted 
                       )}
                     </motion.div>
                   )}
+
+                  {/* Properties tab — location listings grid. Shows photo,
+                      sub-types, daily price, city, and a PDF link per property.
+                      Falls back to an empty state when none are listed yet. */}
+                  {activeTab === 'properties' && isLocation && (
+                    <motion.div variants={itemVariants} className="rounded-3xl bg-white shadow-soft border border-neutral-100 hover:border-[#0F766E] transition-colors duration-200 p-6 sm:p-8">
+                      <div className="flex items-center justify-between gap-3 mb-5 flex-wrap">
+                        <h2 className="text-base font-bold text-neutral-900 flex items-center gap-2">
+                          <span className="w-1 h-5 rounded-full bg-[#0F766E]" />
+                          Properties &amp; Set-ups
+                          {(p.properties?.length ?? 0) > 0 && (
+                            <span className="text-xs font-semibold text-neutral-400 ml-1">
+                              ({p.properties!.length} listing{p.properties!.length === 1 ? '' : 's'})
+                            </span>
+                          )}
+                        </h2>
+                      </div>
+                      {p.properties && p.properties.length > 0 ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {p.properties.map((pr) => {
+                            const photo = pr.photoUrls?.[0];
+                            const rateLabel = pr.dailyBudget != null ? `${formatPaise(pr.dailyBudget)} /day` : null;
+                            return (
+                              <div key={pr.id} className="rounded-2xl border border-neutral-200 hover:border-[#0F766E] hover:shadow-sm transition-all bg-white overflow-hidden">
+                                <div className="h-36 bg-gradient-to-br from-[#E0F2F1] to-[#CCFBF1] flex items-center justify-center overflow-hidden">
+                                  {photo ? (
+                                    <img src={photo} alt={pr.name} className="w-full h-full object-cover" loading="lazy" />
+                                  ) : (
+                                    <FaLocationDot className="w-8 h-8 text-[#0F766E]/50" />
+                                  )}
+                                </div>
+                                <div className="p-3">
+                                  <h3 className="text-sm font-bold text-neutral-900 truncate">{pr.name}</h3>
+                                  {pr.description && <p className="text-xs text-neutral-600 mt-0.5 line-clamp-2">{pr.description}</p>}
+                                  {(pr.subTypes?.length ?? 0) > 0 && (
+                                    <div className="flex flex-wrap gap-1 mt-2">
+                                      {pr.subTypes!.slice(0, 3).map((s) => (
+                                        <span key={s} className="px-2 py-0.5 bg-[#E0F2F1] text-[#0F766E] text-[10px] font-semibold rounded border border-[#0F766E]/20">{s}</span>
+                                      ))}
+                                    </div>
+                                  )}
+                                  <div className="flex flex-wrap items-center gap-2 mt-2">
+                                    {rateLabel && (
+                                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#E0F2F1] text-[#0F766E] text-[11px] font-bold border border-[#0F766E]/20">{rateLabel}</span>
+                                    )}
+                                    {pr.city && (
+                                      <span className="inline-flex items-center gap-1 text-[11px] text-neutral-500 font-medium">
+                                        <FaLocationDot className="w-2.5 h-2.5" /> {pr.city}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-3 mt-2">
+                                    {pr.addressLat != null && pr.addressLng != null && (
+                                      <a href={`https://www.google.com/maps/search/?api=1&query=${pr.addressLat},${pr.addressLng}`} target="_blank" rel="noreferrer" className="text-[11px] text-[#0F766E] font-semibold hover:underline inline-flex items-center gap-1">
+                                        <FaLocationDot className="w-2.5 h-2.5" /> Map
+                                      </a>
+                                    )}
+                                    {pr.pdfUrl && (
+                                      <a href={pr.pdfUrl} target="_blank" rel="noreferrer" className="text-[11px] text-[#0F766E] font-semibold hover:underline inline-flex items-center gap-1">
+                                        <FaVideo className="w-2.5 h-2.5" /> {pr.pdfName || 'PDF'}
+                                      </a>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center gap-2 py-10 text-center">
+                          <div className="w-12 h-12 rounded-2xl bg-neutral-50 border border-neutral-200 flex items-center justify-center">
+                            <FaLocationDot className="w-5 h-5 text-neutral-400" />
+                          </div>
+                          <p className="text-sm font-semibold text-neutral-700">No properties listed yet</p>
+                          <p className="text-xs text-neutral-500 max-w-xs">
+                            This provider hasn't published any properties. Use Chat to ask what's available.
+                          </p>
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
                 </motion.div>
               ) : null}
 
@@ -1167,7 +1335,7 @@ We're working on ${projectName}${location ? ` (${location})` : ''}. Just wanted 
                       </div>
                     </div>
                   )}
-                  {viewer?.role === 'company' && (isIndividual || isVendor) && (
+                  {viewer?.role === 'company' && (isIndividual || isVendor || isLocation) && (
                     <LeaveReviewSection
                       targetUserId={profile.id}
                       targetName={title}
@@ -1201,7 +1369,9 @@ We're working on ${projectName}${location ? ` (${location})` : ''}. Just wanted 
                   ? 'Production House'
                   : isCast
                     ? (castRoleType ? castRoleType.charAt(0).toUpperCase() + castRoleType.slice(1) : 'Cast')
-                    : '—'
+                    : isLocation
+                      ? (p?.locationType ? (LOCATION_TYPE_LABELS[p.locationType] ?? 'Location') : 'Location')
+                      : '—'
           }
           userRate={(isIndividual || isCast) && p?.dailyBudget ? formatPaise(p.dailyBudget) + ' /day' : '—'}
           targetUserId={profile.id}

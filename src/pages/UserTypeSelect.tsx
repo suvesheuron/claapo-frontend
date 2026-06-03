@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { useEffect, useRef, useState } from 'react';
 import {
   FaTruck, FaArrowRight, FaVideo, FaUsers, FaChevronRight,
-  FaShieldHalved, FaBolt, FaGift, FaStar,
+  FaShieldHalved, FaBolt, FaGift, FaStar, FaBuilding,
 } from 'react-icons/fa6';
 import AppHeader from '../components/AppHeader';
 import AppFooter from '../components/AppFooter';
@@ -24,7 +24,7 @@ function useInView(threshold = 0.12) {
 
 /* ── Account types — compact picker rows (Company / Crew / Vendor / Cast) ── */
 type AccountType = {
-  key: 'company' | 'individual' | 'vendor' | 'cast';
+  key: 'company' | 'individual' | 'vendor' | 'cast' | 'location';
   icon: typeof FaVideo;
   title: string;
   subtitle: string;
@@ -69,6 +69,15 @@ const accountTypes: AccountType[] = [
     to: '/register/cast',
     iconBg: 'bg-[#F3E8FF] dark:bg-[#9333EA]/20',
     iconText: 'text-[#9333EA] dark:text-[#C084FC]',
+  },
+  {
+    key: 'location',
+    icon: FaBuilding,
+    title: 'Location',
+    subtitle: 'Bungalows, studios & set-ups',
+    to: '/register/location',
+    iconBg: 'bg-[#E0F2F1] dark:bg-[#0F766E]/20',
+    iconText: 'text-[#0F766E] dark:text-[#5EEAD4]',
   },
 ];
 

@@ -13,7 +13,7 @@ import toast from 'react-hot-toast';
 import { useApiQuery } from '../hooks/useApiQuery';
 import { useRole } from '../contexts/RoleContext';
 import { formatPaise } from '../utils/currency';
-import { individualNavLinks, vendorNavLinks, castNavLinks } from '../navigation/dashboardNav';
+import { individualNavLinks, vendorNavLinks, castNavLinks, locationNavLinks } from '../navigation/dashboardNav';
 
 type BookingStatus = 'accepted' | 'locked' | 'cancel_requested';
 
@@ -55,7 +55,7 @@ function formatDate(iso: string | null): string {
 export default function OngoingProjects() {
   const { currentRole } = useRole();
 
-  const navLinks = currentRole === 'Vendor' ? vendorNavLinks : currentRole === 'Cast' ? castNavLinks : individualNavLinks;
+  const navLinks = currentRole === 'Vendor' ? vendorNavLinks : currentRole === 'Location' ? locationNavLinks : currentRole === 'Cast' ? castNavLinks : individualNavLinks;
 
   useEffect(() => { document.title = 'Ongoing Projects – Claapo'; }, []);
 

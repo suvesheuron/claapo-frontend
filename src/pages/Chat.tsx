@@ -44,7 +44,7 @@ import {
 import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 import { useRole } from '../contexts/RoleContext';
-import { individualNavLinks, vendorNavLinks, companyNavLinks, castNavLinks } from '../navigation/dashboardNav';
+import { individualNavLinks, vendorNavLinks, companyNavLinks, castNavLinks, locationNavLinks } from '../navigation/dashboardNav';
 import { linkifyText } from '../utils/linkify';
 import MediaLightbox, { type LightboxMedia } from '../components/MediaLightbox';
 
@@ -192,9 +192,11 @@ export default function Chat() {
       ? companyNavLinks
       : currentRole === 'Vendor'
         ? vendorNavLinks
-        : currentRole === 'Cast'
-          ? castNavLinks
-          : individualNavLinks;
+        : currentRole === 'Location'
+          ? locationNavLinks
+          : currentRole === 'Cast'
+            ? castNavLinks
+            : individualNavLinks;
 
   useEffect(() => {
     document.title = 'Chat – Claapo';

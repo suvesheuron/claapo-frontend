@@ -8,7 +8,7 @@ import DateInput from '../components/DateInput';
 import { useApiQuery } from '../hooks/useApiQuery';
 import { useRole } from '../contexts/RoleContext';
 import { useChatUnread } from '../contexts/ChatUnreadContext';
-import { individualNavLinks, vendorNavLinks, companyNavLinks, castNavLinks } from '../navigation/dashboardNav';
+import { individualNavLinks, vendorNavLinks, companyNavLinks, castNavLinks, locationNavLinks } from '../navigation/dashboardNav';
 
 interface Participant { id: string; displayName?: string; companyName?: string; email?: string; avatarUrl?: string }
 interface Conversation {
@@ -103,9 +103,11 @@ export default function Conversations() {
       ? companyNavLinks
       : currentRole === 'Vendor'
         ? vendorNavLinks
-        : currentRole === 'Cast'
-          ? castNavLinks
-          : individualNavLinks;
+        : currentRole === 'Location'
+          ? locationNavLinks
+          : currentRole === 'Cast'
+            ? castNavLinks
+            : individualNavLinks;
 
   const getName = (u: Participant) => u.displayName ?? u.companyName ?? u.email ?? 'Unknown';
 

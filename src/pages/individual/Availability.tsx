@@ -7,6 +7,7 @@ import AvailabilityDateDetailModal from '../../components/AvailabilityDateDetail
 import { api, ApiException } from '../../services/api';
 import toast from 'react-hot-toast';
 import { individualNavLinks } from '../../navigation/dashboardNav';
+import type { NavItem } from '../../components/DashboardSidebar';
 import type { BookingWithDetails } from '../../types/availability';
 import { parseAvailabilityMonthResponse } from '../../utils/parseAvailabilityResponse';
 import { useChatUnread } from '../../contexts/ChatUnreadContext';
@@ -85,7 +86,7 @@ function buildCalendar(
 
 const cellStyle = CELL_STYLE;
 
-export default function IndividualAvailability() {
+export default function IndividualAvailability({ navLinks = individualNavLinks }: { navLinks?: NavItem[] } = {}) {
   useEffect(() => { document.title = 'Availability – Claapo'; }, []);
 
   const today = new Date();
@@ -231,7 +232,7 @@ export default function IndividualAvailability() {
       <DashboardHeader />
 
       <div className="flex-1 flex min-h-0 overflow-hidden">
-        <DashboardSidebar links={individualNavLinks} />
+        <DashboardSidebar links={navLinks} />
 
         <main className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
           <div className="flex-1 min-h-0 overflow-auto">

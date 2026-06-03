@@ -11,6 +11,7 @@ import {
   FaClipboardList,
   FaBan,
   FaChartLine,
+  FaBuilding,
 } from 'react-icons/fa6';
 import type { NavItem } from '../components/DashboardSidebar';
 
@@ -50,6 +51,19 @@ export const castNavLinks: NavItem[] = [
   { icon: FaFileInvoice,     label: 'Invoices',           to: '/invoices',         section: 'Communication', badgeKey: 'invoices' },
   { icon: FaChartLine,       label: 'Earnings',           to: '/earnings',         section: 'Communication' },
   { icon: FaUser,            label: 'Profile',            to: '/cast-profile',     section: 'Account' },
+];
+
+export const locationNavLinks: NavItem[] = [
+  { icon: FaHouse,           label: 'Dashboard',          to: '/dashboard',              section: 'Overview' },
+  { icon: FaMagnifyingGlass, label: 'Discover',           to: '/discover',               section: 'Overview' },
+  { icon: FaCalendar,        label: 'Manage Schedule',    to: '/location-availability',  section: 'Overview' },
+  { icon: FaBuilding,        label: 'Properties',         to: '/properties',             section: 'Overview' },
+  { icon: FaFolder,          label: 'Project Requests',   to: '/bookings',               section: 'Projects',       badgeKey: 'projectRequests' },
+  { icon: FaClipboardList,   label: 'Project Details',    to: '/project-details',        section: 'Projects' },
+  { icon: FaMessage,         label: 'Chat',               to: '/chat',                   section: 'Communication', badgeKey: 'chat' },
+  { icon: FaFileInvoice,     label: 'Invoices',           to: '/invoices',               section: 'Communication', badgeKey: 'invoices' },
+  { icon: FaChartLine,       label: 'Earnings',           to: '/earnings',               section: 'Communication' },
+  { icon: FaUser,            label: 'Profile',            to: '/location-profile',       section: 'Account' },
 ];
 
 export const companyNavLinks: NavItem[] = [

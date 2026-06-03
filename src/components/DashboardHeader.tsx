@@ -49,6 +49,7 @@ const ROLE_LABELS: Record<string, { label: string; bg: string; text: string }> =
   vendor:     { label: 'Vendor',     bg: 'bg-[#FEF7E0] dark:bg-[#3B2A10]',  text: 'text-[#8A6508] dark:text-[#FBBF24]'    },
   admin:      { label: 'Admin',      bg: 'bg-[#FEF6DA] dark:bg-[#3B2A10]',  text: 'text-[#946A00] dark:text-[#FBBF24]'    },
   cast:       { label: 'Cast',       bg: 'bg-[#F3E8FF] dark:bg-[#2A1242]',  text: 'text-[#9333EA] dark:text-[#C084FC]'    },
+  location:   { label: 'Location',   bg: 'bg-[#E0F2F1] dark:bg-[#0E2E2B]',  text: 'text-[#0F766E] dark:text-[#5EEAD4]'    },
 };
 
 /** Display label for CompanyProfile.companyType values. Canonical values
@@ -79,13 +80,16 @@ export default function DashboardHeader({ userName: propUserName, userAvatar: pr
     user?.role === 'company' ? '/company-profile'
     : user?.role === 'vendor' ? '/vendor-profile'
     : user?.role === 'cast' ? '/cast-profile'
+    : user?.role === 'location' ? '/location-profile'
     : '/profile';
   const schedulePath =
     user?.role === 'company'
       ? '/company-availability'
       : user?.role === 'vendor'
         ? '/vendor-availability'
-        : '/availability';
+        : user?.role === 'location'
+          ? '/location-availability'
+          : '/availability';
 
   const { data: notifData, refetch: refetchNotifs } = useApiQuery<NotificationsResponse>(isAuthenticated ? '/notifications?limit=20' : null);
   const notifications = notifData?.items ?? [];
@@ -150,6 +154,15 @@ export default function DashboardHeader({ userName: propUserName, userAvatar: pr
     if (user.role === 'vendor') {
       const t = profile?.vendorType?.trim();
       return t ? titleCase(t) : roleInfo?.label;
+    }
+    if (user.role === 'location') {
+      const labels: Record<string, string> = {
+        bungalow_villa_apartment: 'Bungalow / Villa / Apartments',
+        studio_setup: 'Studio Set-Ups',
+        location_manager: 'Location Manager',
+      };
+      const t = (profile as { locationType?: string } | null)?.locationType?.trim();
+      return (t && labels[t]) || roleInfo?.label;
     }
     return roleInfo?.label;
   })();

@@ -3,6 +3,7 @@ import CompanyDashboard from './CompanyDashboard';
 import IndividualDashboard from './IndividualDashboard';
 import VendorDashboard from './VendorDashboard';
 import CastDashboard from './CastDashboard';
+import LocationDashboard from './LocationDashboard';
 import OnboardingChecklist from '../components/OnboardingChecklist';
 
 export default function Dashboard() {
@@ -13,6 +14,7 @@ export default function Dashboard() {
     case 'Individual': content = <IndividualDashboard />; break;
     case 'Vendor':     content = <VendorDashboard />;    break;
     case 'Cast':       content = <CastDashboard />;       break;
+    case 'Location':   content = <LocationDashboard />;   break;
     case 'Company':
     default:           content = <CompanyDashboard />;   break;
   }
