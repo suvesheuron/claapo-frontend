@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { FaArrowLeft, FaLocationDot, FaCalendarDays, FaTriangleExclamation, FaVideo, FaChevronLeft, FaChevronRight, FaBan, FaCircleCheck, FaCalendarCheck, FaGlobe, FaInstagram, FaYoutube, FaVimeoV, FaImdb, FaLinkedinIn, FaXTwitter, FaPhone, FaMessage } from 'react-icons/fa6';
+import { FaArrowLeft, FaLocationDot, FaCalendarDays, FaTriangleExclamation, FaVideo, FaChevronLeft, FaChevronRight, FaBan, FaCircleCheck, FaCalendarCheck, FaGlobe, FaInstagram, FaYoutube, FaVimeoV, FaImdb, FaLinkedinIn, FaXTwitter, FaPhone, FaMessage, FaEnvelope, FaCircleInfo, FaFilm } from 'react-icons/fa6';
 import toast from 'react-hot-toast';
 import DashboardHeader from '../components/DashboardHeader';
 import DashboardSidebar from '../components/DashboardSidebar';
@@ -29,13 +29,18 @@ type UserRole = 'individual' | 'company' | 'vendor' | 'admin' | 'cast';
 interface VendorEquipment {
   id: string;
   name: string;
+  description?: string | null;
+  imageUrl?: string | null;
   currentCity?: string | null;
+  dailyBudget?: number | null; // paise
+  quantityTotal?: number | null;
   availabilities?: Array<{ locationCity?: string | null }>;
 }
 
 interface PublicProfileResponse {
   id: string;
   role: UserRole;
+  email?: string;
   phone?: string;
   profile: {
     displayName?: string;
@@ -147,6 +152,14 @@ export default function OtherUserProfile() {
   // Date-less inquiry mode — set when a company viewer clicks Chat on another
   // company's profile. Reuses InquiryRequestModal but skips date selection.
   const [inquiryWithoutDateOpen, setInquiryWithoutDateOpen] = useState(false);
+
+  // Facebook-style profile tabs. Sits where the old "Reach out to..." card
+  // used to live and toggles the content panel below. The third tab is role-
+  // specific: 'showreel' for cast (Work Showcase) or individual (video) and
+  // 'equipment' for vendors (their inventory is the main offering). Defaults
+  // to About so the bio/details are visible on landing.
+  type ProfileTab = 'schedule' | 'about' | 'showreel' | 'equipment';
+  const [activeTab, setActiveTab] = useState<ProfileTab>('about');
 
   useEffect(() => {
     if (!userId) return;
@@ -309,7 +322,10 @@ export default function OtherUserProfile() {
     { key: 'linkedin',  label: 'LinkedIn',    url: (p as { linkedinUrl?: string } | null)?.linkedinUrl, Icon: FaLinkedinIn, color: 'text-[#0A66C2]', bg: 'bg-[#0A66C2]/10', border: 'border-[#0A66C2]/20' },
     { key: 'twitter',   label: 'X (Twitter)', url: (p as { twitterUrl?: string } | null)?.twitterUrl,   Icon: FaXTwitter,   color: 'text-neutral-900', bg: 'bg-neutral-100', border: 'border-neutral-200' },
   ];
-  const visiblePlatforms = (isIndividual || isVendor) ? socialPlatforms.filter((pl) => !!pl.url) : [];
+  // Show social links across all target roles (individual, vendor, cast, company)
+  // — casting directors viewing cast and companies viewing companies were
+  // previously missing this affordance. URL filtering handles missing entries.
+  const visiblePlatforms = socialPlatforms.filter((pl) => !!pl.url);
 
   // Company-side mark-complete on a specific booking (today the visible
   // surface for the company→company hiring flow, but works for any booking
@@ -589,6 +605,17 @@ We're working on ${projectName}${location ? ` (${location})` : ''}. Just wanted 
                               {profile.phone}
                             </p>
                           )}
+                          {profile?.email && (
+                            <p className="text-sm text-neutral-600 flex items-center gap-1.5 mt-2 break-all">
+                              <FaEnvelope className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
+                              <a
+                                href={`mailto:${profile.email}`}
+                                className="hover:text-[#3678F1] hover:underline"
+                              >
+                                {profile.email}
+                              </a>
+                            </p>
+                          )}
                           {isIndividual && p.skills && p.skills.length > 1 ? (
                             <div className="flex flex-wrap gap-1.5 mt-3">
                               {p.skills.slice(1).map((s) => (
@@ -600,70 +627,128 @@ We're working on ${projectName}${location ? ` (${location})` : ''}. Just wanted 
                           ) : null}
                         </div>
 
-                        {/* Social links — moved up next to the name/meta column
-                            (third grid track). Floats top-right beside the avatar on lg+,
-                            and wraps inline with the meta block on smaller screens. */}
-                        {visiblePlatforms.length > 0 && (
-                          <div className="flex items-center gap-2.5 flex-wrap lg:justify-end lg:pt-1">
-                            {visiblePlatforms.map(({ key, label, url, Icon, color, bg, border }) => (
-                              <a
-                                key={key}
-                                href={url}
-                                target="_blank"
-                                rel="noreferrer"
-                                aria-label={label}
-                                title={label}
-                                className={`w-9 h-9 rounded-full border ${border} ${bg} hover:border-[#3678F1] transition-colors flex items-center justify-center`}
-                              >
-                                <Icon className={`w-4 h-4 ${color}`} />
-                              </a>
-                            ))}
+                        {/* Third grid track — primary Chat + Book actions on top,
+                            social links below. Floats top-right on lg+; wraps
+                            inline with the meta block on smaller screens. The
+                            Chat + Book pair previously lived in a standalone
+                            "Reach out to…" card below the hero; moved here so
+                            casting directors, companies, and crews hit the
+                            primary actions immediately without scrolling.
+                            Shown for every bookable target (company/cast/
+                            vendor); individuals also get it so company viewers
+                            can fire off a quick inquiry from the top. */}
+                        {(visiblePlatforms.length > 0 || (showBookActions && (isCompany || isCast || isVendor || isIndividual))) && (
+                          <div className="flex flex-col gap-3 lg:items-end lg:pt-1">
+                            {showBookActions && (isCompany || isCast || isVendor || isIndividual) && (
+                              <div className="flex flex-wrap gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    // Company→company inquiry has no calendar
+                                    // context, so open InquiryRequestModal in
+                                    // date-less mode for project selection.
+                                    // For cast (calendar-enabled), the calendar
+                                    // is still available below for date-scoped
+                                    // chat; this is the quick top-level entry.
+                                    setSelectedChatDate(null);
+                                    setInquiryWithoutDateOpen(true);
+                                  }}
+                                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-neutral-200 bg-white text-sm font-semibold text-neutral-800 hover:border-[#3678F1] hover:text-[#3678F1] transition-colors shadow-sm"
+                                >
+                                  <FaMessage className="w-3.5 h-3.5" />
+                                  Chat
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setIsBookingModalOpen(true)}
+                                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#3678F1] text-sm font-semibold text-white hover:bg-[#2563EB] transition-colors shadow-sm"
+                                >
+                                  <FaCalendarCheck className="w-3.5 h-3.5" />
+                                  Book
+                                </button>
+                              </div>
+                            )}
+                            {visiblePlatforms.length > 0 && (
+                              <div className="flex items-center gap-2.5 flex-wrap lg:justify-end">
+                                {visiblePlatforms.map(({ key, label, url, Icon, color, bg, border }) => (
+                                  <a
+                                    key={key}
+                                    href={url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    aria-label={label}
+                                    title={label}
+                                    className={`w-9 h-9 rounded-full border ${border} ${bg} hover:border-[#3678F1] transition-colors flex items-center justify-center`}
+                                  >
+                                    <Icon className={`w-4 h-4 ${color}`} />
+                                  </a>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
                     </div>
                   </motion.div>
 
-                  {/* Section 8: Chat + Book actions on company / cast profiles
-                      (company viewer only). For company-target profiles the
-                      calendar is hidden so these are the only booking entry
-                      points. Cast targets DO have a calendar, but we keep the
-                      Chat + Book pair here as a primary action row so casting
-                      directors can hire without scrolling to the calendar. */}
-                  {showBookActions && (isCompany || isCast) && (
-                    <motion.div variants={itemVariants} className="rounded-3xl bg-white shadow-soft border border-neutral-100 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-3">
-                      <p className="text-sm text-neutral-600 sm:flex-1">
-                        Reach out to <span className="font-semibold text-neutral-900">{title}</span> for collaboration or hiring.
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            // Open inquiry modal in date-less mode — the
-                            // company→company flow has no calendar context, so
-                            // we just need a project selection to scope the
-                            // conversation and send a template message.
-                            setSelectedChatDate(null);
-                            setInquiryWithoutDateOpen(true);
-                          }}
-                          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-neutral-200 bg-white text-sm font-semibold text-neutral-800 hover:border-[#3678F1] hover:text-[#3678F1] transition-colors"
-                        >
-                          <FaMessage className="w-3.5 h-3.5" />
-                          Chat
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setIsBookingModalOpen(true)}
-                          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#3678F1] text-sm font-semibold text-white hover:bg-[#2563EB] transition-colors"
-                        >
-                          <FaCalendarCheck className="w-3.5 h-3.5" />
-                          Book
-                        </button>
-                      </div>
-                    </motion.div>
-                  )}
+                  {/* Profile tabs (Schedule / About / Showreel) — Facebook-style
+                      strip that swaps the content panel below. The available
+                      tabs depend on target role: Schedule only renders when a
+                      calendar exists (cast/individual/vendor) and the viewer
+                      is a company/admin; Showreel renders for cast (Work
+                      Showcase) or individuals with an uploaded showreel.
+                      Falls back to inline About when fewer than two tabs would
+                      be visible (company-target). */}
+                  {(() => {
+                    const showreelUrl = (p as { showreelUrl?: string | null } | null)?.showreelUrl ?? null;
+                    const hasShowcase = (p as { showcaseItems?: ShowcaseItem[] } | null)?.showcaseItems?.length ?? 0;
+                    const equipmentCount = p?.equipment?.length ?? 0;
+                    const tabs: { key: ProfileTab; label: string; Icon: typeof FaCalendarDays }[] = [];
+                    if (showCalendarSection) tabs.push({ key: 'schedule', label: 'Schedule', Icon: FaCalendarDays });
+                    tabs.push({ key: 'about', label: 'About', Icon: FaCircleInfo });
+                    if ((isCast && hasShowcase > 0) || (isIndividual && showreelUrl)) {
+                      tabs.push({ key: 'showreel', label: 'Showreel', Icon: FaFilm });
+                    }
+                    // Equipment is the vendor analogue of a showreel — their
+                    // inventory IS the offering. Always show the tab for
+                    // vendors even when the catalog is empty so viewers get
+                    // an explicit "no equipment listed yet" state instead of
+                    // wondering why a vendor profile is missing a section.
+                    if (isVendor) tabs.push({ key: 'equipment', label: `Equipment${equipmentCount ? ` (${equipmentCount})` : ''}`, Icon: FaVideo });
+                    if (tabs.length < 2) return null;
+                    // If the current tab isn't in the available set, fall back to About.
+                    const safeActive = tabs.some((t) => t.key === activeTab) ? activeTab : 'about';
+                    return (
+                      <motion.div variants={itemVariants} className="rounded-2xl bg-white shadow-soft border border-neutral-100 px-2 sm:px-3 py-1.5">
+                        <div className="flex items-center gap-1 overflow-x-auto">
+                          {tabs.map(({ key, label, Icon }) => {
+                            const active = safeActive === key;
+                            return (
+                              <button
+                                key={key}
+                                type="button"
+                                onClick={() => setActiveTab(key)}
+                                aria-pressed={active}
+                                className={`relative inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl transition-colors whitespace-nowrap ${
+                                  active
+                                    ? 'text-[#3678F1]'
+                                    : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50'
+                                }`}
+                              >
+                                <Icon className="w-3.5 h-3.5" />
+                                {label}
+                                {active && (
+                                  <span className="absolute left-3 right-3 -bottom-1 h-0.5 rounded-full bg-[#3678F1]" />
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </motion.div>
+                    );
+                  })()}
 
-                  {((isIndividual && (p.bio || p.aboutMe)) || (isCompany && (p.bio || p.aboutUs)) || (isVendor && p.aboutUs) || (isCast && ((p as { aboutMe?: string | null }).aboutMe || p.bio))) && (
+                  {activeTab === 'about' && ((isIndividual && (p.bio || p.aboutMe)) || (isCompany && (p.bio || p.aboutUs)) || (isVendor && p.aboutUs) || (isCast && ((p as { aboutMe?: string | null }).aboutMe || p.bio))) && (
                     <motion.div variants={itemVariants} className="rounded-3xl bg-white shadow-soft border border-neutral-100 hover:border-[#3678F1] transition-colors duration-200 p-6 sm:p-8">
                       <h2 className="text-base font-bold text-neutral-900 mb-4 flex items-center gap-2">
                         <span className="w-1 h-5 rounded-full bg-[#3678F1]" /> About
@@ -684,7 +769,7 @@ We're working on ${projectName}${location ? ` (${location})` : ''}. Just wanted 
                       cast profiles. Mirrors the Personal Details section of
                       the cast's own profile so casting directors see the same
                       filterable attributes when picking talent. */}
-                  {isCast && (
+                  {activeTab === 'about' && isCast && (
                     <motion.div variants={itemVariants} className="rounded-3xl bg-white shadow-soft border border-neutral-100 hover:border-[#3678F1] transition-colors duration-200 p-6 sm:p-8">
                       <h2 className="text-base font-bold text-neutral-900 mb-4 flex items-center gap-2">
                         <span className="w-1 h-5 rounded-full bg-[#9333EA]" /> Cast Details
@@ -722,8 +807,8 @@ We're working on ${projectName}${location ? ` (${location})` : ''}. Just wanted 
                   )}
 
                   {/* Cast Work Showcase — photos / videos / documents the cast
-                      member uploaded. Read-only on a public profile. */}
-                  {isCast && ((p as { showcaseItems?: ShowcaseItem[] }).showcaseItems?.length ?? 0) > 0 && (
+                      member uploaded. Lives in the Showreel tab. */}
+                  {activeTab === 'showreel' && isCast && ((p as { showcaseItems?: ShowcaseItem[] }).showcaseItems?.length ?? 0) > 0 && (
                     <motion.div variants={itemVariants} className="rounded-3xl bg-white shadow-soft border border-neutral-100 hover:border-[#3678F1] transition-colors duration-200 p-6 sm:p-8">
                       <h2 className="text-base font-bold text-neutral-900 mb-4 flex items-center gap-2">
                         <span className="w-1 h-5 rounded-full bg-[#9333EA]" /> Work Showcase
@@ -732,7 +817,24 @@ We're working on ${projectName}${location ? ` (${location})` : ''}. Just wanted 
                     </motion.div>
                   )}
 
-                  {showCalendarSection && (
+                  {/* Individual showreel — a single uploaded video. Rendered in
+                      the Showreel tab; vendors and companies have no showreel
+                      so this is gated to isIndividual. */}
+                  {activeTab === 'showreel' && isIndividual && (p as { showreelUrl?: string | null } | null)?.showreelUrl && (
+                    <motion.div variants={itemVariants} className="rounded-3xl bg-white shadow-soft border border-neutral-100 hover:border-[#3678F1] transition-colors duration-200 p-6 sm:p-8">
+                      <h2 className="text-base font-bold text-neutral-900 mb-4 flex items-center gap-2">
+                        <span className="w-1 h-5 rounded-full bg-[#3678F1]" /> Showreel
+                      </h2>
+                      <video
+                        src={(p as { showreelUrl?: string | null }).showreelUrl ?? undefined}
+                        controls
+                        playsInline
+                        className="w-full rounded-xl border border-neutral-200 bg-black"
+                      />
+                    </motion.div>
+                  )}
+
+                  {activeTab === 'schedule' && showCalendarSection && (
                   <>
                   <motion.div variants={itemVariants} className="rounded-3xl bg-white shadow-soft border border-neutral-100 hover:border-[#3678F1] transition-colors duration-200 p-5 sm:p-6">
                     {/* Header: title + month navigation */}
@@ -903,7 +1005,12 @@ We're working on ${projectName}${location ? ` (${location})` : ''}. Just wanted 
                       </>
                     )}
                   </motion.div>
+                  </>
+                  )}
 
+                  {/* Calendar date-detail modal — kept outside the tab gating
+                      so the modal can stay mounted across tab switches and so
+                      the parent fragment matches a single React subtree. */}
                   <AvailabilityDateDetailModal
                     open={!!detailDate}
                     onClose={() => setDetailDate(null)}
@@ -916,61 +1023,111 @@ We're working on ${projectName}${location ? ` (${location})` : ''}. Just wanted 
                     onChatClick={() => handleDateChatClick(detailDate!)}
                     onMarkBookingComplete={handleMarkBookingComplete}
                     onBookCrewClick={() => {
-                      // Pre-select the date and open booking modal
                       setDetailDate(null);
-                      // We'll need to handle this with a booking modal that can pre-select dates
-                      // For now, navigate to booking from profile with date hint
-                      // This will be handled by the BookingRequestModal
                       setIsBookingModalOpen(true);
                     }}
                   />
 
-                  {/* Vendor details (type, GST, equipment) — rendered after the calendar
-                      so viewers see availability first and the kit inventory below it. */}
-                  {isVendor && (
+                  {/* Vendor details (type, GST) — lives in the About tab next
+                      to the bio. Equipment moved out into its own tab below
+                      since the catalog is the vendor's primary offering. */}
+                  {activeTab === 'about' && isVendor && (
                     <motion.div variants={itemVariants} className="rounded-3xl bg-white shadow-soft border border-neutral-100 hover:border-[#3678F1] transition-colors duration-200 p-6 sm:p-8">
                       <h2 className="text-base font-bold text-neutral-900 mb-5 flex items-center gap-2">
                         <span className="w-1 h-5 rounded-full bg-[#3678F1]" /> Vendor details
                       </h2>
-                      <dl className="space-y-2 text-sm text-neutral-700">
+                      <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm text-neutral-700">
                         <div>
-                          <dt className="text-xs text-neutral-500 mb-0.5">Type</dt>
+                          <dt className="text-xs text-neutral-500 mb-0.5 uppercase tracking-wide font-semibold">Type</dt>
                           <dd>{p.vendorType ?? '—'}</dd>
                         </div>
                         <div>
-                          <dt className="text-xs text-neutral-500 mb-0.5">GST Number</dt>
+                          <dt className="text-xs text-neutral-500 mb-0.5 uppercase tracking-wide font-semibold">GST Number</dt>
                           <dd>{p.gstNumber ?? '—'}</dd>
                         </div>
-                        {p.equipment && p.equipment.length > 0 && (
-                          <div className="pt-2 border-t border-neutral-200 mt-2">
-                            <dt className="text-xs text-neutral-500 mb-1.5 flex items-center gap-1">
-                              <FaVideo className="w-3 h-3" />
-                              Equipment ({p.equipment.length})
-                            </dt>
-                            <div className="space-y-2">
-                              {p.equipment.slice(0, 5).map((eq) => (
-                                <div key={eq.id} className="text-sm">
-                                  <div className="font-medium text-neutral-800">{eq.name}</div>
-                                  {(eq.currentCity || (eq.availabilities && eq.availabilities.length > 0)) && (
-                                    <div className="text-xs text-neutral-500 flex items-center gap-1 mt-0.5">
-                                      <FaLocationDot className="w-3 h-3" />
-                                      {eq.currentCity || eq.availabilities?.[0]?.locationCity || '—'}
-                                    </div>
-                                  )}
-                                </div>
-                              ))}
-                              {p.equipment.length > 5 && (
-                                <div className="text-xs text-neutral-500 mt-1">
-                                  +{p.equipment.length - 5} more equipment
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        )}
                       </dl>
                     </motion.div>
                   )}
-                  </>
+
+                  {/* Equipment tab — vendor inventory grid. Each card shows
+                      thumbnail (when uploaded), name, description, daily rate,
+                      city, and quantity available. Falls back to an empty
+                      state when the vendor hasn't listed any kit yet. */}
+                  {activeTab === 'equipment' && isVendor && (
+                    <motion.div variants={itemVariants} className="rounded-3xl bg-white shadow-soft border border-neutral-100 hover:border-[#3678F1] transition-colors duration-200 p-6 sm:p-8">
+                      <div className="flex items-center justify-between gap-3 mb-5 flex-wrap">
+                        <h2 className="text-base font-bold text-neutral-900 flex items-center gap-2">
+                          <span className="w-1 h-5 rounded-full bg-[#3678F1]" />
+                          Equipment Catalog
+                          {p.equipment && p.equipment.length > 0 && (
+                            <span className="text-xs font-semibold text-neutral-400 ml-1">
+                              ({p.equipment.length} item{p.equipment.length === 1 ? '' : 's'})
+                            </span>
+                          )}
+                        </h2>
+                      </div>
+                      {p.equipment && p.equipment.length > 0 ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {p.equipment.map((eq) => {
+                            const city = eq.currentCity || eq.availabilities?.[0]?.locationCity || null;
+                            const rateLabel = eq.dailyBudget != null ? `${formatPaise(eq.dailyBudget)} /day` : null;
+                            return (
+                              <div
+                                key={eq.id}
+                                className="flex gap-3 p-3 rounded-2xl border border-neutral-200 hover:border-[#3678F1] hover:shadow-sm transition-all bg-white"
+                              >
+                                <div className="w-20 h-20 sm:w-24 sm:h-24 shrink-0 rounded-xl overflow-hidden bg-gradient-to-br from-[#E8F0FE] to-[#DBEAFE] border border-neutral-100 flex items-center justify-center">
+                                  {eq.imageUrl ? (
+                                    <img
+                                      src={eq.imageUrl}
+                                      alt={eq.name}
+                                      className="w-full h-full object-cover"
+                                      loading="lazy"
+                                    />
+                                  ) : (
+                                    <FaVideo className="w-7 h-7 text-[#3678F1]/60" />
+                                  )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <h3 className="text-sm font-bold text-neutral-900 truncate">{eq.name}</h3>
+                                  {eq.description && (
+                                    <p className="text-xs text-neutral-600 mt-0.5 line-clamp-2">{eq.description}</p>
+                                  )}
+                                  <div className="flex flex-wrap items-center gap-2 mt-2">
+                                    {rateLabel && (
+                                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#E8F0FE] text-[#1D4ED8] text-[11px] font-bold border border-[#3678F1]/20">
+                                        {rateLabel}
+                                      </span>
+                                    )}
+                                    {city && (
+                                      <span className="inline-flex items-center gap-1 text-[11px] text-neutral-500 font-medium">
+                                        <FaLocationDot className="w-2.5 h-2.5" />
+                                        {city}
+                                      </span>
+                                    )}
+                                    {eq.quantityTotal != null && eq.quantityTotal > 1 && (
+                                      <span className="text-[11px] text-neutral-500 font-medium">
+                                        × {eq.quantityTotal}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center gap-2 py-10 text-center">
+                          <div className="w-12 h-12 rounded-2xl bg-neutral-50 border border-neutral-200 flex items-center justify-center">
+                            <FaVideo className="w-5 h-5 text-neutral-400" />
+                          </div>
+                          <p className="text-sm font-semibold text-neutral-700">No equipment listed yet</p>
+                          <p className="text-xs text-neutral-500 max-w-xs">
+                            This vendor hasn't published any inventory. Use Chat to ask what they have available.
+                          </p>
+                        </div>
+                      )}
+                    </motion.div>
                   )}
                 </motion.div>
               ) : null}
