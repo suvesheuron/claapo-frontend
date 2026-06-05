@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useEffect, useState, useMemo } from 'react';
-import { FaPlus, FaUsers, FaTruck, FaFolder, FaXmark, FaEye, FaMessage, FaPeopleGroup, FaFileInvoice, FaChevronLeft, FaChevronRight, FaStar, FaLock } from 'react-icons/fa6';
+import { FaPlus, FaUsers, FaTruck, FaFolder, FaXmark, FaEye, FaMessage, FaPeopleGroup, FaFileInvoice, FaChevronLeft, FaChevronRight, FaStar } from 'react-icons/fa6';
 import DashboardHeader from '../components/DashboardHeader';
 import DashboardSidebar from '../components/DashboardSidebar';
 import AppFooter from '../components/AppFooter';
@@ -323,15 +323,13 @@ export default function CompanyDashboard() {
                     { icon: FaUsers, title: 'Find Crew',    desc: 'Hire freelancers',     to: '/search', locked: false },
                     { icon: FaTruck, title: 'Find Vendors', desc: 'Equipment & services', to: '/search?type=vendors', locked: false },
                   ]),
-                  // Cast Search — unlocked only for Casting Director / Agency
-                  // companyType. Server enforces the same gate, returning 403
-                  // CAST_SEARCH_LOCKED for other companies.
+                  // Cast Search — now available to every company account.
                   {
-                    icon: isCastingDirector ? FaStar : FaLock,
+                    icon: FaStar,
                     title: 'Cast Search',
-                    desc: isCastingDirector ? 'Actors & models' : 'Casting Agency plan only',
-                    to: isCastingDirector ? '/search/cast' : '#',
-                    locked: !isCastingDirector,
+                    desc: 'Actors & models',
+                    to: '/search/cast',
+                    locked: false,
                   },
                 ].map((action) => (
                   <Link

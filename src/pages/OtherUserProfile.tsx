@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { FaArrowLeft, FaLocationDot, FaCalendarDays, FaTriangleExclamation, FaVideo, FaChevronLeft, FaChevronRight, FaBan, FaCircleCheck, FaCalendarCheck, FaGlobe, FaInstagram, FaYoutube, FaVimeoV, FaImdb, FaLinkedinIn, FaXTwitter, FaPhone, FaMessage, FaEnvelope, FaCircleInfo, FaFilm } from 'react-icons/fa6';
+import { FaArrowLeft, FaLocationDot, FaCalendarDays, FaTriangleExclamation, FaVideo, FaChevronLeft, FaChevronRight, FaBan, FaCircleCheck, FaCalendarCheck, FaGlobe, FaInstagram, FaYoutube, FaVimeoV, FaImdb, FaLinkedinIn, FaXTwitter, FaPhone, FaMessage, FaEnvelope, FaCircleInfo, FaFilm, FaImages, FaFilePdf, FaXmark } from 'react-icons/fa6';
 import toast from 'react-hot-toast';
 import DashboardHeader from '../components/DashboardHeader';
 import DashboardSidebar from '../components/DashboardSidebar';
@@ -24,6 +24,7 @@ import { formatPaise } from '../utils/currency';
 import StarRating from '../components/StarRating';
 import WorkShowcase, { type ShowcaseItem } from '../components/profile/WorkShowcase';
 import CoverMedia, { type CoverType } from '../components/profile/CoverMedia';
+import MediaLightbox, { type LightboxMedia } from '../components/MediaLightbox';
 
 type UserRole = 'individual' | 'company' | 'vendor' | 'admin' | 'cast' | 'location';
 
@@ -88,6 +89,7 @@ interface PublicProfileResponse {
     address?: string;
     addressLat?: number | null;
     addressLng?: number | null;
+    mapLink?: string | null;
     detailPdfUrl?: string | null;
     detailPdfName?: string | null;
     properties?: LocationProperty[];
@@ -162,6 +164,12 @@ export default function OtherUserProfile() {
   const [reviewsRefreshKey, setReviewsRefreshKey] = useState(0);
   const [avatarPreviewOpen, setAvatarPreviewOpen] = useState(false);
   const [coverPreviewOpen, setCoverPreviewOpen] = useState(false);
+  // Per-property "Location Images" gallery — set to a property's photo URLs to
+  // open the in-app grid; null = closed.
+  const [galleryImages, setGalleryImages] = useState<{ title: string; urls: string[] } | null>(null);
+  // In-app media viewer — images/PDFs open here instead of navigating the
+  // browser to the raw signed storage URL.
+  const [lightbox, setLightbox] = useState<LightboxMedia | null>(null);
 
   const [calYear, setCalYear] = useState(new Date().getFullYear());
   const [calMonth, setCalMonth] = useState(new Date().getMonth());
@@ -253,8 +261,27 @@ export default function OtherUserProfile() {
   // Cast targets are treated like Individuals — companies (especially Casting
   // Directors) see the calendar and booking affordances.
   const viewerIsCompany = viewer?.role === 'company' || viewer?.role === 'admin';
-  const showCalendarSection = viewerIsCompany && (isIndividual || isVendor || isCast || isLocation);
+  // Location targets intentionally have NO calendar/Schedule tab for company
+  // viewers — they only see About (+Reviews) and the Properties list.
+  const showCalendarSection = viewerIsCompany && (isIndividual || isVendor || isCast);
   const showBookActions = viewerIsCompany; // booking available against any role
+
+  // Default the open tab to Schedule when a calendar is shown (company viewing
+  // a bookable target); otherwise fall back to About. Runs once per profile so
+  // the user's manual tab switches aren't overridden. `didInitTab` resets when
+  // the viewed profile changes.
+  const didInitTab = useRef(false);
+  useEffect(() => { didInitTab.current = false; }, [userId]);
+  useEffect(() => {
+    if (!profile || didInitTab.current) return;
+    didInitTab.current = true;
+    setActiveTab(showCalendarSection ? 'schedule' : 'about');
+  }, [profile, showCalendarSection]);
+
+  // Hero layout (all categories): social links pinned to the top-right, and the
+  // Chat/Book actions moved to the BOTTOM of the hero card.
+  const heroActionsAtBottom = true;
+  const bookableTarget = isCompany || isCast || isVendor || isIndividual || isLocation;
   const navLinks = useMemo(() => {
     if (viewer?.role === 'vendor') return vendorNavLinks;
     if (viewer?.role === 'individual') return individualNavLinks;
@@ -622,6 +649,16 @@ We're working on ${projectName}${location ? ` (${location})` : ''}. Just wanted 
                               {[p.locationCity, p.locationState].filter(Boolean).join(', ')}
                             </p>
                           )}
+                          {/* Map pin — company & vendor pin link (location has
+                              its own Map Pin row inside Location Details). */}
+                          {(isCompany || isVendor) && p.mapLink && (
+                            <p className="text-sm flex items-center gap-1.5 mt-2">
+                              <FaLocationDot className="w-3.5 h-3.5 text-neutral-400" />
+                              <a href={p.mapLink} target="_blank" rel="noreferrer" className="text-[#3678F1] hover:underline">
+                                Open in Google Maps
+                              </a>
+                            </p>
+                          )}
                           {isIndividual && p.dailyBudget != null && (
                             <div className="inline-block mt-3 bg-[#E8F0FE] border border-[#3678F1]/20 text-[#3678F1] px-3 py-1.5 rounded-lg">
                               <p className="text-sm font-bold">
@@ -667,37 +704,11 @@ We're working on ${projectName}${location ? ` (${location})` : ''}. Just wanted 
                             Shown for every bookable target (company/cast/
                             vendor); individuals also get it so company viewers
                             can fire off a quick inquiry from the top. */}
-                        {(visiblePlatforms.length > 0 || (showBookActions && (isCompany || isCast || isVendor || isIndividual || isLocation))) && (
+                        {(visiblePlatforms.length > 0 || (showBookActions && bookableTarget)) && (
                           <div className="flex flex-col gap-3 lg:items-end lg:pt-1">
-                            {showBookActions && (isCompany || isCast || isVendor || isIndividual || isLocation) && (
-                              <div className="flex flex-wrap gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    // Company→company inquiry has no calendar
-                                    // context, so open InquiryRequestModal in
-                                    // date-less mode for project selection.
-                                    // For cast (calendar-enabled), the calendar
-                                    // is still available below for date-scoped
-                                    // chat; this is the quick top-level entry.
-                                    setSelectedChatDate(null);
-                                    setInquiryWithoutDateOpen(true);
-                                  }}
-                                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-neutral-200 bg-white text-sm font-semibold text-neutral-800 hover:border-[#3678F1] hover:text-[#3678F1] transition-colors shadow-sm"
-                                >
-                                  <FaMessage className="w-3.5 h-3.5" />
-                                  Chat
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => setIsBookingModalOpen(true)}
-                                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#3678F1] text-sm font-semibold text-white hover:bg-[#2563EB] transition-colors shadow-sm"
-                                >
-                                  <FaCalendarCheck className="w-3.5 h-3.5" />
-                                  Book
-                                </button>
-                              </div>
-                            )}
+                            {/* Social links — pinned to the top of the track. For
+                                cast & location the Chat/Book pair drops to the
+                                bottom of the hero card, so social sits alone here. */}
                             {visiblePlatforms.length > 0 && (
                               <div className="flex items-center gap-2.5 flex-wrap lg:justify-end">
                                 {visiblePlatforms.map(({ key, label, url, Icon, color, bg, border }) => (
@@ -715,9 +726,49 @@ We're working on ${projectName}${location ? ` (${location})` : ''}. Just wanted 
                                 ))}
                               </div>
                             )}
+                            {/* Chat + Book — top-right for company/vendor/individual;
+                                cast & location render these at the bottom instead. */}
+                            {showBookActions && bookableTarget && !heroActionsAtBottom && (
+                              <div className="flex flex-wrap gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => { setSelectedChatDate(null); setInquiryWithoutDateOpen(true); }}
+                                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-neutral-200 bg-white text-sm font-semibold text-neutral-800 hover:border-[#3678F1] hover:text-[#3678F1] transition-colors shadow-sm"
+                                >
+                                  <FaMessage className="w-3.5 h-3.5" /> Chat
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setIsBookingModalOpen(true)}
+                                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#3678F1] text-sm font-semibold text-white hover:bg-[#2563EB] transition-colors shadow-sm"
+                                >
+                                  <FaCalendarCheck className="w-3.5 h-3.5" /> Book
+                                </button>
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
+
+                      {/* Bottom action bar — Chat + Book for cast & location. */}
+                      {showBookActions && bookableTarget && heroActionsAtBottom && (
+                        <div className="mt-5 pt-4 border-t border-neutral-100 flex flex-wrap gap-2 sm:justify-end">
+                          <button
+                            type="button"
+                            onClick={() => { setSelectedChatDate(null); setInquiryWithoutDateOpen(true); }}
+                            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-neutral-200 bg-white text-sm font-semibold text-neutral-800 hover:border-[#3678F1] hover:text-[#3678F1] transition-colors shadow-sm"
+                          >
+                            <FaMessage className="w-3.5 h-3.5" /> Chat
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setIsBookingModalOpen(true)}
+                            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#3678F1] text-sm font-semibold text-white hover:bg-[#2563EB] transition-colors shadow-sm"
+                          >
+                            <FaCalendarCheck className="w-3.5 h-3.5" /> Book
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </motion.div>
 
@@ -737,18 +788,15 @@ We're working on ${projectName}${location ? ` (${location})` : ''}. Just wanted 
                     const tabs: { key: ProfileTab; label: string; Icon: typeof FaCalendarDays }[] = [];
                     if (showCalendarSection) tabs.push({ key: 'schedule', label: 'Schedule', Icon: FaCalendarDays });
                     tabs.push({ key: 'about', label: 'About', Icon: FaCircleInfo });
-                    if ((isCast && hasShowcase > 0) || (isIndividual && showreelUrl)) {
+                    // The role-specific tabs (showreel / equipment / properties)
+                    // and detail sections are COMPANY-ONLY. Other viewers who
+                    // reach a profile via name search see just About + Reviews
+                    // plus location & social links.
+                    if (viewerIsCompany && ((isCast && hasShowcase > 0) || (isIndividual && showreelUrl))) {
                       tabs.push({ key: 'showreel', label: 'Showreel', Icon: FaFilm });
                     }
-                    // Equipment is the vendor analogue of a showreel — their
-                    // inventory IS the offering. Always show the tab for
-                    // vendors even when the catalog is empty so viewers get
-                    // an explicit "no equipment listed yet" state instead of
-                    // wondering why a vendor profile is missing a section.
-                    if (isVendor) tabs.push({ key: 'equipment', label: `Equipment${equipmentCount ? ` (${equipmentCount})` : ''}`, Icon: FaVideo });
-                    // Properties are the location analogue of equipment — the
-                    // listed spaces ARE the offering. Always shown for locations.
-                    if (isLocation) tabs.push({ key: 'properties', label: `Properties${propertyCount ? ` (${propertyCount})` : ''}`, Icon: FaLocationDot });
+                    if (viewerIsCompany && isVendor) tabs.push({ key: 'equipment', label: `Equipment${equipmentCount ? ` (${equipmentCount})` : ''}`, Icon: FaVideo });
+                    if (viewerIsCompany && isLocation) tabs.push({ key: 'properties', label: `Properties${propertyCount ? ` (${propertyCount})` : ''}`, Icon: FaLocationDot });
                     if (tabs.length < 2) return null;
                     // If the current tab isn't in the available set, fall back to About.
                     const safeActive = tabs.some((t) => t.key === activeTab) ? activeTab : 'about';
@@ -802,7 +850,7 @@ We're working on ${projectName}${location ? ` (${location})` : ''}. Just wanted 
                   {/* Location Details — type, sub-types, Google map pin, and the
                       profile-level detailed PDF. Always shown in the About tab
                       for location targets. */}
-                  {activeTab === 'about' && isLocation && (
+                  {viewerIsCompany && activeTab === 'about' && isLocation && (
                     <motion.div variants={itemVariants} className="rounded-3xl bg-white shadow-soft border border-neutral-100 hover:border-[#3678F1] transition-colors duration-200 p-6 sm:p-8">
                       <h2 className="text-base font-bold text-neutral-900 mb-4 flex items-center gap-2">
                         <span className="w-1 h-5 rounded-full bg-[#0F766E]" /> Location Details
@@ -828,11 +876,11 @@ We're working on ${projectName}${location ? ` (${location})` : ''}. Just wanted 
                             <dd className="text-neutral-800">{p.address}</dd>
                           </div>
                         )}
-                        {p.addressLat != null && p.addressLng != null && (
+                        {(p.mapLink || (p.addressLat != null && p.addressLng != null)) && (
                           <div>
                             <dt className="text-xs font-semibold text-neutral-400 uppercase tracking-wide mb-1">Map Pin</dt>
                             <dd>
-                              <a href={`https://www.google.com/maps/search/?api=1&query=${p.addressLat},${p.addressLng}`} target="_blank" rel="noreferrer" className="text-[#0F766E] hover:underline inline-flex items-center gap-1.5">
+                              <a href={p.mapLink || `https://www.google.com/maps/search/?api=1&query=${p.addressLat},${p.addressLng}`} target="_blank" rel="noreferrer" className="text-[#0F766E] hover:underline inline-flex items-center gap-1.5">
                                 <FaLocationDot className="w-3.5 h-3.5" /> Open in Google Maps
                               </a>
                             </dd>
@@ -842,9 +890,9 @@ We're working on ${projectName}${location ? ` (${location})` : ''}. Just wanted 
                           <div>
                             <dt className="text-xs font-semibold text-neutral-400 uppercase tracking-wide mb-1">Detailed PDF</dt>
                             <dd>
-                              <a href={p.detailPdfUrl} target="_blank" rel="noreferrer" className="text-[#0F766E] hover:underline inline-flex items-center gap-1.5">
-                                <FaVideo className="w-3.5 h-3.5" /> {p.detailPdfName || 'View PDF'}
-                              </a>
+                              <button type="button" onClick={() => setLightbox({ url: p.detailPdfUrl!, type: 'document', title: p.detailPdfName || 'Detailed PDF' })} className="text-[#0F766E] hover:underline inline-flex items-center gap-1.5">
+                                <FaFilePdf className="w-3.5 h-3.5 text-[#DC2626]" /> {p.detailPdfName || 'View PDF'}
+                              </button>
                             </dd>
                           </div>
                         )}
@@ -856,7 +904,7 @@ We're working on ${projectName}${location ? ` (${location})` : ''}. Just wanted 
                       cast profiles. Mirrors the Personal Details section of
                       the cast's own profile so casting directors see the same
                       filterable attributes when picking talent. */}
-                  {activeTab === 'about' && isCast && (
+                  {viewerIsCompany && activeTab === 'about' && isCast && (
                     <motion.div variants={itemVariants} className="rounded-3xl bg-white shadow-soft border border-neutral-100 hover:border-[#3678F1] transition-colors duration-200 p-6 sm:p-8">
                       <h2 className="text-base font-bold text-neutral-900 mb-4 flex items-center gap-2">
                         <span className="w-1 h-5 rounded-full bg-[#9333EA]" /> Cast Details
@@ -895,7 +943,7 @@ We're working on ${projectName}${location ? ` (${location})` : ''}. Just wanted 
 
                   {/* Cast Work Showcase — photos / videos / documents the cast
                       member uploaded. Lives in the Showreel tab. */}
-                  {activeTab === 'showreel' && isCast && ((p as { showcaseItems?: ShowcaseItem[] }).showcaseItems?.length ?? 0) > 0 && (
+                  {viewerIsCompany && activeTab === 'showreel' && isCast && ((p as { showcaseItems?: ShowcaseItem[] }).showcaseItems?.length ?? 0) > 0 && (
                     <motion.div variants={itemVariants} className="rounded-3xl bg-white shadow-soft border border-neutral-100 hover:border-[#3678F1] transition-colors duration-200 p-6 sm:p-8">
                       <h2 className="text-base font-bold text-neutral-900 mb-4 flex items-center gap-2">
                         <span className="w-1 h-5 rounded-full bg-[#9333EA]" /> Work Showcase
@@ -907,7 +955,7 @@ We're working on ${projectName}${location ? ` (${location})` : ''}. Just wanted 
                   {/* Individual showreel — a single uploaded video. Rendered in
                       the Showreel tab; vendors and companies have no showreel
                       so this is gated to isIndividual. */}
-                  {activeTab === 'showreel' && isIndividual && (p as { showreelUrl?: string | null } | null)?.showreelUrl && (
+                  {viewerIsCompany && activeTab === 'showreel' && isIndividual && (p as { showreelUrl?: string | null } | null)?.showreelUrl && (
                     <motion.div variants={itemVariants} className="rounded-3xl bg-white shadow-soft border border-neutral-100 hover:border-[#3678F1] transition-colors duration-200 p-6 sm:p-8">
                       <h2 className="text-base font-bold text-neutral-900 mb-4 flex items-center gap-2">
                         <span className="w-1 h-5 rounded-full bg-[#3678F1]" /> Showreel
@@ -1118,7 +1166,7 @@ We're working on ${projectName}${location ? ` (${location})` : ''}. Just wanted 
                   {/* Vendor details (type, GST) — lives in the About tab next
                       to the bio. Equipment moved out into its own tab below
                       since the catalog is the vendor's primary offering. */}
-                  {activeTab === 'about' && isVendor && (
+                  {viewerIsCompany && activeTab === 'about' && isVendor && (
                     <motion.div variants={itemVariants} className="rounded-3xl bg-white shadow-soft border border-neutral-100 hover:border-[#3678F1] transition-colors duration-200 p-6 sm:p-8">
                       <h2 className="text-base font-bold text-neutral-900 mb-5 flex items-center gap-2">
                         <span className="w-1 h-5 rounded-full bg-[#3678F1]" /> Vendor details
@@ -1140,7 +1188,7 @@ We're working on ${projectName}${location ? ` (${location})` : ''}. Just wanted 
                       thumbnail (when uploaded), name, description, daily rate,
                       city, and quantity available. Falls back to an empty
                       state when the vendor hasn't listed any kit yet. */}
-                  {activeTab === 'equipment' && isVendor && (
+                  {viewerIsCompany && activeTab === 'equipment' && isVendor && (
                     <motion.div variants={itemVariants} className="rounded-3xl bg-white shadow-soft border border-neutral-100 hover:border-[#3678F1] transition-colors duration-200 p-6 sm:p-8">
                       <div className="flex items-center justify-between gap-3 mb-5 flex-wrap">
                         <h2 className="text-base font-bold text-neutral-900 flex items-center gap-2">
@@ -1220,7 +1268,7 @@ We're working on ${projectName}${location ? ` (${location})` : ''}. Just wanted 
                   {/* Properties tab — location listings grid. Shows photo,
                       sub-types, daily price, city, and a PDF link per property.
                       Falls back to an empty state when none are listed yet. */}
-                  {activeTab === 'properties' && isLocation && (
+                  {viewerIsCompany && activeTab === 'properties' && isLocation && (
                     <motion.div variants={itemVariants} className="rounded-3xl bg-white shadow-soft border border-neutral-100 hover:border-[#0F766E] transition-colors duration-200 p-6 sm:p-8">
                       <div className="flex items-center justify-between gap-3 mb-5 flex-wrap">
                         <h2 className="text-base font-bold text-neutral-900 flex items-center gap-2">
@@ -1240,43 +1288,52 @@ We're working on ${projectName}${location ? ` (${location})` : ''}. Just wanted 
                             const rateLabel = pr.dailyBudget != null ? `${formatPaise(pr.dailyBudget)} /day` : null;
                             return (
                               <div key={pr.id} className="rounded-2xl border border-neutral-200 hover:border-[#0F766E] hover:shadow-sm transition-all bg-white overflow-hidden">
-                                <div className="h-36 bg-gradient-to-br from-[#E0F2F1] to-[#CCFBF1] flex items-center justify-center overflow-hidden">
+                                <button
+                                  type="button"
+                                  onClick={() => photo && setLightbox({ url: photo, type: 'image', title: pr.name })}
+                                  className={`w-full h-36 bg-gradient-to-br from-[#E0F2F1] to-[#CCFBF1] flex items-center justify-center overflow-hidden ${photo ? 'cursor-zoom-in' : ''}`}
+                                >
                                   {photo ? (
                                     <img src={photo} alt={pr.name} className="w-full h-full object-cover" loading="lazy" />
                                   ) : (
                                     <FaLocationDot className="w-8 h-8 text-[#0F766E]/50" />
                                   )}
-                                </div>
-                                <div className="p-3">
-                                  <h3 className="text-sm font-bold text-neutral-900 truncate">{pr.name}</h3>
-                                  {pr.description && <p className="text-xs text-neutral-600 mt-0.5 line-clamp-2">{pr.description}</p>}
-                                  {(pr.subTypes?.length ?? 0) > 0 && (
-                                    <div className="flex flex-wrap gap-1 mt-2">
-                                      {pr.subTypes!.slice(0, 3).map((s) => (
-                                        <span key={s} className="px-2 py-0.5 bg-[#E0F2F1] text-[#0F766E] text-[10px] font-semibold rounded border border-[#0F766E]/20">{s}</span>
-                                      ))}
-                                    </div>
-                                  )}
-                                  <div className="flex flex-wrap items-center gap-2 mt-2">
-                                    {rateLabel && (
-                                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#E0F2F1] text-[#0F766E] text-[11px] font-bold border border-[#0F766E]/20">{rateLabel}</span>
+                                </button>
+                                <div className="p-3 flex items-start justify-between gap-3">
+                                  {/* Left — property details */}
+                                  <div className="min-w-0 flex-1">
+                                    <h3 className="text-sm font-bold text-neutral-900 truncate">{pr.name}</h3>
+                                    {pr.description && <p className="text-xs text-neutral-600 mt-0.5 line-clamp-2">{pr.description}</p>}
+                                    {(pr.subTypes?.length ?? 0) > 0 && (
+                                      <div className="flex flex-wrap gap-1 mt-2">
+                                        {pr.subTypes!.slice(0, 3).map((s) => (
+                                          <span key={s} className="px-2 py-0.5 bg-[#E0F2F1] text-[#0F766E] text-[10px] font-semibold rounded border border-[#0F766E]/20">{s}</span>
+                                        ))}
+                                      </div>
                                     )}
-                                    {pr.city && (
-                                      <span className="inline-flex items-center gap-1 text-[11px] text-neutral-500 font-medium">
-                                        <FaLocationDot className="w-2.5 h-2.5" /> {pr.city}
-                                      </span>
+                                    {rateLabel && (
+                                      <span className="inline-flex items-center gap-1 px-2 py-0.5 mt-2 rounded-md bg-[#E0F2F1] text-[#0F766E] text-[11px] font-bold border border-[#0F766E]/20">{rateLabel}</span>
                                     )}
                                   </div>
-                                  <div className="flex items-center gap-3 mt-2">
-                                    {pr.addressLat != null && pr.addressLng != null && (
-                                      <a href={`https://www.google.com/maps/search/?api=1&query=${pr.addressLat},${pr.addressLng}`} target="_blank" rel="noreferrer" className="text-[11px] text-[#0F766E] font-semibold hover:underline inline-flex items-center gap-1">
-                                        <FaLocationDot className="w-2.5 h-2.5" /> Map
-                                      </a>
+                                  {/* Right — Location Images / Location PDF for this property. */}
+                                  <div className="flex flex-col gap-1.5 shrink-0 items-stretch">
+                                    {(pr.photoUrls?.length ?? 0) > 0 && (
+                                      <button
+                                        type="button"
+                                        onClick={() => setGalleryImages({ title: pr.name, urls: pr.photoUrls ?? [] })}
+                                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-neutral-200 bg-white text-[11px] font-semibold text-neutral-700 hover:border-[#0F766E] hover:text-[#0F766E] transition-colors whitespace-nowrap"
+                                      >
+                                        <FaImages className="w-3 h-3" /> Location Images
+                                      </button>
                                     )}
                                     {pr.pdfUrl && (
-                                      <a href={pr.pdfUrl} target="_blank" rel="noreferrer" className="text-[11px] text-[#0F766E] font-semibold hover:underline inline-flex items-center gap-1">
-                                        <FaVideo className="w-2.5 h-2.5" /> {pr.pdfName || 'PDF'}
-                                      </a>
+                                      <button
+                                        type="button"
+                                        onClick={() => setLightbox({ url: pr.pdfUrl!, type: 'document', title: pr.pdfName || pr.name })}
+                                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-neutral-200 bg-white text-[11px] font-semibold text-neutral-700 hover:border-[#0F766E] hover:text-[#0F766E] transition-colors whitespace-nowrap"
+                                      >
+                                        <FaFilePdf className="w-3 h-3 text-[#DC2626]" /> Location PDF
+                                      </button>
                                     )}
                                   </div>
                                 </div>
@@ -1418,6 +1475,43 @@ We're working on ${projectName}${location ? ` (${location})` : ''}. Just wanted 
         title={`${title} — Cover Photo`}
         shape="rect"
       />
+
+      {/* Per-property "Location Images" gallery — opens from a property card,
+          shows that property's photos. Click a thumbnail to enlarge in-app. */}
+      {galleryImages && (
+        <div
+          className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setGalleryImages(null)}
+        >
+          <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[88vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="px-5 py-3.5 border-b border-neutral-100 flex items-center justify-between shrink-0">
+              <h2 className="text-sm font-bold text-neutral-900 flex items-center gap-2">
+                <FaImages className="w-4 h-4 text-[#0F766E]" /> {galleryImages.title} — Images
+                <span className="text-xs font-semibold text-neutral-400">({galleryImages.urls.length})</span>
+              </h2>
+              <button type="button" onClick={() => setGalleryImages(null)} className="w-8 h-8 rounded-lg bg-neutral-100 flex items-center justify-center text-neutral-500 hover:bg-neutral-200 transition-colors" aria-label="Close">
+                <FaXmark className="text-sm" />
+              </button>
+            </div>
+            <div className="p-4 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {galleryImages.urls.map((url, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => setLightbox({ url, type: 'image', title: `${galleryImages.title} — Image ${i + 1}` })}
+                  className="block rounded-xl overflow-hidden border border-neutral-200 hover:border-[#0F766E] transition-colors aspect-[4/3] bg-neutral-100 cursor-zoom-in"
+                >
+                  <img src={url} alt={`${galleryImages.title} ${i + 1}`} className="w-full h-full object-cover" loading="lazy" />
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* In-app media viewer for images & PDFs (keeps the raw signed storage
+          URL out of the address bar). */}
+      <MediaLightbox media={lightbox} onClose={() => setLightbox(null)} />
     </div>
   );
 }

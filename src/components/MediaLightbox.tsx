@@ -4,7 +4,7 @@ import { FaXmark } from 'react-icons/fa6';
 
 export interface LightboxMedia {
   url: string;
-  type: 'image' | 'video';
+  type: 'image' | 'video' | 'document';
   title?: string;
 }
 
@@ -65,6 +65,14 @@ export default function MediaLightbox({
             autoPlay
             playsInline
             className="max-h-[86vh] max-w-full rounded-lg bg-black shadow-2xl"
+          />
+        ) : media.type === 'document' ? (
+          // Render documents (PDFs) in an in-app iframe so the raw signed
+          // storage URL never lands in the browser address bar.
+          <iframe
+            src={media.url}
+            title={media.title ?? 'Document'}
+            className="w-full h-[86vh] rounded-lg bg-white shadow-2xl"
           />
         ) : (
           <img

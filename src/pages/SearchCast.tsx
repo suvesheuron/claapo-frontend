@@ -7,7 +7,6 @@ import DashboardSidebar from '../components/DashboardSidebar';
 import AppFooter from '../components/AppFooter';
 import Avatar from '../components/Avatar';
 import { api, ApiException } from '../services/api';
-import { useApiQuery } from '../hooks/useApiQuery';
 import { companyNavLinks } from '../navigation/dashboardNav';
 import { ROLE_TYPES, LANGUAGES, LOOK_TYPES, BODY_TYPES, HAIR_TYPES, GENDERS, cmToFeetInches } from '../constants/castOptions';
 import { paiseToRupees, rupeesToPaise } from '../utils/currency';
@@ -37,16 +36,9 @@ interface CastSearchResponse {
   meta: { total: number; page: number; limit: number; pages: number };
 }
 
-interface MeResponse {
-  profile?: { companyType?: string | null } | null;
-}
-
 export default function SearchCast() {
   useEffect(() => { document.title = 'Cast Search – Claapo'; }, []);
   const navigate = useNavigate();
-
-  const { data: me } = useApiQuery<MeResponse>('/profile/me', { swr: true });
-  const isCastingDirector = me?.profile?.companyType === 'casting_director';
 
   const [name, setName] = useState('');
   const [roleType, setRoleType] = useState('');
@@ -129,7 +121,6 @@ export default function SearchCast() {
   // button remains for users who prefer a manual trigger and as a retry
   // affordance after an error.
   useEffect(() => {
-    if (!isCastingDirector) return;
     // Don't re-run while a previous request is still in flight — let it
     // settle, then react to whatever the final filter state is.
     if (loading) return;
@@ -141,7 +132,7 @@ export default function SearchCast() {
     // any filter mutation re-fires; runSearch is recreated each render
     // and listing it here would re-fire infinitely.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isCastingDirector, query]);
+  }, [query]);
 
   return (
     <div className="min-h-screen bg-[#F3F4F6] flex">
@@ -158,7 +149,7 @@ export default function SearchCast() {
             <Link to="/dashboard" className="text-sm text-neutral-500 hover:text-neutral-700">← Back to dashboard</Link>
           </div>
 
-          {locked || (me && !isCastingDirector) ? (
+          {locked ? (
             <LockedCard />
           ) : (
             <>

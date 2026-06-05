@@ -18,6 +18,8 @@ import {
   ProfileSection, InfoRow, EditableField, SocialLinks,
   ProfileCompletionBadge, SkillTag,
 } from '../../components/profile/ProfileComponents';
+import ContactVisibilityToggles from '../../components/profile/ContactVisibilityToggles';
+import { FaLock } from 'react-icons/fa6';
 import { 
   calculateCompanyCompletion, getProfileImprovementTips 
 } from '../../utils/profileCompletion';
@@ -40,6 +42,7 @@ interface CompanyProfileData {
   locationState: string | null;
   bio: string | null;
   aboutUs: string | null;
+  mapLink?: string | null;
   gstNumber: string | null;
   sacCode: string | null;
   panNumber: string | null;
@@ -64,6 +67,8 @@ interface MeResponse {
   phone: string;
   role: string;
   isVerified: boolean;
+  isEmailPublic?: boolean;
+  isPhonePublic?: boolean;
   profile: CompanyProfileData | null;
 }
 
@@ -78,6 +83,7 @@ export default function CompanyProfile() {
   const [address, setAddress] = useState('');
   const [bio, setBio] = useState('');
   const [aboutUs, setAboutUs] = useState('');
+  const [mapLink, setMapLink] = useState('');
   const [companyType, setCompanyType] = useState('');
   const [skills, setSkills] = useState('');
   const [website, setWebsite] = useState('');
@@ -198,6 +204,7 @@ export default function CompanyProfile() {
     setAddress(p.address ?? '');
     setBio(p.bio ?? '');
     setAboutUs(p.aboutUs ?? '');
+    setMapLink(p.mapLink ?? '');
     setCompanyType(p.companyType ?? '');
     setSkills((p.skills ?? []).join(', '));
     setWebsite(p.website ?? '');
@@ -243,6 +250,7 @@ export default function CompanyProfile() {
         aboutUs: aboutUs.trim() || undefined,
         companyType: companyType.trim() || undefined,
         skills: skills.split(',').map((s) => s.trim()).filter(Boolean),
+        mapLink: mapLink.trim() || null,
         website: website.trim() || undefined,
         imdbUrl: imdbUrl.trim() || undefined,
         instagramUrl: instagramUrl.trim() || undefined,
@@ -755,6 +763,15 @@ export default function CompanyProfile() {
                               disabled={saving}
                               icon={<FaLocationDot />}
                             />
+                            <EditableField
+                              label="Google Maps Pin (Optional)"
+                              value={mapLink}
+                              onChange={setMapLink}
+                              placeholder="Paste a Google Maps link, e.g. https://maps.app.goo.gl/…"
+                              disabled={saving}
+                              icon={<FaLocationDot />}
+                              helpText="Your pinned location will be visible to users who search for your company."
+                            />
                           </div>
                         </ProfileSection>
 
@@ -862,6 +879,16 @@ export default function CompanyProfile() {
                             <EditableField label="Account number" value={bankAccountNumber} onChange={setBankAccountNumber} disabled={saving} />
                             <EditableField label="IFSC" value={ifscCode} onChange={setIfscCode} placeholder="e.g. HDFC0001234" disabled={saving} />
                           </div>
+                        </ProfileSection>
+
+                        <ProfileSection title="Contact Visibility" icon={<FaLock />}>
+                          <ContactVisibilityToggles
+                            email={me?.email}
+                            phone={me?.phone}
+                            initialEmailPublic={me?.isEmailPublic ?? true}
+                            initialPhonePublic={me?.isPhonePublic ?? true}
+                            disabled={saving}
+                          />
                         </ProfileSection>
 
                         {/* Action Buttons */}

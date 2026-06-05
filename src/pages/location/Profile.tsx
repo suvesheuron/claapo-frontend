@@ -17,6 +17,8 @@ import LocationAutocomplete from '../../components/LocationAutocomplete';
 import {
   ProfileSection, InfoRow, EditableField, SocialLinks,
 } from '../../components/profile/ProfileComponents';
+import ContactVisibilityToggles from '../../components/profile/ContactVisibilityToggles';
+import { FaLock } from 'react-icons/fa6';
 import {
   LOCATION_TYPES, LOCATION_TYPE_LABELS, subTypesForLocationType,
 } from '../../constants/locationCategories';
@@ -58,6 +60,8 @@ interface MeResponse {
   phone: string;
   role: string;
   isVerified: boolean;
+  isEmailPublic?: boolean;
+  isPhonePublic?: boolean;
   profile: LocationProfileData | null;
 }
 
@@ -72,8 +76,7 @@ export default function LocationProfile() {
   const [locationCity, setLocationCity] = useState('');
   const [locationState, setLocationState] = useState('');
   const [address, setAddress] = useState('');
-  const [addressLat, setAddressLat] = useState('');
-  const [addressLng, setAddressLng] = useState('');
+  const [mapLink, setMapLink] = useState('');
   const [aboutUs, setAboutUs] = useState('');
   const [website, setWebsite] = useState('');
   const [imdbUrl, setImdbUrl] = useState('');
@@ -188,8 +191,7 @@ export default function LocationProfile() {
     setLocationCity(p.locationCity ?? '');
     setLocationState(p.locationState ?? '');
     setAddress(p.address ?? '');
-    setAddressLat(p.addressLat != null ? String(p.addressLat) : '');
-    setAddressLng(p.addressLng != null ? String(p.addressLng) : '');
+    setMapLink((p as { mapLink?: string | null }).mapLink ?? '');
     setAboutUs(p.aboutUs ?? '');
     setWebsite(p.website ?? '');
     setImdbUrl(p.imdbUrl ?? '');
@@ -219,8 +221,6 @@ export default function LocationProfile() {
     }
     setSaving(true);
     try {
-      const lat = addressLat.trim() ? Number(addressLat) : undefined;
-      const lng = addressLng.trim() ? Number(addressLng) : undefined;
       await api.patch('/profile/location', {
         propertyName: propertyName.trim() || undefined,
         locationType: locationType || undefined,
@@ -234,8 +234,7 @@ export default function LocationProfile() {
         youtubeUrl: youtubeUrl.trim() || undefined,
         vimeoUrl: vimeoUrl.trim() || undefined,
         address: address.trim() || null,
-        ...(lat != null && !Number.isNaN(lat) ? { addressLat: lat } : {}),
-        ...(lng != null && !Number.isNaN(lng) ? { addressLng: lng } : {}),
+        mapLink: mapLink.trim() || null,
         panNumber: panNumber.trim() || null,
         billingName: billingName.trim() || null,
         gstNumber: gstNumber.trim() || null,
@@ -374,8 +373,8 @@ export default function LocationProfile() {
                             <InfoRow
                               label="Map Pin"
                               value={
-                                addressLat && addressLng ? (
-                                  <a href={`https://www.google.com/maps/search/?api=1&query=${addressLat},${addressLng}`} target="_blank" rel="noreferrer" className="text-[#0F766E] hover:underline inline-flex items-center gap-1.5">
+                                mapLink ? (
+                                  <a href={mapLink} target="_blank" rel="noreferrer" className="text-[#0F766E] hover:underline inline-flex items-center gap-1.5">
                                     <FaMapPin className="w-3.5 h-3.5" /> Open in Google Maps
                                   </a>
                                 ) : '—'
@@ -439,10 +438,15 @@ export default function LocationProfile() {
                             <LocationAutocomplete label="City" city={locationCity} state={locationState} disabled={saving}
                               onSelect={(loc) => { setLocationCity(loc.city); setLocationState(loc.state); }} placeholder="Search city or pin code..." />
                             <EditableField label="Address" type="textarea" rows={2} value={address} onChange={setAddress} placeholder="Full address of the property" disabled={saving} icon={<FaLocationDot />} />
-                            <div className="grid grid-cols-2 gap-3">
-                              <EditableField label="Map Pin — Latitude" value={addressLat} onChange={setAddressLat} placeholder="e.g. 19.0760" disabled={saving} helpText="For the Google Maps pin" />
-                              <EditableField label="Map Pin — Longitude" value={addressLng} onChange={setAddressLng} placeholder="e.g. 72.8777" disabled={saving} />
-                            </div>
+                            <EditableField
+                              label="Google Maps Pin"
+                              value={mapLink}
+                              onChange={setMapLink}
+                              placeholder="Paste a Google Maps link, e.g. https://maps.app.goo.gl/…"
+                              disabled={saving}
+                              icon={<FaMapPin />}
+                              helpText="Open your location in Google Maps → Share → Copy link, then paste it here."
+                            />
                           </div>
                         </ProfileSection>
 
@@ -522,6 +526,16 @@ export default function LocationProfile() {
                             <EditableField label="Account number" value={bankAccountNumber} onChange={setBankAccountNumber} disabled={saving} />
                             <EditableField label="IFSC" value={ifscCode} onChange={setIfscCode} disabled={saving} />
                           </div>
+                        </ProfileSection>
+
+                        <ProfileSection title="Contact Visibility" icon={<FaLock />}>
+                          <ContactVisibilityToggles
+                            email={me?.email}
+                            phone={me?.phone}
+                            initialEmailPublic={me?.isEmailPublic ?? true}
+                            initialPhonePublic={me?.isPhonePublic ?? true}
+                            disabled={saving}
+                          />
                         </ProfileSection>
 
                         <div className="flex justify-end gap-3">
