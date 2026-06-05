@@ -392,7 +392,8 @@ export default function InvoicesList() {
     currentRole === 'Individual' ||
     currentRole === 'Vendor' ||
     currentRole === 'Company' ||
-    currentRole === 'Cast';
+    currentRole === 'Cast' ||
+    currentRole === 'Location';
 
   // Render one invoice list row. Extracted so the active and cancelled
   // sections share identical row markup without duplication.
@@ -487,6 +488,12 @@ export default function InvoicesList() {
 
   const filteredProjects = useMemo(() => {
     return projects.filter((project) => {
+      // Only surface projects that actually have invoices for this user — a
+      // booked-but-uninvoiced project has nothing to view here (all roles).
+      // The "Create Invoice" button (→ /invoice/new) still lists every booked
+      // project, so first-time invoicing is unaffected; once an invoice exists
+      // the project appears here. invoiceCount is role-aware (issuer/recipient).
+      if ((project.invoiceCount ?? 0) <= 0) return false;
       if (projectListSearch.trim() && !project.title.toLowerCase().includes(projectListSearch.trim().toLowerCase())) {
         return false;
       }
@@ -496,6 +503,15 @@ export default function InvoicesList() {
       return true;
     });
   }, [projects, projectListSearch, projectListTaxOnly, projectListPaymentFilter]);
+
+  // Projects that actually have invoices (before search/payment/tax filters) —
+  // the base set the list shows; drives the "no invoices yet" empty state and
+  // the "X of Y match filters" denominator.
+  const invoicedProjectCount = useMemo(
+    () => projects.filter((p) => (p.invoiceCount ?? 0) > 0).length,
+    [projects],
+  );
+  const hasListFilters = projectListSearch.trim() !== '' || projectListPaymentFilter !== 'all' || projectListTaxOnly;
 
   const unreadInvoiceByProject = useMemo(() => {
     if (currentRole !== 'Company') return {} as Record<string, number>;
@@ -614,6 +630,27 @@ export default function InvoicesList() {
     }
 
     if (filteredProjects.length === 0) {
+      // No list filters active ⇒ the user simply has no invoiced projects yet.
+      if (!hasListFilters) {
+        return (
+          <div className="rounded-3xl bg-white border border-neutral-200/80 py-16 text-center px-6 flex flex-col items-center justify-center">
+            <div className="w-16 h-16 rounded-2xl bg-[#E8F0FE] ring-1 ring-[#3678F1]/15 flex items-center justify-center mb-4">
+              <FaFileInvoice className="text-[#3678F1] text-2xl" />
+            </div>
+            <p className="text-base font-bold text-neutral-900 mb-1.5">No invoices yet</p>
+            <p className="text-sm text-neutral-500 max-w-xs mx-auto mb-5">
+              {canCreate
+                ? 'Once you raise an invoice for a project, it will appear here.'
+                : 'Projects with invoices will appear here.'}
+            </p>
+            {canCreate && (
+              <Link to="/invoice/new" className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-br from-[#3678F1] to-[#2563EB] text-white rounded-xl text-sm font-semibold hover:from-[#2563EB] hover:to-[#1D4ED8] shadow-brand transition-colors duration-200">
+                <FaPlus className="w-3.5 h-3.5" /> Create Invoice
+              </Link>
+            )}
+          </div>
+        );
+      }
       return (
         <div className="rounded-2xl bg-white border border-dashed border-neutral-200 py-12 text-center px-6">
           <div className="w-12 h-12 rounded-2xl bg-[#E8F0FE] ring-1 ring-[#3678F1]/15 flex items-center justify-center mx-auto mb-3">
@@ -953,10 +990,10 @@ export default function InvoicesList() {
                       <p className="text-sm text-neutral-500 mt-1.5 ml-[46px]">
                         {projectsLoading
                           ? 'Loading your projects…'
-                          : projects.length === 0
-                            ? 'No projects yet'
-                            : (projectListSearch.trim() || projectListPaymentFilter !== 'all' || projectListTaxOnly)
-                              ? `${filteredProjects.length} of ${projects.length} project${projects.length === 1 ? '' : 's'} match filters`
+                          : invoicedProjectCount === 0
+                            ? 'No invoices yet'
+                            : hasListFilters
+                              ? `${filteredProjects.length} of ${invoicedProjectCount} project${invoicedProjectCount === 1 ? '' : 's'} match filters`
                               : 'Select a project to view invoices'}
                         {!projectsLoading && currentRole === 'Company' && unreadInvoiceProjectCount > 0 && (
                           <span className="ml-1 text-[#F40F02] font-semibold">
@@ -983,7 +1020,7 @@ export default function InvoicesList() {
                       )}
                       </div>
                     </div>
-                    {projects.length > 0 && (
+                    {invoicedProjectCount > 0 && (
                       <div className="flex flex-col gap-3 p-3 bg-white rounded-xl border border-neutral-200/70 shadow-sm">
                         <div className="relative">
                           <FaMagnifyingGlass className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 w-3.5 h-3.5 pointer-events-none" />

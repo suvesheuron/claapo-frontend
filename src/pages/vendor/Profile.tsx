@@ -16,12 +16,14 @@ import { useApiQuery } from '../../hooks/useApiQuery';
 import { vendorNavLinks } from '../../navigation/dashboardNav';
 import LocationAutocomplete from '../../components/LocationAutocomplete';
 import { REGISTRATION_VENDOR_CATEGORIES, vendorCategoryToVendorType } from '../../constants/registrationCategories';
-import { 
+import {
   ProfileSection, InfoRow, EditableField, SocialLinks,
   ProfileCompletionBadge,
 } from '../../components/profile/ProfileComponents';
-import { 
-  calculateVendorCompletion, getProfileImprovementTips 
+import ContactVisibilityToggles from '../../components/profile/ContactVisibilityToggles';
+import { FaLock } from 'react-icons/fa6';
+import {
+  calculateVendorCompletion, getProfileImprovementTips
 } from '../../utils/profileCompletion';
 
 interface VendorProfileData {
@@ -31,6 +33,7 @@ interface VendorProfileData {
   locationCity: string | null;
   locationState: string | null;
   aboutUs: string | null;
+  mapLink?: string | null;
   website: string | null;
   imdbUrl?: string | null;
   instagramUrl: string | null;
@@ -56,6 +59,8 @@ interface MeResponse {
   phone: string;
   role: string;
   isVerified: boolean;
+  isEmailPublic?: boolean;
+  isPhonePublic?: boolean;
   profile: VendorProfileData | null;
 }
 
@@ -69,6 +74,7 @@ export default function VendorProfile() {
   const [locationCity, setLocationCity] = useState('');
   const [locationState, setLocationState] = useState('');
   const [aboutUs, setAboutUs] = useState('');
+  const [mapLink, setMapLink] = useState('');
   const [website, setWebsite] = useState('');
   const [imdbUrl, setImdbUrl] = useState('');
   const [instagramUrl, setInstagramUrl] = useState('');
@@ -190,6 +196,7 @@ export default function VendorProfile() {
     setLocationCity(p.locationCity ?? '');
     setLocationState(p.locationState ?? '');
     setAboutUs(p.aboutUs ?? '');
+    setMapLink(p.mapLink ?? '');
     setWebsite(p.website ?? '');
     setImdbUrl(p.imdbUrl ?? '');
     setInstagramUrl(p.instagramUrl ?? '');
@@ -229,6 +236,7 @@ export default function VendorProfile() {
         locationCity: locationCity.trim() || undefined,
         locationState: locationState.trim() || undefined,
         aboutUs: aboutUs.trim() || undefined,
+        mapLink: mapLink.trim() || null,
         website: website.trim() || undefined,
         imdbUrl: imdbUrl.trim() || undefined,
         instagramUrl: instagramUrl.trim() || undefined,
@@ -709,6 +717,15 @@ export default function VendorProfile() {
                               disabled={saving}
                               icon={<FaLocationDot />}
                             />
+                            <EditableField
+                              label="Google Maps Pin (Optional)"
+                              value={mapLink}
+                              onChange={setMapLink}
+                              placeholder="Paste a Google Maps link, e.g. https://maps.app.goo.gl/…"
+                              disabled={saving}
+                              icon={<FaLocationDot />}
+                              helpText="Your pinned location will be visible to users who search for your company."
+                            />
                           </div>
                         </ProfileSection>
 
@@ -807,6 +824,16 @@ export default function VendorProfile() {
                             <EditableField label="Account number" value={bankAccountNumber} onChange={setBankAccountNumber} disabled={saving} />
                             <EditableField label="IFSC" value={ifscCode} onChange={setIfscCode} disabled={saving} />
                           </div>
+                        </ProfileSection>
+
+                        <ProfileSection title="Contact Visibility" icon={<FaLock />}>
+                          <ContactVisibilityToggles
+                            email={me?.email}
+                            phone={me?.phone}
+                            initialEmailPublic={me?.isEmailPublic ?? true}
+                            initialPhonePublic={me?.isPhonePublic ?? true}
+                            disabled={saving}
+                          />
                         </ProfileSection>
 
                         {/* Action Buttons */}

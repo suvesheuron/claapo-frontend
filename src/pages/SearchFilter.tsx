@@ -1,4 +1,4 @@
-import { Link, Navigate, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useSearchParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { FaMagnifyingGlass, FaChevronLeft, FaChevronRight, FaPlus, FaTriangleExclamation, FaLocationDot, FaBuilding } from 'react-icons/fa6';
@@ -15,7 +15,10 @@ import { useApiQuery } from '../hooks/useApiQuery';
 import { formatPaise } from '../utils/currency';
 import { companyNavLinks } from '../navigation/dashboardNav';
 import { REGISTRATION_INDIVIDUAL_DEPARTMENTS, REGISTRATION_VENDOR_CATEGORIES, REGISTRATION_GENRES, REGISTRATION_COMPANY_TYPES, vendorCategoryToVendorType } from '../constants/registrationCategories';
-import { LOCATION_TYPES, LOCATION_TYPE_LABELS } from '../constants/locationCategories';
+import { LOCATION_TYPES, LOCATION_TYPE_LABELS, LOCATION_SUBTYPES_BY_TYPE } from '../constants/locationCategories';
+
+// Full flat list of location sub-types (the "Type" filter on the Locations tab).
+const ALL_LOCATION_SUBTYPES = Array.from(new Set(Object.values(LOCATION_SUBTYPES_BY_TYPE).flat()));
 
 type SearchType = 'crew' | 'vendors' | 'companies' | 'locations';
 
@@ -128,6 +131,7 @@ function companyTypeLabelToCanonical(label: string): string {
 
 export default function SearchFilter() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const isSubuser = user?.mainUserId != null;
 
   // Casting Director / Agency companies don't have crew/vendor search on
@@ -226,13 +230,12 @@ export default function SearchFilter() {
         return;
       }
 
-      // Locations tab — provider + property search by city / type / dates.
+      // Locations tab — provider + property search by name / city / category / sub-type.
       if (type === 'locations') {
         if (q.trim()) params.propertyName = q.trim();
         if (loc.trim()) params.city = loc.trim();
-        if (skill.trim()) params.locationType = skill.trim(); // skill slot reused as locationType
-        if (sDate) params.startDate = new Date(sDate).toISOString();
-        if (eDate) params.endDate = new Date(eDate).toISOString();
+        if (skill.trim()) params.locationType = skill.trim(); // skill slot reused as Category (location type)
+        if (genre.trim()) params.subType = genre.trim();      // genre slot reused as Type (sub-type)
         const qs = new URLSearchParams(params);
         const raw = await api.get<{ items?: LocationResult[]; meta?: { total?: number } }>(`/search/locations?${qs.toString()}`);
         const list = Array.isArray(raw?.items) ? raw.items : [];
@@ -555,6 +558,12 @@ Please share your best quotation for this requirement.`;
                     {type === 'crew' ? 'Crew' : type === 'vendors' ? 'Vendors' : type === 'companies' ? 'Companies' : 'Locations'}
                   </button>
                 ))}
+                {/* Cast search lives on its own page (rich actor/model filters);
+                    open to every company now. */}
+                <button type="button" onClick={() => navigate('/search/cast')}
+                  className="rounded-full px-6 py-2 text-sm font-semibold transition-colors duration-200 text-[#2563EB] hover:text-[#1D4ED8]">
+                  Cast
+                </button>
               </div>
 
               {/* Companies tab: name + city + companyType filters. The
@@ -627,7 +636,7 @@ Please share your best quotation for this requirement.`;
                   {/* Search input */}
                   <div>
                     <label className="block text-[11px] font-bold text-neutral-500 mb-2 uppercase tracking-widest">
-                      {searchType === 'crew' ? ' Name' : 'Vendor Name'}
+                      {searchType === 'vendors' ? 'Vendor Name' : 'Name'}
                     </label>
                     <div className="relative group">
                       <input type="text" value={query} onChange={(e) => { setQuery(e.target.value); setPage(1); }}
@@ -685,14 +694,26 @@ Please share your best quotation for this requirement.`;
                     </div>
                   )}
 
-                  {/* Location type filter (skillFilter slot reused) */}
+                  {/* Category filter — location type (skillFilter slot reused) */}
                   {searchType === 'locations' && (
                     <div>
-                      <label className="block text-[11px] font-bold text-neutral-500 mb-2 uppercase tracking-widest">Location Type</label>
+                      <label className="block text-[11px] font-bold text-neutral-500 mb-2 uppercase tracking-widest">Category</label>
                       <select value={skillFilter} onChange={(e) => { setSkillFilter(e.target.value); setPage(1); }}
                         className="w-full px-4 py-3 border border-neutral-200 rounded-xl text-sm bg-neutral-50 focus:bg-white focus:outline-none focus:border-[#3678F1] focus:ring-2 focus:ring-[#3678F1]/20 transition-colors duration-200 appearance-none">
-                        <option value="">All types</option>
+                        <option value="">All categories</option>
                         {LOCATION_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                      </select>
+                    </div>
+                  )}
+
+                  {/* Type filter — location sub-type (genreFilter slot reused) */}
+                  {searchType === 'locations' && (
+                    <div>
+                      <label className="block text-[11px] font-bold text-neutral-500 mb-2 uppercase tracking-widest">Type</label>
+                      <select value={genreFilter} onChange={(e) => { setGenreFilter(e.target.value); setPage(1); }}
+                        className="w-full px-4 py-3 border border-neutral-200 rounded-xl text-sm bg-neutral-50 focus:bg-white focus:outline-none focus:border-[#3678F1] focus:ring-2 focus:ring-[#3678F1]/20 transition-colors duration-200 appearance-none">
+                        <option value="">All types</option>
+                        {ALL_LOCATION_SUBTYPES.map((s) => <option key={s} value={s}>{s}</option>)}
                       </select>
                     </div>
                   )}
@@ -726,20 +747,23 @@ Please share your best quotation for this requirement.`;
                     </div>
                   )}
 
-                  {/* Row 2 - Start Date, End Date, Reset */}
-                  {/* Start Date */}
+                  {/* Row 2 - Start Date, End Date, Reset. Dates are hidden on the
+                      Locations tab — location providers have no bookable calendar. */}
+                  {searchType !== 'locations' && (
                   <div>
                     <label className="block text-[11px] font-bold text-neutral-500 mb-2 uppercase tracking-widest">Start Date</label>
                     <DateInput value={startDate} onChange={(e) => { setStartDate(e.target.value); setPage(1); }}
                       className="w-full px-4 py-3 border border-neutral-200 rounded-xl text-sm bg-neutral-50 focus:bg-white focus:outline-none focus:border-[#3678F1] focus:ring-2 focus:ring-[#3678F1]/20 transition-colors duration-200" />
                   </div>
+                  )}
 
-                  {/* End Date */}
+                  {searchType !== 'locations' && (
                   <div>
                     <label className="block text-[11px] font-bold text-neutral-500 mb-2 uppercase tracking-widest">End Date</label>
                     <DateInput value={endDate} min={startDate || undefined} onChange={(e) => { setEndDate(e.target.value); setPage(1); }}
                       className="w-full px-4 py-3 border border-neutral-200 rounded-xl text-sm bg-neutral-50 focus:bg-white focus:outline-none focus:border-[#3678F1] focus:ring-2 focus:ring-[#3678F1]/20 transition-colors duration-200" />
                   </div>
+                  )}
 
                   {/* Reset button */}
                   <div className="flex items-end">
@@ -1088,7 +1112,22 @@ Please share your best quotation for this requirement.`;
                                 </div>
                               </div>
                               {(r.properties?.length ?? 0) > 0 && (
-                                <p className="text-xs text-neutral-500 mb-2">{r.properties!.length} matching propert{r.properties!.length === 1 ? 'y' : 'ies'}</p>
+                                <div className="mb-2 space-y-1.5">
+                                  <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
+                                    {r.properties!.length} matching propert{r.properties!.length === 1 ? 'y' : 'ies'}
+                                  </p>
+                                  {r.properties!.slice(0, 3).map((pr) => (
+                                    <div key={pr.id} className="flex items-center justify-between gap-2">
+                                      <span className="text-xs font-semibold text-neutral-800 truncate">{pr.name}</span>
+                                      {(pr.subTypes?.length ?? 0) > 0 && (
+                                        <span className="text-[10px] font-semibold text-[#0F766E] bg-[#E0F2F1] border border-[#0F766E]/20 rounded px-1.5 py-0.5 shrink-0 truncate max-w-[120px]">{pr.subTypes![0]}</span>
+                                      )}
+                                    </div>
+                                  ))}
+                                  {r.properties!.length > 3 && (
+                                    <p className="text-[10px] text-neutral-400">+{r.properties!.length - 3} more</p>
+                                  )}
+                                </div>
                               )}
                               <div className="flex flex-col gap-2 pt-3 border-t border-neutral-100 mt-auto">
                                 <span className="text-xs text-neutral-500 flex items-center gap-1.5">

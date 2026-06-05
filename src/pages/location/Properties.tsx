@@ -12,7 +12,6 @@ import { useApiQuery } from '../../hooks/useApiQuery';
 import { api, ApiException } from '../../services/api';
 import { formatPaise } from '../../utils/currency';
 import { locationNavLinks } from '../../navigation/dashboardNav';
-import LocationAutocomplete from '../../components/LocationAutocomplete';
 
 interface PropertyAvailability {
   id: string;
@@ -66,12 +65,7 @@ export default function Properties() {
   const [availTo, setAvailTo] = useState('');
 
   const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
   const [subTypesText, setSubTypesText] = useState('');
-  const [city, setCity] = useState('');
-  const [address, setAddress] = useState('');
-  const [lat, setLat] = useState('');
-  const [lng, setLng] = useState('');
   const [dailyBudget, setDailyBudget] = useState('');
   const [photos, setPhotos] = useState<UploadedPhoto[]>([]);
   const [pdf, setPdf] = useState<{ key: string; name: string } | null>(null);
@@ -80,8 +74,7 @@ export default function Properties() {
 
   const openAdd = () => {
     setSaveError(null);
-    setName(''); setDescription(''); setSubTypesText(''); setCity(''); setAddress('');
-    setLat(''); setLng(''); setDailyBudget(''); setPhotos([]); setPdf(null);
+    setName(''); setSubTypesText(''); setDailyBudget(''); setPhotos([]); setPdf(null);
     setModal('add');
   };
 
@@ -89,12 +82,7 @@ export default function Properties() {
     setSaveError(null);
     setEditingId(item.id);
     setName(item.name);
-    setDescription(item.description ?? '');
     setSubTypesText((item.subTypes ?? []).join(', '));
-    setCity(item.city ?? '');
-    setAddress(item.address ?? '');
-    setLat(item.addressLat != null ? String(item.addressLat) : '');
-    setLng(item.addressLng != null ? String(item.addressLng) : '');
     setDailyBudget(item.dailyBudget != null ? String(Math.round(item.dailyBudget / 100)) : '');
     // Seed existing photos (parallel key/url arrays) so the owner can keep/append.
     const keys = item.photoKeys ?? [];
@@ -154,16 +142,9 @@ export default function Properties() {
     const budgetPaise = dailyBudget.trim() ? Math.round(parseFloat(dailyBudget) * 100) : undefined;
     if (budgetPaise !== undefined && (Number.isNaN(budgetPaise) || budgetPaise < 0)) { setSaveError('Daily price must be a valid number.'); return; }
     const subTypes = subTypesText.split(',').map((s) => s.trim()).filter(Boolean);
-    const latNum = lat.trim() ? Number(lat) : undefined;
-    const lngNum = lng.trim() ? Number(lng) : undefined;
     const body = {
       name: nameTrim,
-      description: description.trim() || undefined,
       subTypes,
-      city: city.trim() || undefined,
-      address: address.trim() || undefined,
-      ...(latNum != null && !Number.isNaN(latNum) ? { addressLat: latNum } : {}),
-      ...(lngNum != null && !Number.isNaN(lngNum) ? { addressLng: lngNum } : {}),
       dailyBudget: budgetPaise,
       photoKeys: photos.map((p) => p.key),
       pdfKey: pdf?.key ?? null,
@@ -394,27 +375,8 @@ export default function Properties() {
                   <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Sea-facing Heritage Villa" className="w-full px-4 py-2.5 border border-neutral-300 rounded-xl text-sm bg-[#F3F4F6] focus:bg-white focus:outline-none focus:border-[#0F766E] focus:ring-2 focus:ring-[#0F766E]/15 transition-all" />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Description</label>
-                  <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} placeholder="Highlights, capacity, what's included…" className="w-full px-4 py-2.5 border border-neutral-300 rounded-xl text-sm bg-[#F3F4F6] focus:bg-white focus:outline-none focus:border-[#0F766E] focus:ring-2 focus:ring-[#0F766E]/15 resize-none transition-all" />
-                </div>
-                <div>
                   <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Sub-types <span className="text-neutral-400 font-normal">(comma-separated)</span></label>
                   <input type="text" value={subTypesText} onChange={(e) => setSubTypesText(e.target.value)} placeholder="e.g. Heritage Villa, Sea-facing" className="w-full px-4 py-2.5 border border-neutral-300 rounded-xl text-sm bg-[#F3F4F6] focus:bg-white focus:outline-none focus:border-[#0F766E] focus:ring-2 focus:ring-[#0F766E]/15 transition-all" />
-                </div>
-                <LocationAutocomplete label="City" city={city} compact onSelect={(loc) => setCity(loc.city)} placeholder="e.g. Mumbai" />
-                <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Address</label>
-                  <input type="text" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Full address" className="w-full px-4 py-2.5 border border-neutral-300 rounded-xl text-sm bg-[#F3F4F6] focus:bg-white focus:outline-none focus:border-[#0F766E] focus:ring-2 focus:ring-[#0F766E]/15 transition-all" />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Map Pin — Lat</label>
-                    <input type="text" value={lat} onChange={(e) => setLat(e.target.value)} placeholder="19.0760" className="w-full px-4 py-2.5 border border-neutral-300 rounded-xl text-sm bg-[#F3F4F6] focus:bg-white focus:outline-none focus:border-[#0F766E] focus:ring-2 focus:ring-[#0F766E]/15 transition-all" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Map Pin — Lng</label>
-                    <input type="text" value={lng} onChange={(e) => setLng(e.target.value)} placeholder="72.8777" className="w-full px-4 py-2.5 border border-neutral-300 rounded-xl text-sm bg-[#F3F4F6] focus:bg-white focus:outline-none focus:border-[#0F766E] focus:ring-2 focus:ring-[#0F766E]/15 transition-all" />
-                  </div>
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Daily price</label>

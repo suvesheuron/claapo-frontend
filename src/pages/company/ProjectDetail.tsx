@@ -80,6 +80,11 @@ interface BookingTarget {
     roleType?: string;
     avatarKey?: string | null;
   } | null;
+  locationProfile?: {
+    propertyName?: string;
+    locationType?: string | null;
+    logoKey?: string | null;
+  } | null;
 }
 
 interface Booking {
@@ -91,6 +96,8 @@ interface Booking {
   projectRole?: { roleName: string } | null;
   /** Vendor bookings — the specific equipment item being hired. */
   vendorEquipment?: { id: string; name: string } | null;
+  /** Location bookings — the specific property/setup being hired. */
+  locationProperty?: { id: string; name: string } | null;
   shootDates?: string[];
   shootLocations?: string[];
   shootDateLocations?: Array<{ date: string; location: string }> | null;
@@ -323,6 +330,9 @@ export default function ProjectDetail() {
   // Cast bookings (actors/models). The "Add Cast" button is unlocked only for
   // Casting Director / Agency companies; everyone else sees a locked upsell.
   const castBookings    = bookings.filter((b) => b.target.role === 'cast');
+  // Location bookings (booked properties/setups). Like company rows, the
+  // "what" is the specific property — surfaced via b.locationProperty.name.
+  const locationBookings = bookings.filter((b) => b.target.role === 'location');
   // New project flow (no Lock / Activate step): projects are created as `active`
   // and the only forward action is "Mark Complete". `draft` is treated as
   // ongoing too — legacy rows that haven't been swept by the migration.
@@ -340,7 +350,8 @@ export default function ProjectDetail() {
   const vendorCost  = vendorBookings.filter((b) => b.status === 'accepted' || b.status === 'locked').reduce((s, b) => s + (b.rateOffered ?? 0), 0);
   const companyCost = companyBookings.filter((b) => b.status === 'accepted' || b.status === 'locked').reduce((s, b) => s + (b.rateOffered ?? 0), 0);
   const castCost    = castBookings.filter((b) => b.status === 'accepted' || b.status === 'locked').reduce((s, b) => s + (b.rateOffered ?? 0), 0);
-  const remaining   = totalBudget - crewCost - vendorCost - companyCost - castCost;
+  const locationCost = locationBookings.filter((b) => b.status === 'accepted' || b.status === 'locked').reduce((s, b) => s + (b.rateOffered ?? 0), 0);
+  const remaining   = totalBudget - crewCost - vendorCost - companyCost - castCost - locationCost;
 
   const handleCancelBooking = async (bookingId: string) => {
     setCancelError(null);
@@ -419,6 +430,7 @@ export default function ProjectDetail() {
     b.target.companyProfile?.companyName ??
     b.target.vendorProfile?.companyName ??
     b.target.castProfile?.displayName ??
+    b.target.locationProfile?.propertyName ??
     b.target.email;
 
   // The line under the name on each booking card — image #37 asked for the
@@ -454,6 +466,10 @@ export default function ProjectDetail() {
             .replace(/\b\w/g, (c) => c.toUpperCase())
         : 'Production House';
     }
+    if (b.target.role === 'location') {
+      // The line shows which specific property/setup was booked.
+      return b.locationProperty?.name?.trim() || 'Location';
+    }
     return b.projectRole?.roleName?.trim() || 'Member';
   };
 
@@ -466,6 +482,7 @@ export default function ProjectDetail() {
       b.target.castProfile?.avatarKey ??
       b.target.companyProfile?.logoKey ??
       b.target.vendorProfile?.logoKey ??
+      b.target.locationProfile?.logoKey ??
       null;
     return getMediaUrl(key) ?? undefined;
   };
@@ -564,6 +581,51 @@ export default function ProjectDetail() {
                   </div>
                 </div>
               ) : null}
+
+              {/* Budget Summary — moved to the top so the company sees spend at
+                  a glance before the booking sections. Hidden for CDs viewing a
+                  project they're hired on (the budget belongs to the owner). */}
+              {gateReady && project && !hideBudgetForViewer && (
+                <div className="rounded-2xl bg-white border border-neutral-200 p-5 mb-5 hover:border-[#3678F1] transition-colors duration-200">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-sm font-bold text-neutral-900">Budget Summary</h3>
+                    <Link to={`/invoices/${project.id}`} className="flex items-center gap-1.5 text-xs text-[#3678F1] font-semibold hover:underline">
+                      <FaFileInvoice className="w-3 h-3" /> View Invoices
+                    </Link>
+                  </div>
+                  {(() => {
+                    const showCrew = !showCastOnly;
+                    const showVendor = !showCastOnly;
+                    const showCompany = !showCastOnly && companyBookings.length > 0;
+                    const showLocation = locationBookings.length > 0;
+                    const extraCount = (showCompany ? 1 : 0) + (castBookings.length > 0 ? 1 : 0) + (showLocation ? 1 : 0);
+                    const cols = 2 + (showCrew ? 1 : 0) + (showVendor ? 1 : 0) + extraCount;
+                    const colsClass = cols >= 6 ? 'sm:grid-cols-6' : cols === 5 ? 'sm:grid-cols-5' : cols === 4 ? 'sm:grid-cols-4' : cols === 3 ? 'sm:grid-cols-3' : 'sm:grid-cols-2';
+                    return loadingBookings ? (
+                      <div className={`grid grid-cols-2 ${colsClass} gap-3`}>
+                        {Array.from({ length: cols }).map((_, i) => <div key={i} className="skeleton h-16 rounded-xl" />)}
+                      </div>
+                    ) : (
+                      <div className={`grid grid-cols-2 ${colsClass} gap-3`}>
+                        {[
+                          { label: 'Total Budget', value: formatBudgetCompact(totalBudget), color: 'text-neutral-900' },
+                          ...(showCrew ? [{ label: 'Crew Cost', value: formatBudgetCompact(crewCost), color: 'text-[#3678F1]' }] : []),
+                          ...(showVendor ? [{ label: 'Vendor Cost', value: formatBudgetCompact(vendorCost), color: 'text-[#2563EB]' }] : []),
+                          ...(showCompany ? [{ label: 'Company Cost', value: formatBudgetCompact(companyCost), color: 'text-[#1D4ED8]' }] : []),
+                          ...(castBookings.length > 0 ? [{ label: 'Cast Cost', value: formatBudgetCompact(castCost), color: 'text-[#9333EA]' }] : []),
+                          ...(showLocation ? [{ label: 'Location Cost', value: formatBudgetCompact(locationCost), color: 'text-[#0F766E]' }] : []),
+                          { label: 'Remaining', value: formatBudgetCompact(remaining), color: remaining >= 0 ? 'text-[#22C55E]' : 'text-[#F40F02]' },
+                        ].map(({ label, value, color }) => (
+                          <div key={label} className="rounded-xl bg-[#F3F4F6] p-3">
+                            <p className="text-xs text-neutral-500">{label}</p>
+                            <p className={`text-lg font-bold mt-1 ${color}`}>{value}</p>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
 
               {/* Booking sections are gated on `gateReady` so we don't flash
                   the full Crew/Vendor/Cast view for ~100ms before the CD
@@ -988,65 +1050,74 @@ export default function ProjectDetail() {
                     )}
                   </div>
                 )}
-              </div>
-              )}
 
-              {/* Budget Summary — hidden for CDs viewing a project they're
-                  hired on. The budget there belongs to the project owner.
-                  Also gated on `gateReady` to avoid the same flash. */}
-              {gateReady && project && !hideBudgetForViewer && (
-                <div className="rounded-2xl bg-white border border-neutral-200 p-5 mt-5 hover:border-[#3678F1] transition-colors duration-200">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm font-bold text-neutral-900">Budget Summary</h3>
-                    <Link to={`/invoices/${project.id}`} className="flex items-center gap-1.5 text-xs text-[#3678F1] font-semibold hover:underline">
-                      <FaFileInvoice className="w-3 h-3" /> View Invoices
-                    </Link>
-                  </div>
-                  {(() => {
-                    // On CD-owned projects the Crew/Vendor cards are hidden
-                    // — drop those cost cells from the summary too so the
-                    // grid doesn't show zero-valued boxes for hires that
-                    // aren't possible on this project.
-                    const showCrew = !showCastOnly;
-                    const showVendor = !showCastOnly;
-                    const showCompany = !showCastOnly && companyBookings.length > 0;
-                    const extraCount = (showCompany ? 1 : 0) + (castBookings.length > 0 ? 1 : 0);
-                    const cols = 2 + (showCrew ? 1 : 0) + (showVendor ? 1 : 0) + extraCount; // Total + (Crew?) + (Vendor?) + Remaining + optionals
-                    const colsClass = cols >= 6 ? 'sm:grid-cols-6' : cols === 5 ? 'sm:grid-cols-5' : cols === 4 ? 'sm:grid-cols-4' : cols === 3 ? 'sm:grid-cols-3' : 'sm:grid-cols-2';
-                    return loadingBookings ? (
-                      <div className={`grid grid-cols-2 ${colsClass} gap-3`}>
-                        {Array.from({ length: cols }).map((_, i) => <div key={i} className="skeleton h-16 rounded-xl" />)}
+                {/* Locations — booked properties/setups on this project. Hidden
+                    when there are none. Like vendor/cast, the target side closes
+                    out the engagement; the company can chat / view invoices /
+                    cancel from here. */}
+                {!showCastOnly && locationBookings.length > 0 && (
+                  <div className="rounded-2xl bg-white border border-neutral-200 p-5 hover:border-[#0F766E] transition-colors duration-200 lg:col-span-2">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg bg-[#E0F2F1] ring-1 ring-[#0F766E]/15 flex items-center justify-center">
+                          <FaBuilding className="text-[#0F766E] text-sm" />
+                        </div>
+                        <h2 className="text-sm font-bold text-neutral-900">
+                          Locations ({locationBookings.length})
+                        </h2>
                       </div>
+                      <Link to="/search?type=locations" className="text-xs text-[#0F766E] hover:underline font-medium">+ Add Location</Link>
+                    </div>
+                    {loadingBookings ? (
+                      <div className="space-y-2">{[1, 2].map((i) => <div key={i} className="skeleton h-14 rounded-xl" />)}</div>
                     ) : (
-                      <div className={`grid grid-cols-2 ${colsClass} gap-3`}>
-                        {[
-                          { label: 'Total Budget', value: formatBudgetCompact(totalBudget), color: 'text-neutral-900' },
-                          ...(showCrew
-                            ? [{ label: 'Crew Cost', value: formatBudgetCompact(crewCost), color: 'text-[#3678F1]' }]
-                            : []),
-                          ...(showVendor
-                            ? [{ label: 'Vendor Cost', value: formatBudgetCompact(vendorCost), color: 'text-[#2563EB]' }]
-                            : []),
-                          // Only surface Company Cost / Cast Cost when there's
-                          // at least one booking of that kind — keeps the
-                          // summary uncluttered for crew/vendor-only flows.
-                          ...(showCompany
-                            ? [{ label: 'Company Cost', value: formatBudgetCompact(companyCost), color: 'text-[#1D4ED8]' }]
-                            : []),
-                          ...(castBookings.length > 0
-                            ? [{ label: 'Cast Cost', value: formatBudgetCompact(castCost), color: 'text-[#9333EA]' }]
-                            : []),
-                          { label: 'Remaining',    value: formatBudgetCompact(remaining),   color: remaining >= 0 ? 'text-[#22C55E]' : 'text-[#F40F02]' },
-                        ].map(({ label, value, color }) => (
-                          <div key={label} className="rounded-xl bg-[#F3F4F6] p-3">
-                            <p className="text-xs text-neutral-500">{label}</p>
-                            <p className={`text-lg font-bold mt-1 ${color}`}>{value}</p>
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
+                        {locationBookings.map((booking) => (
+                          <div key={booking.id} className="rounded-xl border border-neutral-200 p-3 bg-[#FAFAFA]">
+                            <div className="flex items-center gap-3">
+                              {getMemberAvatarUrl(booking) ? (
+                                <Avatar src={getMemberAvatarUrl(booking)} name={getMemberName(booking)} size="sm" />
+                              ) : (
+                                <div className="w-9 h-9 rounded-xl bg-[#E0F2F1] ring-1 ring-[#0F766E]/15 flex items-center justify-center shrink-0">
+                                  <FaBuilding className="text-[#0F766E] text-xs" />
+                                </div>
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-bold text-neutral-900 truncate">{getMemberName(booking)}</p>
+                                <p className="text-[11px] text-neutral-500 truncate">
+                                  {getMemberRoleLabel(booking)}
+                                  {booking.rateOffered ? ` · ₹${(booking.rateOffered / 100).toLocaleString('en-IN')}/day` : ''}
+                                </p>
+                                {(booking.shootDates?.length || booking.shootLocations?.length || booking.shootDateLocations?.length) ? (
+                                  <p className="text-[10px] text-neutral-400 mt-0.5">{getBookingDateLocationSummary(booking)}</p>
+                                ) : null}
+                              </div>
+                              <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
+                                {statusBadge(booking.status)}
+                                <Link to={`/chat/${booking.target.id}?projectId=${encodeURIComponent(booking.projectId)}`} title="Chat"
+                                  className="w-7 h-7 rounded-lg bg-[#F3F4F6] flex items-center justify-center text-neutral-500 hover:bg-[#E0F2F1] hover:text-[#0F766E] transition-colors">
+                                  <FaMessage className="text-xs" />
+                                </Link>
+                                <Link to={`/invoices/${booking.projectId}`} title="View Invoices"
+                                  className="w-7 h-7 rounded-lg bg-[#F3F4F6] flex items-center justify-center text-neutral-500 hover:bg-[#E0F2F1] hover:text-[#0F766E] transition-colors">
+                                  <FaFileInvoice className="text-xs" />
+                                </Link>
+                                {(booking.status === 'pending' || booking.status === 'accepted') && (
+                                  <button type="button" title="Cancel location booking"
+                                    onClick={() => handleCancelBooking(booking.id)}
+                                    className="w-7 h-7 rounded-lg bg-[#F3F4F6] flex items-center justify-center text-neutral-400 hover:bg-[#FEE2E2] hover:text-[#F40F02] transition-colors">
+                                    <FaBan className="text-xs" />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
                           </div>
                         ))}
                       </div>
-                    );
-                  })()}
-                </div>
+                    )}
+                  </div>
+                )}
+              </div>
               )}
 
             </div>

@@ -15,10 +15,12 @@ import { useApiQuery } from '../../hooks/useApiQuery';
 import { paiseToRupees, rupeesToPaise } from '../../utils/currency';
 import { individualNavLinks } from '../../navigation/dashboardNav';
 import LocationAutocomplete from '../../components/LocationAutocomplete';
-import { 
+import {
   ProfileSection, InfoRow, EditableField, SkillTag, SocialLinks,
   ProfileCompletionBadge,
 } from '../../components/profile/ProfileComponents';
+import ContactVisibilityToggles from '../../components/profile/ContactVisibilityToggles';
+import { FaLock } from 'react-icons/fa6';
 import {
   calculateIndividualCompletion,
   getProfileImprovementTips
@@ -62,6 +64,8 @@ interface MeResponse {
   phone: string;
   role: string;
   isVerified: boolean;
+  isEmailPublic?: boolean;
+  isPhonePublic?: boolean;
   profile: ProfileData | null;
 }
 
@@ -871,6 +875,16 @@ export default function IndividualProfile() {
                               helpText="11-character IFSC"
                             />
                           </div>
+                        </ProfileSection>
+
+                        <ProfileSection title="Contact Visibility" icon={<FaLock />}>
+                          <ContactVisibilityToggles
+                            email={me?.email}
+                            phone={me?.phone}
+                            initialEmailPublic={me?.isEmailPublic ?? true}
+                            initialPhonePublic={me?.isPhonePublic ?? true}
+                            disabled={saving}
+                          />
                         </ProfileSection>
 
                         {/* Action Buttons */}

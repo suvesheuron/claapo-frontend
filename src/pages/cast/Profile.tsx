@@ -15,6 +15,8 @@ import { castNavLinks } from '../../navigation/dashboardNav';
 import {
   ProfileSection, InfoRow, EditableField, SkillTag, SocialLinks,
 } from '../../components/profile/ProfileComponents';
+import ContactVisibilityToggles from '../../components/profile/ContactVisibilityToggles';
+import { FaLock } from 'react-icons/fa6';
 import {
   ROLE_TYPES, GENDERS, BODY_TYPES, SKIN_TONES, EYE_COLORS,
   LOOK_TYPES, HAIR_TYPES, LANGUAGES, buildHeightOptions, cmToFeetInches,
@@ -82,6 +84,8 @@ interface MeResponse {
   email: string;
   phone: string;
   role: string;
+  isEmailPublic?: boolean;
+  isPhonePublic?: boolean;
   profile: CastProfileData | null;
 }
 
@@ -736,6 +740,18 @@ export default function CastProfile() {
               </dl>
             )}
           </ProfileSection>
+
+          {editing && (
+            <ProfileSection title="Contact Visibility" icon={<FaLock />}>
+              <ContactVisibilityToggles
+                email={me?.email}
+                phone={me?.phone}
+                initialEmailPublic={me?.isEmailPublic ?? true}
+                initialPhonePublic={me?.isPhonePublic ?? true}
+                disabled={saving}
+              />
+            </ProfileSection>
+          )}
         </main>
 
         <AppFooter />

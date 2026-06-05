@@ -56,7 +56,6 @@ export const castNavLinks: NavItem[] = [
 export const locationNavLinks: NavItem[] = [
   { icon: FaHouse,           label: 'Dashboard',          to: '/dashboard',              section: 'Overview' },
   { icon: FaMagnifyingGlass, label: 'Discover',           to: '/discover',               section: 'Overview' },
-  { icon: FaCalendar,        label: 'Manage Schedule',    to: '/location-availability',  section: 'Overview' },
   { icon: FaBuilding,        label: 'Properties',         to: '/properties',             section: 'Overview' },
   { icon: FaFolder,          label: 'Project Requests',   to: '/bookings',               section: 'Projects',       badgeKey: 'projectRequests' },
   { icon: FaClipboardList,   label: 'Project Details',    to: '/project-details',        section: 'Projects' },

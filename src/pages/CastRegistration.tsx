@@ -25,6 +25,8 @@ const BENEFITS = [
 const ROLE_TYPES = [
   { value: 'actor', label: 'Actor' },
   { value: 'model', label: 'Model' },
+  { value: 'dancer', label: 'Dancer' },
+  { value: 'influencer', label: 'Influencer' },
 ];
 
 const GENDERS = [
